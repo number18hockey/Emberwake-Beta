@@ -5,8 +5,8 @@
 | **A / D** | move |
 | **Space** or **W** | jump (hold **S** to drop through bridges) |
 | **Shift** | dodge (dodge through a hit at the last moment, then strike back: a riposte) |
-| **Left mouse** | light attack; hold it to keep attacking. Clicking a creature always punches it, whatever you hold |
-| **Right mouse** or **Q** | heavy attack (hold to charge); also opens doors |
+| **Left mouse** | tap for one light attack. After a hit, alternate light and heavy to build an Ember Cadence. Clicking a creature always punches it, whatever you hold |
+| **Right mouse** or **Q** | heavy attack (hold to charge); also opens doors. Three landed alternating hits complete a **REFRAIN**, briefly opening the target |
 | **V** | change weapon style (five per weapon, unlocked by training) |
 | **X** | swap to your off-hand weapon (pairs make combo finishers) |
 | **1** to **0**, mouse wheel | hotbar |

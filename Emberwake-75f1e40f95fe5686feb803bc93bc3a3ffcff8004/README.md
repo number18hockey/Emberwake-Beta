@@ -46,7 +46,7 @@ You can also open the included [`Emberwake Guide.html`](Emberwake-1/Emberwake%20
 | `Space` or `W` | Jump |
 | `S` | Hold to drop through bridges or aim down |
 | `Shift` | Dodge |
-| `Left mouse` | Light attack |
+| `Left mouse` | Tap for a light attack; alternate with heavy attacks after hits to build an Ember Cadence |
 | `Right mouse` or `Q` | Heavy attack or charge |
 | `E` | Pack, equipment, and hand crafting |
 | `B` | Recipe book |

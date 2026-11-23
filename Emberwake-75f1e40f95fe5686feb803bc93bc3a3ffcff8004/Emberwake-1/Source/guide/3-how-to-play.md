@@ -49,6 +49,8 @@ The **workshops** turn raw things into materials: the kiln (brick, glass, charco
 
 Each kind of weapon (blades, pikes, fangs, mauls, bows, chains, fists) has its own **fighting style**, and you **learn it by using it**. A new weapon family starts at **BASICS** (the plain combo, the heavy blow, the air combo and the counter). Keep fighting with it and it grows to **FOOTWORK** (sweeps, rising strikes, dives), then **FLOW** and **MASTERY** (dashes, charged and aimed heavies). The forms page (**C**) shows what each step teaches.
 
+**Ember Cadence.** Tap each attack once; holding light will not repeat it. Land a light hit, then a heavy, then a light (or start heavy and alternate) before the ember fades. The second alternating hit sparks an **ECHO**; the third lands a **REFRAIN**, staggers and opens the foe for a heavy **BREAK**. The HUD shows which button to answer with. A miss or repeating the same button starts a fresh cadence.
+
 **Every attack sets up the next.** A sweep knocks a foe **DOWN**: hit a downed foe with a heavy blow or from above and it **CRUSHES**. Launch a foe and your air blows **JUGGLE** it, then a dive **SPIKES** it. Lunges and dashes leave a foe **OPEN** for a heavy blow that **BREAKS** it. Thrusts **SKEWER** a pinned, hooked or reeled foe, and a run of light blows builds **RHYTHM** for a heavier finish. Each family leans on some of these more than others.
 
 **A perfect dodge** (dodge just as a blow lands) opens a **counter**: attack straight away for a riposte, aim up for a rising counter, hold **S** for a sweeping one, or use the heavy button for a reversal; in the air, a diving one.

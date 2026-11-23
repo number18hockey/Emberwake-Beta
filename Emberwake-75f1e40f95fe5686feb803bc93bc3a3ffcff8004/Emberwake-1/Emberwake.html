@@ -12,7 +12,7 @@ canvas{display:block;width:100vw;height:100vh;image-rendering:pixelated;image-re
 <body>
 <canvas id="c" tabindex="0"></canvas>
 <script>
-const GAME_VERSION = '2026.11.22';
+const GAME_VERSION = '2026.11.23';
 'use strict';
 // ============================================================
 //  EMBERWAKE — core: constants, math, input, audio, pixel font
@@ -4237,7 +4237,7 @@ function tickProjs() {
     else if (solid && pr.t > 1 && !pr.phase && pr.type !== 'cloud') {
       dead = true; const bx = pr.x - pr.vx, by = pr.y - pr.vy;
       if (pr.type === 'rock') { addShake(3); sfx('brk'); burst(pr.x, pr.y - 4, 12, ['#375666', '#22343f'], 2, 30, { hit: 1 }); }
-      else if (pr.type === 'bomb') { if (pr.ghost) boomFx(bx, by, pr.boom); else explode(bx, by, pr.boom, pr.dmg, ow); }
+      else if (pr.type === 'bomb') { if (pr.ghost) boomFx(bx, by, pr.boom); else explode(bx, by, pr.boom, pr.dmg, ow, pr.cadenceAtk); }
       else if (pr.type === 'glob') burst(bx, by, 8, ['#ff7a2a', '#ffd35a'], 1.4, 16, { glow: 1 });
       else if (pr.type === 'arrow' || pr.type === 'knife' || pr.type === 'javelin') { sparks(bx, by, 3, 0, 1.4); P(bx, by, 0, 0, 90, '#ffd35a', { g: 0, fr: 0, glow: 1 }); }
       else sparks(bx, by, 6);
@@ -4254,8 +4254,9 @@ function tickProjs() {
           if (e.dead || e.noHit) continue; const root = e.root || e;
           if (!pr.hits.has(root) && circBox(pr.x, pr.y, pr.r, e)) {
             pr.hits.add(root);
-            if (pr.boom) { explode(pr.x, pr.y, pr.boom, pr.dmg, ow); dead = true; break; }
-            strike(ow, e, pr.dmg, (sign(pr.vx) || 1) * pr.kb[0], pr.kb[1], { stop: pr.stop || 3, shake: 2, crit: pr.crit, stagger: pr.stagger, hx: pr.x, hy: pr.y });
+            if (pr.boom) { explode(pr.x, pr.y, pr.boom, pr.dmg, ow, pr.cadenceAtk); dead = true; break; }
+            const beat = pr.cadenceAtk ? cadenceStep(pr.cadenceAtk) : 0, landed = strike(ow, e, round(pr.dmg * cadenceMul(beat)), (sign(pr.vx) || 1) * pr.kb[0], pr.kb[1], { stop: (pr.stop || 3) + (beat >= 3 ? 3 : beat === 2 ? 1 : 0), shake: 2, crit: pr.crit, stagger: beat >= 3 ? max(pr.stagger || 0, 48) : pr.stagger, hx: pr.x, hy: pr.y });
+            if (landed && pr.cadenceAtk) cadenceHit(pr.cadenceAtk, e, beat, pr.x, pr.y);
             if (!pr.pierce) { dead = true; break; }
           }
         }
@@ -5720,8 +5721,10 @@ function startAttack(f, btn, I, force) {
   if (!force && m.cost) { if (f.stam < m.cost * .6) { if (f === G.p) sfx('deny'); id = resolveMove(set, 'L', c); if (f === G.p) id = famGate(W.set, set, id, 'L', c); m = set.moves[id]; if (m.rise && c.air) { id = set.map.aChain[0]; m = set.moves[id]; } } else { f.stam = max(0, f.stam - m.cost); f.stamDelay = 42; } }
   const rep = f.hist.slice(-4).filter(h => h === id).length, fresh = !f.hist.slice(-3).includes(id);
   f.hist.push(id); if (f.hist.length > 8) f.hist.shift();
+  const cadence = f === G.p && f.cadence, cadenceLink = !!(cadence && cadence.until >= G.time && cadence.btn !== btn && cadence.set === W.set), cadenceBase = cadenceLink ? { btn: cadence.btn, count: cadence.count, until: cadence.until, set: cadence.set } : null;
+  if (f === G.p) f.cadence = null;
   f.face = c.side; f.state = 'attack'; f.chainT = 0; f.mineP = 0;
-  const a = f.atk = { f, id, m, W, set, setName: W.set, btn, phase: 0, pt: 0, face: c.side, aimA: c.elev, hits: new Map(), charge: 0, charged: false, hit: false, air: c.air, fresh, stale: fresh ? 1.1 : ([1, .86, .72, .6, .5][rep] || .5), act: m.act, dashT: 0, dashN: 0, prevAng: 0, aimOff: 0, th: 0, crit: !!m.crit, dist: c.dist, tx: I.wx, ty: I.wy, shots: 0, shotI: 0 };
+  const a = f.atk = { f, id, m, W, set, setName: W.set, btn, phase: 0, pt: 0, face: c.side, aimA: c.elev, hits: new Map(), charge: 0, charged: false, hit: false, air: c.air, fresh, stale: fresh ? 1.1 : ([1, .86, .72, .6, .5][rep] || .5), act: m.act, dashT: 0, dashN: 0, prevAng: 0, aimOff: 0, th: 0, crit: !!m.crit, dist: c.dist, tx: I.wx, ty: I.wy, shots: 0, shotI: 0, cadenceLink, cadenceBase };
   // what you wear and how well you know the weapon change how each kind of blow comes out
   if (f === G.p && gearOn()) { const air = c.air, sh = m.kind === 'shot', spd = (sh ? gearMul('bow') : a.btn === 'L' ? gearMul('light') : 1) * (air ? (gearMul('air') + 1) / 2 : 1) * styleSpeed(W, id); a.tm = (W.wsp || 1) / spd; a.gm = (a.btn === 'H' ? gearMul('heavy') : 1) * (air ? (gearMul('air') + 1) / 2 : 1) * styleDmg(W, id); a.dk = gearMul('dash') * (air ? gearMul('air') : 1); a.critB = (gearHas('crit') ? .06 : 0) + (gearHas('keen') ? .08 : 0); }
   if (!force && f === G.p && btn === 'H' && id === set.map.h) { const art = artFor(W); if (art) a.artCharge = { min: 26, max: 96, into: art }; }
@@ -5745,7 +5748,7 @@ function thrustExt(a, pt) {
   if (m.pump) { const w = clamp(pt / a.act, 0, .999) * m.pump, fr = w - floor(w); return .35 + .65 * sin(min(1, fr * 2.2) * PI / 2); }
   return .4 + .6 * ease.out3(clamp(pt / min(a.act, 4), 0, 1));
 }
-function endAttack(f) { if (f.atk) { f.lastMove = f.atk.id; f.chainT = 26; } f.atk = null; if (f.state === 'attack') f.state = 'normal'; }
+function endAttack(f) { if (f.atk) { if (f === G.p && !f.atk.hit && !f.atk.projectileOut) f.cadence = null; f.lastMove = f.atk.id; f.chainT = 26; } f.atk = null; if (f.state === 'attack') f.state = 'normal'; }
 
 function tickAttack(f, I) {
   const a = f.atk; let m = a.m; a.pt++;
@@ -5810,11 +5813,12 @@ function activeTick(a) {
 function fireArrows(a, count) {
   const f = a.f, m = a.m, A = m.arrows, fc = a.face, sx = f.x + 3 + fc * 5, sy = f.y + (A.low ? 16 : 7);
   if (a.W.ammo && f.isPlayer && !(WORLD.arena && !WORLD.royale) && WORLD.mode !== 1) { count = min(count, countItem('arrow')); if (count <= 0) { sfx('deny'); if (G.time - (G.hintT || -999) > 240) { G.hintT = G.time; say('No arrows. Bind flint to sticks with fiber.'); } return; } removeItem('arrow', count); }
+  if (count > 0 && f === G.p) a.projectileOut = true;
   for (let k = 0; k < count; k++, a.shotI++) {
     let vx, vy, g = A.g === undefined ? .05 : A.g;
     if (A.rain) { const tx = a.tx + (A.n > 1 ? (a.shotI - (A.n - 1) / 2) * 10 : 0) + frand(-3, 3), Tf = A.tf || 46; g = .16; vx = clamp((tx - sx) / Tf, -7, 7); vy = (a.ty - sy - .5 * g * Tf * Tf) / Tf; }
     else { const v = A.v || 6.5; if (A.radial) { const th = a.shotI / A.n * TAU; vx = cos(th) * v; vy = sin(th) * v; } else { const th = a.th + (A.spread ? (a.shotI - (A.n - 1) / 2) * A.spread : 0) + (A.burst ? frand(-.025, .025) : 0); vx = fc * cos(th) * v; vy = sin(th) * v; } }
-    spawnProj({ type: A.boom ? 'bomb' : 'arrow', owner: f, x: sx, y: sy, vx, vy, g, r: 3, dmg: max(1, round(a.W.dmg * m.dmg * a.stale * (f.dmgMul || 1))), pierce: !!A.pierce, boom: A.boom || 0, life: 190, kb: [m.kb[0], m.kb[1]], crit: a.crit, stagger: m.stagger, stop: m.stop });
+    spawnProj({ type: A.boom ? 'bomb' : 'arrow', owner: f, x: sx, y: sy, vx, vy, g, r: 3, dmg: max(1, round(a.W.dmg * m.dmg * a.stale * (f.dmgMul || 1))), pierce: !!A.pierce, boom: A.boom || 0, life: 190, kb: [m.kb[0], m.kb[1]], crit: a.crit, stagger: m.stagger, stop: m.stop, cadenceAtk: f === G.p ? a : null });
   }
   fsx(f, 'bolt', 0); fsx(f, 'thrust', 0);
 }
@@ -5880,12 +5884,13 @@ function applyHit(a, e, hx, hy) {
   if (last !== undefined && (!m.multi || a.pt - last < m.multi)) return; a.hits.set(root, a.pt);
   const P0 = f === G.p, sharp = P0 && f.sharp > 0;
   const crit = a.crit || Math.random() < .07 + (a.W.crit || 0) + (a.critB || 0) + (P0 ? boonAdd('crit') : 0);
-  let dmg = a.W.dmg * m.dmg * a.stale * (P0 ? 1 + rankI() * .04 + qBonus(a.W.id) + (sharp ? .2 : 0) : 1) * (crit && !a.crit ? 1.6 : 1) * (f.dmgMul || 1) * (a.gm || 1) * (P0 ? (a.btn === 'H' ? boonMul('hdmg') : 1) * (m.counter ? boonMul('counter') : 1) : 1);
+  const beat = P0 ? cadenceStep(a) : 0;
+  let dmg = a.W.dmg * m.dmg * a.stale * (P0 ? 1 + rankI() * .04 + qBonus(a.W.id) + (sharp ? .2 : 0) : 1) * (crit && !a.crit ? 1.6 : 1) * (f.dmgMul || 1) * (a.gm || 1) * (P0 ? (a.btn === 'H' ? boonMul('hdmg') : 1) * (m.counter ? boonMul('counter') : 1) : 1) * cadenceMul(beat);
   const lk = P0 ? flowPay(a, e) : null; if (lk) dmg *= lk.mul * (lk.tag ? boonMul('flow') : 1);
   dmg = max(1, round(dmg * frand(.93, 1.07)));
   let kx = m.kb[0] * a.face; if (m.kind === 'spin') kx = m.kb[0] * (sign((e.x + e.w / 2) - (f.x + 3)) || a.face);
-  if (!strike(f, e, dmg, kx, m.kb[1], { stagger: m.flow === 'down' ? max(m.stagger || 0, 45) : m.stagger, launch: m.launch, crit, stop: (m.stop || 0) + (lk && lk.tag ? 2 : 0), shake: m.shake, blunt: m.blunt, cold: a.W.cold, hx, hy })) return;
-  if (P0) { flowSet(a, e, lk, hx, hy); famGain(a.setName, ((a.fresh ? 1 : .4) + (lk && lk.tag ? 1 : 0)) * (e.type === 'dummy' ? .5 : 1)); if (e.type !== 'dummy') artGain(a.W); }
+  if (!strike(f, e, dmg, kx, m.kb[1], { stagger: beat >= 3 ? max(m.stagger || 0, 48) : m.flow === 'down' ? max(m.stagger || 0, 45) : m.stagger, launch: m.launch, crit, stop: (m.stop || 0) + (lk && lk.tag ? 2 : 0) + (beat >= 3 ? 3 : beat === 2 ? 1 : 0), shake: m.shake, blunt: m.blunt, cold: a.W.cold, hx, hy })) return;
+  if (P0) { flowSet(a, e, lk, hx, hy); cadenceHit(a, e, beat, hx, hy); famGain(a.setName, ((a.fresh ? 1 : .4) + (lk && lk.tag ? 1 : 0)) * (e.type === 'dummy' ? .5 : 1)); if (e.type !== 'dummy') artGain(a.W); }
   if (a.W.burn && !e.dead) applyStatus(e, 'burn', f, { d: 110 });
   if (!e.dead) { if (a.W.frost) applyStatus(e, 'frost', f, { d: 100 }); if (a.W.poison || (P0 && f.venom > 0)) applyStatus(e, 'poison', f, { d: 260 }); if (a.W.bleed && Math.random() < a.W.bleed) applyStatus(e, 'bleed', f, { d: 180 }); }
   if (a.W.steal && f.hp < f.maxhp) { f.hp = min(f.maxhp, f.hp + max(1, round(dmg * a.W.steal))); }
@@ -5906,15 +5911,16 @@ function landShock(a, S, cx) {
   sparks(cx, fy - 2, 14, 0, 3); G.trails.push({ kind: 'ring', x: cx, y: fy, r: S.r, life: 12, max: 12 });
   if (f === G.p) { for (let dx = -S.r; dx <= S.r; dx += 4) { const tx = floor((cx + dx) / T), ty = floor((fy - 2) / T), t = tileAt(tx, ty); if (t && TP[t].decor) breakTile(tx, ty); } terrainSlam(a, cx, fy); }
 }
-function explode(x, y, r, dmg, by) {
+function explode(x, y, r, dmg, by, cadenceAtk) {
   boomFx(x, y, r);
-  for (const e of foesOf(by)) { if (e.dead || e.noHit) continue; if (circBox(x, y, r, e)) strike(by, e, dmg, (sign(e.x + e.w / 2 - x) || 1) * 3, -2.6, { stop: 4, shake: 2, hx: e.x + e.w / 2, hy: e.y + e.h / 2 }); }
+  for (const e of foesOf(by)) { if (e.dead || e.noHit) continue; if (circBox(x, y, r, e)) { const beat = cadenceAtk ? cadenceStep(cadenceAtk) : 0, hx = e.x + e.w / 2, hy = e.y + e.h / 2, landed = strike(by, e, round(dmg * cadenceMul(beat)), (sign(e.x + e.w / 2 - x) || 1) * 3, -2.6, { stop: 4 + (beat >= 3 ? 3 : beat === 2 ? 1 : 0), shake: 2, stagger: beat >= 3 ? 48 : 0, hx, hy }); if (landed && cadenceAtk) cadenceHit(cadenceAtk, e, beat, hx, hy); } }
 }
 function fireProj(a) {
   const f = a.f, m = a.m, fc = a.face, cx = f.x + 3, cy = f.y + 7, dm = f.dmgMul || 1;
-  if (m.proj === 'wave') { const el = clamp(a.aimA, -.6, .6); spawnProj({ type: 'wave', owner: f, x: cx + fc * 10, y: cy + 2, vx: fc * cos(el) * 4.8, vy: sin(el) * 4.8, r: 11, dmg: round(a.W.dmg * 2.2 * dm), pierce: true, life: 46, kb: [3.5, -1.5] }); fsx(f, 'wave', 0); }
-  else if (m.proj === 'javelin') spawnProj({ type: 'javelin', owner: f, x: cx + fc * 8, y: cy, vx: fc * cos(a.th) * 6.4, vy: sin(a.th) * 6.4, g: .09, r: 4, dmg: round(a.W.dmg * 2.8 * dm), life: 130, kb: [4, -1], spr: a.W.held });
-  else if (m.proj === 'knife') spawnProj({ type: 'knife', owner: f, x: cx + fc * 6, y: cy, vx: fc * cos(a.th) * 7, vy: sin(a.th) * 7, g: .03, r: 3, dmg: round(a.W.dmg * 1.3 * dm), life: 90, kb: [1.5, -.4] });
+  const cadenceAtk = f === G.p ? a : null; if (cadenceAtk) a.projectileOut = true;
+  if (m.proj === 'wave') { const el = clamp(a.aimA, -.6, .6); spawnProj({ type: 'wave', owner: f, x: cx + fc * 10, y: cy + 2, vx: fc * cos(el) * 4.8, vy: sin(el) * 4.8, r: 11, dmg: round(a.W.dmg * 2.2 * dm), pierce: true, life: 46, kb: [3.5, -1.5], cadenceAtk }); fsx(f, 'wave', 0); }
+  else if (m.proj === 'javelin') spawnProj({ type: 'javelin', owner: f, x: cx + fc * 8, y: cy, vx: fc * cos(a.th) * 6.4, vy: sin(a.th) * 6.4, g: .09, r: 4, dmg: round(a.W.dmg * 2.8 * dm), life: 130, kb: [4, -1], spr: a.W.held, cadenceAtk });
+  else if (m.proj === 'knife') spawnProj({ type: 'knife', owner: f, x: cx + fc * 6, y: cy, vx: fc * cos(a.th) * 7, vy: sin(a.th) * 7, g: .03, r: 3, dmg: round(a.W.dmg * 1.3 * dm), life: 90, kb: [1.5, -.4], cadenceAtk });
 }
 function fadeTrail(a) {
   const f = a.f, m = a.m, cx = f.x + 3 + a.face, cy = f.y + 6, L = (ARM + a.W.len) * m.reach;
@@ -6602,6 +6608,7 @@ buildStyles();
 //  button until it flares, and let go.
 // ============================================================
 const FAM_AT = [0, 30, 110, 260], FAM_STEP = ['BASICS', 'FOOTWORK', 'FLOW', 'MASTERY'];
+const CADENCE_WINDOW = 72;
 const FAM_NAME = { sword: 'BLADES', spear: 'PIKES', fangs: 'FANGS', maul: 'MAULS', bow: 'BOWS', chuks: 'CHAINS', brawl: 'BARE HANDS' };
 // how each family leans: a bigger share of one kind of flow
 const FAM_LEAN = { sword: { rhythm: 1.3 }, spear: { skewer: 1.3, open: 1.1 }, fangs: { open: 1.3, counter: 1.1 }, maul: { crush: 1.3 }, bow: { juggle: 1.3, spike: 1.2 }, chuks: { skewer: 1.25, juggle: 1.15 }, brawl: { counter: 1.3, rhythm: 1.15 } };
@@ -6769,6 +6776,25 @@ function flowPay(a, e) {
   if (heavy) f.rhythm = 0;
   return mul > 1.001 ? { mul: min(2.6, mul), tag } : null;
 }
+// A hit plants one ember; alternating the next button in time turns it into a
+// two-beat ECHO, then a three-beat REFRAIN that leaves its target OPEN.
+function cadenceStep(a) {
+  if (a.link || a.cadenceCommitted) return a.cadenceStep || 0;
+  const q = a.cadenceBase;
+  return a.cadenceLink && q && q.until >= G.time && q.btn !== a.btn && q.set === a.setName ? min(3, q.count + 1) : 0;
+}
+function cadenceHit(a, e, beat, hx, hy) {
+  if (a.link || a.cadenceCommitted) return; a.cadenceCommitted = true; a.cadenceStep = beat; a.hit = true;
+  const f = a.f, root = e.root || e, step = beat || 1, refrain = step >= 3;
+  f.cadence = { btn: a.btn, count: refrain ? 1 : step, until: G.time + CADENCE_WINDOW, set: a.setName };
+  if (step < 2) return;
+  const col = refrain ? '#ffd35a' : '#8ff5e6', word = refrain ? 'REFRAIN' : 'ECHO';
+  numPop(hx, hy - 17, word, col, refrain ? 1.25 : 1); sparks(hx, hy, refrain ? 14 : 8, 0, 2.8, refrain ? ['#ffd35a', '#fff1a8', '#ff8a3d'] : ['#8ff5e6', '#c9fff6', '#ffd35a']);
+  G.combo.pts += refrain ? 5 : 2;
+  if (refrain) { root.fl = root.fl || {}; root.fl.open = G.time + 60; flowTag(root, 'OPEN', '#8ff5e6'); sfx('charged', 0); }
+  else sfx('reflect', 0);
+}
+const cadenceMul = beat => beat >= 3 ? 1.38 : beat === 2 ? 1.16 : 1;
 function flowSet(a, e, lk, hx, hy) {
   const m = a.m, f = a.f, root = e.root || e, fl = root.fl || (root.fl = {}), now = G.time;
   if (m.flow === 'down') { fl.down = now + 60; flowTag(root, 'DOWN', '#ffb347'); }
@@ -6788,6 +6814,13 @@ function drawFamHud(c) {
   if (st < 3) { const u = clamp((xp - FAM_AT[st]) / (FAM_AT[st + 1] - FAM_AT[st]), 0, 1), bx = x + textW(lab) + 4; c.fillStyle = '#2b2740'; c.fillRect(bx, y + 2, 40, 3); c.fillStyle = '#ffd35a'; c.fillRect(bx, y + 2, round(40 * u), 3); }
   const al = artLine(W); if (al) textS(c, al, x, y - 9, artFor(W) ? '#8ff5e6' : '#8b8fa3');
   if ((p.rhythm || 0) >= 2) textS(c, 'RHYTHM ' + 'I'.repeat(min(4, p.rhythm)), x + 150, y, '#ffd35a');
+}
+function drawCadenceHud(c) {
+  const q = G.p && G.p.cadence; if (!q || q.until < G.time || UI.open) return;
+  const uw = VS.uw, label = q.count >= 2 ? 'REFRAIN READY' : 'EMBER CADENCE', next = q.btn === 'L' ? 'NEXT RMB / Q' : 'NEXT LMB', y = round(VS.uh * .34) + 40;
+  const s = label + '  ' + next, x = uw - 8 - textW(s); textO(c, s, x, y, q.count >= 2 ? '#ffd35a' : '#8ff5e6');
+  for (let i = 0; i < 3; i++) { c.fillStyle = i < q.count ? (q.count >= 2 ? '#ffd35a' : '#8ff5e6') : '#4a4460'; c.fillRect(x + i * 6, y + 7, 4, 2); }
+  c.fillStyle = '#4a4460'; c.fillRect(x + 22, y + 7, 17, 2); c.fillStyle = '#ff8a3d'; c.fillRect(x + 22, y + 7, round(17 * clamp((q.until - G.time) / CADENCE_WINDOW, 0, 1)), 2);
 }
 function flowTag(root, text, col) { root.flT = { text, col, t: G.time + 50 }; }
 // small words over foes left open by your last move
@@ -6819,7 +6852,7 @@ function newFighter(x, y, o) {
   const f = {
     fighter: true, x, y, px: x, py: y, w: 6, h: 20, vx: 0, vy: 0, face: 1, onGround: false, canStep: true, stepVis: 0, hp: 100, maxhp: 100, stam: 100, maxstam: 100, stamDelay: 0,
     inv: 0, iDodge: 0, dodgeT: 0, dodgeCd: 0, dodgeDir: 1, dodgeGrace: 0, dodgeGround: true, dbuf: 0, airDash: 1, updraft: true, dblUsed: false, perfected: false,
-    state: 'normal', atk: null, buf: null, coyote: 0, jbuf: 0, runPh: 0, landT: 0, hurtT: 0, riposte: 0, lastMove: null, chainT: 0, hist: [], toolT: 0, mineX: -1, mineY: -1, mineP: 0,
+    state: 'normal', atk: null, buf: null, coyote: 0, jbuf: 0, runPh: 0, landT: 0, hurtT: 0, riposte: 0, lastMove: null, chainT: 0, cadence: null, hist: [], toolT: 0, mineX: -1, mineY: -1, mineP: 0,
     placeCd: 0, dead: false, deadT: 0, healCd: 0, regenT: 0, sHold: 0, noCut: false, ghostReq: false, scarf: [], skin: 0, hat: 0, team: 'p', name: '', wid: 'sword', flash: 0, taken: 0, takenT: 0,
     kills: 0, deaths: 0, foes: [], atkN: 0
   };
@@ -6832,7 +6865,7 @@ function newPlayer() {
   while (boxHits(p.x, p.y, p.w, p.h)) p.y -= T; p.py = p.y; return p;
 }
 function reviveFighter(f, x, y) {
-  Object.assign(f, { x, y, px: x, py: y, vx: 0, vy: 0, hp: f.maxhp, stam: f.maxstam, dead: false, deadT: 0, inv: 120, iDodge: 0, state: 'normal', atk: null, buf: null, hurtT: 0, riposte: 0, taken: 0, chainT: 0, mineP: 0 });
+  Object.assign(f, { x, y, px: x, py: y, vx: 0, vy: 0, hp: f.maxhp, stam: f.maxstam, dead: false, deadT: 0, inv: 120, iDodge: 0, state: 'normal', atk: null, buf: null, hurtT: 0, riposte: 0, taken: 0, chainT: 0, cadence: null, mineP: 0 });
   while (boxHits(f.x, f.y, f.w, f.h)) { f.y -= T; f.py = f.y; }
   for (const s of f.scarf) { s.x = s.ox = f.x + 3; s.y = s.oy = f.y + 5; }
 }
@@ -6908,7 +6941,7 @@ function tickFighter(f, I) {
   if (WORLD.arena && !WORLD.royale) { if (f.regenT > 240 && f.hp < f.maxhp && G.time % 4 === 0) f.hp++; }
   else if (f.isPlayer && f.regenT > 420 / DIFF().regen && G.time % max(1, round((WORLD.mode === 1 || G.food > 70 ? 40 : G.food > 30 ? 80 : 1e9) / DIFF().regen / blessRegen())) === 0 && f.hp < f.maxhp) f.hp++;
   const W = heldOf(f), isW = W && W.type === 'weapon', free = f.hurtT <= 0;
-  if (isW && free) { if (I.lp) f.buf = { b: 'L', t: 10 }; else if (f === G.p && I.l && f.state === 'normal' && !f.buf && !(f.toolT > 0)) f.buf = { b: 'L', t: 2 }; if (I.rp) f.buf = { b: 'H', t: 10 }; }
+  if (isW && free) { if (I.lp) f.buf = { b: 'L', t: 10 }; if (I.rp) f.buf = { b: 'H', t: 10 }; }
   if (f.buf && --f.buf.t < 0) f.buf = null;
   if (I.dodgeP) f.dbuf = 7; else if (f.dbuf > 0) f.dbuf--;
   let a = f.atk;
@@ -9221,6 +9254,7 @@ function drawHUD(c) {
   G.feed.forEach((f, i) => { const a = clamp(1 - (f.t - 150) / 60, 0, 1) * (1 - i * .16); if (a <= 0) return; c.globalAlpha = a; const x = 6 + (f.t < 6 ? (6 - f.t) * -3 : 0); if (f.isNew) { textO(c, 'NEW FORM', x, fy, '#8ff5e6'); fy += 9; } textO(c, f.name, x, fy, f.isNew ? '#ffd35a' : f.fresh ? '#fff' : '#8b8fa3'); if (i === 0 && !f.fresh) drawText(c, 'dull', x + textW(f.name) + 5, fy, '#6a6485'); fy += 10; });
   c.globalAlpha = 1;
   if (G.combo.n > 1 && !A) { const r = rankI(), s = `${G.combo.n} HITS`, x = uw - 8 - textW(s, 2), y = round(uh * .34), pop = G.combo.t > 172 ? 1 : 0; textO(c, s, x, y - pop, '#fff', 2); if (r) textO(c, RANKS[r], uw - 8 - textW(RANKS[r]), y + 18, RANK_COL[r]); bar(c, uw - 68, y + 29, 60, 2, G.combo.t / 180, RANK_COL[r], '#4a4460'); }
+  drawCadenceHud(c);
   // boss bars
   const b = G.boss, v = G.duel;
   if (b && b.state !== 'intro') { const bw = clamp(uw - 300, 110, 220), bx = round((uw - bw) / 2); textC(c, b.name, uw / 2, 5, '#ffd35a', 1, textO); bar(c, bx, 15, bw, 6, b.hp / b.maxhp, b.phase === 2 ? '#ff7a2a' : '#c94a3a', '#8f2233'); if (b.state === 'tired' || b.state === 'stagger') textC(c, 'STAGGERED: STRIKE NOW', uw / 2, 24, (G.time >> 3) & 1 ? '#8ff5e6' : '#fff', 1, textO); else if (b.st && b.st.blind > 0) textC(c, 'BLINDED', uw / 2, 24, '#b9bdd0', 1, textO); }
@@ -9380,7 +9414,7 @@ function drawPause(c) {
   if (!A) button(c, x + 8, y + h - 36, 118, 13, 'CRAFTING: ' + (SETTINGS.craft === 'hands' ? 'HANDS-ON' : 'SIMPLE'), () => { SETTINGS.craft = SETTINGS.craft === 'hands' ? 'simple' : 'hands'; saveSettings(); UI.job = null; sfx('ui'); });
   button(c, x + 130, y + h - 36, 118, 13, 'FPS MODE: ' + (SETTINGS.fpsMode ? 'ON' : 'OFF'), () => { SETTINGS.fpsMode = !SETTINGS.fpsMode; if (SETTINGS.fpsMode) G.parts.length = 0; saveSettings(); sfx('ui'); });
   if (!A) button(c, x + 130, y + h - 19, 118, 13, 'DIFFICULTY: ' + DIFF().n, () => { SETTINGS.diff = SETTINGS.diff === 'easy' ? 'normal' : SETTINGS.diff === 'normal' ? 'hard' : 'easy'; saveSettings(); sfx('ui'); });
-  const H = ['A / D  move        SPACE or W  jump        SHIFT  dodge', 'LMB  light attack (hold to keep going)   RMB or Q  heavy', ...(SETTINGS.combat === 'simple' ? ['Aim up to launch, aim down or hold S for low blows. Click', 'a creature to punch it, whatever you are holding.'] : ['Where you aim, which keys you hold, whether you are in', 'the air and how far the cursor is all change the attack.']), 'Dodge through a hit at the last moment, then strike: Riposte.', A ? '1-6 weapons    TAB scores    C forms    O sound' : '1-0 / wheel  hotbar     E  pack + crafting     C  forms', A ? 'R  throw sidearm    T  switch sidearm    Echoes leave when a Waker joins.' : 'J  journal + leads   F  talk / use   H  quick heal', A ? '' : 'R  throw sidearm   T  switch sidearm   S held: drop through bridges', A ? '' : 'Ore, keys and such leave your fists free.   K  knap   M  map', A ? '' : 'F beside a station uses it. Hold W/S on ladders. RMB opens doors.', A ? '' : 'V  weapon style (5 per weapon)   X  swap to off hand', A ? '' : 'Tools swing where you point, at rock or beast. Hold RMB: heavy.'];
+  const H = ['A / D  move        SPACE or W  jump        SHIFT  dodge', 'LMB tap: light   RMB or Q: heavy (hold to charge)', 'Alternate LMB/RMB after hits: ECHO, then REFRAIN.', ...(SETTINGS.combat === 'simple' ? ['Aim up to launch, aim down or hold S for low blows. Click', 'a creature to punch it, whatever you are holding.'] : ['Where you aim, which keys you hold, whether you are in', 'the air and how far the cursor is all change the attack.']), 'Dodge through a hit at the last moment, then strike: Riposte.', A ? '1-6 weapons    TAB scores    C forms    O sound' : '1-0 / wheel  hotbar     E  pack + crafting     C  forms', A ? 'R  throw sidearm    T  switch sidearm    Echoes leave when a Waker joins.' : 'J  journal + leads   F  talk / use   H  quick heal', A ? '' : 'R  throw sidearm   T  switch sidearm   S held: drop through bridges', A ? '' : 'Ore, keys and such leave your fists free.   K  knap   M  map', A ? '' : 'F beside a station uses it. Hold W/S on ladders. RMB opens doors.', A ? '' : 'V  weapon style (5 per weapon)   X  swap to off hand', A ? '' : 'Tools swing where you point, at rock or beast. Hold RMB: heavy.'];
   H.forEach((l, i) => drawText(c, l, x + 8, y + 42 + i * 12, i === 2 || i === 3 ? '#8ff5e6' : '#d8d4e6'));
 }
 function drawDialog(c) {

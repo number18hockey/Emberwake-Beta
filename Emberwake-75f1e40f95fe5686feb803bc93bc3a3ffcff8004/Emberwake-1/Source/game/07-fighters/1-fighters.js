@@ -19,7 +19,7 @@ function newFighter(x, y, o) {
   const f = {
     fighter: true, x, y, px: x, py: y, w: 6, h: 20, vx: 0, vy: 0, face: 1, onGround: false, canStep: true, stepVis: 0, hp: 100, maxhp: 100, stam: 100, maxstam: 100, stamDelay: 0,
     inv: 0, iDodge: 0, dodgeT: 0, dodgeCd: 0, dodgeDir: 1, dodgeGrace: 0, dodgeGround: true, dbuf: 0, airDash: 1, updraft: true, dblUsed: false, perfected: false,
-    state: 'normal', atk: null, buf: null, coyote: 0, jbuf: 0, runPh: 0, landT: 0, hurtT: 0, riposte: 0, lastMove: null, chainT: 0, hist: [], toolT: 0, mineX: -1, mineY: -1, mineP: 0,
+    state: 'normal', atk: null, buf: null, coyote: 0, jbuf: 0, runPh: 0, landT: 0, hurtT: 0, riposte: 0, lastMove: null, chainT: 0, cadence: null, hist: [], toolT: 0, mineX: -1, mineY: -1, mineP: 0,
     placeCd: 0, dead: false, deadT: 0, healCd: 0, regenT: 0, sHold: 0, noCut: false, ghostReq: false, scarf: [], skin: 0, hat: 0, team: 'p', name: '', wid: 'sword', flash: 0, taken: 0, takenT: 0,
     kills: 0, deaths: 0, foes: [], atkN: 0
   };
@@ -32,7 +32,7 @@ function newPlayer() {
   while (boxHits(p.x, p.y, p.w, p.h)) p.y -= T; p.py = p.y; return p;
 }
 function reviveFighter(f, x, y) {
-  Object.assign(f, { x, y, px: x, py: y, vx: 0, vy: 0, hp: f.maxhp, stam: f.maxstam, dead: false, deadT: 0, inv: 120, iDodge: 0, state: 'normal', atk: null, buf: null, hurtT: 0, riposte: 0, taken: 0, chainT: 0, mineP: 0 });
+  Object.assign(f, { x, y, px: x, py: y, vx: 0, vy: 0, hp: f.maxhp, stam: f.maxstam, dead: false, deadT: 0, inv: 120, iDodge: 0, state: 'normal', atk: null, buf: null, hurtT: 0, riposte: 0, taken: 0, chainT: 0, cadence: null, mineP: 0 });
   while (boxHits(f.x, f.y, f.w, f.h)) { f.y -= T; f.py = f.y; }
   for (const s of f.scarf) { s.x = s.ox = f.x + 3; s.y = s.oy = f.y + 5; }
 }
@@ -108,7 +108,7 @@ function tickFighter(f, I) {
   if (WORLD.arena && !WORLD.royale) { if (f.regenT > 240 && f.hp < f.maxhp && G.time % 4 === 0) f.hp++; }
   else if (f.isPlayer && f.regenT > 420 / DIFF().regen && G.time % max(1, round((WORLD.mode === 1 || G.food > 70 ? 40 : G.food > 30 ? 80 : 1e9) / DIFF().regen / blessRegen())) === 0 && f.hp < f.maxhp) f.hp++;
   const W = heldOf(f), isW = W && W.type === 'weapon', free = f.hurtT <= 0;
-  if (isW && free) { if (I.lp) f.buf = { b: 'L', t: 10 }; else if (f === G.p && I.l && f.state === 'normal' && !f.buf && !(f.toolT > 0)) f.buf = { b: 'L', t: 2 }; if (I.rp) f.buf = { b: 'H', t: 10 }; }
+  if (isW && free) { if (I.lp) f.buf = { b: 'L', t: 10 }; if (I.rp) f.buf = { b: 'H', t: 10 }; }
   if (f.buf && --f.buf.t < 0) f.buf = null;
   if (I.dodgeP) f.dbuf = 7; else if (f.dbuf > 0) f.dbuf--;
   let a = f.atk;

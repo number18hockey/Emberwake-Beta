@@ -31,6 +31,7 @@
 //  button until it flares, and let go.
 // ============================================================
 const FAM_AT = [0, 30, 110, 260], FAM_STEP = ['BASICS', 'FOOTWORK', 'FLOW', 'MASTERY'];
+const CADENCE_WINDOW = 72;
 const FAM_NAME = { sword: 'BLADES', spear: 'PIKES', fangs: 'FANGS', maul: 'MAULS', bow: 'BOWS', chuks: 'CHAINS', brawl: 'BARE HANDS' };
 // how each family leans: a bigger share of one kind of flow
 const FAM_LEAN = { sword: { rhythm: 1.3 }, spear: { skewer: 1.3, open: 1.1 }, fangs: { open: 1.3, counter: 1.1 }, maul: { crush: 1.3 }, bow: { juggle: 1.3, spike: 1.2 }, chuks: { skewer: 1.25, juggle: 1.15 }, brawl: { counter: 1.3, rhythm: 1.15 } };
@@ -198,6 +199,25 @@ function flowPay(a, e) {
   if (heavy) f.rhythm = 0;
   return mul > 1.001 ? { mul: min(2.6, mul), tag } : null;
 }
+// A hit plants one ember; alternating the next button in time turns it into a
+// two-beat ECHO, then a three-beat REFRAIN that leaves its target OPEN.
+function cadenceStep(a) {
+  if (a.link || a.cadenceCommitted) return a.cadenceStep || 0;
+  const q = a.cadenceBase;
+  return a.cadenceLink && q && q.until >= G.time && q.btn !== a.btn && q.set === a.setName ? min(3, q.count + 1) : 0;
+}
+function cadenceHit(a, e, beat, hx, hy) {
+  if (a.link || a.cadenceCommitted) return; a.cadenceCommitted = true; a.cadenceStep = beat; a.hit = true;
+  const f = a.f, root = e.root || e, step = beat || 1, refrain = step >= 3;
+  f.cadence = { btn: a.btn, count: refrain ? 1 : step, until: G.time + CADENCE_WINDOW, set: a.setName };
+  if (step < 2) return;
+  const col = refrain ? '#ffd35a' : '#8ff5e6', word = refrain ? 'REFRAIN' : 'ECHO';
+  numPop(hx, hy - 17, word, col, refrain ? 1.25 : 1); sparks(hx, hy, refrain ? 14 : 8, 0, 2.8, refrain ? ['#ffd35a', '#fff1a8', '#ff8a3d'] : ['#8ff5e6', '#c9fff6', '#ffd35a']);
+  G.combo.pts += refrain ? 5 : 2;
+  if (refrain) { root.fl = root.fl || {}; root.fl.open = G.time + 60; flowTag(root, 'OPEN', '#8ff5e6'); sfx('charged', 0); }
+  else sfx('reflect', 0);
+}
+const cadenceMul = beat => beat >= 3 ? 1.38 : beat === 2 ? 1.16 : 1;
 function flowSet(a, e, lk, hx, hy) {
   const m = a.m, f = a.f, root = e.root || e, fl = root.fl || (root.fl = {}), now = G.time;
   if (m.flow === 'down') { fl.down = now + 60; flowTag(root, 'DOWN', '#ffb347'); }
@@ -217,6 +237,13 @@ function drawFamHud(c) {
   if (st < 3) { const u = clamp((xp - FAM_AT[st]) / (FAM_AT[st + 1] - FAM_AT[st]), 0, 1), bx = x + textW(lab) + 4; c.fillStyle = '#2b2740'; c.fillRect(bx, y + 2, 40, 3); c.fillStyle = '#ffd35a'; c.fillRect(bx, y + 2, round(40 * u), 3); }
   const al = artLine(W); if (al) textS(c, al, x, y - 9, artFor(W) ? '#8ff5e6' : '#8b8fa3');
   if ((p.rhythm || 0) >= 2) textS(c, 'RHYTHM ' + 'I'.repeat(min(4, p.rhythm)), x + 150, y, '#ffd35a');
+}
+function drawCadenceHud(c) {
+  const q = G.p && G.p.cadence; if (!q || q.until < G.time || UI.open) return;
+  const uw = VS.uw, label = q.count >= 2 ? 'REFRAIN READY' : 'EMBER CADENCE', next = q.btn === 'L' ? 'NEXT RMB / Q' : 'NEXT LMB', y = round(VS.uh * .34) + 40;
+  const s = label + '  ' + next, x = uw - 8 - textW(s); textO(c, s, x, y, q.count >= 2 ? '#ffd35a' : '#8ff5e6');
+  for (let i = 0; i < 3; i++) { c.fillStyle = i < q.count ? (q.count >= 2 ? '#ffd35a' : '#8ff5e6') : '#4a4460'; c.fillRect(x + i * 6, y + 7, 4, 2); }
+  c.fillStyle = '#4a4460'; c.fillRect(x + 22, y + 7, 17, 2); c.fillStyle = '#ff8a3d'; c.fillRect(x + 22, y + 7, round(17 * clamp((q.until - G.time) / CADENCE_WINDOW, 0, 1)), 2);
 }
 function flowTag(root, text, col) { root.flT = { text, col, t: G.time + 50 }; }
 // small words over foes left open by your last move

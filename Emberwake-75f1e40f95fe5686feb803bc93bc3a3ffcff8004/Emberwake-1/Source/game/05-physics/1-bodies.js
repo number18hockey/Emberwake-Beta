@@ -108,7 +108,7 @@ function tickProjs() {
     else if (solid && pr.t > 1 && !pr.phase && pr.type !== 'cloud') {
       dead = true; const bx = pr.x - pr.vx, by = pr.y - pr.vy;
       if (pr.type === 'rock') { addShake(3); sfx('brk'); burst(pr.x, pr.y - 4, 12, ['#375666', '#22343f'], 2, 30, { hit: 1 }); }
-      else if (pr.type === 'bomb') { if (pr.ghost) boomFx(bx, by, pr.boom); else explode(bx, by, pr.boom, pr.dmg, ow); }
+      else if (pr.type === 'bomb') { if (pr.ghost) boomFx(bx, by, pr.boom); else explode(bx, by, pr.boom, pr.dmg, ow, pr.cadenceAtk); }
       else if (pr.type === 'glob') burst(bx, by, 8, ['#ff7a2a', '#ffd35a'], 1.4, 16, { glow: 1 });
       else if (pr.type === 'arrow' || pr.type === 'knife' || pr.type === 'javelin') { sparks(bx, by, 3, 0, 1.4); P(bx, by, 0, 0, 90, '#ffd35a', { g: 0, fr: 0, glow: 1 }); }
       else sparks(bx, by, 6);
@@ -125,8 +125,9 @@ function tickProjs() {
           if (e.dead || e.noHit) continue; const root = e.root || e;
           if (!pr.hits.has(root) && circBox(pr.x, pr.y, pr.r, e)) {
             pr.hits.add(root);
-            if (pr.boom) { explode(pr.x, pr.y, pr.boom, pr.dmg, ow); dead = true; break; }
-            strike(ow, e, pr.dmg, (sign(pr.vx) || 1) * pr.kb[0], pr.kb[1], { stop: pr.stop || 3, shake: 2, crit: pr.crit, stagger: pr.stagger, hx: pr.x, hy: pr.y });
+            if (pr.boom) { explode(pr.x, pr.y, pr.boom, pr.dmg, ow, pr.cadenceAtk); dead = true; break; }
+            const beat = pr.cadenceAtk ? cadenceStep(pr.cadenceAtk) : 0, landed = strike(ow, e, round(pr.dmg * cadenceMul(beat)), (sign(pr.vx) || 1) * pr.kb[0], pr.kb[1], { stop: (pr.stop || 3) + (beat >= 3 ? 3 : beat === 2 ? 1 : 0), shake: 2, crit: pr.crit, stagger: beat >= 3 ? max(pr.stagger || 0, 48) : pr.stagger, hx: pr.x, hy: pr.y });
+            if (landed && pr.cadenceAtk) cadenceHit(pr.cadenceAtk, e, beat, pr.x, pr.y);
             if (!pr.pierce) { dead = true; break; }
           }
         }

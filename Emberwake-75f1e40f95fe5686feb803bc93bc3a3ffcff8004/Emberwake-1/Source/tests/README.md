@@ -69,6 +69,7 @@ Links, armour, weapon styles, creatures and guardians.
 - `cinder_ring.py` The Cinder Ring relay: players meet by code, select a shared broker, survive brief stalls, share movement and land PvP damage.
 - `armour.py` Armour: walking, jumping and damage taken with each set.
 - `bosses.py` Each guardian: summoned, every attack, the second phase, and its reward.
+- `cadence.py` Held light does not repeat; alternating landed light and heavy hits build an ECHO and REFRAIN.
 - `creatures.py` Every creature of every world moves, fights, dies and drops things.
 - `mastery_and_flow.py` Learned forms (BASICS to MASTERY), follow-ups (CRUSH, BREAK, JUGGLE, SPIKE, RHYTHM), the four counters after a perfect dodge, and arts learned by use.
 - `links.py` Links: a thrown star pins a post to the wall, and every link on the practice post.

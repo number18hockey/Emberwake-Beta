@@ -276,8 +276,10 @@ function startAttack(f, btn, I, force) {
   if (!force && m.cost) { if (f.stam < m.cost * .6) { if (f === G.p) sfx('deny'); id = resolveMove(set, 'L', c); if (f === G.p) id = famGate(W.set, set, id, 'L', c); m = set.moves[id]; if (m.rise && c.air) { id = set.map.aChain[0]; m = set.moves[id]; } } else { f.stam = max(0, f.stam - m.cost); f.stamDelay = 42; } }
   const rep = f.hist.slice(-4).filter(h => h === id).length, fresh = !f.hist.slice(-3).includes(id);
   f.hist.push(id); if (f.hist.length > 8) f.hist.shift();
+  const cadence = f === G.p && f.cadence, cadenceLink = !!(cadence && cadence.until >= G.time && cadence.btn !== btn && cadence.set === W.set), cadenceBase = cadenceLink ? { btn: cadence.btn, count: cadence.count, until: cadence.until, set: cadence.set } : null;
+  if (f === G.p) f.cadence = null;
   f.face = c.side; f.state = 'attack'; f.chainT = 0; f.mineP = 0;
-  const a = f.atk = { f, id, m, W, set, setName: W.set, btn, phase: 0, pt: 0, face: c.side, aimA: c.elev, hits: new Map(), charge: 0, charged: false, hit: false, air: c.air, fresh, stale: fresh ? 1.1 : ([1, .86, .72, .6, .5][rep] || .5), act: m.act, dashT: 0, dashN: 0, prevAng: 0, aimOff: 0, th: 0, crit: !!m.crit, dist: c.dist, tx: I.wx, ty: I.wy, shots: 0, shotI: 0 };
+  const a = f.atk = { f, id, m, W, set, setName: W.set, btn, phase: 0, pt: 0, face: c.side, aimA: c.elev, hits: new Map(), charge: 0, charged: false, hit: false, air: c.air, fresh, stale: fresh ? 1.1 : ([1, .86, .72, .6, .5][rep] || .5), act: m.act, dashT: 0, dashN: 0, prevAng: 0, aimOff: 0, th: 0, crit: !!m.crit, dist: c.dist, tx: I.wx, ty: I.wy, shots: 0, shotI: 0, cadenceLink, cadenceBase };
   // what you wear and how well you know the weapon change how each kind of blow comes out
   if (f === G.p && gearOn()) { const air = c.air, sh = m.kind === 'shot', spd = (sh ? gearMul('bow') : a.btn === 'L' ? gearMul('light') : 1) * (air ? (gearMul('air') + 1) / 2 : 1) * styleSpeed(W, id); a.tm = (W.wsp || 1) / spd; a.gm = (a.btn === 'H' ? gearMul('heavy') : 1) * (air ? (gearMul('air') + 1) / 2 : 1) * styleDmg(W, id); a.dk = gearMul('dash') * (air ? gearMul('air') : 1); a.critB = (gearHas('crit') ? .06 : 0) + (gearHas('keen') ? .08 : 0); }
   if (!force && f === G.p && btn === 'H' && id === set.map.h) { const art = artFor(W); if (art) a.artCharge = { min: 26, max: 96, into: art }; }
@@ -301,7 +303,7 @@ function thrustExt(a, pt) {
   if (m.pump) { const w = clamp(pt / a.act, 0, .999) * m.pump, fr = w - floor(w); return .35 + .65 * sin(min(1, fr * 2.2) * PI / 2); }
   return .4 + .6 * ease.out3(clamp(pt / min(a.act, 4), 0, 1));
 }
-function endAttack(f) { if (f.atk) { f.lastMove = f.atk.id; f.chainT = 26; } f.atk = null; if (f.state === 'attack') f.state = 'normal'; }
+function endAttack(f) { if (f.atk) { if (f === G.p && !f.atk.hit && !f.atk.projectileOut) f.cadence = null; f.lastMove = f.atk.id; f.chainT = 26; } f.atk = null; if (f.state === 'attack') f.state = 'normal'; }
 
 function tickAttack(f, I) {
   const a = f.atk; let m = a.m; a.pt++;
@@ -366,11 +368,12 @@ function activeTick(a) {
 function fireArrows(a, count) {
   const f = a.f, m = a.m, A = m.arrows, fc = a.face, sx = f.x + 3 + fc * 5, sy = f.y + (A.low ? 16 : 7);
   if (a.W.ammo && f.isPlayer && !(WORLD.arena && !WORLD.royale) && WORLD.mode !== 1) { count = min(count, countItem('arrow')); if (count <= 0) { sfx('deny'); if (G.time - (G.hintT || -999) > 240) { G.hintT = G.time; say('No arrows. Bind flint to sticks with fiber.'); } return; } removeItem('arrow', count); }
+  if (count > 0 && f === G.p) a.projectileOut = true;
   for (let k = 0; k < count; k++, a.shotI++) {
     let vx, vy, g = A.g === undefined ? .05 : A.g;
     if (A.rain) { const tx = a.tx + (A.n > 1 ? (a.shotI - (A.n - 1) / 2) * 10 : 0) + frand(-3, 3), Tf = A.tf || 46; g = .16; vx = clamp((tx - sx) / Tf, -7, 7); vy = (a.ty - sy - .5 * g * Tf * Tf) / Tf; }
     else { const v = A.v || 6.5; if (A.radial) { const th = a.shotI / A.n * TAU; vx = cos(th) * v; vy = sin(th) * v; } else { const th = a.th + (A.spread ? (a.shotI - (A.n - 1) / 2) * A.spread : 0) + (A.burst ? frand(-.025, .025) : 0); vx = fc * cos(th) * v; vy = sin(th) * v; } }
-    spawnProj({ type: A.boom ? 'bomb' : 'arrow', owner: f, x: sx, y: sy, vx, vy, g, r: 3, dmg: max(1, round(a.W.dmg * m.dmg * a.stale * (f.dmgMul || 1))), pierce: !!A.pierce, boom: A.boom || 0, life: 190, kb: [m.kb[0], m.kb[1]], crit: a.crit, stagger: m.stagger, stop: m.stop });
+    spawnProj({ type: A.boom ? 'bomb' : 'arrow', owner: f, x: sx, y: sy, vx, vy, g, r: 3, dmg: max(1, round(a.W.dmg * m.dmg * a.stale * (f.dmgMul || 1))), pierce: !!A.pierce, boom: A.boom || 0, life: 190, kb: [m.kb[0], m.kb[1]], crit: a.crit, stagger: m.stagger, stop: m.stop, cadenceAtk: f === G.p ? a : null });
   }
   fsx(f, 'bolt', 0); fsx(f, 'thrust', 0);
 }
@@ -436,12 +439,13 @@ function applyHit(a, e, hx, hy) {
   if (last !== undefined && (!m.multi || a.pt - last < m.multi)) return; a.hits.set(root, a.pt);
   const P0 = f === G.p, sharp = P0 && f.sharp > 0;
   const crit = a.crit || Math.random() < .07 + (a.W.crit || 0) + (a.critB || 0) + (P0 ? boonAdd('crit') : 0);
-  let dmg = a.W.dmg * m.dmg * a.stale * (P0 ? 1 + rankI() * .04 + qBonus(a.W.id) + (sharp ? .2 : 0) : 1) * (crit && !a.crit ? 1.6 : 1) * (f.dmgMul || 1) * (a.gm || 1) * (P0 ? (a.btn === 'H' ? boonMul('hdmg') : 1) * (m.counter ? boonMul('counter') : 1) : 1);
+  const beat = P0 ? cadenceStep(a) : 0;
+  let dmg = a.W.dmg * m.dmg * a.stale * (P0 ? 1 + rankI() * .04 + qBonus(a.W.id) + (sharp ? .2 : 0) : 1) * (crit && !a.crit ? 1.6 : 1) * (f.dmgMul || 1) * (a.gm || 1) * (P0 ? (a.btn === 'H' ? boonMul('hdmg') : 1) * (m.counter ? boonMul('counter') : 1) : 1) * cadenceMul(beat);
   const lk = P0 ? flowPay(a, e) : null; if (lk) dmg *= lk.mul * (lk.tag ? boonMul('flow') : 1);
   dmg = max(1, round(dmg * frand(.93, 1.07)));
   let kx = m.kb[0] * a.face; if (m.kind === 'spin') kx = m.kb[0] * (sign((e.x + e.w / 2) - (f.x + 3)) || a.face);
-  if (!strike(f, e, dmg, kx, m.kb[1], { stagger: m.flow === 'down' ? max(m.stagger || 0, 45) : m.stagger, launch: m.launch, crit, stop: (m.stop || 0) + (lk && lk.tag ? 2 : 0), shake: m.shake, blunt: m.blunt, cold: a.W.cold, hx, hy })) return;
-  if (P0) { flowSet(a, e, lk, hx, hy); famGain(a.setName, ((a.fresh ? 1 : .4) + (lk && lk.tag ? 1 : 0)) * (e.type === 'dummy' ? .5 : 1)); if (e.type !== 'dummy') artGain(a.W); }
+  if (!strike(f, e, dmg, kx, m.kb[1], { stagger: beat >= 3 ? max(m.stagger || 0, 48) : m.flow === 'down' ? max(m.stagger || 0, 45) : m.stagger, launch: m.launch, crit, stop: (m.stop || 0) + (lk && lk.tag ? 2 : 0) + (beat >= 3 ? 3 : beat === 2 ? 1 : 0), shake: m.shake, blunt: m.blunt, cold: a.W.cold, hx, hy })) return;
+  if (P0) { flowSet(a, e, lk, hx, hy); cadenceHit(a, e, beat, hx, hy); famGain(a.setName, ((a.fresh ? 1 : .4) + (lk && lk.tag ? 1 : 0)) * (e.type === 'dummy' ? .5 : 1)); if (e.type !== 'dummy') artGain(a.W); }
   if (a.W.burn && !e.dead) applyStatus(e, 'burn', f, { d: 110 });
   if (!e.dead) { if (a.W.frost) applyStatus(e, 'frost', f, { d: 100 }); if (a.W.poison || (P0 && f.venom > 0)) applyStatus(e, 'poison', f, { d: 260 }); if (a.W.bleed && Math.random() < a.W.bleed) applyStatus(e, 'bleed', f, { d: 180 }); }
   if (a.W.steal && f.hp < f.maxhp) { f.hp = min(f.maxhp, f.hp + max(1, round(dmg * a.W.steal))); }
@@ -462,15 +466,16 @@ function landShock(a, S, cx) {
   sparks(cx, fy - 2, 14, 0, 3); G.trails.push({ kind: 'ring', x: cx, y: fy, r: S.r, life: 12, max: 12 });
   if (f === G.p) { for (let dx = -S.r; dx <= S.r; dx += 4) { const tx = floor((cx + dx) / T), ty = floor((fy - 2) / T), t = tileAt(tx, ty); if (t && TP[t].decor) breakTile(tx, ty); } terrainSlam(a, cx, fy); }
 }
-function explode(x, y, r, dmg, by) {
+function explode(x, y, r, dmg, by, cadenceAtk) {
   boomFx(x, y, r);
-  for (const e of foesOf(by)) { if (e.dead || e.noHit) continue; if (circBox(x, y, r, e)) strike(by, e, dmg, (sign(e.x + e.w / 2 - x) || 1) * 3, -2.6, { stop: 4, shake: 2, hx: e.x + e.w / 2, hy: e.y + e.h / 2 }); }
+  for (const e of foesOf(by)) { if (e.dead || e.noHit) continue; if (circBox(x, y, r, e)) { const beat = cadenceAtk ? cadenceStep(cadenceAtk) : 0, hx = e.x + e.w / 2, hy = e.y + e.h / 2, landed = strike(by, e, round(dmg * cadenceMul(beat)), (sign(e.x + e.w / 2 - x) || 1) * 3, -2.6, { stop: 4 + (beat >= 3 ? 3 : beat === 2 ? 1 : 0), shake: 2, stagger: beat >= 3 ? 48 : 0, hx, hy }); if (landed && cadenceAtk) cadenceHit(cadenceAtk, e, beat, hx, hy); } }
 }
 function fireProj(a) {
   const f = a.f, m = a.m, fc = a.face, cx = f.x + 3, cy = f.y + 7, dm = f.dmgMul || 1;
-  if (m.proj === 'wave') { const el = clamp(a.aimA, -.6, .6); spawnProj({ type: 'wave', owner: f, x: cx + fc * 10, y: cy + 2, vx: fc * cos(el) * 4.8, vy: sin(el) * 4.8, r: 11, dmg: round(a.W.dmg * 2.2 * dm), pierce: true, life: 46, kb: [3.5, -1.5] }); fsx(f, 'wave', 0); }
-  else if (m.proj === 'javelin') spawnProj({ type: 'javelin', owner: f, x: cx + fc * 8, y: cy, vx: fc * cos(a.th) * 6.4, vy: sin(a.th) * 6.4, g: .09, r: 4, dmg: round(a.W.dmg * 2.8 * dm), life: 130, kb: [4, -1], spr: a.W.held });
-  else if (m.proj === 'knife') spawnProj({ type: 'knife', owner: f, x: cx + fc * 6, y: cy, vx: fc * cos(a.th) * 7, vy: sin(a.th) * 7, g: .03, r: 3, dmg: round(a.W.dmg * 1.3 * dm), life: 90, kb: [1.5, -.4] });
+  const cadenceAtk = f === G.p ? a : null; if (cadenceAtk) a.projectileOut = true;
+  if (m.proj === 'wave') { const el = clamp(a.aimA, -.6, .6); spawnProj({ type: 'wave', owner: f, x: cx + fc * 10, y: cy + 2, vx: fc * cos(el) * 4.8, vy: sin(el) * 4.8, r: 11, dmg: round(a.W.dmg * 2.2 * dm), pierce: true, life: 46, kb: [3.5, -1.5], cadenceAtk }); fsx(f, 'wave', 0); }
+  else if (m.proj === 'javelin') spawnProj({ type: 'javelin', owner: f, x: cx + fc * 8, y: cy, vx: fc * cos(a.th) * 6.4, vy: sin(a.th) * 6.4, g: .09, r: 4, dmg: round(a.W.dmg * 2.8 * dm), life: 130, kb: [4, -1], spr: a.W.held, cadenceAtk });
+  else if (m.proj === 'knife') spawnProj({ type: 'knife', owner: f, x: cx + fc * 6, y: cy, vx: fc * cos(a.th) * 7, vy: sin(a.th) * 7, g: .03, r: 3, dmg: round(a.W.dmg * 1.3 * dm), life: 90, kb: [1.5, -.4], cadenceAtk });
 }
 function fadeTrail(a) {
   const f = a.f, m = a.m, cx = f.x + 3 + a.face, cy = f.y + 6, L = (ARM + a.W.len) * m.reach;
