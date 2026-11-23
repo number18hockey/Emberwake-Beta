@@ -285,7 +285,8 @@ function startAttack(f, btn, I, force, timed) {
   if (!force && tryLink(f, btn)) return true;
   const set = MOVESETS[W.set], c = atkContext(f, I); let id = force || resolveMove(set, btn, c); if (!force && f === G.p) id = famGate(W.set, set, id, btn, c);
   let m = set.moves[id]; if (!m) return false;
-  if (force) { if (m.cost) { f.stam = max(0, f.stam - m.cost); f.stamDelay = 30; } }
+  let staminaPaid = 0;
+  if (force) { if (m.cost) { f.stam = max(0, f.stam - m.cost); f.stamDelay = 30; if (f === G.p) staminaPaid += m.cost; } }
   else if (m.rise && c.air) { if (!f.updraft) { id = btn === 'L' ? set.map.aChain[0] : set.map.ha; m = set.moves[id]; } else f.updraft = false; }
   // Player attacks have a deliberate stamina price: a short string is fine,
   // but alternating a clean ECHO or REFRAIN refunds enough to keep the flow.
@@ -293,7 +294,7 @@ function startAttack(f, btn, I, force, timed) {
   if (f === G.p) {
     const price = (btn === 'H' ? 14 : 8) + (m.cost || 0);
     if (f.stam < price) { sfx('deny'); if (f === G.p) { G.feed.unshift({ name: 'CATCH YOUR BREATH', fresh: false, isNew: false, t: 0, flow: 1 }); if (G.feed.length > 5) G.feed.pop(); } return false; }
-    f.stam -= price; f.stamDelay = 30;
+    f.stam -= price; f.stamDelay = 30; staminaPaid += price;
   } else if (!force && m.cost) {
     if (f.stam < m.cost * .6) { id = resolveMove(set, 'L', c); m = set.moves[id]; }
     else { f.stam = max(0, f.stam - m.cost); f.stamDelay = 30; }
@@ -304,7 +305,7 @@ function startAttack(f, btn, I, force, timed) {
   if (f === G.p) f.cadence = null;
   f.face = c.side; f.state = 'attack'; f.chainT = 0; f.mineP = 0;
   const form = attackForm(set, id, m, c, f);
-  const a = f.atk = { f, id, m, W, set, setName: W.set, btn, phase: 0, pt: 0, face: c.side, aimA: c.elev, hits: new Map(), charge: 0, charged: false, hit: false, air: c.air, fresh, stale: fresh ? 1.1 : ([1, .86, .72, .6, .5][rep] || .5), act: m.act, dashT: 0, dashN: 0, prevAng: 0, aimOff: 0, th: 0, crit: !!m.crit, dist: c.dist, tx: I.wx, ty: I.wy, shots: 0, shotI: 0, cadenceLink, cadenceBase, timed: !!timed, form, momentum: abs(f.vx), crashReady: form === 'CRASH' && f.vy > 1.2 };
+  const a = f.atk = { f, id, m, W, set, setName: W.set, btn, phase: 0, pt: 0, face: c.side, aimA: c.elev, hits: new Map(), charge: 0, charged: false, hit: false, air: c.air, fresh, stale: fresh ? 1.1 : ([1, .86, .72, .6, .5][rep] || .5), act: m.act, dashT: 0, dashN: 0, prevAng: 0, aimOff: 0, th: 0, crit: !!m.crit, dist: c.dist, tx: I.wx, ty: I.wy, shots: 0, shotI: 0, cadenceLink, cadenceBase, timed: !!timed, staminaPaid, form, momentum: abs(f.vx), crashReady: form === 'CRASH' && f.vy > 1.2 };
   if (f === G.p && WORLD.royale && ['bow', 'fangs', 'chuks'].includes(W.set)) a.gm = .78;
   // what you wear and how well you know the weapon change how each kind of blow comes out
   if (f === G.p && gearOn()) { const air = c.air, sh = m.kind === 'shot', spd = (sh ? gearMul('bow') : a.btn === 'L' ? gearMul('light') : 1) * (air ? (gearMul('air') + 1) / 2 : 1) * styleSpeed(W, id); a.tm = (W.wsp || 1) / spd; a.gm = (a.btn === 'H' ? gearMul('heavy') : 1) * (air ? (gearMul('air') + 1) / 2 : 1) * styleDmg(W, id); a.dk = gearMul('dash') * (air ? gearMul('air') : 1); a.critB = (gearHas('crit') ? .06 : 0) + (gearHas('keen') ? .08 : 0); }
@@ -466,7 +467,7 @@ function applyHit(a, e, hx, hy) {
   const crash = a.form === 'CRASH' && a.crashReady;
   const beat = P0 ? cadenceStep(a) : 0;
   const cleanBeat = P0 && a.timed ? 1.08 : 1;
-  let dmg = a.W.dmg * m.dmg * a.stale * (P0 ? 1 + rankI() * .04 + qBonus(a.W.id) + (sharp ? .2 : 0) : 1) * (crit && !a.crit ? 1.6 : 1) * (crash ? 1.25 : 1) * cleanBeat * combatDmgMul(f) * (a.gm || 1) * (P0 ? (a.btn === 'H' ? boonMul('hdmg') : 1) * (m.counter ? boonMul('counter') : 1) : 1) * cadenceMul(beat);
+  let dmg = a.W.dmg * m.dmg * a.stale * (P0 ? 1 + rankI() * .025 + qBonus(a.W.id) + (sharp ? .2 : 0) : 1) * (crit && !a.crit ? 1.6 : 1) * (crash ? 1.25 : 1) * cleanBeat * combatDmgMul(f) * (a.gm || 1) * (P0 ? (a.btn === 'H' ? boonMul('hdmg') : 1) * (m.counter ? boonMul('counter') : 1) : 1) * cadenceMul(beat);
   const lk = P0 ? flowPay(a, e) : null; if (lk) dmg *= lk.mul * (lk.tag ? boonMul('flow') : 1);
   dmg = max(1, round(dmg * frand(.93, 1.07)));
   let kx = m.kb[0] * a.face; if (m.kind === 'spin') kx = m.kb[0] * (sign((e.x + e.w / 2) - (f.x + 3)) || a.face);

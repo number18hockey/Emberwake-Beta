@@ -41,8 +41,11 @@ async def run():
       t('heavy on a standing foe', M.h); t('heavy on a downed foe', M.h, 0, { down: G.time + 50 }); t('light on a downed foe', M.chain[0], 0, { down: G.time + 50 });
       t('air blow on a launched foe', M.aChain[0], 1, {}, 'launched'); t('dive on a launched foe', M.aD, 1, {}, 'launched');
       t('heavy on an open foe', M.h, 0, { open: G.time + 50 }); t('heavy after three light blows', M.h, 0, {}, null, 3);
+      t('heavy through stacked setup', M.h, 1, { down: G.time + 50, open: G.time + 50 }, 'launched', 4);
       FOE.fl = {}; FOE.st = null; p.rhythm = 0; return JSON.stringify(out); })()"""
-    for k, v in __import__('json').loads(await h.ev(PAY)).items(): out['flow: ' + k] = v
+    flow_results = __import__('json').loads(await h.ev(PAY))
+    for k, v in flow_results.items(): out['flow: ' + k] = v
+    assert float(flow_results['heavy through stacked setup'].split('x')[-1]) <= 2.05, 'layered setup damage should stay below the combo burst ceiling'
     # rhythm builds for real: three light blows in a row
     await h.ev("FOE.fl = {}; G.p.rhythm = 0; G.p.stam = 100;")
     for _ in range(3): await swing(h, ticks=22)

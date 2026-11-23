@@ -186,18 +186,19 @@ function artLine(W) {
 function flowPay(a, e) {
   const f = a.f, m = a.m, M = a.set.map, root = e.root || e, fl = root.fl || (root.fl = {}), now = G.time, lean = FAM_LEAN[a.setName] || {};
   const heavy = m.btn === 'H', above = m.kind === 'plunge' || !!m.pogo || a.id === M.aD || a.id === M.haD || a.id === M.ripA, thrust = m.kind === 'thrust';
-  let mul = 1, tag = '';
-  if ((fl.down || 0) > now) { if (heavy || above) { mul *= 1.6 * (lean.crush || 1); tag = 'CRUSH'; fl.down = 0; } else mul *= 1.15; }
+  let bonus = 0, tag = '';
+  // Setup rewards add together instead of multiplying into sudden damage spikes.
+  if ((fl.down || 0) > now) { if (heavy || above) { bonus += .42 * (lean.crush || 1); tag = 'CRUSH'; fl.down = 0; } else bonus += .12; }
   if (stActive(root, 'launched')) {
-    if (above) { mul *= 1.6 * (lean.spike || 1); tag = tag || 'SPIKE'; if (!root.ghost) root.vy = max(root.vy || 0, 4.5); }
-    else if (a.air) { mul *= 1.3 * (lean.juggle || 1); tag = tag || 'JUGGLE'; if (!root.ghost) root.vy = min(root.vy || 0, -1.3); }
+    if (above) { bonus += .42 * (lean.spike || 1); tag = tag || 'SPIKE'; if (!root.ghost) root.vy = max(root.vy || 0, 4.5); }
+    else if (a.air) { bonus += .25 * (lean.juggle || 1); tag = tag || 'JUGGLE'; if (!root.ghost) root.vy = min(root.vy || 0, -1.3); }
   }
-  if ((fl.open || 0) > now) { if (heavy) { mul *= 1.5 * (lean.open || 1); tag = tag || 'BREAK'; fl.open = 0; } else mul *= 1.15 * (lean.open || 1); }
-  if (thrust && (stActive(root, 'hook') || stActive(root, 'pin') || stActive(root, 'reel'))) { mul *= 1.5 * (lean.skewer || 1); tag = tag || 'SKEWER'; }
-  if (heavy && (f.rhythm || 0) >= 2) { mul *= (1 + .12 * min(4, f.rhythm)) * (lean.rhythm || 1); tag = tag || 'RHYTHM'; }
-  if (m.counter && lean.counter) mul *= lean.counter;
+  if ((fl.open || 0) > now) { if (heavy) { bonus += .35 * (lean.open || 1); tag = tag || 'BREAK'; fl.open = 0; } else bonus += .12 * (lean.open || 1); }
+  if (thrust && (stActive(root, 'hook') || stActive(root, 'pin') || stActive(root, 'reel'))) { bonus += .35 * (lean.skewer || 1); tag = tag || 'SKEWER'; }
+  if (heavy && (f.rhythm || 0) >= 2) { bonus += .1 * min(4, f.rhythm) * (lean.rhythm || 1); tag = tag || 'RHYTHM'; }
   if (heavy) f.rhythm = 0;
-  return mul > 1.001 ? { mul: min(2.6, mul), tag } : null;
+  const mul = min(2.05, (1 + bonus) * (m.counter && lean.counter ? lean.counter : 1));
+  return mul > 1.001 ? { mul, tag } : null;
 }
 // A hit plants one ember; a timed, alternating follow-up turns it into a
 // two-beat ECHO, then a three-beat REFRAIN that leaves its target OPEN.
@@ -211,17 +212,18 @@ function cadenceHit(a, e, beat, hx, hy) {
   const f = a.f, root = e.root || e, step = beat || 1, refrain = step >= 3;
   f.cadence = { btn: a.btn, count: refrain ? 1 : step, until: G.time + CADENCE_WINDOW, set: a.setName };
   if (step < 2) return;
-  // A clean alternating hit buys back the next beat's stamina. A REFRAIN
-  // restores enough to restart the string, so rhythm is the way to sustain
-  // offense instead of holding the attack button.
-  f.stam = min(f.maxstam, f.stam + (refrain ? 16 : 9)); f.stamDelay = 0;
+  // A clean alternation returns most of the move's entry cost. A REFRAIN
+  // pays the full entry cost plus a small surplus, sustaining deliberate strings.
+  const paid = a.staminaPaid || (a.btn === 'H' ? 14 : 8), refund = refrain ? paid + 8 : max(8, round(paid * .7)), before = f.stam;
+  f.stam = min(f.maxstam, f.stam + refund); const restored = round(f.stam - before); f.stamDelay = 0;
   const col = refrain ? '#ffd35a' : '#8ff5e6', word = refrain ? 'REFRAIN' : 'ECHO';
-  numPop(hx, hy - 17, word, col, refrain ? 1.25 : 1); sparks(hx, hy, refrain ? 14 : 8, 0, 2.8, refrain ? ['#ffd35a', '#fff1a8', '#ff8a3d'] : ['#8ff5e6', '#c9fff6', '#ffd35a']);
+  numPop(hx, hy - 17, word, col, refrain ? 1.25 : 1); if (restored) numPop(f.x + 3, f.y - 11, '+' + restored + ' STAM', col, 1); sparks(hx, hy, refrain ? 14 : 8, 0, 2.8, refrain ? ['#ffd35a', '#fff1a8', '#ff8a3d'] : ['#8ff5e6', '#c9fff6', '#ffd35a']);
   G.combo.pts += refrain ? 5 : 2;
+  G.feed.unshift({ name: word + ' · +' + restored + ' STAM', fresh: true, isNew: false, t: 0, flow: 1 }); if (G.feed.length > 5) G.feed.pop();
   if (refrain) { root.fl = root.fl || {}; root.fl.open = G.time + 60; flowTag(root, 'OPEN', '#8ff5e6'); sfx('charged', 0); }
   else sfx('reflect', 0);
 }
-const cadenceMul = beat => beat >= 3 ? 1.38 : beat === 2 ? 1.16 : 1;
+const cadenceMul = beat => beat >= 3 ? 1.16 : beat === 2 ? 1.08 : 1;
 function flowSet(a, e, lk, hx, hy) {
   const m = a.m, f = a.f, root = e.root || e, fl = root.fl || (root.fl = {}), now = G.time;
   if (m.flow === 'down') { fl.down = now + 60; flowTag(root, 'DOWN', '#ffb347'); }
@@ -254,7 +256,7 @@ function drawCadenceHud(c) {
     c.fillStyle = ready ? '#ffd35a' : '#ffffff'; c.fillRect(bx, by, round(72 * clamp(a.pt / rec, 0, 1)), 3);
   }
   const q = p.cadence; if (!q || q.until < G.time) return;
-  const label = q.count >= 2 ? 'REFRAIN READY' : 'EMBER CADENCE', next = q.btn === 'L' ? 'NEXT RMB / Q' : 'NEXT LMB', y = round(uh * .34) + 40;
+  const label = q.count >= 2 ? 'REFRAIN · FULL REFUND' : 'ECHO · COST BACK', next = q.btn === 'L' ? 'NEXT RMB / Q' : 'NEXT LMB', y = round(uh * .34) + 40;
   const s = label + '  ' + next, x = uw - 8 - textW(s); textO(c, s, x, y, q.count >= 2 ? '#ffd35a' : '#8ff5e6');
   for (let i = 0; i < 3; i++) { c.fillStyle = i < q.count ? (q.count >= 2 ? '#ffd35a' : '#8ff5e6') : '#4a4460'; c.fillRect(x + i * 6, y + 7, 4, 2); }
   c.fillStyle = '#4a4460'; c.fillRect(x + 22, y + 7, 17, 2); c.fillStyle = '#ff8a3d'; c.fillRect(x + 22, y + 7, round(17 * clamp((q.until - G.time) / CADENCE_WINDOW, 0, 1)), 2);
