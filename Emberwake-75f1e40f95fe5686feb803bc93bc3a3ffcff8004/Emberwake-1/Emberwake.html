@@ -7084,7 +7084,7 @@ function tickFighter(f, I) {
   let a = f.atk;
   if (f.dbuf > 0 && f.dodgeCd <= 0 && f.hurtT <= 0 && f.stam >= 12 && (f.state === 'normal' || (f.state === 'attack' && (a.phase === 2 || (a.phase === 0 && a.charge > 0)))) && (f.onGround || f.coyote > 0 || f.airDash > 0)) startDodge(f, I.md, I);
   if (f.buf && f.hurtT <= 0) {
-    a = f.atk; const ok = f.state === 'normal' || (f.state === 'dodge' && f.dodgeT >= 2) || (f.state === 'attack' && a.phase === 2 && a.pt >= floor(a.m.rec * .38));
+    a = f.atk; const ok = f.state === 'normal' || (f.state === 'dodge' && f.dodgeT >= 2) || (f.state === 'attack' && a.phase === 2 && (f.buf.beat || a.pt >= floor(a.m.rec * .38)));
     if (ok) { const b = f.buf.b, beat = !!f.buf.beat; f.buf = null; if (f.state === 'attack') endAttack(f); if (startAttack(f, b, I, false, beat)) f.atkN++; }
   }
   let grav = .26; const gp = f === G.p && gearOn(), maxV = 1.45 * (gp ? gearMul('walk') : 1) * (f === G.p && typeof brewMul === 'function' ? brewMul('swift') : 1);

@@ -27,6 +27,17 @@ async def main():
         assert forms['drive']['form'] == 'DRIVE', 'a dodge follow-up should become a momentum drive'
         assert forms['riposte']['form'] == 'RIPOSTE', 'a perfect-dodge follow-up should become a riposte'
 
+        fast_beat = await h.ev("""(() => {
+          const p=G.p, I={md:0,jumpP:false,jumpH:false,down:false,l:false,r:false,lp:false,rp:true,dodgeP:false,armP:false,wx:p.x+50,wy:p.y+7,faceAim:false};
+          p.state='normal';p.atk=null;p.buf=null;p.chainT=0;p.lastMove=null;p.onGround=true;p.coyote=0;p.vx=p.vy=0;p.stam=100;p.hurtT=0;
+          startAttack(p,'L',I,false,false);const a=p.atk;a.hit=true;a.tm=.5;a.phase=2;a.pt=attackBeatWindow(a).from;p.cadence={btn:'L',count:1,until:G.time+100,set:'sword'};
+          const expectedBeat=a.pt, visible=attackBeatWindow(a);tickFighter(p,I);
+          return {expectedBeat,visible,started:p.atk&&p.atk.btn==='H',timed:p.atk&&p.atk.timed,linked:p.atk&&p.atk.cadenceLink,state:p.state,buf:p.buf,active:p.atk&&{id:p.atk.id,btn:p.atk.btn,phase:p.atk.phase},stamina:p.stam};
+        })()""")
+        print('fast recovery beat:', fast_beat)
+        assert fast_beat['expectedBeat'] < 5, 'regression setup should reach the beat before the unscaled recovery threshold'
+        assert fast_beat['started'] and fast_beat['timed'] and fast_beat['linked'], 'a displayed fast-weapon beat should accept and link its queued follow-up'
+
         impact = await h.ev("""(() => {
           const p=G.p, e=spawnMob('husk',floor((p.x+3)/T)+3,heights[floor((p.x+3)/T)+3]); e.hp=e.maxhp=5000;e.frozen=1;e.stun=9999;window.TESTFOE=e;
           const reset=(ground,vy=0,vx=0)=>{p.state='normal';p.atk=null;p.onGround=ground;p.coyote=0;p.vy=vy;p.vx=vx;p.stam=100;p.riposte=0;p.dodgeGrace=0;p.updraft=true;p.airRiseUsed=false;p.pogoUsed=false;e.dead=false;e.hp=5000;e.fl={};e.stun=9999;e.vx=e.vy=0;e.onGround=true;};
