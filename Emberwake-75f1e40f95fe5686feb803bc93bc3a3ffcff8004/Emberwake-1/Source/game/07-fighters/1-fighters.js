@@ -114,7 +114,7 @@ function tickFighter(f, I) {
     if (f !== G.p || f.state === 'normal' || f.state === 'dodge') f.buf = { b, t: 7, beat: false };
     else if (f.state === 'attack' && f.atk) {
       const win = attackBeatWindow(f.atk);
-      f.buf = win && f.atk.pt >= win.from && f.atk.pt <= win.to ? { b, t: 2, beat: true } : null;
+      f.buf = win && f.atk.pt >= win.from && f.atk.pt <= win.to ? { b, t: 2, beat: true, perfect: f.atk.pt >= win.perfectFrom && f.atk.pt <= win.perfectTo } : null;
     }
   }
   if (f.buf && --f.buf.t < 0) f.buf = null;
@@ -123,7 +123,7 @@ function tickFighter(f, I) {
   if (f.dbuf > 0 && f.dodgeCd <= 0 && f.hurtT <= 0 && f.stam >= 12 && (f.state === 'normal' || (f.state === 'attack' && (a.phase === 2 || (a.phase === 0 && a.charge > 0)))) && (f.onGround || f.coyote > 0 || f.airDash > 0)) startDodge(f, I.md, I);
   if (f.buf && f.hurtT <= 0) {
     a = f.atk; const ok = f.state === 'normal' || (f.state === 'dodge' && f.dodgeT >= 2) || (f.state === 'attack' && a.phase === 2 && (f.buf.beat || a.pt >= floor(a.m.rec * .38)));
-    if (ok) { const b = f.buf.b, beat = !!f.buf.beat; f.buf = null; if (f.state === 'attack') endAttack(f); if (startAttack(f, b, I, false, beat)) f.atkN++; }
+    if (ok) { const b = f.buf.b, beat = !!f.buf.beat, perfect = !!f.buf.perfect; f.buf = null; if (f.state === 'attack') endAttack(f); if (startAttack(f, b, I, false, beat, perfect)) f.atkN++; }
   }
   let grav = .26; const gp = f === G.p && gearOn(), maxV = 1.45 * (gp ? gearMul('walk') : 1) * (f === G.p && typeof brewMul === 'function' ? brewMul('swift') : 1);
   if (gp && f.vy > 0 && (gearHas('feather') || gearHas('prismatic')) && I.jumpH && !f.onGround) grav = .17;

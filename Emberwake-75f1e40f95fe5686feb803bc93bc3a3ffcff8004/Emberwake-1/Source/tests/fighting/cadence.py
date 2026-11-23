@@ -104,16 +104,20 @@ async def main():
         assert bow_third['open'], 'bow REFRAIN should open its target on impact'
 
         refunds = await h.ev("""(() => {
-          const p=G.p,e=FOE,make=(btn,count,paid)=>{const q={btn:btn==='H'?'L':'H',count,until:G.time+48,set:'sword'};p.cadence=q;return {f:p,link:false,cadenceCommitted:false,timed:true,cadenceBase:{...q},cadenceLink:true,setName:'sword',btn,staminaPaid:paid};};
+          const p=G.p,e=FOE,make=(btn,count,paid,perfect=false)=>{const q={btn:btn==='H'?'L':'H',count,until:G.time+48,set:'sword'};p.cadence=q;return {f:p,link:false,cadenceCommitted:false,timed:true,perfect,cadenceBase:{...q},cadenceLink:true,setName:'sword',btn,staminaPaid:paid};};
           p.maxstam=100;p.stam=50;p.stamDelay=25;const echoAtk=make('H',1,20),echoBeat=cadenceStep(echoAtk);cadenceHit(echoAtk,e,echoBeat,e.x+3,e.y+8);const echo={beat:echoBeat,stam:p.stam,delay:p.stamDelay,feed:G.feed[0].name};
           p.stam=50;p.stamDelay=25;const refrainAtk=make('L',2,30),refrainBeat=cadenceStep(refrainAtk);cadenceHit(refrainAtk,e,refrainBeat,e.x+3,e.y+8);const refrain={beat:refrainBeat,stam:p.stam,delay:p.stamDelay,feed:G.feed[0].name};
-          return {echo,refrain,echoMul:cadenceMul(2),refrainMul:cadenceMul(3)};
+          G.slowT=0;p.stam=50;p.stamDelay=25;const perfectEchoAtk=make('H',1,20,true),perfectEchoBeat=cadenceStep(perfectEchoAtk);cadenceHit(perfectEchoAtk,e,perfectEchoBeat,e.x+3,e.y+8);const perfectEcho={beat:perfectEchoBeat,stam:p.stam,feed:G.feed[0].name};
+          p.stam=50;p.stamDelay=25;const perfectRefrainAtk=make('L',2,30,true),perfectRefrainBeat=cadenceStep(perfectRefrainAtk);cadenceHit(perfectRefrainAtk,e,perfectRefrainBeat,e.x+3,e.y+8);const perfectRefrain={beat:perfectRefrainBeat,stam:p.stam,feed:G.feed[0].name};
+          return {echo,refrain,perfectEcho,perfectRefrain,slow:G.slowT,echoMul:cadenceMul(2),refrainMul:cadenceMul(3)};
         })()""")
         print('cadence refunds and damage:', refunds)
         assert refunds['echo']['beat'] == 2 and refunds['echo']['stam'] == 64, 'ECHO should return 70% of the move cost'
         assert refunds['refrain']['beat'] == 3 and refunds['refrain']['stam'] == 88, 'REFRAIN should refund the move plus its 8-stamina surplus'
         assert refunds['echo']['delay'] == refunds['refrain']['delay'] == 0, 'a successful cadence should restart stamina recovery immediately'
         assert refunds['echoMul'] == 1.08 and refunds['refrainMul'] == 1.16, 'cadence should reward timing without a runaway damage multiplier'
+        assert refunds['perfectEcho']['stam'] == 70 and refunds['perfectRefrain']['stam'] == 96, 'a perfect beat should refund ECHO fully and add 16 to REFRAIN'
+        assert refunds['slow'] >= 6 and refunds['perfectRefrain']['feed'].startswith('PERFECT REFRAIN'), 'the narrow sweet spot should have a distinct flourish and callout'
         print('errors:', h.errs[:5] or 'none')
         assert not h.errs, 'browser reported an error'
     finally:

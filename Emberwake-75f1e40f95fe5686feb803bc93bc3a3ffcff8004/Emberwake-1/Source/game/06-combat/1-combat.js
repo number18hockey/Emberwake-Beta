@@ -278,9 +278,10 @@ function attackForm(set, id, m, c, f) {
 function attackBeatWindow(a) {
   if (!a || a.phase !== 2) return null;
   const rec = max(1, round(a.m.rec * (a.tm || a.W.wsp || 1)));
-  return { from: max(1, ceil(rec * .42)), to: max(1, floor(rec * .92)) };
+  const from = max(1, ceil(rec * .42)), to = max(1, floor(rec * .92)), center = clamp(round(rec * .68), from, to);
+  return { from, to, perfectFrom: center, perfectTo: center };
 }
-function startAttack(f, btn, I, force, timed) {
+function startAttack(f, btn, I, force, timed, perfect) {
   const W = heldOf(f); if (!W || W.type !== 'weapon') return false;
   if (!force && tryLink(f, btn)) return true;
   const set = MOVESETS[W.set], c = atkContext(f, I); let id = force || resolveMove(set, btn, c); if (!force && f === G.p) id = famGate(W.set, set, id, btn, c);
@@ -305,7 +306,7 @@ function startAttack(f, btn, I, force, timed) {
   if (f === G.p) f.cadence = null;
   f.face = c.side; f.state = 'attack'; f.chainT = 0; f.mineP = 0;
   const form = attackForm(set, id, m, c, f);
-  const a = f.atk = { f, id, m, W, set, setName: W.set, btn, phase: 0, pt: 0, face: c.side, aimA: c.elev, hits: new Map(), charge: 0, charged: false, hit: false, air: c.air, fresh, stale: fresh ? 1.1 : ([1, .86, .72, .6, .5][rep] || .5), act: m.act, dashT: 0, dashN: 0, prevAng: 0, aimOff: 0, th: 0, crit: !!m.crit, dist: c.dist, tx: I.wx, ty: I.wy, shots: 0, shotI: 0, cadenceLink, cadenceBase, timed: !!timed, staminaPaid, form, momentum: abs(f.vx), crashReady: form === 'CRASH' && f.vy > 1.2 };
+  const a = f.atk = { f, id, m, W, set, setName: W.set, btn, phase: 0, pt: 0, face: c.side, aimA: c.elev, hits: new Map(), charge: 0, charged: false, hit: false, air: c.air, fresh, stale: fresh ? 1.1 : ([1, .86, .72, .6, .5][rep] || .5), act: m.act, dashT: 0, dashN: 0, prevAng: 0, aimOff: 0, th: 0, crit: !!m.crit, dist: c.dist, tx: I.wx, ty: I.wy, shots: 0, shotI: 0, cadenceLink, cadenceBase, timed: !!timed, perfect: !!perfect, staminaPaid, form, momentum: abs(f.vx), crashReady: form === 'CRASH' && f.vy > 1.2 };
   if (f === G.p && WORLD.royale && ['bow', 'fangs', 'chuks'].includes(W.set)) a.gm = .78;
   // what you wear and how well you know the weapon change how each kind of blow comes out
   if (f === G.p && gearOn()) { const air = c.air, sh = m.kind === 'shot', spd = (sh ? gearMul('bow') : a.btn === 'L' ? gearMul('light') : 1) * (air ? (gearMul('air') + 1) / 2 : 1) * styleSpeed(W, id); a.tm = (W.wsp || 1) / spd; a.gm = (a.btn === 'H' ? gearMul('heavy') : 1) * (air ? (gearMul('air') + 1) / 2 : 1) * styleDmg(W, id); a.dk = gearMul('dash') * (air ? gearMul('air') : 1); a.critB = (gearHas('crit') ? .06 : 0) + (gearHas('keen') ? .08 : 0); }

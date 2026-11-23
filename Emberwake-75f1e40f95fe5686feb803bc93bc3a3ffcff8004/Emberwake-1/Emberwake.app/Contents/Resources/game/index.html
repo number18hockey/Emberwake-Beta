@@ -5802,9 +5802,10 @@ function attackForm(set, id, m, c, f) {
 function attackBeatWindow(a) {
   if (!a || a.phase !== 2) return null;
   const rec = max(1, round(a.m.rec * (a.tm || a.W.wsp || 1)));
-  return { from: max(1, ceil(rec * .42)), to: max(1, floor(rec * .92)) };
+  const from = max(1, ceil(rec * .42)), to = max(1, floor(rec * .92)), center = clamp(round(rec * .68), from, to);
+  return { from, to, perfectFrom: center, perfectTo: center };
 }
-function startAttack(f, btn, I, force, timed) {
+function startAttack(f, btn, I, force, timed, perfect) {
   const W = heldOf(f); if (!W || W.type !== 'weapon') return false;
   if (!force && tryLink(f, btn)) return true;
   const set = MOVESETS[W.set], c = atkContext(f, I); let id = force || resolveMove(set, btn, c); if (!force && f === G.p) id = famGate(W.set, set, id, btn, c);
@@ -5829,7 +5830,7 @@ function startAttack(f, btn, I, force, timed) {
   if (f === G.p) f.cadence = null;
   f.face = c.side; f.state = 'attack'; f.chainT = 0; f.mineP = 0;
   const form = attackForm(set, id, m, c, f);
-  const a = f.atk = { f, id, m, W, set, setName: W.set, btn, phase: 0, pt: 0, face: c.side, aimA: c.elev, hits: new Map(), charge: 0, charged: false, hit: false, air: c.air, fresh, stale: fresh ? 1.1 : ([1, .86, .72, .6, .5][rep] || .5), act: m.act, dashT: 0, dashN: 0, prevAng: 0, aimOff: 0, th: 0, crit: !!m.crit, dist: c.dist, tx: I.wx, ty: I.wy, shots: 0, shotI: 0, cadenceLink, cadenceBase, timed: !!timed, staminaPaid, form, momentum: abs(f.vx), crashReady: form === 'CRASH' && f.vy > 1.2 };
+  const a = f.atk = { f, id, m, W, set, setName: W.set, btn, phase: 0, pt: 0, face: c.side, aimA: c.elev, hits: new Map(), charge: 0, charged: false, hit: false, air: c.air, fresh, stale: fresh ? 1.1 : ([1, .86, .72, .6, .5][rep] || .5), act: m.act, dashT: 0, dashN: 0, prevAng: 0, aimOff: 0, th: 0, crit: !!m.crit, dist: c.dist, tx: I.wx, ty: I.wy, shots: 0, shotI: 0, cadenceLink, cadenceBase, timed: !!timed, perfect: !!perfect, staminaPaid, form, momentum: abs(f.vx), crashReady: form === 'CRASH' && f.vy > 1.2 };
   if (f === G.p && WORLD.royale && ['bow', 'fangs', 'chuks'].includes(W.set)) a.gm = .78;
   // what you wear and how well you know the weapon change how each kind of blow comes out
   if (f === G.p && gearOn()) { const air = c.air, sh = m.kind === 'shot', spd = (sh ? gearMul('bow') : a.btn === 'L' ? gearMul('light') : 1) * (air ? (gearMul('air') + 1) / 2 : 1) * styleSpeed(W, id); a.tm = (W.wsp || 1) / spd; a.gm = (a.btn === 'H' ? gearMul('heavy') : 1) * (air ? (gearMul('air') + 1) / 2 : 1) * styleDmg(W, id); a.dk = gearMul('dash') * (air ? gearMul('air') : 1); a.critB = (gearHas('crit') ? .06 : 0) + (gearHas('keen') ? .08 : 0); }
@@ -6907,13 +6908,15 @@ function cadenceHit(a, e, beat, hx, hy) {
   if (step < 2) return;
   // A clean alternation returns most of the move's entry cost. A REFRAIN
   // pays the full entry cost plus a small surplus, sustaining deliberate strings.
-  const paid = a.staminaPaid || (a.btn === 'H' ? 14 : 8), refund = refrain ? paid + 8 : max(8, round(paid * .7)), before = f.stam;
+  const perfect = !!a.perfect, paid = a.staminaPaid || (a.btn === 'H' ? 14 : 8), refund = refrain ? paid + (perfect ? 16 : 8) : max(8, round(paid * (perfect ? 1 : .7))), before = f.stam;
   f.stam = min(f.maxstam, f.stam + refund); const restored = round(f.stam - before); f.stamDelay = 0;
-  const col = refrain ? '#ffd35a' : '#8ff5e6', word = refrain ? 'REFRAIN' : 'ECHO';
-  numPop(hx, hy - 17, word, col, refrain ? 1.25 : 1); if (restored) numPop(f.x + 3, f.y - 11, '+' + restored + ' STAM', col, 1); sparks(hx, hy, refrain ? 14 : 8, 0, 2.8, refrain ? ['#ffd35a', '#fff1a8', '#ff8a3d'] : ['#8ff5e6', '#c9fff6', '#ffd35a']);
-  G.combo.pts += refrain ? 5 : 2;
+  const col = refrain ? '#ffd35a' : '#8ff5e6', word = (perfect ? 'PERFECT ' : '') + (refrain ? 'REFRAIN' : 'ECHO');
+  numPop(hx, hy - 17, word, perfect ? '#ffffff' : col, perfect ? 1.25 : refrain ? 1.2 : 1); if (restored) numPop(f.x + 3, f.y - 11, '+' + restored + ' STAM', perfect ? '#ffffff' : col, 1); sparks(hx, hy, perfect ? 18 : refrain ? 14 : 8, 0, perfect ? 3.2 : 2.8, perfect ? ['#ffffff', '#8ff5e6', '#ffd35a'] : refrain ? ['#ffd35a', '#fff1a8', '#ff8a3d'] : ['#8ff5e6', '#c9fff6', '#ffd35a']);
+  G.combo.pts += (refrain ? 5 : 2) + (perfect ? 2 : 0);
   G.feed.unshift({ name: word + ' · +' + restored + ' STAM', fresh: true, isNew: false, t: 0, flow: 1 }); if (G.feed.length > 5) G.feed.pop();
-  if (refrain) { root.fl = root.fl || {}; root.fl.open = G.time + 60; flowTag(root, 'OPEN', '#8ff5e6'); sfx('charged', 0); }
+  if (refrain) { root.fl = root.fl || {}; root.fl.open = G.time + 60; flowTag(root, 'OPEN', '#8ff5e6'); }
+  if (perfect) { if (slowOK()) G.slowT = max(G.slowT, 6); G.hitstop = max(G.hitstop, 5); sfx('perfect', 0); }
+  else if (refrain) { sfx('charged', 0); }
   else sfx('reflect', 0);
 }
 const cadenceMul = beat => beat >= 3 ? 1.16 : beat === 2 ? 1.08 : 1;
@@ -6942,14 +6945,16 @@ function drawCadenceHud(c) {
   const a = p.atk, win = attackBeatWindow(a);
   if (win) {
     const rec = max(1, round(a.m.rec * (a.tm || a.W.wsp || 1))), next = a.btn === 'L' ? 'RMB / Q' : 'LMB';
-    const ready = a.pt >= win.from && a.pt <= win.to, y = hotbarLayout().y - 27;
-    textC(c, (ready ? 'ON THE BEAT' : 'RECOVER') + '  •  NEXT ' + next, uw / 2, y, ready ? '#ffd35a' : '#b9bdd0', 1, textO);
+    const ready = a.pt >= win.from && a.pt <= win.to, perfect = ready && a.pt >= win.perfectFrom && a.pt <= win.perfectTo, y = hotbarLayout().y - 27;
+    textC(c, (perfect ? 'PERFECT!' : ready ? 'ON THE BEAT' : 'RECOVER') + '  •  NEXT ' + next, uw / 2, y, perfect ? '#8ff5e6' : ready ? '#ffd35a' : '#b9bdd0', 1, textO);
     const bx = round(uw / 2 - 36), by = y + 8; c.fillStyle = '#302a42'; c.fillRect(bx, by, 72, 3);
     const sx = bx + round(72 * win.from / rec), ex = bx + round(72 * (win.to + 1) / rec); c.fillStyle = '#8f6730'; c.fillRect(sx, by, max(1, ex - sx), 3);
     c.fillStyle = ready ? '#ffd35a' : '#ffffff'; c.fillRect(bx, by, round(72 * clamp(a.pt / rec, 0, 1)), 3);
+    const ps = bx + round(72 * win.perfectFrom / rec), pe = bx + round(72 * (win.perfectTo + 1) / rec); c.fillStyle = '#8ff5e6'; c.fillRect(ps, by, max(2, pe - ps), 3);
+    c.fillStyle = '#ffffff'; c.fillRect(bx + round(72 * clamp(a.pt / rec, 0, 1)), by - 1, 1, 5);
   }
   const q = p.cadence; if (!q || q.until < G.time) return;
-  const label = q.count >= 2 ? 'REFRAIN · FULL REFUND' : 'ECHO · COST BACK', next = q.btn === 'L' ? 'NEXT RMB / Q' : 'NEXT LMB', y = round(uh * .34) + 40;
+  const label = q.count >= 2 ? 'REFRAIN +8 / PERFECT +16' : 'ECHO 70% / PERFECT 100%', next = q.btn === 'L' ? 'NEXT RMB / Q' : 'NEXT LMB', y = round(uh * .34) + 40;
   const s = label + '  ' + next, x = uw - 8 - textW(s); textO(c, s, x, y, q.count >= 2 ? '#ffd35a' : '#8ff5e6');
   for (let i = 0; i < 3; i++) { c.fillStyle = i < q.count ? (q.count >= 2 ? '#ffd35a' : '#8ff5e6') : '#4a4460'; c.fillRect(x + i * 6, y + 7, 4, 2); }
   c.fillStyle = '#4a4460'; c.fillRect(x + 22, y + 7, 17, 2); c.fillStyle = '#ff8a3d'; c.fillRect(x + 22, y + 7, round(17 * clamp((q.until - G.time) / CADENCE_WINDOW, 0, 1)), 2);
@@ -7079,7 +7084,7 @@ function tickFighter(f, I) {
     if (f !== G.p || f.state === 'normal' || f.state === 'dodge') f.buf = { b, t: 7, beat: false };
     else if (f.state === 'attack' && f.atk) {
       const win = attackBeatWindow(f.atk);
-      f.buf = win && f.atk.pt >= win.from && f.atk.pt <= win.to ? { b, t: 2, beat: true } : null;
+      f.buf = win && f.atk.pt >= win.from && f.atk.pt <= win.to ? { b, t: 2, beat: true, perfect: f.atk.pt >= win.perfectFrom && f.atk.pt <= win.perfectTo } : null;
     }
   }
   if (f.buf && --f.buf.t < 0) f.buf = null;
@@ -7088,7 +7093,7 @@ function tickFighter(f, I) {
   if (f.dbuf > 0 && f.dodgeCd <= 0 && f.hurtT <= 0 && f.stam >= 12 && (f.state === 'normal' || (f.state === 'attack' && (a.phase === 2 || (a.phase === 0 && a.charge > 0)))) && (f.onGround || f.coyote > 0 || f.airDash > 0)) startDodge(f, I.md, I);
   if (f.buf && f.hurtT <= 0) {
     a = f.atk; const ok = f.state === 'normal' || (f.state === 'dodge' && f.dodgeT >= 2) || (f.state === 'attack' && a.phase === 2 && (f.buf.beat || a.pt >= floor(a.m.rec * .38)));
-    if (ok) { const b = f.buf.b, beat = !!f.buf.beat; f.buf = null; if (f.state === 'attack') endAttack(f); if (startAttack(f, b, I, false, beat)) f.atkN++; }
+    if (ok) { const b = f.buf.b, beat = !!f.buf.beat, perfect = !!f.buf.perfect; f.buf = null; if (f.state === 'attack') endAttack(f); if (startAttack(f, b, I, false, beat, perfect)) f.atkN++; }
   }
   let grav = .26; const gp = f === G.p && gearOn(), maxV = 1.45 * (gp ? gearMul('walk') : 1) * (f === G.p && typeof brewMul === 'function' ? brewMul('swift') : 1);
   if (gp && f.vy > 0 && (gearHas('feather') || gearHas('prismatic')) && I.jumpH && !f.onGround) grav = .17;

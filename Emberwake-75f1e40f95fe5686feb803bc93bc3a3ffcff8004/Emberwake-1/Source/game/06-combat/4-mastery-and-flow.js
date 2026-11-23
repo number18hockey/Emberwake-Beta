@@ -214,13 +214,15 @@ function cadenceHit(a, e, beat, hx, hy) {
   if (step < 2) return;
   // A clean alternation returns most of the move's entry cost. A REFRAIN
   // pays the full entry cost plus a small surplus, sustaining deliberate strings.
-  const paid = a.staminaPaid || (a.btn === 'H' ? 14 : 8), refund = refrain ? paid + 8 : max(8, round(paid * .7)), before = f.stam;
+  const perfect = !!a.perfect, paid = a.staminaPaid || (a.btn === 'H' ? 14 : 8), refund = refrain ? paid + (perfect ? 16 : 8) : max(8, round(paid * (perfect ? 1 : .7))), before = f.stam;
   f.stam = min(f.maxstam, f.stam + refund); const restored = round(f.stam - before); f.stamDelay = 0;
-  const col = refrain ? '#ffd35a' : '#8ff5e6', word = refrain ? 'REFRAIN' : 'ECHO';
-  numPop(hx, hy - 17, word, col, refrain ? 1.25 : 1); if (restored) numPop(f.x + 3, f.y - 11, '+' + restored + ' STAM', col, 1); sparks(hx, hy, refrain ? 14 : 8, 0, 2.8, refrain ? ['#ffd35a', '#fff1a8', '#ff8a3d'] : ['#8ff5e6', '#c9fff6', '#ffd35a']);
-  G.combo.pts += refrain ? 5 : 2;
+  const col = refrain ? '#ffd35a' : '#8ff5e6', word = (perfect ? 'PERFECT ' : '') + (refrain ? 'REFRAIN' : 'ECHO');
+  numPop(hx, hy - 17, word, perfect ? '#ffffff' : col, perfect ? 1.25 : refrain ? 1.2 : 1); if (restored) numPop(f.x + 3, f.y - 11, '+' + restored + ' STAM', perfect ? '#ffffff' : col, 1); sparks(hx, hy, perfect ? 18 : refrain ? 14 : 8, 0, perfect ? 3.2 : 2.8, perfect ? ['#ffffff', '#8ff5e6', '#ffd35a'] : refrain ? ['#ffd35a', '#fff1a8', '#ff8a3d'] : ['#8ff5e6', '#c9fff6', '#ffd35a']);
+  G.combo.pts += (refrain ? 5 : 2) + (perfect ? 2 : 0);
   G.feed.unshift({ name: word + ' · +' + restored + ' STAM', fresh: true, isNew: false, t: 0, flow: 1 }); if (G.feed.length > 5) G.feed.pop();
-  if (refrain) { root.fl = root.fl || {}; root.fl.open = G.time + 60; flowTag(root, 'OPEN', '#8ff5e6'); sfx('charged', 0); }
+  if (refrain) { root.fl = root.fl || {}; root.fl.open = G.time + 60; flowTag(root, 'OPEN', '#8ff5e6'); }
+  if (perfect) { if (slowOK()) G.slowT = max(G.slowT, 6); G.hitstop = max(G.hitstop, 5); sfx('perfect', 0); }
+  else if (refrain) { sfx('charged', 0); }
   else sfx('reflect', 0);
 }
 const cadenceMul = beat => beat >= 3 ? 1.16 : beat === 2 ? 1.08 : 1;
@@ -249,14 +251,16 @@ function drawCadenceHud(c) {
   const a = p.atk, win = attackBeatWindow(a);
   if (win) {
     const rec = max(1, round(a.m.rec * (a.tm || a.W.wsp || 1))), next = a.btn === 'L' ? 'RMB / Q' : 'LMB';
-    const ready = a.pt >= win.from && a.pt <= win.to, y = hotbarLayout().y - 27;
-    textC(c, (ready ? 'ON THE BEAT' : 'RECOVER') + '  •  NEXT ' + next, uw / 2, y, ready ? '#ffd35a' : '#b9bdd0', 1, textO);
+    const ready = a.pt >= win.from && a.pt <= win.to, perfect = ready && a.pt >= win.perfectFrom && a.pt <= win.perfectTo, y = hotbarLayout().y - 27;
+    textC(c, (perfect ? 'PERFECT!' : ready ? 'ON THE BEAT' : 'RECOVER') + '  •  NEXT ' + next, uw / 2, y, perfect ? '#8ff5e6' : ready ? '#ffd35a' : '#b9bdd0', 1, textO);
     const bx = round(uw / 2 - 36), by = y + 8; c.fillStyle = '#302a42'; c.fillRect(bx, by, 72, 3);
     const sx = bx + round(72 * win.from / rec), ex = bx + round(72 * (win.to + 1) / rec); c.fillStyle = '#8f6730'; c.fillRect(sx, by, max(1, ex - sx), 3);
     c.fillStyle = ready ? '#ffd35a' : '#ffffff'; c.fillRect(bx, by, round(72 * clamp(a.pt / rec, 0, 1)), 3);
+    const ps = bx + round(72 * win.perfectFrom / rec), pe = bx + round(72 * (win.perfectTo + 1) / rec); c.fillStyle = '#8ff5e6'; c.fillRect(ps, by, max(2, pe - ps), 3);
+    c.fillStyle = '#ffffff'; c.fillRect(bx + round(72 * clamp(a.pt / rec, 0, 1)), by - 1, 1, 5);
   }
   const q = p.cadence; if (!q || q.until < G.time) return;
-  const label = q.count >= 2 ? 'REFRAIN · FULL REFUND' : 'ECHO · COST BACK', next = q.btn === 'L' ? 'NEXT RMB / Q' : 'NEXT LMB', y = round(uh * .34) + 40;
+  const label = q.count >= 2 ? 'REFRAIN +8 / PERFECT +16' : 'ECHO 70% / PERFECT 100%', next = q.btn === 'L' ? 'NEXT RMB / Q' : 'NEXT LMB', y = round(uh * .34) + 40;
   const s = label + '  ' + next, x = uw - 8 - textW(s); textO(c, s, x, y, q.count >= 2 ? '#ffd35a' : '#8ff5e6');
   for (let i = 0; i < 3; i++) { c.fillStyle = i < q.count ? (q.count >= 2 ? '#ffd35a' : '#8ff5e6') : '#4a4460'; c.fillRect(x + i * 6, y + 7, 4, 2); }
   c.fillStyle = '#4a4460'; c.fillRect(x + 22, y + 7, 17, 2); c.fillStyle = '#ff8a3d'; c.fillRect(x + 22, y + 7, round(17 * clamp((q.until - G.time) / CADENCE_WINDOW, 0, 1)), 2);
