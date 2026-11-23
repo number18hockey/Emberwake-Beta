@@ -110,7 +110,7 @@ function itemTip(it) {
   }
   else if (it.type === 'tool') L.push([`${{ pick: 'pick', axe: 'axe', shovel: 'shovel', hammer: 'hammer', knife: 'knife' }[it.kind]} : power ${it.power}, works ${TIER_N[it.tier].replace(/^an? /, '').replace(' tool', '')} rock and softer`, '#fff']);
   else if (it.type === 'food') L.push([`food +${it.food || 0}${it.heal ? `, heals ${it.heal}` : ''}`, '#7ddc6f']);
-  else if (it.type === 'armor') { L.push([`${it.slot}: protection ${it.prot}, weight ${it.wt}`, '#fff']); if (it.light || it.mine || it.poise || it.shot) L.push([[it.light ? 'sheds light' : '', it.mine ? `digs ${round((it.mine - 1) * 100)}% harder` : '', it.poise ? 'barely flinches' : '', it.shot ? 'turns arrows' : ''].filter(Boolean).join(', '), '#ffb347']); const g = G.gear && G.gear[it.slot]; if (g && g.id !== it.id) L.push([`now wearing ${IT[g.id].name} (${IT[g.id].prot})`, '#8b8fa3']); L.push(['right click to wear', '#8ff5e6']); }
+  else if (it.type === 'armor') { L.push([`${it.slot}: protection ${it.prot}, weight ${it.wt}`, '#fff']); if (it.light || it.mine || it.poise || it.shot) L.push([[it.light ? 'sheds light' : '', it.mine ? `digs ${round((it.mine - 1) * 100)}% harder` : '', it.poise ? 'barely flinches' : '', it.shot ? 'turns arrows' : ''].filter(Boolean).join(', '), '#ffb347']); const g = G.gear && G.gear[it.slot], worn = g && g.id === it.id; if (g && !worn) L.push([`now wearing ${IT[g.id].name} (${IT[g.id].prot})`, '#8b8fa3']); L.push([worn ? 'click worn slot to unequip' : 'right click to wear', '#8ff5e6']); }
   if (it.type === 'trinket') { const on = (G.trink || []).slice(0, trinkSlots()).includes(it.id); L.push([on ? 'TRINKET: worn' : 'TRINKET', '#b49cff']); }
   for (const l of wrapText(it.desc, 150)) if (l) L.push([l, '#b9bdd0']);
   { const ma = madeAt(it.id); if (ma.length) L.push(['made at: ' + ma.slice(0, 3).join(', '), '#b49cff']); }
@@ -267,7 +267,7 @@ function drawRingForm(c) {
 function drawHUD(c) {
   const p = G.p, uw = VS.uw, uh = VS.uh, A = WORLD.arena;
   c.drawImage(SPR.heart, 3, 3); bar(c, 15, 4, 72, 7, p.hp / p.maxhp, p.hp < 30 && (G.time >> 3) & 1 ? '#ff9a8a' : '#e2483b', '#8f2233'); textO(c, ceil(max(0, p.hp)), 91, 4, '#fff');
-  if (!A && gearOn()) { drawGearHud(c); drawStyleHud(c); drawFamHud(c); drawDrill(c); }
+  if ((!A || WORLD.royale) && gearOn()) { drawGearHud(c); if (!A) { drawStyleHud(c); drawFamHud(c); drawDrill(c); } }
   bar(c, 15, 14, 72, 4, p.stam / p.maxstam, p.stam < 22 ? '#ffd35a' : '#7ddc6f', p.stam < 22 ? '#b85a1e' : '#2f8a43');
   if ((!A || WORLD.royale) && WORLD.mode !== 1) { const f = G.food / 100; bar(c, 15, 20, 72, 2, f, f < .25 && (G.time >> 4) & 1 ? '#ff9a8a' : '#e0a050', '#7a4a1a'); if (f < .3) textO(c, f <= 0 ? 'STARVING' : 'HUNGRY', 91, 16, '#e0a050'); }
   if (p.riposte > 0 && (G.time >> 2) & 1) textO(c, 'RIPOSTE READY', 15, 22, '#8ff5e6');
@@ -373,7 +373,7 @@ function drawInv(c) {
     hit(x, y, L.cw, 18, () => craft(e.r));
   }
   if (list.length > L.rows) drawText(c, `${UI.scroll + 1}-${min(list.length, UI.scroll + L.rows)}/${list.length}`, L.cx + L.cw - 34, L.cy + L.rows * 19 + 7, '#6a6485');
-  if (!WORLD.arena) { const t2 = drawGearPanel(c, L.gx, L.ay + 14); if (t2) tip = t2; }
+  if (!WORLD.arena || WORLD.royale) { const t2 = drawGearPanel(c, L.gx, L.ay + 14); if (t2) tip = t2; }
   if (tip) drawTip(c, tip);
 }
 const CODEX_SETS = ['brawl', 'sword', 'spear', 'fangs', 'maul', 'bow', 'chuks', 'links', 'styles'], CODEX_TABS = ['FISTS', 'BLADE', 'PIKE', 'FANGS', 'MAUL', 'BOW', 'CHAIN', 'LINKS', 'STYLE'];
