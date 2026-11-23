@@ -53,7 +53,7 @@ function bgLayer(k, col, hiA) {
 }
 function regionMix(x) {
   if (WORLD.arena) return WORLD.royale ? brRegionMix(x) : [['ash', 1]];
-  const BGK = { reach: 'reach', moor: 'moor', fen: 'moor', thorn: 'moor', ash: 'ash', scoria: 'scoria', dunes: 'scoria' }, acc = { reach: 0, moor: 0, ash: 0, scoria: 0 };
+  const BGK = { reach: 'reach', moor: 'moor', mosswood: 'moor', willowmere: 'moor', fen: 'moor', thorn: 'moor', ash: 'ash', scoria: 'scoria', dunes: 'scoria' }, acc = { reach: 0, moor: 0, ash: 0, scoria: 0 };
   let tot = 0;
   if (WORLD.endless) { const [t, h] = climate(x), w = bweights(t, h); for (const b in w) if (w[b] > .001) { acc[BGK[b] || 'moor'] += w[b]; tot += w[b]; } }
   else for (const sg of SEGS) { const w = segW(sg, x, 60); if (w > .001) { acc[BGK[sg.b] || 'moor'] += w; tot += w; } }
@@ -169,7 +169,7 @@ function renderView(al) {
   for (const fi of G.fires) if (fi.x1 > cx - 60 && fi.x0 < cx + VS.vw + 60) for (let X = fi.x0; X < fi.x1; X += 12) addLight(X, fi.y - 4, .8, .4, .12);
   for (const e of G.enemies) if (e.type === 'cinderling' && !e.dead && e.x > cx - 60 && e.x < cx + VS.vw + 60) addLight(e.x + 4, e.y + 4, .7, .32, .1);
   for (let k = kx0; k <= kx1; k++) { const bk = PROPB.get(k); if (bk) for (const q of bk) if (q.light && q.x > cx - 120 && q.x < cx + VS.vw + 120 && q.y > cy - 120 && q.y < cy + VS.vh + 120) { const fl = .93 + .07 * sin(G.time * .21 + q.x); addLight(q.x + (q.img.width >> 1), q.y + (q.lyo !== undefined ? q.lyo : q.img.height * .6), q.light[0] * fl, q.light[1] * fl, q.light[2] * fl); } }
-  if (!WORLD.arena) stationLights();
+  if (!WORLD.arena || WORLD.royale) stationLights();
   for (const o of tileObjs.values()) if (o.id === PEDESTAL && pedItem(o) && o.x > vx0 - 20 && o.x < vx1 + 20) addLight(o.x * T + 4, o.y * T - 6, .5, .45, .3);
   const pods = [];
   for (const [tx, tr] of treeTops) {
@@ -201,7 +201,7 @@ function renderView(al) {
   for (const o of tileObjs.values()) if (o.id === PEDESTAL && o.x >= vx0 - 2 && o.x <= vx1 + 2 && o.y >= vy0 - 2 && o.y <= vy1 + 2) { w.drawImage(SPR.pedestal, o.x * T - 1, o.y * T - 4); const it = pedItem(o); if (it) { const ic = IT[it].icon; w.drawImage(ic, o.x * T + 4 - (ic.width >> 1), o.y * T - 14 + round(sin(G.time * .06) * 1.5)); } }
   for (let k = kx0; k <= kx1; k++) { const bk = PROPB.get(k); if (bk) for (const q of bk) if (q.rf !== RFRAME && q.x < cx + VS.vw && q.x + q.img.width > cx && q.y < cy + VS.vh && q.y + q.img.height > cy) { q.rf = RFRAME; w.drawImage(q.img, q.x, q.y); } }
   for (const [tx, tr] of treeTops) { if (tx < vx0 - 6 || tx > vx1 + 6) continue; const sw = round(sin(G.time * .02 + tr.ph) * 1.3); w.drawImage(SPR.top[tr.kind][tr.v].cv, tx * T + 4 - 23 + sw, tr.y * T + 1 - 31); }
-  if (!WORLD.arena) { drawPhys(w, al); drawStationsWorld(w); }
+  if (!WORLD.arena || WORLD.royale) { drawPhys(w, al); drawStationsWorld(w); }
   for (const d of G.drops) { const ic = IT[d.id].icon, x = lerp(d.px, d.x, al) + 3, y = lerp(d.py, d.y, al) + 3 + sin(d.t * .1), k = ic.width > 12 ? .7 : 1; w.drawImage(ic, round(x - ic.width * k / 2), round(y - ic.height * k / 2), round(ic.width * k), round(ic.height * k)); }
   if (WORLD.royale) brWorld(w, al, cx, cy);
   for (const q of G.parts) { if (q.glow) continue; w.globalAlpha = min(1, q.life / q.max * 2); w.fillStyle = q.col; w.fillRect(floor(q.x), floor(q.y), q.sz, q.sz); } w.globalAlpha = 1;
@@ -390,7 +390,7 @@ function drawTags(c, cx, cy, al) {
 function ambient() {
   const b = G.biome, cx = G.cam.x, cy = G.cam.y;
   if (b === 'reach' && G.time % 3 === 0) P(cx + frand(-20, VS.vw + 60), cy - 4, frand(-.5, -.15), frand(.3, .7), 340, fpick(['#ffffff', '#dcf7f5', '#b4e6e8']), { g: 0, fr: 1 });
-  else if (b === 'moor' && G.time % 7 === 0) P(cx + frand(VS.vw), cy + VS.vh * frand(.4, 1.1), frand(-.15, .15), frand(-.35, -.12), 260, fpick(['#ffa07c', '#f06a55', '#ffc2a0']), { g: -.0008, fr: .998, glow: G.dn < .5 ? 1 : 0 });
+  else if ((b === 'moor' || b === 'mosswood' || b === 'willowmere') && G.time % 7 === 0) P(cx + frand(VS.vw), cy + VS.vh * frand(.4, 1.1), frand(-.15, .15), frand(-.35, -.12), 260, fpick(b === 'mosswood' ? ['#b2e38a', '#6ba653', '#d5d37a'] : b === 'willowmere' ? ['#c9fff6', '#8fd0d8', '#b4e6c2'] : ['#ffa07c', '#f06a55', '#ffc2a0']), { g: -.0008, fr: .998, glow: G.dn < .5 ? 1 : 0 });
   else if (b === 'scoria' && G.time % 4 === 0) P(cx + VS.vw + 4, cy + frand(VS.vh), frand(-2.2, -1.2), frand(-.1, .2), 260, fpick(['#d67645', '#bd5a36', '#f0b070']), { g: 0, fr: 1 });
   else if ((b === 'ash' || b === 'ring') && G.time % 4 === 0) { if (Math.random() < .5) P(cx + frand(VS.vw), cy + VS.vh * frand(.3, 1), frand(-.2, .2), frand(-.5, -.2), 200, fpick(SPARK), { g: -.002, fr: 1, glow: 1 }); else P(cx + frand(VS.vw + 40), cy - 4, frand(-.4, -.1), frand(.3, .6), 340, '#a19baa', { g: 0, fr: 1 }); }
   else if (b === 'deep' && G.time % 9 === 0) P(cx + frand(VS.vw), cy + frand(VS.vh), frand(-.1, .1), frand(-.1, .1), 200, fpick(['#4fd8c8', '#8ff5e6']), { g: 0, fr: 1, glow: 1 });
@@ -422,10 +422,10 @@ function tick() {
   if (G.dialog && !WORLD.arena && !netLive()) { tickParts(); tickStory(); tickCam(); endTick(); return; }
   coopTick();
   refreshFoes(); tickPlayer();
-  for (const f of G.fighters) { if (f === G.p) continue; if (f.remote) { if (f.coop || f.ghostH) coopReplay(f); else tickRemote(f); } else if (f.ai) { if (f.onBarge) brBotRide(f); else { tickFighter(f, f.brBot ? brBotThink(f) : aiThink(f)); if (f.brBot) brBotAfter(f); } } }
+  for (const f of G.fighters) { if (f === G.p) continue; if (f.remote) { if (f.coop || f.ghostH) coopReplay(f); else tickRemote(f); } else if (f.ai || f.isClone) { if (f.onBarge) brBotRide(f); else { tickFighter(f, f.brBot ? brBotThink(f) : f.isClone ? cloneThink(f) : aiThink(f)); if (f.brBot) brBotAfter(f); } } }
   if (G.duel) tickDuel();
   tickEnemies(); spawnTick(); tickDrops(); tickProjs(); tickParts(); tickStory(); tickStructs(); if (!netGuest()) tickLiquids(); tickCam(); ambient();
-  if (!WORLD.arena) { tickFalling(); tickFelled(); tickRubble(); tickDoors(); tickDrill(); tickStations(); if (!G.away) tickHunger(); if (!netGuest()) tickRegrow(); tickDims(); tickLairs(); tickBless(); tickFurniture(); tickMeal(); if (G.time % 20 === 0) { mapReveal(); G.magR = hasUtil('magnet') ? 76 : 36; } }
+  if (!WORLD.arena || WORLD.royale) { tickFalling(); tickFelled(); tickRubble(); tickDoors(); tickDrill(); tickStations(); if (!G.away) tickHunger(); tickBrews(); if (!WORLD.royale && !netGuest()) tickRegrow(); if (!WORLD.royale) { tickDims(); tickLairs(); tickBless(); tickFurniture(); tickMeal(); if (G.time % 20 === 0) { mapReveal(); G.magR = hasUtil('magnet') ? 76 : 36; } } }
   if (WORLD.arena) arenaTick();
   if (G.combo.t > 0 && --G.combo.t <= 0) { G.combo.n = 0; G.combo.pts = 0; }
   if (G.slowT > 0) G.slowT--; if (G.selT > 0) G.selT--;
@@ -484,7 +484,7 @@ function freshSession() {
     boss: null, duel: null, flash: 0, spawnT: 200, biome: '', biomeT: 0, sel: 0, selT: 0, known: new Set(), movesUsed: new Set(), journal: ['waking', 'forge'], jNew: false, q: 0, qFlash: 0, says: [], sayCur: null,
     note: null, banner: null, dialog: null, kills: 0, deaths: 0, played: 0, dirty: false, saveT: 0, savedNote: null, clock: .1, introI: 0, introT: 0, echoT: 60,
     leads: new Set(), pin: null, found: new Set(), linksKnown: new Set(), fam: {}, arts: new Set(), artk: {}, respawn: null, fires: [], smokes: [], stuck: [], link: null, zoom: 1, zoomT: 1, armT: 0, linkBanner: null, leadDone: null, cine: null, bars: 0,
-    falling: [], felled: [], rubble: [], autoDoors: [], regrow: [], lairs: new Set(), bless: null, blessUsed: {}, ev: null, dev: null, devT: 2400, evClock: undefined, dhaz: [], echoes: new Set(), beasts: {}, gear: { head: null, body: null, legs: null, feet: null, off: null }, trink: [], meal: null, rest: 0, nearWarm: false, nearFount: false, mast: {}, pairsKnown: new Set(), drill: null, food: 100, worn: new Set(), spy: false, lampOff: false, quality: {}, reqs: null, seen: null, hintT: -999
+    falling: [], felled: [], rubble: [], autoDoors: [], regrow: [], lairs: new Set(), bless: null, blessUsed: {}, ev: null, dev: null, devT: 2400, evClock: undefined, dhaz: [], echoes: new Set(), beasts: {}, gear: { head: null, body: null, legs: null, feet: null, off: null }, trink: [], meal: null, brew: null, cloneTape: [], rest: 0, nearWarm: false, nearFount: false, mast: {}, pairsKnown: new Set(), drill: null, food: 100, worn: new Set(), spy: false, lampOff: false, quality: {}, reqs: null, seen: null, hintT: -999
   });
   for (const k in YACC) delete YACC[k]; INV_N = packCap(); mapReset();
   UI.open = null; UI.held = null; UI.scroll = 0; acc = 0;
@@ -523,12 +523,14 @@ addEventListener('keydown', e => {
   if (G.state === 'brlobby') { if (k === 'Escape') { brLeave(); sfx('ui'); } return; }
   if (G.state !== 'play') { if (k === 'Escape') { if (G.state === 'accounts' && !ACCOUNT.active) return; G.state = ['create', 'wcopy', 'wpaste'].includes(G.state) ? 'worlds' : 'title'; if (G.state === 'accounts') ACCOUNT.form = 'list'; if (G.state === 'title' && COOP.role) coopLeave(); sfx('ui'); } return; }
   if (G.dialog) { if (k === 'KeyF' || k === 'Space' || k === 'Enter' || k === 'KeyE') { dialogAdvance(); pressed[k] = false; } return; }
-  if (k === 'Escape' || k === 'KeyP') { if (UI.open) { closeUI(); sfx('ui'); } else toggleUI('pause'); return; }
+  if (k === 'Escape' || k === 'KeyP' && !WORLD.royale) { if (UI.open) { closeUI(); sfx('ui'); } else toggleUI('pause'); return; }
   if ((k === 'Enter' || k === 'NumpadEnter') && chatKey()) return;
   if (k === 'KeyM' && WORLD.royale) { if (G.p && G.p.onBarge) BR.mapHide = !BR.mapHide; else BR.mapOpen = !BR.mapOpen; sfx('ui'); return; }
   if (k === 'KeyO' || k === 'KeyM' && (WORLD.arena || !hasUtil('fieldmap'))) { muted = !muted; G.banner = { text: muted ? 'SOUND OFF' : 'SOUND ON', sub: '[O] toggles sound', t: 0 }; return; }
   if (k === 'KeyM') { toggleUI('map'); return; }
   if (k === 'KeyC') { toggleUI('codex'); return; }
+  if (WORLD.royale && k === 'KeyB') { toggleUI('book'); return; }
+  if (WORLD.royale && k === 'KeyK' && (hasItem('rock') || hasItem('flint'))) { toggleUI('knap'); return; }
   if (k === 'KeyG' && !UI.open) { dropSelected(e.shiftKey); return; }
   if (k.startsWith('Digit')) { const n = +k[5], i = n === 0 ? 9 : n - 1; if (i < hotN()) { G.sel = i; G.selT = 120; if (G.p.atk && G.p.atk.phase < 2) endAttack(G.p); } return; }
   if (WORLD.royale && k === 'KeyE') { toggleUI('inv'); return; }

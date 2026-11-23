@@ -84,7 +84,8 @@ function brSend() {
       st: p.dead ? 4 : p.state === 'dodge' ? 2 : p.hurtT > 0 ? 3 : a ? 1 : 0, dd: p.dodgeDir, hp: max(0, round(p.hp)), k: p.kills, d: p.deaths,
       m: a ? a.id : '', an: p.atkN, mp: a ? a.phase : 0, mt: a ? a.pt : 0, ma: a ? r2(a.aimA) : 0, md: a ? round(a.dist) : 0, mc: a ? a.charge : 0, mf: a ? a.face : p.face, rp: p.riposte > 0 ? 1 : 0, sp: p.inv > 30 ? 1 : 0,
       hs: NET.hits, ps: NET.shots, kb: NET.kb, sx: p.st ? [p.st.pin > 0 ? (p.st.pinS || 0) + 2 : 0, p.st.burn > 0 ? 1 : 0, p.st.blind > 0 ? 1 : 0, p.st.hook > 0 || p.st.reel > 0 ? 1 : 0] : 0, lk: p.state === 'link' ? 1 : 0,
-      wd: round(p.ward || 0), gl: p.glide ? 1 : 0, ob: p.onBarge ? 1 : 0, al: p.dead ? 0 : 1, pl: BR.place | 0, oc: [...BR.mine], dl: BR.dl || 0
+      wd: round(p.ward || 0), gl: p.glide ? 1 : 0, ob: p.onBarge ? 1 : 0, al: p.dead ? 0 : 1, pl: BR.place | 0, oc: [...BR.mine], dl: BR.dl || 0,
+      pt: typeof p.team === 'string' ? p.team.slice(0, 80) : 'me', po: BR.pactWith || '', td: brTilePacket(), dp: brDropPacket()
     });
   }
   if (BR.lead) {
@@ -126,7 +127,25 @@ function brSaw(id, q, s) {
   if (!f && BR.ro.includes(id)) { f = newFighter(num(s.x, 600), num(s.y, 300), { remote: true, peer: id, team: 'r:' + id, snaps: [], spawnT: 0, name: q.n, skin: q.sk, brIn: true, ward: 0, guest: q.guest }); NET.peers.set(id, f); G.fighters.push(f); }
   if (f && typeof s.x === 'number') {
     netApply(f, s); f.ward = clamp(num(s.wd) | 0, 0, 100); f.glide = !!s.gl; f.onBarge = !!s.ob; f.noHit = !!s.ob;
+    if (typeof s.pt === 'string' && s.pt.length <= 80 && /^P:[\w:-]+$/.test(s.pt)) f.team = s.pt;
+    const team = 'P:' + [brMe(), id].sort().map(v => String(v).replace(/[^\w-]/g, '').slice(0, 24)).join(':');
+    if (f.team === team && !BR.teammate) { G.p.team = team; BR.teammate = id; BR.pactWith = ''; BR.pactFrom = ''; BR.note = 'PACT FORGED WITH ' + f.name.toUpperCase(); BR.noteT = 180; sfx('quest', 0); }
     if (s.al === 0 && !f.dead) { f.dead = true; f.deadT = 0; f.hp = 0; }
+  }
+  if (s.po === brMe() && !BR.teammate && !BR.pactFrom) { BR.pactFrom = id; BR.note = 'PACT OFFER FROM ' + (f ? f.name : q.n).toUpperCase() + '  ·  PRESS P TO ACCEPT'; BR.noteT = 180; }
+  if (s.po === brMe() && BR.pactWith === id) brFormPact(id);
+  if (Array.isArray(s.td) && s.td.length) {
+    BR.applying = true;
+    try { for (const row of s.td.slice(0, 40)) {
+      if (!Array.isArray(row) || row.length < 3) continue; const i = num(row[0]) | 0, t = num(row[1]) | 0, w = num(row[2]) | 0;
+      if (i < 0 || i >= tiles.length || !TP[t] || w < 0 || w > 31) continue;
+      const x = i % WW, y = (i / WW) | 0; if (tiles[i] !== t) setTile(x, y, t); walls[i] = w; dirtyAt(x, y);
+    } } finally { BR.applying = false; }
+  }
+  if (Array.isArray(s.dp)) for (const row of s.dp.slice(0, 18)) {
+    if (!Array.isArray(row) || row.length < 7 || !IT[row[1]]) continue; const seq = num(row[0]) | 0, last = BR.dropSeen.get(id) || 0; if (seq <= last) continue; BR.dropSeen.set(id, seq);
+    const n = clamp(num(row[2]) | 0, 1, 99), x = clamp(num(row[3]), 0, WW * T), y = clamp(num(row[4]), 0, WH * T), vx = clamp(num(row[5]), -4, 4), vy = clamp(num(row[6]), -5, 5);
+    spawnDrop(row[1], n, x, y, vx, vy, true);
   }
   if (Array.isArray(s.oc)) for (const i of s.oc.slice(0, 200)) { const c = BR.chests[i | 0]; if (c && !c.open) { c.open = true; c.t = 0; } }
   if (Array.isArray(s.dl) && s.dl.length === 4) { const key = id + ':' + s.dl[0]; if (!BR.dlSeen.has(key)) { BR.dlSeen.add(key); brDropPile(num(s.dl[1]), num(s.dl[2]), brItemsOk(s.dl[3])); } }

@@ -72,7 +72,7 @@ function brWorld(w, al, cx, cy) {
   for (const ch of BR.chests) {
     const px = ch.x * T, py = ch.y * T; if (px < vx0 || px > vx1 || py < cy - 20 || py > cy + VS.vh + 20) continue;
     if (ch.open) { w.globalAlpha = .55; w.drawImage(q.img, px + q.ox, py + q.oy + 1); w.globalAlpha = 1; w.fillStyle = '#2a1e16'; w.fillRect(px + q.ox + 1, py + q.oy + 1, q.img.width - 2, 2); }
-    else { w.drawImage(q.img, px + q.ox, py + q.oy); if (ch.rare) { w.fillStyle = '#ffd35a'; w.fillRect(px + q.ox + 1, py + q.oy, q.img.width - 2, 1); } }
+    else { w.drawImage(q.img, px + q.ox, py + q.oy); if (ch.rare || ch.event) { w.fillStyle = ch.event ? '#8ff5e6' : '#ffd35a'; w.fillRect(px + q.ox + 1, py + q.oy, q.img.width - 2, 1); } if (ch.event) { w.globalAlpha = .22 + .16 * sin(G.time * .08); w.fillStyle = '#8ff5e6'; w.fillRect(px - 2, py - 2, 13, 11); w.globalAlpha = 1; } }
   }
   if (BR.phase === 'drop' || BR.t < BR_DROP + 240) { const b = brBarge(min(BR.t, BR_DROP) + max(0, BR.t - BR_DROP)); if (b.x > cx - 80 && b.x < cx + VS.vw + 80) brDrawBarge(w, { x: BR.t > BR_DROP ? b.x + b.dir * (BR.t - BR_DROP) * 3 : b.x, y: b.y - max(0, BR.t - BR_DROP) * .3, dir: b.dir }, al); }
 }
@@ -116,7 +116,7 @@ function brStrip(c, x, y, w, h) {
 }
 function brHud(c) {
   const p = G.p, uw = VS.uw, uh = VS.uh, z = BR.storm, alive = BR.lastAlive;
-  if ((p.ward || 0) > 0) { bar(c, 15, 20, 72, 3, p.ward / 100, '#8fd0ff', '#2a62c0'); textO(c, round(p.ward), 91, 17, '#8fd0ff'); }
+  if ((p.ward || 0) > 0) { bar(c, 15, 26, 72, 3, p.ward / 100, '#8fd0ff', '#2a62c0'); textO(c, round(p.ward), 91, 24, '#8fd0ff'); }
   // the storm strip and its clock
   const sw = clamp(uw - 280, 140, 260), sx = round((uw - sw) / 2); brStrip(c, sx, 4, sw, 9);
   let msg = '', col = '#fff';
@@ -127,8 +127,9 @@ function brHud(c) {
   else msg = 'the ashfall has closed';
   textC(c, msg, uw / 2, 17, col, 1, textO);
   // who is left
-  const bw = 96, bx = uw - bw - 4; c.fillStyle = 'rgba(18,13,31,.66)'; c.fillRect(bx, 4, bw, 22); c.fillStyle = '#ff8a3d'; c.fillRect(bx, 4, 2, 22);
+  const bw = 96, bx = uw - bw - 4, paired = !!BR.teammate; c.fillStyle = 'rgba(18,13,31,.66)'; c.fillRect(bx, 4, bw, paired ? 31 : 22); c.fillStyle = '#ff8a3d'; c.fillRect(bx, 4, 2, paired ? 31 : 22);
   textO(c, alive + ' LEFT', bx + 7, 7, '#fff1a8', 1); drawText(c, p.kills + ' taken down', bx + 7, 16, '#d8d4e6');
+  if (paired) drawText(c, 'PACTED', bx + 7, 25, '#8ff5e6');
   if (BR.inStorm && (G.time >> 4) & 1) textC(c, 'YOU ARE IN THE ASHFALL', uw / 2, round(uh * .3), '#ff9adf', 1, textO);
   if (BR.noteT > 0) { c.globalAlpha = min(1, BR.noteT / 30); textC(c, BR.note, uw / 2, round(uh * .66), '#fff', 1, textO); c.globalAlpha = 1; }
   if (p.brUse) { const u = p.brUse, it = IT[u.id], hb = hotbarLayout(), w2 = 110, x2 = round((uw - w2) / 2), y2 = hb.y - 24; textC(c, (it.ward ? 'MENDING YOUR WARD' : 'APPLYING ' + it.name.toUpperCase()), uw / 2, y2 - 9, it.ward ? '#8fd0ff' : '#7ddc6f', 1, textO); bar(c, x2, y2, w2, 4, u.t / u.dur, it.ward ? '#8fd0ff' : '#7ddc6f', '#2b2740'); }
@@ -148,7 +149,7 @@ function brMap(c) {
   const s = w / (BRW * T), oy = sy0 * 2 * T * s, z = BR.storm;
   if (z) { c.fillStyle = 'rgba(150,60,170,.45)'; c.fillRect(x, y, round(z.L * s), h); c.fillRect(x + round(z.R * s), y, w - round(z.R * s), h); c.fillStyle = '#ffffff'; c.fillRect(x + round(z.nL * s), y, 1, h); c.fillRect(x + round(z.nR * s), y, 1, h); }
   for (const q of BR.pois) { const X = x + round(q.x * T * s), Y = y + round(heights[q.x] * T * s - oy) - 14; textC(c, q.name, X, max(y + 2, Y), '#fff1a8', 1, textO); }
-  for (const ch of BR.chests) if (!ch.open && !ch.cave) { c.fillStyle = ch.rare ? '#ffd35a' : 'rgba(255,200,120,.7)'; c.fillRect(x + round(ch.x * T * s), y + round(ch.y * T * s - oy), 1, 1); }
+  for (const ch of BR.chests) if (!ch.open && !ch.cave) { c.fillStyle = ch.event ? '#8ff5e6' : ch.rare ? '#ffd35a' : 'rgba(255,200,120,.7)'; c.fillRect(x + round(ch.x * T * s), y + round(ch.y * T * s - oy), ch.event ? 3 : 1, ch.event ? 3 : 1); }
   const p = G.p, me = p.onBarge ? brBarge() : p, my = clamp(round((me.y + 10) * s - oy), 2, h - 2); c.fillStyle = '#ffd35a'; c.fillRect(x + round((me.x + 3) * s) - 2, y + my - 2, 5, 5); c.fillStyle = INK; c.fillRect(x + round((me.x + 3) * s), y + my, 1, 1);
   if (p.onBarge) textC(c, 'SPACE to leap here', x + round((me.x + 3) * s), y + my + 6, '#ffd35a', 1, textO);
 }

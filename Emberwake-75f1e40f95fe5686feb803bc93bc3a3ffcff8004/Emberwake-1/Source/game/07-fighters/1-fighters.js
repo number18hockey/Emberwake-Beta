@@ -84,6 +84,7 @@ function killFighter(f, by) {
   if (f.hollow && !f.remote && netHost() && f.nid) sendAll({ t: 'hdie', id: f.nid, x: round(f.x), y: round(f.y), elite: f.elite || '' });
   f.hp = 0; f.dead = true; f.deadT = 0; f.atk = null; f.state = 'normal'; f.deaths++;
   burst(f.x + 3, f.y + 10, 40, f.skin === 4 ? FROST : SPARK, 3, 60, { glow: 1, g: .02 }); if (f === G.p) sfx('die', 0); else fsx(f, 'kill', 0);
+  if (f.isClone) { f.gone = true; return; }
   if (WORLD.arena) arenaDeath(f, by); else if (f === G.p) { G.deaths = (G.deaths || 0) + 1; G.dirty = true; }
   else if (f.hollow && !f.remote) hollowDrops(f);
 }
@@ -103,7 +104,7 @@ function tickFighter(f, I) {
   if (I.armP && f.hurtT <= 0) throwArm(f, I.wx, I.wy);
   if (I.jumpP) f.jbuf = 7; else if (f.jbuf > 0) f.jbuf--;
   if (f.onGround) { f.coyote = 6; f.airDash = airDashMax(f); f.updraft = true; f.dblUsed = false; } else if (f.coyote > 0) f.coyote--;
-  if (f.stamDelay > 0) f.stamDelay--; else f.stam = min(f.maxstam, f.stam + .6 * (f.isPlayer && !WORLD.arena ? (f.tonic > 0 ? 1.8 : 1) * (WORLD.mode !== 1 && G.food <= 0 ? .5 : 1) * gearMul('st') : 1));
+  if (f.stamDelay > 0) f.stamDelay--; else f.stam = min(f.maxstam, f.stam + (f.isPlayer && (!WORLD.arena || WORLD.royale) ? (f.tonic > 0 ? 1.8 : 1) * (WORLD.mode !== 1 && G.food <= 0 ? .5 : 1) * gearMul('st') : 1));
   f.regenT++;
   if (WORLD.arena && !WORLD.royale) { if (f.regenT > 240 && f.hp < f.maxhp && G.time % 4 === 0) f.hp++; }
   else if (f.isPlayer && f.regenT > 420 / DIFF().regen && G.time % max(1, round((WORLD.mode === 1 || G.food > 70 ? 40 : G.food > 30 ? 80 : 1e9) / DIFF().regen / blessRegen())) === 0 && f.hp < f.maxhp) f.hp++;
@@ -117,7 +118,7 @@ function tickFighter(f, I) {
     a = f.atk; const ok = f.state === 'normal' || (f.state === 'dodge' && f.dodgeT >= 2) || (f.state === 'attack' && a.phase === 2 && a.pt >= floor(a.m.rec * .38));
     if (ok) { const b = f.buf.b; f.buf = null; if (f.state === 'attack') endAttack(f); if (startAttack(f, b, I)) f.atkN++; }
   }
-  let grav = .26; const gp = f === G.p && gearOn(), maxV = 1.45 * (gp ? gearMul('walk') : 1);
+  let grav = .26; const gp = f === G.p && gearOn(), maxV = 1.45 * (gp ? gearMul('walk') : 1) * (f === G.p && typeof brewMul === 'function' ? brewMul('swift') : 1);
   if (gp && f.vy > 0 && (gearHas('feather') || gearHas('prismatic')) && I.jumpH && !f.onGround) grav = .17;
   if (f.state === 'dodge') {
     f.dodgeT++; f.vx = f.dodgeDir * 3.5 * (f.dodgeT > 8 ? .7 : 1) * (f === G.p ? gearMul('dodge') : 1); if (!f.dodgeGround) { f.vy = 0; grav = 0; }
@@ -180,18 +181,20 @@ function playerInput() {
 function tickPlayer() {
   const p = G.p, I = playerInput();
   if (WORLD.royale && !brInput(p, I)) return;
+  if (p.consume && !p.brUse) { tickConsume(p); I.md = 0; I.jumpP = I.jumpH = I.l = I.r = I.lp = I.rp = I.dodgeP = I.armP = false; }
+  recordCloneInput(I);
   tickFighter(p, I);
   if (WORLD.royale) brAfter(p, I);
   if (p.dead) { if (!WORLD.royale && p.deadT > (WORLD.arena ? 150 : 190)) respawnPlayer(); return; }
-  if (WORLD.arena) return;
+  if (WORLD.arena && !WORLD.royale) return;
   // ---- tools, blocks, consumables ----
   toolTick(p, I);
   const hi = heldItem(); if (hi && hi.type === 'weapon') G.lastWeapon = G.sel;
-  if (pressed.KeyH && !G.dialog) useHeal(countItem('salve') ? 'salve' : 'glowcap');
+  if (!WORLD.royale && pressed.KeyH && !G.dialog) useHeal(countItem('salve') ? 'salve' : 'glowcap');
   if (pressed.KeyT && !G.dialog && !UI.open) cycleArm(p);
-  if (!UI.open && !G.dialog && !G.cine) { if (pressed.KeyV) tryStyle(p, I); if (pressed.KeyX) swapOff(p, I); }
-  tickStyles(p, I);
-  if (pressed.KeyF && !UI.open) interact();
+  if (!WORLD.royale && !UI.open && !G.dialog && !G.cine) { if (pressed.KeyV) tryStyle(p, I); if (pressed.KeyX) swapOff(p, I); }
+  if (!WORLD.royale) tickStyles(p, I);
+  if (!WORLD.royale && pressed.KeyF && !UI.open) interact();
 }
 function respawnPlayer() {
   const p = G.p;
@@ -314,6 +317,7 @@ function drawRig(x, P, S, wp, wp2) {
     x.restore();
   }
   armDraw(x, shx, shy, P.armA, P.armExt, S.arm, S.hand);
+  if (P.consumeIcon) { const L = ARM * clamp(P.armExt, .3, 1), hx = shx + cos(P.armA) * L, hy = shy + sin(P.armA) * L; x.drawImage(P.consumeIcon, round(hx - 3), round(hy - 7), 6, 6); }
   x.restore();
 }
 function fighterPose(f, al) {
@@ -337,6 +341,7 @@ function fighterPose(f, al) {
   if (st && (st.hook > 0 || st.reel > 0 || st.held > 0)) { P.lean = -.35; P.head = -.35 + sin(G.time * .3) * .1; P.armA = 2.4; P.armB = 2.7; P.l1a = .5; P.l2a = -.4; P.wAng = 2.2; if (!f.atk) return P; }
   if (f.throwT > 0 && !f.atk) { const u = 1 - f.throwT / 12; P.armA = lerp(-2.4, f.throwA || 0, ease.out(min(1, u * 2))); P.armExt = 1; P.lean = .25 * sin(u * PI); P.wAng = idle; }
   if (f.atk) atkPose(P, f.atk, al);
+  if (f.consume) { P.lean = lerp(P.lean, -.12, .8); P.head = lerp(P.head, -.14, .8); P.armA = f.consume.drink ? -1.3 : -1.58; P.armExt = .82; P.consumeIcon = IT[f.consume.id] && IT[f.consume.id].icon; }
   if (isW && it.chuks) { const a = f.atk; if (a && a.phase === 1 && a.m.kind === 'swing') P.nA = swingAng(a, max(0, a.pt + al - 2.2)) + (a.m.to > a.m.from ? -.5 : .5); else if (a && (a.m.kind === 'thrust' || a.m.kind === 'shot') && a.phase === 1) P.nA = P.wAng; else if (a && (a.m.kind === 'spin' || a.m.kind === 'flip')) P.nA = P.wAng + .35; else P.nA = PI / 2 + sin(t * .07) * .12 - P.lean; }
   else if (f.isPlayer && (f.toolT > 0 || f.toolCharge > 0) && (!it || it.type === 'tool' || it.fist)) {
     // the tool rises behind you, comes down along your aim, bites, and comes back

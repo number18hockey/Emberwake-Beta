@@ -271,15 +271,26 @@ function startAttack(f, btn, I, force) {
   if (!force && tryLink(f, btn)) return true;
   const set = MOVESETS[W.set], c = atkContext(f, I); let id = force || resolveMove(set, btn, c); if (!force && f === G.p) id = famGate(W.set, set, id, btn, c);
   let m = set.moves[id]; if (!m) return false;
-  if (force) { if (m.cost) { f.stam = max(0, f.stam - m.cost); f.stamDelay = 42; } }
+  if (force) { if (m.cost) { f.stam = max(0, f.stam - m.cost); f.stamDelay = 30; } }
   else if (m.rise && c.air) { if (!f.updraft) { id = btn === 'L' ? set.map.aChain[0] : set.map.ha; m = set.moves[id]; } else f.updraft = false; }
-  if (!force && m.cost) { if (f.stam < m.cost * .6) { if (f === G.p) sfx('deny'); id = resolveMove(set, 'L', c); if (f === G.p) id = famGate(W.set, set, id, 'L', c); m = set.moves[id]; if (m.rise && c.air) { id = set.map.aChain[0]; m = set.moves[id]; } } else { f.stam = max(0, f.stam - m.cost); f.stamDelay = 42; } }
+  // Player attacks have a deliberate stamina price: a short string is fine,
+  // but alternating a clean ECHO or REFRAIN refunds enough to keep the flow.
+  // This gives every click a decision without slowing enemy attack pacing.
+  if (f === G.p) {
+    const price = (btn === 'H' ? 14 : 8) + (m.cost || 0);
+    if (f.stam < price) { sfx('deny'); if (f === G.p) { G.feed.unshift({ name: 'CATCH YOUR BREATH', fresh: false, isNew: false, t: 0, flow: 1 }); if (G.feed.length > 5) G.feed.pop(); } return false; }
+    f.stam -= price; f.stamDelay = 30;
+  } else if (!force && m.cost) {
+    if (f.stam < m.cost * .6) { id = resolveMove(set, 'L', c); m = set.moves[id]; }
+    else { f.stam = max(0, f.stam - m.cost); f.stamDelay = 30; }
+  }
   const rep = f.hist.slice(-4).filter(h => h === id).length, fresh = !f.hist.slice(-3).includes(id);
   f.hist.push(id); if (f.hist.length > 8) f.hist.shift();
   const cadence = f === G.p && f.cadence, cadenceLink = !!(cadence && cadence.until >= G.time && cadence.btn !== btn && cadence.set === W.set), cadenceBase = cadenceLink ? { btn: cadence.btn, count: cadence.count, until: cadence.until, set: cadence.set } : null;
   if (f === G.p) f.cadence = null;
   f.face = c.side; f.state = 'attack'; f.chainT = 0; f.mineP = 0;
   const a = f.atk = { f, id, m, W, set, setName: W.set, btn, phase: 0, pt: 0, face: c.side, aimA: c.elev, hits: new Map(), charge: 0, charged: false, hit: false, air: c.air, fresh, stale: fresh ? 1.1 : ([1, .86, .72, .6, .5][rep] || .5), act: m.act, dashT: 0, dashN: 0, prevAng: 0, aimOff: 0, th: 0, crit: !!m.crit, dist: c.dist, tx: I.wx, ty: I.wy, shots: 0, shotI: 0, cadenceLink, cadenceBase };
+  if (f === G.p && WORLD.royale && ['bow', 'fangs', 'chuks'].includes(W.set)) a.gm = .78;
   // what you wear and how well you know the weapon change how each kind of blow comes out
   if (f === G.p && gearOn()) { const air = c.air, sh = m.kind === 'shot', spd = (sh ? gearMul('bow') : a.btn === 'L' ? gearMul('light') : 1) * (air ? (gearMul('air') + 1) / 2 : 1) * styleSpeed(W, id); a.tm = (W.wsp || 1) / spd; a.gm = (a.btn === 'H' ? gearMul('heavy') : 1) * (air ? (gearMul('air') + 1) / 2 : 1) * styleDmg(W, id); a.dk = gearMul('dash') * (air ? gearMul('air') : 1); a.critB = (gearHas('crit') ? .06 : 0) + (gearHas('keen') ? .08 : 0); }
   if (!force && f === G.p && btn === 'H' && id === set.map.h) { const art = artFor(W); if (art) a.artCharge = { min: 26, max: 96, into: art }; }
@@ -373,7 +384,7 @@ function fireArrows(a, count) {
     let vx, vy, g = A.g === undefined ? .05 : A.g;
     if (A.rain) { const tx = a.tx + (A.n > 1 ? (a.shotI - (A.n - 1) / 2) * 10 : 0) + frand(-3, 3), Tf = A.tf || 46; g = .16; vx = clamp((tx - sx) / Tf, -7, 7); vy = (a.ty - sy - .5 * g * Tf * Tf) / Tf; }
     else { const v = A.v || 6.5; if (A.radial) { const th = a.shotI / A.n * TAU; vx = cos(th) * v; vy = sin(th) * v; } else { const th = a.th + (A.spread ? (a.shotI - (A.n - 1) / 2) * A.spread : 0) + (A.burst ? frand(-.025, .025) : 0); vx = fc * cos(th) * v; vy = sin(th) * v; } }
-    spawnProj({ type: A.boom ? 'bomb' : 'arrow', owner: f, x: sx, y: sy, vx, vy, g, r: 3, dmg: max(1, round(a.W.dmg * m.dmg * a.stale * (f.dmgMul || 1))), pierce: !!A.pierce, boom: A.boom || 0, life: 190, kb: [m.kb[0], m.kb[1]], crit: a.crit, stagger: m.stagger, stop: m.stop, cadenceAtk: f === G.p ? a : null });
+    spawnProj({ type: A.boom ? 'bomb' : 'arrow', owner: f, x: sx, y: sy, vx, vy, g, r: 3, dmg: max(1, round(a.W.dmg * m.dmg * a.stale * (a.gm || 1) * combatDmgMul(f))), pierce: !!A.pierce, boom: A.boom || 0, life: 190, kb: [m.kb[0], m.kb[1]], crit: a.crit, stagger: m.stagger, stop: m.stop, cadenceAtk: f === G.p ? a : null });
   }
   fsx(f, 'bolt', 0); fsx(f, 'thrust', 0);
 }
@@ -440,7 +451,7 @@ function applyHit(a, e, hx, hy) {
   const P0 = f === G.p, sharp = P0 && f.sharp > 0;
   const crit = a.crit || Math.random() < .07 + (a.W.crit || 0) + (a.critB || 0) + (P0 ? boonAdd('crit') : 0);
   const beat = P0 ? cadenceStep(a) : 0;
-  let dmg = a.W.dmg * m.dmg * a.stale * (P0 ? 1 + rankI() * .04 + qBonus(a.W.id) + (sharp ? .2 : 0) : 1) * (crit && !a.crit ? 1.6 : 1) * (f.dmgMul || 1) * (a.gm || 1) * (P0 ? (a.btn === 'H' ? boonMul('hdmg') : 1) * (m.counter ? boonMul('counter') : 1) : 1) * cadenceMul(beat);
+  let dmg = a.W.dmg * m.dmg * a.stale * (P0 ? 1 + rankI() * .04 + qBonus(a.W.id) + (sharp ? .2 : 0) : 1) * (crit && !a.crit ? 1.6 : 1) * combatDmgMul(f) * (a.gm || 1) * (P0 ? (a.btn === 'H' ? boonMul('hdmg') : 1) * (m.counter ? boonMul('counter') : 1) : 1) * cadenceMul(beat);
   const lk = P0 ? flowPay(a, e) : null; if (lk) dmg *= lk.mul * (lk.tag ? boonMul('flow') : 1);
   dmg = max(1, round(dmg * frand(.93, 1.07)));
   let kx = m.kb[0] * a.face; if (m.kind === 'spin') kx = m.kb[0] * (sign((e.x + e.w / 2) - (f.x + 3)) || a.face);
@@ -471,7 +482,7 @@ function explode(x, y, r, dmg, by, cadenceAtk) {
   for (const e of foesOf(by)) { if (e.dead || e.noHit) continue; if (circBox(x, y, r, e)) { const beat = cadenceAtk ? cadenceStep(cadenceAtk) : 0, hx = e.x + e.w / 2, hy = e.y + e.h / 2, landed = strike(by, e, round(dmg * cadenceMul(beat)), (sign(e.x + e.w / 2 - x) || 1) * 3, -2.6, { stop: 4 + (beat >= 3 ? 3 : beat === 2 ? 1 : 0), shake: 2, stagger: beat >= 3 ? 48 : 0, hx, hy }); if (landed && cadenceAtk) cadenceHit(cadenceAtk, e, beat, hx, hy); } }
 }
 function fireProj(a) {
-  const f = a.f, m = a.m, fc = a.face, cx = f.x + 3, cy = f.y + 7, dm = f.dmgMul || 1;
+  const f = a.f, m = a.m, fc = a.face, cx = f.x + 3, cy = f.y + 7, dm = combatDmgMul(f);
   const cadenceAtk = f === G.p ? a : null; if (cadenceAtk) a.projectileOut = true;
   if (m.proj === 'wave') { const el = clamp(a.aimA, -.6, .6); spawnProj({ type: 'wave', owner: f, x: cx + fc * 10, y: cy + 2, vx: fc * cos(el) * 4.8, vy: sin(el) * 4.8, r: 11, dmg: round(a.W.dmg * 2.2 * dm), pierce: true, life: 46, kb: [3.5, -1.5], cadenceAtk }); fsx(f, 'wave', 0); }
   else if (m.proj === 'javelin') spawnProj({ type: 'javelin', owner: f, x: cx + fc * 8, y: cy, vx: fc * cos(a.th) * 6.4, vy: sin(a.th) * 6.4, g: .09, r: 4, dmg: round(a.W.dmg * 2.8 * dm), life: 130, kb: [4, -1], spr: a.W.held, cadenceAtk });

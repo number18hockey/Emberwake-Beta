@@ -8,7 +8,7 @@
 //  storm clock and the echoes; every computer runs its own Waker and
 //  shares it as presence, exactly like the Cinder Ring.
 // ============================================================
-const BRW = 520, BRH = 140, BRSKY = 17, BR_MAX = 12, BR_FILL = 8;
+const BRW = 640, BRH = 140, BRSKY = 17, BR_MAX = 12, BR_FILL = 8;
 const BR_TIERS = ['COMMON', 'UNCOMMON', 'RARE', 'EPIC', 'LEGENDARY'], BR_TCOL = ['#c8c4d4', '#7ddc6f', '#5aa8ff', '#c77dff', '#ffd35a'];
 const BR_MATT = { wood: 0, flint: 0, bone: 0, stone: 0, copper: 1, bronze: 1, rust: 2, chitin: 2, iron: 2, steel: 3, glass: 3, deep: 4, ember: 4 };
 const BR_OLD = { sword: 0, spear: 0, fangs: 1, maul: 2, bow: 1, nunchaku: 1, kblade: 4, kmaul: 4, vpike: 3, vfangs: 3 };
@@ -18,13 +18,14 @@ const BR_WALL = { moor: W_DIRT, thorn: W_DIRT, dunes: W_SAND, reach: W_STONE, as
 const BR_PNAMES = { moor: ['HEARTHWICK', 'MILLSTEAD', 'LANTERN GREEN'], thorn: ['THORNWOOD', 'BRAMBLE CAMP', 'THE TANGLE'], dunes: ['SUNKEN SPIRE', 'DUSTWATCH', 'RUSTFALL RUINS'], reach: ['COLDGLASS KEEP', 'FROSTGATE', 'STILLWATCH'], ash: ['CINDER WORKS', 'SLAG HOLLOW', 'THE KILNS'] };
 const BR_BOTN = ['WREN', 'KESTREL', 'MARROW', 'TINDER', 'SORREL', 'FLINT', 'ROOK', 'BRAMBLE', 'EMBERLY', 'SALTWICK', 'HOLLIS', 'VESK', 'ODA', 'TALLOW'];
 // storm phases: seconds of waiting, seconds of closing, share of the map still safe after, damage per second outside
-const STORM = [[55, 25, .6, 1], [35, 20, .36, 2], [28, 18, .18, 4], [24, 15, .08, 6], [20, 15, 0, 10]];
-const BR_DROP = 22 * 60;
+const STORM = [[85, 35, .6, 1], [55, 25, .36, 2], [40, 22, .18, 4], [34, 18, .08, 6], [28, 18, 0, 10]];
+const BR_DROP = 30 * 60, BR_EVENT_AT = BR_DROP + 150 * 60;
 const BR = {
   on: false, via: 'solo', code: 'open', phase: '', mi: '', seed: 0, t: 0, ro: [], nb: 0, lead: true, leaderId: '', people: new Map(),
   cd: 0, cdAt: 0, cdMax: 0, chests: [], open: new Set(), mine: new Set(), zones: [], storm: null, bots: new Map(), bk: [], bkSeq: 0, bkSeen: new Map(),
   dlSeen: new Set(), dl: null, place: 0, spec: null, specT: 0, overT: 0, winner: '', winMe: false, pois: [], segs: BR_BIOMES.slice(), segW: BRW / 5, mapCv: null,
-  note: '', noteT: 0, chan: null, inStorm: false, poiNow: '', mapOpen: false, total: 0, lastAlive: 0, lobbyT: 0, err: ''
+  note: '', noteT: 0, chan: null, inStorm: false, poiNow: '', mapOpen: false, total: 0, lastAlive: 0, lastTeams: 0, lobbyT: 0, err: '',
+  cache: null, pactWith: '', pactFrom: '', teammate: '', dropsOut: [], dropSeq: 0, dropSeen: new Map(), tileOut: new Map(), applying: false
 };
 const brOn = () => WORLD.royale && BR.on;
 const brTag = f => !f ? '' : f === G.p ? (NET.me || 'me') : f.botTag || f.peer || '';
@@ -39,16 +40,23 @@ function brItems() {
   defI('br_draught', { name: 'Heartroot Draught', type: 'brheal', heal: 60, cap: 100, use: 150, stack: 3, icon: icon('jug', v('#ffb0b0', '#e2483b', '#8f2233', '#4a1018', '#ffd0d0')), desc: 'Heals 60. Drink it somewhere safe.' });
   defI('br_shard', { name: 'Ward Shard', type: 'brheal', ward: 25, cap: 50, use: 80, stack: 6, icon: icon('stone', v('#e0f4ff', '#8fd0ff', '#4a8adf', '#22406a', '#ffffff')), desc: '+25 ward, up to 50. Ward takes blows before your health does.' });
   defI('br_ward', { name: 'Greatward Flask', type: 'brheal', ward: 50, cap: 100, use: 160, stack: 3, icon: icon('vial', v('#e0f4ff', '#5aa8ff', '#2a62c0', '#14305a', '#ffffff')), desc: '+50 ward, up to 100.' });
+  defI('br_emberlight', { name: 'Emberlight', type: 'brheal', ward: 35, cap: 100, use: 55, stack: 2, icon: icon('vial', v('#fff1a8', '#ffb347', '#e2542b', '#6a2418', '#ffffff')), desc: 'The Ember Cache prize: drink for 35 ward.' });
 }
-function brRollTier(rare) { const r = Math.random(); return rare ? (r < .3 ? 2 : r < .78 ? 3 : 4) : (r < .4 ? 0 : r < .7 ? 1 : r < .89 ? 2 : r < .975 ? 3 : 4); }
-function brLoot(rare) {
-  const P = brPool(), k = brRollTier(rare), pool = P[k].length ? P[k] : P[0], out = [[fpick(pool), 1]];
-  const n = rare ? 2 : 1 + (Math.random() < .55 ? 1 : 0);
-  for (let i = 0; i < n; i++) {
-    const r = Math.random();
-    out.push(r < .27 ? ['br_salve', 2] : r < .38 ? ['br_draught', 1] : r < .62 ? ['br_shard', 2] : r < .7 ? ['br_ward', 1] : r < .84 ? [fpick(['shuriken', 'flask', 'smoke']), fpick([2, 3])] : r < .9 ? ['hook', 1] : ['arrow', 15]);
-  }
-  if (IT[out[0][0]].ammo && !out.some(o => o[0] === 'arrow')) out.push(['arrow', 20]);
+function brRollTier(rare) { const r = Math.random(); return rare ? (r < .78 ? 1 : 2) : (r < .82 ? 0 : 1); }
+function brLoot(rare, event = false) {
+  const out = [];
+  // Chests are trail caches now: a weapon is possible, while food and craft
+  // materials are the reliable find. The center cache is the one exception.
+  if (event) return [['br_emberlight', 1], [fpick(['copper_ore', 'tin_ore', 'coal']), 3], ['berries', 3], ['br_shard', 1]];
+  if (Math.random() < (rare ? .72 : .28)) { const P = brPool(), k = brRollTier(rare), pool = P[k].length ? P[k] : P[0]; if (pool.length) out.push([fpick(pool), 1]); }
+  const bundles = [
+    [['stick', randi(2, 4)], ['fiber', randi(1, 3)]],
+    [['rock', randi(1, 3)], ...(Math.random() < .65 ? [['flint', 1]] : [])],
+    [[fpick(['berries', 'meat', 'egg']), randi(1, 3)], ...(Math.random() < .45 ? [['salt', 1]] : [])],
+    [[fpick(['copper_ore', 'tin_ore', 'coal']), randi(1, 2)], ['br_salve', 1]]
+  ];
+  const bundleN = rare ? 3 : 2; for (let i = 0; i < bundleN; i++) out.push(...bundles.splice(randi(0, bundles.length - 1), 1)[0]);
+  if (rare && Math.random() < .3) out.push(['br_shard', 1]);
   return out;
 }
 
@@ -73,7 +81,7 @@ function brEase(x, dir, gy) { for (let k = 1; k < 30; k++) { const xx = x + dir 
 function brChest(x, y, rare, o = {}) {
   if (!inW(x, y) || tiles[y * WW + x] !== AIR || !TP[tileAt(x, y + 1)].solid && tileAt(x, y + 1) !== PLATFORM) return null;
   for (const c of BR.chests) if (abs(c.x - x) < 3 && abs(c.y - y) < 3) return null;
-  const c = { i: BR.chests.length, x, y, rare: !!rare, cave: !!o.cave, high: !!o.high, open: false, t: 0 }; BR.chests.push(c); return c;
+  const c = { i: BR.chests.length, x, y, rare: !!rare, cave: !!o.cave, high: !!o.high, event: !!o.event, open: false, t: 0 }; BR.chests.push(c); if (c.event) BR.cache = c; return c;
 }
 function brTree(x, gy, b) {
   const kind = b === 'thorn' ? 3 : b === 'moor' ? 0 : b === 'reach' ? 1 : 2, th = kind === 0 ? 7 + randi(0, 7) : kind === 1 ? 5 + randi(0, 5) : 5 + randi(0, 4);
@@ -140,6 +148,14 @@ function genRoyale(seed) {
     for (let xx = x; xx <= x + 7; xx++) if (tileAt(xx, py) === AIR) tiles[py * WW + xx] = PLATFORM;
     brChest(x + 3, py - 1, false, { high: true }); reserve(x - 1, x + 8, 1);
   }
+  // A marked Ember Cache arrives late, after the first scramble for shelter.
+  // It brings a small ward and the ingredients for a real craft, not an endgame weapon.
+  let ex = BRW >> 1;
+  for (let d = 0; d < 70 && (RESV[ex] || abs(heights[ex - 1] - heights[ex]) > 1 || abs(heights[ex + 1] - heights[ex]) > 1); d++) {
+    const q = d & 1 ? (BRW >> 1) + ((d + 1) >> 1) : (BRW >> 1) - (d >> 1); if (q > 24 && q < BRW - 24 && !RESV[q] && abs(heights[q - 1] - heights[q]) <= 1 && abs(heights[q + 1] - heights[q]) <= 1) { ex = q; break; }
+  }
+  brChest(ex, heights[ex] - 1, true, { high: true, event: true });
+  if (!BR.cache) for (let d = 0; d < BRW; d++) { const q = (BRW >> 1) + (d & 1 ? (d + 1) >> 1 : -(d >> 1)); if (q < 20 || q >= BRW - 20 || RESV[q] || abs(heights[q - 1] - heights[q]) > 1 || abs(heights[q + 1] - heights[q]) > 1 || BR.chests.some(c => abs(c.x - q) < 4)) continue; if (brChest(q, heights[q] - 1, true, { event: true })) break; }
   for (let x = 0; x < BRW; x++) { let y = 0; while (y < BRH && !TP[tiles[y * WW + x]].solid) y++; SKYL[x] = max(heights[x] + 3, min(y + 3, BRH)); }
   for (const q of PROPS) bucketAdd(PROPB, q); for (const q of FGP) bucketAdd(FGPB, q);
   MODS_ON = false; brMapArt();
@@ -175,6 +191,18 @@ function brPOI(b, cx, name) {
     for (const [ox, h] of [[-15, 6], [-9, 9], [7, 7], [14, 5]]) for (let y = gy - h; y < gy; y++) { tiles[y * WW + cx + ox] = y < gy - h + 2 && rand() < .5 ? AIR : CINDERBRICK; walls[y * WW + cx + ox + 1] = W_RUIN; }
     for (let x = cx - 9; x <= cx + 7; x++) tiles[(gy - 9) * WW + x] = PLATFORM;
     vent(cx - 3, gy - 22); brChest(cx - 12, gy - 1, false); brChest(cx + 2, gy - 1, false); brChest(cx - 1, gy - 10, true, { high: true }); brChest(cx + 11, gy - 1, false);
+  }
+  // A shared field kit keeps each settlement useful: forage, cook, then craft.
+  const kit = [BENCH, FIRE, CAULDRON, SIEVE], starts = [23, -23, 19, -19, 15, -15, 11, -11, 7, -7, 3, -3];
+  for (const start of starts) {
+    const dir = start < 0 ? -1 : 1, spots = []; let clear = true;
+    for (let k = 0; k < kit.length; k++) {
+      const x = cx + start + dir * k; if (x < 3 || x > BRW - 4) { clear = false; break; }
+      const y = heights[x] - 1, i = y * WW + x;
+      if (tiles[i] !== AIR || !TP[tiles[i + WW]].solid || BR.chests.some(c => abs(c.x - x) < 3 && abs(c.y - y) < 3)) { clear = false; break; }
+      spots.push([x, y]);
+    }
+    if (clear) { spots.forEach(([x, y], i) => dyn(x, y, kit[i])); break; }
   }
   reserve(cx - 28, cx + 28, 2);
 }
@@ -247,10 +275,15 @@ function brQuickUse(p) {
 
 // ---------------- chests ----------------
 function brNearChest(f, r = 16) { let best = null, bd = r; for (const c of BR.chests) { if (c.open) continue; const d = abs(c.x * T + 4 - (f.x + 3)) + abs((c.y + 1) * T - (f.y + f.h)) * .7; if (d < bd) { bd = d; best = c; } } return best; }
+function brNearStation(f, r = 6) {
+  const px = floor((f.x + 3) / T), py = floor((f.y + f.h / 2) / T); let best = null, bd = r + 1;
+  for (const o of tileObjs.values()) { if (!STATIONS[o.id] || o.id === POST) continue; const d = abs(o.x - px) + abs(o.y - py) * .5; if (d < bd) { bd = d; best = o; } }
+  return best;
+}
 function brOpenChest(c, f) {
-  if (!c || c.open) return; c.open = true; c.t = 0; BR.mine.add(c.i);
+  if (!c || c.open) return; if (c.event && BR.t < BR_EVENT_AT) { if (f === G.p) { BR.note = 'THE EMBER CACHE IS STILL SLEEPING'; BR.noteT = 100; sfx('deny'); } return; } c.open = true; c.t = 0; BR.mine.add(c.i);
   const px = c.x * T + 4, py = c.y * T + 2; sfx('craft', 0); burst(px, py, 14, c.rare ? ['#ffd35a', '#fff1a8'] : ['#ffb347', '#c98a5a'], 1.6, 30, { glow: 1 });
-  const loot = brLoot(c.rare);
+  const loot = brLoot(c.rare, c.event);
   if (f === G.p) { loot.forEach(([id, n], k) => spawnDrop(id, n, px - 3, py - 4, (k - (loot.length - 1) / 2) * 1.1, -2.4 - k * .2)); return; }
   if (f && f.br) for (const [id, n] of loot) brBotTake(f, id, n);
 }
@@ -267,7 +300,7 @@ function brSpill(f) {
   else if (f.br) { if (f.wid && f.wid !== 'fists') out.push([f.wid, 1]); if (f.br.heals > 0) out.push(['br_salve', min(4, f.br.heals)]); if (f.br.wards > 0) out.push(['br_shard', min(4, f.br.wards)]); }
   return out;
 }
-function brDropPile(x, y, items) { items.forEach(([id, n], k) => { if (IT[id] && n > 0) spawnDrop(id, n, x + frand(-3, 3), y - 4, (k - (items.length - 1) / 2) * .9, -2 - frand(1)); }); }
+function brDropPile(x, y, items) { items.forEach(([id, n], k) => { if (IT[id] && n > 0) spawnDrop(id, n, x + frand(-3, 3), y - 4, (k - (items.length - 1) / 2) * .9, -2 - frand(1), true); }); }
 
 // ---------------- starting a match ----------------
 function brNewBot(i, skill) {
@@ -279,8 +312,8 @@ function brSkill() { const d = SETTINGS.diff; return d === 'hard' ? frand(.58, .
 // everyone runs this with the same seed, so everyone stands on the same island
 function brEnterMatch(mi, seed, roster, nb) {
   const nick = G.nick, skin = G.skin;
-  genRoyale(seed); freshSession(); G.nick = nick; G.skin = skin; G.clock = [.3, .36, .2, .58][seed % 4]; updateSun();
-  Object.assign(BR, { mapHide: false, mi, seed, t: 0, ro: roster.slice(), nb, phase: 'drop', open: new Set(), mine: new Set(), bots: new Map(), bk: [], bkSeq: 0, bkSeen: new Map(), dlSeen: new Set(), dl: null, place: 0, spec: null, specT: 0, overT: 0, winner: '', winMe: false, chan: null, note: '', noteT: 0, inStorm: false, poiNow: '', mapOpen: false, lastAlive: 0 });
+  genRoyale(seed); freshSession(); WORLD.mode = 0; G.nick = nick; G.skin = skin; G.clock = [.3, .36, .2, .58][seed % 4]; updateSun();
+  Object.assign(BR, { mapHide: false, mi, seed, t: 0, ro: roster.slice(), nb, phase: 'drop', open: new Set(), mine: new Set(), bots: new Map(), bk: [], bkSeq: 0, bkSeen: new Map(), dlSeen: new Set(), dl: null, place: 0, spec: null, specT: 0, overT: 0, winner: '', winMe: false, chan: null, note: '', noteT: 0, inStorm: false, poiNow: '', mapOpen: false, lastAlive: 0, lastTeams: 0, cache: null, cacheAnnounced: false, pactWith: '', pactFrom: '', teammate: '', dropsOut: [], dropSeq: 0, dropSeen: new Map(), tileOut: new Map(), applying: false });
   BR.zones = brZones(seed); BR.storm = brStormAt(0); NET.deathN = 0; NET.kb = ['', 0]; NET.hits = []; NET.shots = []; NET.seen.clear();
   inv = new Array(INV_N).fill(null); G.sel = 0;
   G.p = newPlayer(); Object.assign(G.p, { name: G.nick, brIn: true, ward: 0, onBarge: true, noHit: true, team: 'me' }); G.fighters = [G.p]; G.npcs = []; G.enemies = [];
@@ -312,16 +345,17 @@ function brTick() {
   // spectating after you fall
   if (p.dead && BR.phase !== 'over') { const s = BR.spec; if (!s || s.dead || s.gone || !G.fighters.includes(s)) { BR.specT++; if (BR.specT > 50) { BR.spec = brAlive().find(f => f !== p) || null; BR.specT = 0; } } if (pressed.KeyD || pressed.ArrowRight || pressed.KeyA || pressed.ArrowLeft) brSpecNext(pressed.KeyA || pressed.ArrowLeft ? -1 : 1); }
   // who is left
-  const alive = brAlive(); BR.lastAlive = alive.length;
-  if (BR.phase === 'fight' && alive.length <= 1 && BR.t > BR_DROP + 60) brOver(alive[0] || null);
+  const alive = brAlive(), teams = new Set(alive.map(f => f.team)); BR.lastAlive = alive.length; BR.lastTeams = teams.size;
+  if (BR.phase === 'fight' && teams.size <= 1 && BR.t > BR_DROP + 60) brOver(alive[0] || null);
+  if (!BR.cacheAnnounced && BR.t >= BR_EVENT_AT) { BR.cacheAnnounced = true; BR.note = 'THE EMBER CACHE IS OPEN  ·  FIND THE GOLD MARK'; BR.noteT = 240; sfx('quest', 0); }
   if (BR.phase === 'over') { BR.overT++; if (BR.via !== 'solo' && BR.overT > 60 * 14) brBackToLobby(); }
   if (BR.via !== 'solo') brNetTick();
 }
 const brAlive = () => G.fighters.filter(f => f.brIn && !f.dead && !f.gone);
 function brSpecNext(d) { const a = brAlive().filter(f => f !== G.p); if (!a.length) return; const i = a.indexOf(BR.spec); BR.spec = a[((i < 0 ? 0 : i + d) % a.length + a.length) % a.length]; sfx('ui'); }
 function brOver(w) {
-  BR.phase = 'over'; BR.overT = 0; BR.winner = w ? w.name : ''; BR.winMe = w === G.p;
-  if (BR.winMe) { BR.place = 1; G.banner = { text: 'YOU ARE THE LAST EMBER', sub: G.p.kills + ' taken down. The ashfall settles.', t: 0 }; sfx('quest', 0); G.flash = .5; G.flashCol = '255,211,90'; for (let i = 0; i < 40; i++) P(G.p.x + 3 + frand(-60, 60), G.p.y - frand(10, 80), frand(-.5, .5), frand(.3, 1), 90, fpick(['#ffd35a', '#ff8a3d', '#fff1a8']), { glow: 1, g: .01 }); }
+  BR.phase = 'over'; BR.overT = 0; BR.winner = w ? w.name : ''; BR.winMe = !!(w && G.p && w.team === G.p.team);
+  if (BR.winMe) { BR.place = 1; G.banner = { text: w === G.p ? 'YOU ARE THE LAST EMBER' : 'YOUR PACT OUTLASTED THE ASHFALL', sub: G.p.kills + ' taken down. The ashfall settles.', t: 0 }; sfx('quest', 0); G.flash = .5; G.flashCol = '255,211,90'; for (let i = 0; i < 40; i++) P(G.p.x + 3 + frand(-60, 60), G.p.y - frand(10, 80), frand(-.5, .5), frand(.3, 1), 90, fpick(['#ffd35a', '#ff8a3d', '#fff1a8']), { glow: 1, g: .01 }); }
   else G.banner = { text: w ? w.name + ' IS THE LAST EMBER' : 'THE ASHFALL TOOK EVERYONE', sub: BR.place ? 'you placed #' + BR.place : '', t: 0 };
   if (w && w !== G.p) BR.spec = w;
 }
@@ -348,15 +382,36 @@ function brInput(p, I) {
   if (p.dead) return true;
   if (p.glide) { I.lp = I.rp = I.l = I.r = I.dodgeP = I.armP = I.jumpP = false; }
   if (p.brUse) { I.lp = I.rp = I.l = I.r = I.dodgeP = I.armP = false; I.md = 0; }
+  if (p.consume) { I.lp = I.rp = I.l = I.r = I.dodgeP = I.armP = I.jumpP = I.jumpH = false; I.md = 0; }
   const it = heldItem();
   if (it && it.type === 'brheal' && !UI.open) { if (I.lp && !p.brUse) brStartUse(p, it.id); I.lp = I.l = false; }
   if (!UI.open && !G.dialog) {
-    if (pressed.KeyF) { const c = brNearChest(p); if (c) brOpenChest(c, p); }
+    if (pressed.KeyF) { const c = brNearChest(p); if (c) brOpenChest(c, p); else { const s = brNearStation(p); if (s) openStation(s.x, s.y); } }
     if (pressed.KeyH) brQuickUse(p);
     if (pressed.KeyT) cycleArm(p);
+    if (pressed.KeyB) toggleUI('book');
+    if (pressed.KeyK && (hasItem('rock') || hasItem('flint'))) toggleUI('knap');
+    if (pressed.KeyP) brOfferPact(p);
   }
   return true;
 }
+function brOfferPact(p) {
+  if (BR.pactFrom) { brFormPact(BR.pactFrom); return; }
+  if (BR.teammate) { BR.note = 'PACT WITH ' + (NET.peers.get(BR.teammate)?.name || 'YOUR ALLY').toUpperCase(); BR.noteT = 120; return; }
+  let best = null, bd = 76;
+  for (const f of NET.peers.values()) { if (f.dead || f.gone || !f.brIn || f.team === p.team) continue; const d = hypot(f.x - p.x, f.y - p.y); if (d < bd) { bd = d; best = f; } }
+  if (!best) { BR.note = 'MOVE CLOSE TO A WAKER AND PRESS P TO OFFER A PACT'; BR.noteT = 150; sfx('deny'); return; }
+  BR.pactWith = best.peer; BR.note = 'PACT OFFER SENT TO ' + best.name.toUpperCase(); BR.noteT = 120; sfx('ui');
+}
+function brFormPact(id) {
+  const p = G.p, f = NET.peers.get(id); if (!p || !f || BR.teammate || BR.pactWith !== id && BR.pactFrom !== id) return;
+  const team = 'P:' + [brMe(), id].sort().map(v => String(v).replace(/[^\w-]/g, '').slice(0, 24)).join(':'); p.team = team; f.team = team; BR.teammate = id; BR.pactWith = ''; BR.pactFrom = '';
+  BR.note = 'PACT FORGED WITH ' + f.name.toUpperCase(); BR.noteT = 180; sfx('quest', 0); burst(p.x + 3, p.y + 8, 18, ['#8ff5e6', '#ffffff', '#ffd35a'], 2, 32, { glow: 1 });
+}
+function brTileChanged(i) { if (!BR.on || !WORLD.royale || BR.applying || !Number.isInteger(i) || i < 0 || i >= tiles.length) return; BR.tileOut.set(i, [i, tiles[i], walls[i]]); if (BR.tileOut.size > 1600) BR.tileOut.delete(BR.tileOut.keys().next().value); }
+function brTilePacket() { const a = []; for (const [i, v] of BR.tileOut) { a.push(v); BR.tileOut.delete(i); if (a.length >= 40) break; } return a; }
+function brQueueDrop(id, n, x, y, vx, vy) { if (!BR.on || !WORLD.royale || !IT[id] || BR.dropsOut.length >= 120) return; BR.dropsOut.push([++BR.dropSeq, id, n, round(x), round(y), round(vx || 0), round(vy || 0)]); }
+function brDropPacket() { return BR.dropsOut.splice(0, 18); }
 function brAfter(p, I) { brGlide(p, I); brTickUse(p); }
 // the camera follows whoever you are watching
 function brCamTarget() {

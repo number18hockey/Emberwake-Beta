@@ -318,7 +318,7 @@ function tickLink(f) {
 }
 function linkHit(k, st) {
   const f = k.f, e = k.e, W = heldOf(f); k.hits++;
-  const fin = st.final && k.hits >= (st.multi || 1), dmg = max(1, round(W.dmg * st.hit * (f.dmgMul || 1) * (f === G.p ? 1.1 : 1) * frand(.95, 1.05) * (e.fighter && WORLD.arena ? .85 : 1)));
+  const fin = st.final && k.hits >= (st.multi || 1), dmg = max(1, round(W.dmg * st.hit * combatDmgMul(f) * (f === G.p ? 1.1 : 1) * frand(.95, 1.05) * (e.fighter && WORLD.arena ? .85 : 1)));
   const end = fin ? k.L.end : null, kx = end ? end[0] * k.face : 0, ky = end ? end[1] : 0, hx = e.x + e.w / 2, hy = e.y + e.h * .45;
   if (fin && e.st) e.st.held = 0; if (fin && e.remote) netHit(e, 0, 0, 0, false, ['rel', 0, 0], f);
   if (st.fx === 'arrow' || st.fx === 'rain') { const sx = f.x + 3 + f.face * 5, sy = f.y + 7; for (let i = 0; i < (st.fx === 'rain' ? 2 : 1); i++) { const tx = hx + frand(-3, 3), ty = st.fx === 'rain' ? hy - 140 : hy, d = hypot(tx - sx, ty - sy) || 1; spawnProj({ type: 'arrow', ghost: true, owner: f, x: st.fx === 'rain' ? tx + frand(-10, 10) : sx, y: st.fx === 'rain' ? ty : sy, vx: st.fx === 'rain' ? 0 : (tx - sx) / d * 9, vy: st.fx === 'rain' ? 8 : (ty - sy) / d * 9, g: 0, r: 2, dmg: 0, life: 22 }); } fsx(f, 'bolt', 0); }

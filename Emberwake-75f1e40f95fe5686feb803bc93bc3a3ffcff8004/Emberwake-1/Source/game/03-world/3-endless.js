@@ -16,7 +16,7 @@
 // ============================================================
 const EW = 65536, EH = 360, CW = 64, NCH = EW / CW, X0 = EW / 2;
 const GEN_RANGE = [4, 7, 12], GEN_RANGE_N = ['Near', 'Normal', 'Far'], GEN_RANGE_D = ['the world forms 256 paces around you', 'the world forms 448 paces around you', 'the world forms 768 paces around you: heavier'];
-const BNAMES = ['', 'moor', 'thorn', 'reach', 'fen', 'dunes', 'scoria', 'ash'], BIDX = { moor: 1, thorn: 2, reach: 3, fen: 4, dunes: 5, scoria: 6, ash: 7 };
+const BNAMES = ['', 'moor', 'thorn', 'reach', 'fen', 'dunes', 'scoria', 'ash', 'mosswood', 'willowmere'], BIDX = { moor: 1, thorn: 2, reach: 3, fen: 4, dunes: 5, scoria: 6, ash: 7, mosswood: 8, willowmere: 9 };
 let CST = null, SURF = null, BIO = null, UD0 = 0, UD1 = 0, FORCE = [], FLATS = [], WINDOWS = [], BLADE_X = 0, SPIRE_X = 0;
 const LAKES = new Map(), PEND = { mods: new Map(), walls: new Map(), stn: new Map() };
 let GENQ = 0;
@@ -31,12 +31,15 @@ function climate(x) {
   for (const f of FORCE) { const w = smooth((f.r + 70 - abs(x - f.x)) / 70); if (w > 0) { t = lerp(t, f.t, w); h = lerp(h, f.h, w); } }
   return [t, h];
 }
-const bioOf = (t, h) => t < .34 ? 'reach' : t > .66 ? (h < .45 ? 'dunes' : h > .7 ? 'ash' : 'scoria') : h > .63 ? 'fen' : h < .37 ? 'thorn' : 'moor';
+const bioOf = (t, h) => t < .34 ? 'reach' : t > .66 ? (h < .45 ? 'dunes' : h > .7 ? 'ash' : 'scoria') : h > .68 ? 'fen' : h < .38 ? 'thorn' : h >= .59 && h < .68 ? 'willowmere' : h >= .47 && h < .59 ? 'mosswood' : 'moor';
 function bweights(t, h) {
   const cold = smooth((.38 - t) / .08), hot = smooth((t - .62) / .08), temp = max(0, 1 - cold - hot);
-  const wet = smooth((h - .59) / .08), dry = smooth((.41 - h) / .08), mid = max(0, 1 - wet - dry);
+  const wet = smooth((h - .68) / .08), dry = smooth((.38 - h) / .08), mid = max(0, 1 - wet - dry);
+  let grove = smooth((h - .45) / .04) * (1 - smooth((h - .56) / .04)), mere = smooth((h - .58) / .04) * (1 - smooth((h - .67) / .04));
+  const bands = grove + mere; if (bands > mid && bands > 0) { grove *= mid / bands; mere *= mid / bands; }
+  const plain = max(0, mid - grove - mere);
   const hw = smooth((h - .66) / .08), hd = smooth((.49 - h) / .08), hm = max(0, 1 - hw - hd);
-  return { reach: cold, moor: temp * mid, fen: temp * wet, thorn: temp * dry, dunes: hot * hd, scoria: hot * hm, ash: hot * hw };
+  return { reach: cold, moor: temp * plain, mosswood: temp * grove, willowmere: temp * mere, fen: temp * wet, thorn: temp * dry, dunes: hot * hd, scoria: hot * hm, ash: hot * hw };
 }
 function biomeE(x) {
   if (DIM) return dimBio(x);
@@ -47,6 +50,8 @@ function biomeE(x) {
 // ---------------- the shape of the land ----------------
 const LFN = {
   moor: x => (fbm(x * .0075, 21.3, 3) - .5) * 46 - max(0, fbm(x * .028, 4.1, 2) - .58) * 60,
+  mosswood: x => (fbm(x * .009, 25.3, 3) - .5) * 34 + (fbm(x * .024, 4.1, 2) - .5) * 12,
+  willowmere: x => 7 + (fbm(x * .011, 62.7, 2) - .5) * 8 + (fbm(x * .042, 4.1, 2) - .5) * 3,
   thorn: x => -4 + (fbm(x * .011, 71.3, 3) - .5) * 48 + (fbm(x * .05, 7.7, 2) - .5) * 6,
   reach: x => { const r = 1 - abs(fbm(x * .0058, 2.9, 3) * 2 - 1); return -14 - r * r * 72 - (fbm(x * .03, 2.9, 2) - .5) * 8; },
   scoria: x => { const n = (fbm(x * .0062, 31.1, 3) - .24) * 3.8, st = floor(n * 3) / 3, fr = n * 3 - floor(n * 3), lv = st + smooth((fr - .78) * 5) / 3; return 14 - max(0, lv) * 36 + (fbm(x * .06, 5.5, 2) - .5) * 2; },
@@ -55,7 +60,7 @@ const LFN = {
   ash: x => (fbm(x * .0075, 21.3, 3) - .5) * 30
 };
 // the lands' shapes blend over a long stretch, so one land rises out of the next instead of stepping up a cliff
-const HW = { moor: 0, thorn: 0, reach: 0, fen: 0, dunes: 0, scoria: 0, ash: 0 };
+const HW = { moor: 0, mosswood: 0, willowmere: 0, thorn: 0, reach: 0, fen: 0, dunes: 0, scoria: 0, ash: 0 };
 function Hraw(x) {
   for (const b in HW) HW[b] = 0;
   const g = GEN(), bl = g.blend;
@@ -73,7 +78,7 @@ function lakeOf(k) {
   let L = LAKES.get(k); if (L !== undefined) return L; L = null;
   if (hh(k, 501, SEED) < .5) {
     const c = k * 360 + 70 + floor(hh(k, 502, SEED) * 220), a = 13 + floor(hh(k, 503, SEED) * 14), D = 5 + floor(hh(k, 504, SEED) * 5), b = biomeE(c);
-    if ((b === 'moor' || b === 'fen' || b === 'thorn' || b === 'reach') && !WINDOWS.some(w => c + a + 20 > w[0] && c - a - 20 < w[1])) {
+    if ((b === 'moor' || b === 'fen' || b === 'willowmere' || b === 'thorn' || b === 'reach') && !WINDOWS.some(w => c + a + 20 > w[0] && c - a - 20 < w[1])) {
       const l = round(Hflat(c - a)), r = round(Hflat(c + a)), lv = max(l, r);   // full to the lower rim, never above it
       if (abs(l - r) < 8) L = { c, a, D, L: lv, ice: b === 'reach' };
     }
@@ -95,7 +100,7 @@ function protectDepth(x) { const w = inWindow(x, 4); return w ? w[2] : 0; }
 const mouthAt = x => { const k = floor(x / 90), c = k * 90 + 20 + floor(hh(k, 701, SEED) * 50); return hh(k, 702, SEED) < .35 && abs(x - c) < 5 && !inWindow(x, 30); };
 const shaftX = (k, y) => k * 200 + 40 + floor(hh(k, 602, SEED) * 120) + round((fbm(y * .08, k * 9.1, 2) - .5) * 6);
 // procedural structures: one cell per 150 columns, maybe a hut, a camp, a tower...
-const SKINDS = { moor: ['hut', 'camp', 'circle', 'tower', 'well', 'graves'], thorn: ['camp', 'hut', 'tower', 'circle'], reach: ['camp', 'circle', 'tower'], fen: ['stilt', 'stilt', 'hut'], dunes: ['dune', 'dune', 'well', 'graves'], scoria: ['tower', 'dune', 'graves', 'camp'], ash: ['graves', 'camp', 'circle'] };
+const SKINDS = { moor: ['hut', 'camp', 'circle', 'tower', 'well', 'graves'], mosswood: ['hut', 'camp', 'circle', 'well', 'den'], willowmere: ['stilt', 'stilt', 'hut', 'well', 'camp'], thorn: ['camp', 'hut', 'tower', 'circle'], reach: ['camp', 'circle', 'tower'], fen: ['stilt', 'stilt', 'hut'], dunes: ['dune', 'dune', 'well', 'graves'], scoria: ['tower', 'dune', 'graves', 'camp'], ash: ['graves', 'camp', 'circle'] };
 function structOf(k) { return pmemo('s' + k, () => structOf0(k)); }
 function structOf0(k) {
   const x = k * 150 + 30 + floor(hh(k, 802, SEED) * 90), nu = newLand(x - 16) && newLand(x + 16);
@@ -153,7 +158,7 @@ function terrainColumn(x) {
       if (d > 2) w = dl ? W_DEEP : clay ? W_SAND : (b === 'ash' && d < dd) ? W_ASH : deep ? W_STONE : W_DIRT;
       if (dl) t = abs(fbm(x * .05, y * .05 + 40, 3) - .5) < .018 ? DEEPGLOW : DEEPSTONE;
       else if (d < dd) t = b === 'reach' ? ((high || d < 2) ? (slope > 7 && d < 3 ? STONE : SNOW) : (slope > 8 && d < 3 ? STONE : DIRT)) : b === 'scoria' ? (d < 2 ? SAND : strata ? SANDSTONE : SAND) : b === 'ash' ? ASH
-        : b === 'fen' ? (d < 2 ? MUD : d < 5 ? PEAT : fbm(x * .08, y * .08 + 5, 2) > .55 ? CLAY : DIRT) : b === 'dunes' ? (d < 1 && fbm(x * .05, 9.9, 2) > .62 ? SALT : SAND)
+        : b === 'fen' || b === 'willowmere' ? (d < 2 ? MUD : d < 5 ? PEAT : fbm(x * .08, y * .08 + 5, 2) > .55 ? CLAY : DIRT) : b === 'dunes' ? (d < 1 && fbm(x * .05, 9.9, 2) > .62 ? SALT : SAND)
         : b === 'thorn' ? (fbm(x * .09, y * .09 + 3, 2) > .66 ? GRAVEL : slope > 9 && d < 3 ? STONE : DIRT) : (slope > 9 && d < 3 ? STONE : DIRT);
       else if ((b === 'scoria' || b === 'dunes') && d < dd + 20) t = strata ? SANDSTONE : SAND;
       else if (b === 'fen' && d < dd + 10 && fbm(x * .06, y * .06 + 11, 2) > .5) t = CLAY;
@@ -223,10 +228,10 @@ function decorColumn(x, hs, b, L) {
 }
 function treeColumn(x, hs, b) {
   const k = floor(x / 5); if (x !== k * 5 + floor(hh(k, 77, SEED) * 5)) return;
-  const ch = b === 'moor' ? .55 : b === 'thorn' ? .7 : b === 'reach' ? .35 : b === 'ash' ? .18 : b === 'fen' ? .14 : b === 'dunes' ? 0 : .1;
+  const ch = b === 'moor' ? .55 : b === 'mosswood' ? .68 : b === 'willowmere' || b === 'fen' ? .16 : b === 'thorn' ? .7 : b === 'reach' ? .35 : b === 'ash' ? .18 : b === 'dunes' ? 0 : .1;
   if (hh(k, 78, SEED) > ch || abs(surf(x - 1) - hs) > 1 || abs(surf(x + 1) - hs) > 1) return;
   const tp = tiles[hs * WW + x]; if (!TP[tp].solid || TP[tp].ghost) return;
-  const kind = b === 'thorn' ? 3 : b === 'moor' || b === 'fen' ? 0 : b === 'reach' ? 1 : 2, r = hh(k, 79, SEED), th = kind === 0 ? 6 + floor(r * 9) : kind === 1 ? 5 + floor(r * 6) : kind === 3 ? 5 + floor(r * 5) : 4 + floor(r * 5);
+  const kind = b === 'thorn' ? 3 : b === 'moor' || b === 'fen' || b === 'willowmere' || b === 'mosswood' ? 0 : b === 'reach' ? 1 : 2, r = hh(k, 79, SEED), th = kind === 0 ? 6 + floor(r * 9) : kind === 1 ? 5 + floor(r * 6) : kind === 3 ? 5 + floor(r * 5) : 4 + floor(r * 5);
   for (let y = 1; y <= th + 4; y++) { const t = tiles[(hs - y) * WW + x]; if (t !== AIR && !(TP[t].decor && !TP[t].dyn)) return; }
   for (let y = 1; y <= th; y++) tiles[(hs - y) * WW + x] = [TRUNK, TRUNK2, TRUNK3, TRUNK4][kind];
   treeTops.set(x, { y: hs - th, kind, v: floor(hh(k, 80, SEED) * 3), ph: hh(k, 81, SEED) * TAU });
@@ -267,7 +272,7 @@ function finishChunk(cx) {
   // things to see: foliage in front, stalactites and crystals behind
   for (let x = x0 + randi(0, 5); x < x1; x += randi(3, 8)) {
     if (RESV[x] > 1) continue; const h = heights[x], t = tileAt(x, h), b = biomeE(x); if (!TP[t].solid || TP[t].ghost || tileAt(x, h - 1) === WATER || tileAt(x, h - 1) !== AIR && !TP[tileAt(x, h - 1)].decor) continue;
-    if (b === 'dunes' && rand() < .7) continue; const set = FOL[b === 'ash' ? 'ash' : b === 'reach' ? 'reach' : b === 'scoria' || b === 'dunes' ? 'scoria' : 'moor']; fgOn(set[randi(0, set.length - 1)], x, h, { lit: 1 });
+    if (b === 'dunes' && rand() < .7) continue; const set = FOL[b] || FOL[b === 'scoria' || b === 'dunes' ? 'scoria' : 'moor']; fgOn(set[randi(0, set.length - 1)], x, h, { lit: 1 });
   }
   if (!PROPV) { PROPV = { st: [], cy: [] }; for (let k = 0; k < 12; k++) PROPV.st.push(PROP.stalactite(8 + round(k * 1.2), 100 + k)); for (let k = 0; k < 6; k++) PROPV.cy.push(PROP.crystal(k * 7 + 3)); }
   for (let k = 0, n = CW * WH / 700 | 0; k < n; k++) {

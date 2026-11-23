@@ -211,6 +211,10 @@ function cadenceHit(a, e, beat, hx, hy) {
   const f = a.f, root = e.root || e, step = beat || 1, refrain = step >= 3;
   f.cadence = { btn: a.btn, count: refrain ? 1 : step, until: G.time + CADENCE_WINDOW, set: a.setName };
   if (step < 2) return;
+  // A clean alternating hit buys back the next beat's stamina. A REFRAIN
+  // restores enough to restart the string, so rhythm is the way to sustain
+  // offense instead of holding the attack button.
+  f.stam = min(f.maxstam, f.stam + (refrain ? 16 : 9)); f.stamDelay = 0;
   const col = refrain ? '#ffd35a' : '#8ff5e6', word = refrain ? 'REFRAIN' : 'ECHO';
   numPop(hx, hy - 17, word, col, refrain ? 1.25 : 1); sparks(hx, hy, refrain ? 14 : 8, 0, 2.8, refrain ? ['#ffd35a', '#fff1a8', '#ff8a3d'] : ['#8ff5e6', '#c9fff6', '#ffd35a']);
   G.combo.pts += refrain ? 5 : 2;

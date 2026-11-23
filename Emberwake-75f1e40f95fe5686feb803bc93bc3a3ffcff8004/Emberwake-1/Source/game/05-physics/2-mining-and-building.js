@@ -13,7 +13,7 @@ const hittable = t => !!t && t !== BEDROCK && !TP[t].ghost && !TP[t].liquid && !
 const solidHit = t => hittable(t) && TP[t].solid && !TP[t].dyn;
 const areaHit = t => solidHit(t) || (hittable(t) && TP[t].stalk);
 const isWeb = t => !!TP[t].part && !TP[t].dyn;
-function dirtyAt(tx, ty) { const c = chunks.get(floor(ty / CH) * 8192 + floor(tx / CH)); if (c) c.dirty = true; if (MODS_ON) netTile(ty * WW + tx); }
+function dirtyAt(tx, ty) { const c = chunks.get(floor(ty / CH) * 8192 + floor(tx / CH)); if (c) c.dirty = true; if (MODS_ON) netTile(ty * WW + tx); if (WORLD.royale && typeof brTileChanged === 'function') brTileChanged(ty * WW + tx); }
 
 // ---------------- which tool is in your hand ----------------
 const reachOf = tool => WORLD.mode === 1 ? 72 : tool.kind === 'hand' ? 30 : tool.kind === 'knife' ? 32 : 38;
@@ -326,15 +326,30 @@ function toolTick(p, I) {
 }
 // ---------------- eating and the hunger it answers ----------------
 function eat(it) {
-  const p = G.p; if (p.eatCd > 0) return; if (!WORLD.mode && G.food >= 99 && !(it.heal > 0 && p.hp < p.maxhp) && !it.buff) { say('You are full.'); return; }
-  removeItem(it.id, 1); p.eatCd = 30; G.food = min(100, (G.food || 0) + (it.food || 0)); if (it.heal) { p.hp = min(p.maxhp, p.hp + it.heal); numPop(p.x + 3, p.y - 4, '+' + it.heal, '#7ddc6f'); }
+  const p = G.p; if (p.eatCd > 0 || p.consume || countItem(it.id) < 1) return; if (!WORLD.mode && G.food >= 99 && !(it.heal > 0 && p.hp < p.maxhp) && !it.buff) { say('You are full.'); return; }
+  if (it.brew === 'mirror' && ((p.cloneCd || 0) > 0 || G.fighters.some(f => f.isClone && !f.gone && !f.dead))) { say('Your mirror is still finding its way home.'); sfx('deny'); return; }
+  const drink = !!it.drink || it.brew || it.id === 'tonic' || it.id === 'antidote';
+  p.consume = { id: it.id, drink: !!drink, t: 0, dur: it.consumeT || (drink ? 48 : it.meal ? 38 : 28) }; p.eatCd = p.consume.dur + 12; p.vx *= .45;
+  sfx(drink ? 'stir' : 'ui', 0);
+}
+function finishEat(it) {
+  const p = G.p; if (!p || !it || countItem(it.id) < 1) return;
+  removeItem(it.id, 1); G.food = min(100, (G.food || 0) + (it.food || 0)); if (it.heal) { p.hp = min(p.maxhp, p.hp + it.heal); numPop(p.x + 3, p.y - 4, '+' + it.heal, '#7ddc6f'); }
   if (it.meal) startMeal(it);
   if (it.buff === 'tonic') p.tonic = 1800; if (it.buff === 'ward') { p.ward = 1800; if (p.st) p.st.poison = p.st.bleed = 0; } if (it.buff === 'bandage') { p.bandT = 600; if (p.st) p.st.bleed = 0; }
-  sfx('pickup', 0); for (let k = 0; k < 6; k++) P(p.x + 3, p.y + 6, frand(-.8, .8), frand(-1.2, -.3), 18, fpick(['#ffd35a', '#f4efe6', '#e2483b']), { g: .08 });
+  if (it.brew) drinkBrew(it.brew);
+  sfx('pickup', 0); for (let k = 0; k < 6; k++) P(p.x + 3, p.y + 6, frand(-.8, .8), frand(-1.2, -.3), 18, fpick(it.brew ? ['#8ff5e6', '#c9fff6', '#b49cff'] : ['#ffd35a', '#f4efe6', '#e2483b']), { g: .08 });
   G.flags['ate_' + it.id] = true;
 }
+function tickConsume(p) {
+  if (!p || !p.consume) return false; const u = p.consume, it = IT[u.id];
+  if (p.dead || p.hurtT > 0) { p.consume = null; p.eatCd = 0; if (p === G.p) say('Interrupted. You keep the food.'); return false; }
+  u.t++; p.vx *= .7;
+  if (u.t >= u.dur) { p.consume = null; finishEat(it); }
+  return true;
+}
 function tickHunger() {
-  const p = G.p; if (!p || p.dead || WORLD.arena || WORLD.mode === 1) return;
+  const p = G.p; if (!p || p.dead || WORLD.arena && !WORLD.royale || WORLD.mode === 1) return;
   if (p.eatCd > 0) p.eatCd--; if (p.tonic > 0) p.tonic--; if (p.ward > 0) p.ward--;
   if (p.bandT > 0) { p.bandT--; if (p.bandT % 15 === 0 && p.hp < p.maxhp) p.hp++; }
   const spent = max(0, (p.lastStam === undefined ? p.stam : p.lastStam) - p.stam); p.lastStam = p.stam;
@@ -363,7 +378,7 @@ function splash(tx, ty) { for (let k = 0; k < 8; k++) P(tx * T + 4, ty * T + 4, 
 // ---------------- moving: ladders, ropes, gliders, claws ----------------
 function climbAt(f) { const cx = floor((f.x + 3) / T); for (let y = floor((f.y + 2) / T); y <= floor((f.y + f.h - 1) / T); y++) if (TP[tileAt(cx, y)].climb) return true; return false; }
 function travelTick(f, I, grav) {
-  if (!f.isPlayer || WORLD.arena || f.dead) return grav;
+  if (!f.isPlayer || WORLD.arena && !WORLD.royale || f.dead) return grav;
   if (f.dragT > 0) { f.dragT--; f.vx = approach(f.vx, sign(f.dragX - (f.x + 3)) * 2.2, .35); }
   const onC = climbAt(f);
   if (onC && (I.jumpH && !f.onGround || I.down || (I.jumpH && f.onGround && !I.md))) f.climbing = true;
@@ -428,7 +443,7 @@ function drawPhys(w, al) {
   }
 }
 function drawAim(c, S) {
-  const p = G.p, it = heldItem(); if (!p || p.dead || UI.open || G.dialog || WORLD.arena || G.cine) return;
+  const p = G.p, it = heldItem(); if (!p || p.dead || UI.open || G.dialog || WORLD.arena && !WORLD.royale || G.cine) return;
   // the support web, shown while you hold building parts or a hammer
   if (it && ((it.type === 'block' && isWeb(it.tile)) || (it.type === 'tool' && it.kind === 'hammer'))) {
     const vx0 = floor(G.cam.x / T) - 1, vx1 = vx0 + ceil(VS.vw / T) + 2, vy0 = floor(G.cam.y / T) - 1, vy1 = vy0 + ceil(VS.vh / T) + 2;

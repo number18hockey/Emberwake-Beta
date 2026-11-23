@@ -679,6 +679,8 @@ function buildFoliage() {
   const weeds = (seed) => { const R = mulberry32(seed); const [c, x] = mk(12, 11); for (let k = 0; k < 4; k++) { let X = 1 + k * 3, Y = 10; const len = 5 + R() * 5; for (let i = 0; i < len; i++) { x.fillStyle = i > len - 2 ? '#f0b070' : '#a3482e'; x.fillRect(round(X), round(Y), 1, 1); Y--; if (i > len - 3) X += k & 1 ? 1 : -1; } } return outlined(c); };
   const fungi = (seed) => { const R = mulberry32(seed); const [c, x] = mk(12, 9); for (let k = 0; k < 3; k++) { const bx = 1 + k * 4 + (R() * 2 | 0), ht = 2 + (R() * 4 | 0); x.fillStyle = '#6b4a2f'; x.fillRect(bx + 1, 9 - ht, 1, ht); x.fillStyle = '#e2542b'; x.fillRect(bx - 1, 9 - ht - 2, 5, 2); x.fillStyle = '#ffb347'; x.fillRect(bx, 9 - ht - 3, 3, 1); } return outlined(c); };
   FOL.moor = [tuft(1, ['#ffc2a0', '#f06a55', '#c94a4e']), tuft(2, ['#ffc2a0', '#f06a55', '#c94a4e'], 12, 7), fern(3, '#2c575e', '#ffa07c'), fern(4, '#3a6f76', '#f06a55')];
+  FOL.mosswood = [fern(31, '#245a45', '#8bd27b'), fern(32, '#326f4e', '#b2e38a'), tuft(33, ['#d5d37a', '#6ba653', '#2c633d']), fungi(34)];
+  FOL.willowmere = [fern(41, '#477d70', '#b4e6c2'), tuft(42, ['#e0e5ac', '#80b99a', '#477d70'], 14, 8), fern(43, '#477d70', '#d2f2d2'), fungi(44)];
   FOL.reach = [shards(5), shards(6), tuft(7, ['#ffffff', '#dcf7f5', '#b4e6e8'], 12, 5)];
   FOL.scoria = [weeds(8), weeds(9), tuft(10, ['#f0b070', '#d67645', '#a3482e'], 12, 6)];
   FOL.ash = [tuft(11, ['#d6d0dc', '#a19baa', '#726c7c'], 12, 5), weeds(12)];
@@ -782,7 +784,7 @@ function buildSprites2() { buildProps(); buildFoliage(); buildFolk(); buildArms(
 const GRAVEL = 40, MUD = 41, PEAT = 42, TIN = 43, COAL = 44, SALT = 45, CLAY = 46, TRUNK4 = 47, REED = 48, BERRY = 49, BUSH = 50, PEBBLE = 51, STICKS = 52, BONES = 53, GEODE = 54,
   PACKED = 56, COBBLE = 57, CUTSTONE = 58, MUDBRICK = 59, LOGWALL = 60, WATTLE = 61, THATCH = 62, WINDOW = 63, BEAM = 64, BEAMH = 65, DOORC = 66, DOORO = 67, LADDER = 68, ROPE = 69, CINDERBRICK = 70,
   CHEST = 72, BEDROLL = 73, FIRE = 74, WHEEL = 75, QUERN = 76, BLOOMERY = 77, ANVIL = 78, ANVIL2 = 79, LOOM = 80, RACK = 81, CAULDRON = 82, MASON = 83, SIEVE = 84, WAYSTONE = 85, CHARGE = 86,
-  CREEPER = 87, GLASSROOT = 88, RUSTCHAIN = 89, POST = 90;
+  CREEPER = 87, GLASSROOT = 88, RUSTCHAIN = 89, POST = 90, BREW_STAND = 91, MOON_CAULDRON = 92;
 const W_WATTLE = 10, W_MUDB = 11, W_COBBLE = 12, W_CUT = 13, W_LOG = 14;
 defT(GRAVEL, { name: 'Gravel', solid: true, full: true, hard: 12, hi: '#8a8296', dust: '#6b6478' });
 defT(MUD, { name: 'Fen Mud', solid: true, full: true, hard: 12, hi: '#6f5a66', dust: '#4a3438' });
@@ -824,7 +826,8 @@ defStn(WHEEL, 'Potter\'s Wheel', 'wheel'); defStn(QUERN, 'Quern', 'quern', { dus
 defStn(ANVIL, 'Stone Anvil', 'anvil', { dust: '#8d8794' }); defStn(ANVIL2, 'Iron Anvil', 'anvil2', { dust: '#5f5a69' }); defStn(LOOM, 'Loom', 'loom'); defStn(RACK, 'Drying Rack', 'rack');
 defStn(CAULDRON, 'Cauldron', 'cauldron', { dust: '#a0786a' }); defStn(MASON, 'Mason\'s Bench', 'mason', { dust: '#8d8794' }); defStn(SIEVE, 'Sieve', 'sieve');
 defStn(WAYSTONE, 'Waystone', 'waystone', { light: [.3, .2, .55], dust: '#8a84a0' }); defStn(CHARGE, 'Blasting Charge', null, { hard: 1 }); defStn(POST, 'Practice Post', 'post', { dust: '#8a6a48' });
-const STATIONS = { [BENCH]: 'bench', [FURNACE]: 'kiln', [FIRE]: 'fire', [WHEEL]: 'wheel', [QUERN]: 'quern', [BLOOMERY]: 'bloom', [ANVIL]: 'anvil', [ANVIL2]: 'anvil', [LOOM]: 'loom', [RACK]: 'rack', [CAULDRON]: 'pot', [MASON]: 'mason', [SIEVE]: 'sieve', [CHEST]: 'chest', [WAYSTONE]: 'way', [POST]: 'train' };
+defStn(BREW_STAND, 'Brewer’s Stand', 'brewstand', { dust: '#8fd0d8', light: [.08, .2, .22] }); defStn(MOON_CAULDRON, 'Moon Cauldron', 'moon_cauldron', { dust: '#a58ae0', light: [.18, .1, .3] });
+const STATIONS = { [BENCH]: 'bench', [FURNACE]: 'kiln', [FIRE]: 'fire', [WHEEL]: 'wheel', [QUERN]: 'quern', [BLOOMERY]: 'bloom', [ANVIL]: 'anvil', [ANVIL2]: 'anvil', [LOOM]: 'loom', [RACK]: 'rack', [CAULDRON]: 'pot', [BREW_STAND]: 'pot', [MOON_CAULDRON]: 'pot', [MASON]: 'mason', [SIEVE]: 'sieve', [CHEST]: 'chest', [WAYSTONE]: 'way', [POST]: 'train' };
 TP[BENCH].part = 1; TP[FURNACE].part = 1; TP[PLANK].part = 1; TP[BRICK].part = 1; TP[PLATFORM].part = 1;
 
 // ---------------- what mining sees ----------------
@@ -855,7 +858,7 @@ defM(GEODE, { hp: 10, tier: 3, k: 'glass', y: [['snow', 2], ['rock', .5]] });
 defM([TRUNK, TRUNK2, TRUNK3, TRUNK4], { hp: 6, tier: 1, k: 'wood', y: [['log', 1]] });
 defM([PLANK, LOGWALL, WATTLE, THATCH, BEAM, BEAMH, DOORC, DOORO, LADDER, ROPE, PLATFORM, CHEST, BEDROLL, WHEEL, LOOM, RACK, SIEVE, BENCH], { hp: 4, k: 'wood' });
 defM([PACKED], { hp: 4, k: 'soil' }); defM([MUDBRICK], { hp: 5, k: 'clay' });
-defM([COBBLE, CUTSTONE, BRICK, QUERN, ANVIL, MASON, WAYSTONE, FURNACE, FIRE, BLOOMERY, CAULDRON], { hp: 7, tier: 1, k: 'stone' });
+defM([COBBLE, CUTSTONE, BRICK, QUERN, ANVIL, MASON, WAYSTONE, FURNACE, FIRE, BLOOMERY, CAULDRON, BREW_STAND, MOON_CAULDRON], { hp: 7, tier: 1, k: 'stone' });
 defM([CINDERBRICK, ANVIL2], { hp: 9, tier: 2, k: 'stone' }); defM([WINDOW], { hp: 2, k: 'glass' });
 MAT[PLANK].y = [['plank', 1]]; MAT[BRICK].y = [['brick', 1]]; MAT[PLATFORM].y = [['platform', 1]];
 for (let t = 0; t < TP.length; t++) if (TP[t] && TP[t].part && TP[t].drop && MAT[t] && !MAT[t].y.length) MAT[t].y = [[TP[t].drop, 1]];
@@ -899,7 +902,7 @@ function buildTiles3() {
   TEX[PEBBLE] = genTex((px, py, v) => { const pts = [[1 + v % 2, 6], [4, 6 + (v >> 1) % 2], [6 - v % 2, 7]]; for (const [cx, cy] of pts) { const d = abs(px - cx) + abs(py - cy); if (d === 0) return '#8a8296'; if (d === 1 && py >= cy) return '#4a4458'; } return null; });
   TEX[STICKS] = genTex((px, py, v) => { if (py === 7 - ((px + v) >> 2) && px < 7) return '#7a5a40'; if (py === 5 + ((px + v) >> 2) % 3 && px > 1 && px < 7 && (px + v) % 3) return '#5a4030'; return null; });
   TEX[BONES] = genTex((px, py, v) => { if (py === 6 && px > 0 && px < 7) return '#e6dccc'; if ((py === 5 || py === 7) && (px === 1 || px === 6)) return '#c9bca6'; if (py === 7 - abs(px - 4) && v > 1 && py > 4) return '#d8ccb8'; return null; });
-  for (const id of [CHEST, BEDROLL, FIRE, WHEEL, QUERN, BLOOMERY, ANVIL, ANVIL2, LOOM, RACK, CAULDRON, MASON, SIEVE, WAYSTONE, CHARGE, POST]) TEX[id] = TEX[DIRT];
+  for (const id of [CHEST, BEDROLL, FIRE, WHEEL, QUERN, BLOOMERY, ANVIL, ANVIL2, LOOM, RACK, CAULDRON, MASON, SIEVE, WAYSTONE, CHARGE, POST, BREW_STAND, MOON_CAULDRON]) TEX[id] = TEX[DIRT];
   TEX[CREEPER] = genTex((px, py, v) => { const vx = 3 + round(sin((py + v * 3) * .9)); if (px === vx) return '#2c4a34'; if (abs(px - vx) === 1 && (py + v) % 3 === 0) return '#5a9a5e'; if (abs(px - vx) === 2 && (py + v) % 3 === 1) return hh(px, py, 361 + v) > .4 ? '#3a7a52' : null; return null; });
   TEX[GLASSROOT] = genTex((px, py, v) => { const vx = 3 + ((py + v) % 4 < 2 ? 0 : 1); if (px === vx) return '#62a9bc'; if (px === vx + 1 && (py + v) % 4 === 1) return '#c9fff6'; if (px === vx - 1 && (py + v) % 5 === 2) return '#8fd0d8'; return null; });
   TEX[RUSTCHAIN] = genTex((px, py, v) => { const k = (py + v) % 4; if ((px === 3 || px === 4) && (k === 0 || k === 2)) return k === 0 ? '#bd5a36' : '#7a3222'; if ((px === 2 || px === 5) && k === 1) return '#d67645'; return py % 8 === 0 && px === 4 ? '#5f5a69' : null; });
@@ -937,6 +940,8 @@ function buildStationSprites() {
   S(LOOM, ['a..........a', 'aaaaaaaaaaaa', 'a.e.e.e.e..a', 'a.e.e.e.e..a', 'a.ffffffff.a', 'a.e.e.e.e..a', 'a.e.e.e.e..a', 'aaaaaaaaaaaa', 'a..........a', 'a..........a', 'aa........aa'], { a: '#7a5a40', e: '#e8d8b0', f: '#c94a4e' }, -2, -3);
   S(RACK, ['a..........a', 'aaaaaaaaaaaa', 'a..........a', 'a..........a', 'a..........a', 'a..........a', 'a..........a', 'aa........aa'], { a: '#7a5a40' }, -2, 0);
   S(CAULDRON, ['.aaaaaaaa.', 'abbbbbbbbc', 'abbbbbbbbc', '.bbbbbbbc.', '..cccccc..', '.d......d.', 'd........d'], { a: '#8d8794', b: '#5f5a69', c: '#3f3a4c', d: '#2a2436' }, -1, 1);
+  S(BREW_STAND, ['....e....', '...ebe...', '..abfba..', '...bfb...', '...bfb...', '.aabbbba.', '..cc.cc..', '..cc.cc..'], { a: '#8a6a48', b: '#5f5a69', c: '#3a3448', e: '#8ff5e6', f: '#c9fff6' }, -1, 1);
+  S(MOON_CAULDRON, ['..eeee..', '.eaaaee.', 'eabbbbae', 'eabffbae', '.abffba.', '..cccc..', '.d....d.', 'd......d'], { a: '#a58ae0', b: '#5a4a8a', c: '#3d2f5c', d: '#24182f', e: '#e0d2ff', f: '#8ff5e6' }, -1, 0);
   S(MASON, ['......h.....', '..aaaaaaaa..', '.abbbbbbbbc.', 'dddddddddddd', '.d........d.', '.d........d.', '.dd......dd.'], { a: '#c0bac8', b: '#8a8496', c: '#5f5a69', d: '#5a4030', h: '#cfd6e0' }, -2, 1);
   S(SIEVE, ['a........a', 'aeaeaeaeaa', 'aaaaaaaaaa', '.d......d.', '.d......d.', 'dd......dd'], { a: '#7a5a40', e: '#c9a44a', d: '#5a4030' }, -1, 2);
   S(WAYSTONE, ['..aaaa..', '.abbbbc.', '.abbbbc.', '.abebbc.', '.abeebc.', '.abbebc.', '.abebbc.', '.abbbbc.', '.abbbbc.', 'abbbbbbc', 'abbbbbbc', 'dddddddd'], { a: '#c0bac8', b: '#8a84a0', c: '#5f5a69', d: '#3f3a4c', e: '#b49cff' }, 0, -4);
@@ -967,7 +972,7 @@ let FORGE_X = 0, FORGE_Y = 0, SKY_X = 0, SKY_Y = 0, MINE_X = 0, MINE_Y = 0, road
 const SIZES = [[600, 260], [900, 320], [1400, 380], [2200, 440]], SIZE_N = ['Small', 'Medium', 'Large', 'Vast'], SHAPE_N = ['Balanced', 'Skylands', 'Hollows'], MODE_N = ['Journey', 'Free Forge'];
 const WORLD = { id: '', name: '', seed: 0, size: 1, shape: 0, mode: 0, arena: false };
 const ARENA_SPAWNS = [[18, 58], [131, 58], [75, 48], [44, 43], [105, 43], [75, 38]];
-const BIOME = { reach: 'STILLGLASS REACH', moor: 'EMBERFELT MOOR', scoria: 'RUSTFALL', ash: 'ASHEN HOLLOW', drift: 'THE DRIFT', under: 'THE UNDERDARK', deep: 'THE DEEP', ring: 'THE CINDER RING', village: 'HEARTHHOLD' };
+const BIOME = { reach: 'STILLGLASS REACH', moor: 'EMBERFELT MOOR', mosswood: 'MOSSWOOD', willowmere: 'WILLOWMERE', scoria: 'RUSTFALL', ash: 'ASHEN HOLLOW', drift: 'THE DRIFT', under: 'THE UNDERDARK', deep: 'THE DEEP', ring: 'THE CINDER RING', village: 'HEARTHHOLD' };
 // visual layers and set pieces, rebuilt from the seed every time a world loads
 const STRUCTS = [], PROPS = [], FGP = [], VENTS = [], SPOTS = {}, LANDMARKS = [], ISLES = [];
 let PROPB = new Map(), FGPB = new Map();
@@ -981,7 +986,7 @@ const segOf = b => { let best = null; for (const s of SEGS) if (s.b === b && (!b
 // a new order of lands for every seed: the village always sits on temperate ground near the middle;
 // there is always a glass range (the Mirror Court), a rust country (the mine) and the ash crater by the village
 function layoutBiomes(small) {
-  const n = WORLD.size === 0 ? 5 : WORLD.size === 1 ? 7 : 9, extra = ['moor', 'fen', 'thorn', 'dunes', 'reach', 'scoria', 'thorn', 'fen', 'dunes', 'moor'];
+  const n = WORLD.size === 0 ? 5 : WORLD.size === 1 ? 7 : 9, extra = ['moor', 'fen', 'thorn', 'dunes', 'reach', 'scoria', 'mosswood', 'willowmere', 'thorn', 'fen', 'dunes', 'moor'];
   CRATER_R = small ? 36 : 44; VIL_W = small ? 38 : 46;
   let seq, mid; for (let tries = 0; tries < 80; tries++) {
     const pool = ['reach', 'scoria']; while (pool.length < n - 1) pool.push(extra[randi(0, extra.length - 1)]);
@@ -1019,6 +1024,7 @@ function setTile(x, y, id) {
   if (!inW(x, y)) return; const i = y * WW + x, old = tiles[i]; if (old === id) return;
   tiles[i] = id; if (MODS_ON) { MODS.set(i, id); netTile(i); } if (CHIP.size) CHIP.delete(i);
   if (TP[old].dyn) tileObjs.delete(i); if (TP[id].dyn) tileObjs.set(i, { x, y, id });
+  if (WORLD.royale && typeof brTileChanged === 'function') brTileChanged(i);
   for (const [dx, dy] of [[0, 0], [1, 0], [-1, 0], [0, 1], [0, -1]]) { const c = chunks.get(floor((y + dy) / CH) * 8192 + floor((x + dx) / CH)); if (c) c.dirty = true; }
   if (MODS_ON && !TP[id].liquid) wakeLiquid(x, y);
 }
@@ -1095,6 +1101,8 @@ function genWorldLegacy() {
   const peaks = []; for (const sg of SEGS) if (sg.b === 'reach') { let x = sg.x0 + rand(12); while (x < sg.x1 - 4) { peaks.push([x, rand(36, 80), rand(26, 40)]); x += rand(30, 52); } }
   const LF = {
     moor: x => B + (fbm(x * .0065, 21.3, 3) - .5) * 84 - max(0, fbm(x * .028, 4.1, 2) - .56) * 95 + (fbm(x * .06, 8.3, 2) - .5) * 5,
+    mosswood: x => B + (fbm(x * .0065, 26.3, 3) - .5) * 68 - max(0, fbm(x * .028, 14.1, 2) - .58) * 62 + (fbm(x * .06, 18.3, 2) - .5) * 4,
+    willowmere: x => B + 12 + (fbm(x * .012, 61.7, 2) - .5) * 9 + (fbm(x * .05, 3.1, 2) - .5) * 3,
     reach: x => { let m = 0; for (const [px, ph, pw] of peaks) { const t = max(0, 1 - abs(x - px) / pw); m = max(m, ph * (t > .9 ? .95 + (t - .9) * .5 : t * t * (2.2 - 1.2 * t) / 1.08)); } const r2 = max(0, 1 - abs(fbm(x * .03, 2.9, 3) - .5) * 4); return B - 8 - m - pow(r2, 2) * 9 * smooth(m / 20); },
     scoria: x => { const n = (fbm(x * .0062, 31.1, 3) - .22) * 3.8, st = floor(n * 3) / 3, fr = n * 3 - floor(n * 3), lv = st + smooth((fr - .8) * 5) / 3; return B + 14 - max(0, lv) * 40 + (fbm(x * .06, 5.5, 2) - .5) * 2; },
     fen: x => B + 12 + (fbm(x * .012, 61.7, 2) - .5) * 9 + (fbm(x * .05, 3.1, 2) - .5) * 3,
@@ -1142,10 +1150,10 @@ function genWorldLegacy() {
       if (y >= WH - 3) t = BEDROCK;
       else if (dl) t = abs(fbm(x * .05, y * .05 + 40, 3) - .5) < .018 ? DEEPGLOW : DEEPSTONE;
       else if (d < dd) t = b === 'reach' ? ((high || d < 2) ? (slope > 7 && d < 3 ? STONE : SNOW) : (slope > 8 && d < 3 ? STONE : DIRT)) : b === 'scoria' ? (d < 2 ? SAND : strata ? SANDSTONE : SAND) : b === 'ash' ? ASH
-        : b === 'fen' ? (d < 2 ? MUD : d < 5 ? PEAT : fbm(x * .08, y * .08 + 5, 2) > .55 ? CLAY : DIRT) : b === 'dunes' ? (d < 1 && fbm(x * .05, 9.9, 2) > .62 ? SALT : SAND)
+        : b === 'fen' || b === 'willowmere' ? (d < 2 ? MUD : d < 5 ? PEAT : fbm(x * .08, y * .08 + 5, 2) > .55 ? CLAY : DIRT) : b === 'dunes' ? (d < 1 && fbm(x * .05, 9.9, 2) > .62 ? SALT : SAND)
         : b === 'thorn' ? (fbm(x * .09, y * .09 + 3, 2) > .66 ? GRAVEL : slope > 9 && d < 3 ? STONE : DIRT) : (slope > 9 && d < 3 ? STONE : DIRT);
       else if ((b === 'scoria' || b === 'dunes') && d < dd + 20) t = strata ? SANDSTONE : b === 'dunes' && d < dd + 8 ? SAND : SAND;
-      else if (b === 'fen' && d < dd + 10 && fbm(x * .06, y * .06 + 11, 2) > .5) t = CLAY;
+      else if ((b === 'fen' || b === 'willowmere') && d < dd + 10 && fbm(x * .06, y * .06 + 11, 2) > .5) t = CLAY;
       else t = clay ? SANDSTONE : !deep ? DIRT : fbm(x * .06, y * .06 + 20, 2) > .7 ? DIRT : STONE;
       tiles[i] = t;
     }
@@ -1191,7 +1199,7 @@ function genWorldLegacy() {
     reserve(cx - w0, cx + w0, 1);
   };
   const free = (x, r) => x - r > 8 && x + r < WW - 8 && !nearFlat(x) && abs(x - SPAWN_X) > VIL_W + r + 16 && !RESV[x] && abs(x - SKY_X) > 40;
-  for (let k = 0, tries = 0, n = max(1, WW / 420 | 0) + (shape === 2 ? 1 : 0); k < n && tries < 80; tries++) { const x = randi(20, WW - 20), b = biomeAt(x); if (b === 'ash' || b === 'scoria' || b === 'dunes' || b === 'fen' || !free(x, 8)) continue; chasm(x, randi(4, 7), randi(30, 52), false); k++; }
+  for (let k = 0, tries = 0, n = max(1, WW / 420 | 0) + (shape === 2 ? 1 : 0); k < n && tries < 80; tries++) { const x = randi(20, WW - 20), b = biomeAt(x); if (b === 'ash' || b === 'scoria' || b === 'dunes' || b === 'fen' || b === 'willowmere' || !free(x, 8)) continue; chasm(x, randi(4, 7), randi(30, 52), false); k++; }
   for (let k = 0, tries = 0, n = small ? 1 : 2; k < n && tries < 120; tries++) { const x = randi(20, WW - 20), b = biomeAt(x); if ((b !== 'scoria' && b !== 'dunes') || !free(x, 10) || abs(x - MINE_X) < 26 || abs(x - GATE_X) < 26) continue; chasm(x, randi(9, 13), randi(26, 38), true); k++; }
   // ---- natural arches ----
   const arch = (ax, A, H, th) => {
@@ -1203,7 +1211,7 @@ function genWorldLegacy() {
     reserve(ax - A, ax + A, 1);
   };
   for (let k = 0, tries = 0, n = small ? 2 : 3; k < n && tries < 120; tries++) {
-    const x = randi(30, WW - 31), A = randi(8, 13); if (!free(x, A + 2) || biomeAt(x) === 'ash' || biomeAt(x) === 'fen') continue;
+    const x = randi(30, WW - 31), A = randi(8, 13); if (!free(x, A + 2) || biomeAt(x) === 'ash' || biomeAt(x) === 'fen' || biomeAt(x) === 'willowmere') continue;
     if (abs(heights[x - A] - heights[x]) > 3 || abs(heights[x + A] - heights[x]) > 3) continue; arch(x, A, randi(8, 12), randi(3, 4)); k++;
   }
   // ---- lakes: bowls dug into the moor, filled to the lower rim ----
@@ -1218,7 +1226,7 @@ function genWorldLegacy() {
     reserve(lx - a - 2, lx + a + 2, 1);
   };
   for (let k = 0, tries = 0, n = (small ? 2 : WW > 1200 ? 4 : 3) + SEGS.filter(q => q.b === 'fen').length * 2; k < n && tries < 220; tries++) {
-    const x = randi(20, WW - 20), a = randi(8, 15), b = biomeAt(x); if (!free(x, a + 3) || !(b === 'moor' || b === 'fen' || b === 'thorn')) continue;
+    const x = randi(20, WW - 20), a = randi(8, 15), b = biomeAt(x); if (!free(x, a + 3) || !(b === 'moor' || b === 'mosswood' || b === 'fen' || b === 'willowmere' || b === 'thorn')) continue;
     let lo = 1e9, hi = -1e9; for (let dx = -a - 1; dx <= a + 1; dx++) { lo = min(lo, heights[x + dx]); hi = max(hi, heights[x + dx]); } if (hi - lo > 9) continue;
     lake(x, a, randi(4, 7)); k++;
   }
@@ -1229,7 +1237,7 @@ function genWorldLegacy() {
   // each land has its own underneath: frost-crystal under the Reach, coal seams under the moor, cinder pockets under the ash,
   // clay and peat under the fen, gravel beds under the thorns, salt pans under the dunes
   for (let k = 0; k < 320 * oreK; k++) {
-    let x = randi(4, WW - 5); const b = biomeAt(x), id = b === 'reach' ? GEODE : b === 'moor' ? COAL : b === 'ash' || b === 'scoria' ? (rng() < .25 ? EMBER : COAL) : b === 'fen' ? (rng() < .5 ? CLAY : PEAT) : b === 'thorn' ? GRAVEL : b === 'dunes' ? SALT : 0; if (!id) continue;
+    let x = randi(4, WW - 5); const b = biomeAt(x), id = b === 'reach' ? GEODE : b === 'moor' || b === 'mosswood' ? COAL : b === 'ash' || b === 'scoria' ? (rng() < .25 ? EMBER : COAL) : b === 'fen' || b === 'willowmere' ? (rng() < .5 ? CLAY : PEAT) : b === 'thorn' ? GRAVEL : b === 'dunes' ? SALT : 0; if (!id) continue;
     let y = heights[x] + randi(b === 'reach' || id === EMBER ? 24 : 8, b === 'reach' ? 90 : 60); if (y > WH - 8) continue;
     for (let n = randi(4, id === GEODE || id === EMBER ? 7 : 13); n > 0; n--) { const t = tileAt(x, y); if (t === STONE || t === DIRT || t === SANDSTONE) tiles[y * WW + x] = id; x += randi(-1, 1); y += randi(-1, 1); if (x < 1 || x >= WW - 1) break; }
   }
@@ -1286,9 +1294,9 @@ function genWorldLegacy() {
   let lastTree = -9;
   for (let x = 3; x < WW - 3; x++) {
     const h = heights[x], b = biomeAt(x), tp = tileAt(x, h); if (RESV[x] || tileAt(x, h - 1) !== AIR || nearFlat(x) && flatK(x) > .5) continue;
-    const ch = b === 'moor' ? .3 : b === 'thorn' ? .45 : b === 'reach' ? .2 : b === 'ash' ? .1 : b === 'fen' ? .08 : b === 'dunes' ? 0 : .06;
+    const ch = b === 'moor' ? .3 : b === 'mosswood' ? .55 : b === 'thorn' ? .45 : b === 'reach' ? .2 : b === 'ash' ? .1 : b === 'fen' ? .08 : b === 'willowmere' ? .12 : b === 'dunes' ? 0 : .06;
     if (abs(heights[x - 1] - h) <= 1 && abs(heights[x + 1] - h) <= 1 && x - lastTree > 3 && TP[tp].solid && !TP[tp].ghost && rand() < ch) {
-      const kind = b === 'thorn' ? 3 : b === 'moor' || b === 'fen' ? 0 : b === 'reach' ? 1 : 2, th = kind === 0 ? randi(6, 14) : kind === 1 ? randi(5, 10) : kind === 3 ? randi(5, 9) : randi(4, 8); let ok = true;
+      const kind = b === 'thorn' ? 3 : b === 'moor' || b === 'mosswood' || b === 'fen' || b === 'willowmere' ? 0 : b === 'reach' ? 1 : 2, th = kind === 0 ? randi(6, 14) : kind === 1 ? randi(5, 10) : kind === 3 ? randi(5, 9) : randi(4, 8); let ok = true;
       for (let y = 1; y <= th + 4; y++) if (tileAt(x, h - y) !== AIR) ok = false;
       if (ok) { for (let y = 1; y <= th; y++) tiles[(h - y) * WW + x] = [TRUNK, TRUNK2, TRUNK3, TRUNK4][kind]; treeTops.set(x, { y: h - th, kind, v: randi(0, 2), ph: rand(TAU) }); lastTree = x; }
     }
@@ -1611,7 +1619,7 @@ function chestAt(x, y, key) { if (!inW(x, y)) return; dyn(x, y, CHEST); LOOT.set
 function groundAt(x) { let y = max(2, heights[x] - 26); while (y < WH - 4 && !TP[tiles[y * WW + x]].solid) y++; return y; }
 function buildStructures(free) {
   const n = WORLD.size === 0 ? 9 : WORLD.size === 1 ? 13 : 20, made = {};
-  const KINDS = { moor: ['hut', 'camp', 'circle', 'tower', 'well', 'graves'], thorn: ['camp', 'hut', 'tower', 'circle'], reach: ['camp', 'circle', 'tower'], fen: ['stilt', 'stilt', 'hut'], dunes: ['dune', 'dune', 'well', 'graves'], scoria: ['tower', 'dune', 'camp'], ash: ['graves'] };
+  const KINDS = { moor: ['hut', 'camp', 'circle', 'tower', 'well', 'graves'], mosswood: ['hut', 'camp', 'circle', 'well', 'den'], willowmere: ['stilt', 'stilt', 'hut', 'wreck'], thorn: ['camp', 'hut', 'tower', 'circle'], reach: ['camp', 'circle', 'tower'], fen: ['stilt', 'stilt', 'hut'], dunes: ['dune', 'dune', 'well', 'graves'], scoria: ['tower', 'dune', 'camp'], ash: ['graves'] };
   for (let k = 0, tries = 0; k < n && tries < n * 40; tries++) {
     const x = randi(24, WW - 30), b = biomeAt(x), kinds = KINDS[b]; if (!kinds || !free(x, 9)) continue;
     let kind = kinds[randi(0, kinds.length - 1)]; if ((made[kind] || 0) > n / 3) continue;
@@ -1715,7 +1723,7 @@ function skyRuins() {
 
 // cliffs a Waker cannot jump get a way up: low ones grow a talus of steps, tall ones carry ivy, glass roots or old chains
 function makeTraversable() {
-  const fill = x => { const b = biomeAt(x); return b === 'reach' ? SNOW : b === 'scoria' || b === 'dunes' ? SAND : b === 'ash' ? ASH : b === 'fen' ? MUD : DIRT; };
+  const fill = x => { const b = biomeAt(x); return b === 'reach' ? SNOW : b === 'scoria' || b === 'dunes' ? SAND : b === 'ash' ? ASH : b === 'fen' || b === 'willowmere' ? MUD : DIRT; };
   const aid = x => { const b = biomeAt(x); return b === 'reach' ? GLASSROOT : b === 'scoria' || b === 'dunes' || b === 'ash' ? RUSTCHAIN : CREEPER; };
   const free = x => x > 0 && x < WW - 1 && (RESV[x] | 0) < 2, soft = i => !tiles[i] || (TP[tiles[i]].decor && !TP[tiles[i]].dyn);
   const S = new Int16Array(WW);
@@ -1758,7 +1766,7 @@ function makeTraversable() {
 // ============================================================
 const EW = 65536, EH = 360, CW = 64, NCH = EW / CW, X0 = EW / 2;
 const GEN_RANGE = [4, 7, 12], GEN_RANGE_N = ['Near', 'Normal', 'Far'], GEN_RANGE_D = ['the world forms 256 paces around you', 'the world forms 448 paces around you', 'the world forms 768 paces around you: heavier'];
-const BNAMES = ['', 'moor', 'thorn', 'reach', 'fen', 'dunes', 'scoria', 'ash'], BIDX = { moor: 1, thorn: 2, reach: 3, fen: 4, dunes: 5, scoria: 6, ash: 7 };
+const BNAMES = ['', 'moor', 'thorn', 'reach', 'fen', 'dunes', 'scoria', 'ash', 'mosswood', 'willowmere'], BIDX = { moor: 1, thorn: 2, reach: 3, fen: 4, dunes: 5, scoria: 6, ash: 7, mosswood: 8, willowmere: 9 };
 let CST = null, SURF = null, BIO = null, UD0 = 0, UD1 = 0, FORCE = [], FLATS = [], WINDOWS = [], BLADE_X = 0, SPIRE_X = 0;
 const LAKES = new Map(), PEND = { mods: new Map(), walls: new Map(), stn: new Map() };
 let GENQ = 0;
@@ -1773,12 +1781,15 @@ function climate(x) {
   for (const f of FORCE) { const w = smooth((f.r + 70 - abs(x - f.x)) / 70); if (w > 0) { t = lerp(t, f.t, w); h = lerp(h, f.h, w); } }
   return [t, h];
 }
-const bioOf = (t, h) => t < .34 ? 'reach' : t > .66 ? (h < .45 ? 'dunes' : h > .7 ? 'ash' : 'scoria') : h > .63 ? 'fen' : h < .37 ? 'thorn' : 'moor';
+const bioOf = (t, h) => t < .34 ? 'reach' : t > .66 ? (h < .45 ? 'dunes' : h > .7 ? 'ash' : 'scoria') : h > .68 ? 'fen' : h < .38 ? 'thorn' : h >= .59 && h < .68 ? 'willowmere' : h >= .47 && h < .59 ? 'mosswood' : 'moor';
 function bweights(t, h) {
   const cold = smooth((.38 - t) / .08), hot = smooth((t - .62) / .08), temp = max(0, 1 - cold - hot);
-  const wet = smooth((h - .59) / .08), dry = smooth((.41 - h) / .08), mid = max(0, 1 - wet - dry);
+  const wet = smooth((h - .68) / .08), dry = smooth((.38 - h) / .08), mid = max(0, 1 - wet - dry);
+  let grove = smooth((h - .45) / .04) * (1 - smooth((h - .56) / .04)), mere = smooth((h - .58) / .04) * (1 - smooth((h - .67) / .04));
+  const bands = grove + mere; if (bands > mid && bands > 0) { grove *= mid / bands; mere *= mid / bands; }
+  const plain = max(0, mid - grove - mere);
   const hw = smooth((h - .66) / .08), hd = smooth((.49 - h) / .08), hm = max(0, 1 - hw - hd);
-  return { reach: cold, moor: temp * mid, fen: temp * wet, thorn: temp * dry, dunes: hot * hd, scoria: hot * hm, ash: hot * hw };
+  return { reach: cold, moor: temp * plain, mosswood: temp * grove, willowmere: temp * mere, fen: temp * wet, thorn: temp * dry, dunes: hot * hd, scoria: hot * hm, ash: hot * hw };
 }
 function biomeE(x) {
   if (DIM) return dimBio(x);
@@ -1789,6 +1800,8 @@ function biomeE(x) {
 // ---------------- the shape of the land ----------------
 const LFN = {
   moor: x => (fbm(x * .0075, 21.3, 3) - .5) * 46 - max(0, fbm(x * .028, 4.1, 2) - .58) * 60,
+  mosswood: x => (fbm(x * .009, 25.3, 3) - .5) * 34 + (fbm(x * .024, 4.1, 2) - .5) * 12,
+  willowmere: x => 7 + (fbm(x * .011, 62.7, 2) - .5) * 8 + (fbm(x * .042, 4.1, 2) - .5) * 3,
   thorn: x => -4 + (fbm(x * .011, 71.3, 3) - .5) * 48 + (fbm(x * .05, 7.7, 2) - .5) * 6,
   reach: x => { const r = 1 - abs(fbm(x * .0058, 2.9, 3) * 2 - 1); return -14 - r * r * 72 - (fbm(x * .03, 2.9, 2) - .5) * 8; },
   scoria: x => { const n = (fbm(x * .0062, 31.1, 3) - .24) * 3.8, st = floor(n * 3) / 3, fr = n * 3 - floor(n * 3), lv = st + smooth((fr - .78) * 5) / 3; return 14 - max(0, lv) * 36 + (fbm(x * .06, 5.5, 2) - .5) * 2; },
@@ -1797,7 +1810,7 @@ const LFN = {
   ash: x => (fbm(x * .0075, 21.3, 3) - .5) * 30
 };
 // the lands' shapes blend over a long stretch, so one land rises out of the next instead of stepping up a cliff
-const HW = { moor: 0, thorn: 0, reach: 0, fen: 0, dunes: 0, scoria: 0, ash: 0 };
+const HW = { moor: 0, mosswood: 0, willowmere: 0, thorn: 0, reach: 0, fen: 0, dunes: 0, scoria: 0, ash: 0 };
 function Hraw(x) {
   for (const b in HW) HW[b] = 0;
   const g = GEN(), bl = g.blend;
@@ -1815,7 +1828,7 @@ function lakeOf(k) {
   let L = LAKES.get(k); if (L !== undefined) return L; L = null;
   if (hh(k, 501, SEED) < .5) {
     const c = k * 360 + 70 + floor(hh(k, 502, SEED) * 220), a = 13 + floor(hh(k, 503, SEED) * 14), D = 5 + floor(hh(k, 504, SEED) * 5), b = biomeE(c);
-    if ((b === 'moor' || b === 'fen' || b === 'thorn' || b === 'reach') && !WINDOWS.some(w => c + a + 20 > w[0] && c - a - 20 < w[1])) {
+    if ((b === 'moor' || b === 'fen' || b === 'willowmere' || b === 'thorn' || b === 'reach') && !WINDOWS.some(w => c + a + 20 > w[0] && c - a - 20 < w[1])) {
       const l = round(Hflat(c - a)), r = round(Hflat(c + a)), lv = max(l, r);   // full to the lower rim, never above it
       if (abs(l - r) < 8) L = { c, a, D, L: lv, ice: b === 'reach' };
     }
@@ -1837,7 +1850,7 @@ function protectDepth(x) { const w = inWindow(x, 4); return w ? w[2] : 0; }
 const mouthAt = x => { const k = floor(x / 90), c = k * 90 + 20 + floor(hh(k, 701, SEED) * 50); return hh(k, 702, SEED) < .35 && abs(x - c) < 5 && !inWindow(x, 30); };
 const shaftX = (k, y) => k * 200 + 40 + floor(hh(k, 602, SEED) * 120) + round((fbm(y * .08, k * 9.1, 2) - .5) * 6);
 // procedural structures: one cell per 150 columns, maybe a hut, a camp, a tower...
-const SKINDS = { moor: ['hut', 'camp', 'circle', 'tower', 'well', 'graves'], thorn: ['camp', 'hut', 'tower', 'circle'], reach: ['camp', 'circle', 'tower'], fen: ['stilt', 'stilt', 'hut'], dunes: ['dune', 'dune', 'well', 'graves'], scoria: ['tower', 'dune', 'graves', 'camp'], ash: ['graves', 'camp', 'circle'] };
+const SKINDS = { moor: ['hut', 'camp', 'circle', 'tower', 'well', 'graves'], mosswood: ['hut', 'camp', 'circle', 'well', 'den'], willowmere: ['stilt', 'stilt', 'hut', 'well', 'camp'], thorn: ['camp', 'hut', 'tower', 'circle'], reach: ['camp', 'circle', 'tower'], fen: ['stilt', 'stilt', 'hut'], dunes: ['dune', 'dune', 'well', 'graves'], scoria: ['tower', 'dune', 'graves', 'camp'], ash: ['graves', 'camp', 'circle'] };
 function structOf(k) { return pmemo('s' + k, () => structOf0(k)); }
 function structOf0(k) {
   const x = k * 150 + 30 + floor(hh(k, 802, SEED) * 90), nu = newLand(x - 16) && newLand(x + 16);
@@ -1895,7 +1908,7 @@ function terrainColumn(x) {
       if (d > 2) w = dl ? W_DEEP : clay ? W_SAND : (b === 'ash' && d < dd) ? W_ASH : deep ? W_STONE : W_DIRT;
       if (dl) t = abs(fbm(x * .05, y * .05 + 40, 3) - .5) < .018 ? DEEPGLOW : DEEPSTONE;
       else if (d < dd) t = b === 'reach' ? ((high || d < 2) ? (slope > 7 && d < 3 ? STONE : SNOW) : (slope > 8 && d < 3 ? STONE : DIRT)) : b === 'scoria' ? (d < 2 ? SAND : strata ? SANDSTONE : SAND) : b === 'ash' ? ASH
-        : b === 'fen' ? (d < 2 ? MUD : d < 5 ? PEAT : fbm(x * .08, y * .08 + 5, 2) > .55 ? CLAY : DIRT) : b === 'dunes' ? (d < 1 && fbm(x * .05, 9.9, 2) > .62 ? SALT : SAND)
+        : b === 'fen' || b === 'willowmere' ? (d < 2 ? MUD : d < 5 ? PEAT : fbm(x * .08, y * .08 + 5, 2) > .55 ? CLAY : DIRT) : b === 'dunes' ? (d < 1 && fbm(x * .05, 9.9, 2) > .62 ? SALT : SAND)
         : b === 'thorn' ? (fbm(x * .09, y * .09 + 3, 2) > .66 ? GRAVEL : slope > 9 && d < 3 ? STONE : DIRT) : (slope > 9 && d < 3 ? STONE : DIRT);
       else if ((b === 'scoria' || b === 'dunes') && d < dd + 20) t = strata ? SANDSTONE : SAND;
       else if (b === 'fen' && d < dd + 10 && fbm(x * .06, y * .06 + 11, 2) > .5) t = CLAY;
@@ -1965,10 +1978,10 @@ function decorColumn(x, hs, b, L) {
 }
 function treeColumn(x, hs, b) {
   const k = floor(x / 5); if (x !== k * 5 + floor(hh(k, 77, SEED) * 5)) return;
-  const ch = b === 'moor' ? .55 : b === 'thorn' ? .7 : b === 'reach' ? .35 : b === 'ash' ? .18 : b === 'fen' ? .14 : b === 'dunes' ? 0 : .1;
+  const ch = b === 'moor' ? .55 : b === 'mosswood' ? .68 : b === 'willowmere' || b === 'fen' ? .16 : b === 'thorn' ? .7 : b === 'reach' ? .35 : b === 'ash' ? .18 : b === 'dunes' ? 0 : .1;
   if (hh(k, 78, SEED) > ch || abs(surf(x - 1) - hs) > 1 || abs(surf(x + 1) - hs) > 1) return;
   const tp = tiles[hs * WW + x]; if (!TP[tp].solid || TP[tp].ghost) return;
-  const kind = b === 'thorn' ? 3 : b === 'moor' || b === 'fen' ? 0 : b === 'reach' ? 1 : 2, r = hh(k, 79, SEED), th = kind === 0 ? 6 + floor(r * 9) : kind === 1 ? 5 + floor(r * 6) : kind === 3 ? 5 + floor(r * 5) : 4 + floor(r * 5);
+  const kind = b === 'thorn' ? 3 : b === 'moor' || b === 'fen' || b === 'willowmere' || b === 'mosswood' ? 0 : b === 'reach' ? 1 : 2, r = hh(k, 79, SEED), th = kind === 0 ? 6 + floor(r * 9) : kind === 1 ? 5 + floor(r * 6) : kind === 3 ? 5 + floor(r * 5) : 4 + floor(r * 5);
   for (let y = 1; y <= th + 4; y++) { const t = tiles[(hs - y) * WW + x]; if (t !== AIR && !(TP[t].decor && !TP[t].dyn)) return; }
   for (let y = 1; y <= th; y++) tiles[(hs - y) * WW + x] = [TRUNK, TRUNK2, TRUNK3, TRUNK4][kind];
   treeTops.set(x, { y: hs - th, kind, v: floor(hh(k, 80, SEED) * 3), ph: hh(k, 81, SEED) * TAU });
@@ -2009,7 +2022,7 @@ function finishChunk(cx) {
   // things to see: foliage in front, stalactites and crystals behind
   for (let x = x0 + randi(0, 5); x < x1; x += randi(3, 8)) {
     if (RESV[x] > 1) continue; const h = heights[x], t = tileAt(x, h), b = biomeE(x); if (!TP[t].solid || TP[t].ghost || tileAt(x, h - 1) === WATER || tileAt(x, h - 1) !== AIR && !TP[tileAt(x, h - 1)].decor) continue;
-    if (b === 'dunes' && rand() < .7) continue; const set = FOL[b === 'ash' ? 'ash' : b === 'reach' ? 'reach' : b === 'scoria' || b === 'dunes' ? 'scoria' : 'moor']; fgOn(set[randi(0, set.length - 1)], x, h, { lit: 1 });
+    if (b === 'dunes' && rand() < .7) continue; const set = FOL[b] || FOL[b === 'scoria' || b === 'dunes' ? 'scoria' : 'moor']; fgOn(set[randi(0, set.length - 1)], x, h, { lit: 1 });
   }
   if (!PROPV) { PROPV = { st: [], cy: [] }; for (let k = 0; k < 12; k++) PROPV.st.push(PROP.stalactite(8 + round(k * 1.2), 100 + k)); for (let k = 0; k < 6; k++) PROPV.cy.push(PROP.crystal(k * 7 + 3)); }
   for (let k = 0, n = CW * WH / 700 | 0; k < n; k++) {
@@ -2738,11 +2751,11 @@ function withRng(seed, fn) { const keep = rng; rng = mulberry32(seed >>> 0); try
 
 // ---------------- where the new places go ----------------
 const SKINDS2 = {
-  moor: ['hut', 'camp', 'circle', 'tower', 'well', 'graves', 'shrine', 'mill', 'mill', 'den'], thorn: ['camp', 'hut', 'tower', 'circle', 'shrine', 'den', 'den'],
+  moor: ['hut', 'camp', 'circle', 'tower', 'well', 'graves', 'shrine', 'mill', 'mill', 'den'], mosswood: ['hut', 'camp', 'circle', 'well', 'den', 'shrine', 'mill'], willowmere: ['stilt', 'stilt', 'hut', 'wreck', 'shrine', 'den'], thorn: ['camp', 'hut', 'tower', 'circle', 'shrine', 'den', 'den'],
   reach: ['camp', 'circle', 'tower', 'shrine', 'shrine', 'den'], fen: ['stilt', 'stilt', 'hut', 'wreck', 'shrine'], dunes: ['dune', 'well', 'graves', 'wreck', 'wreck', 'shrine'],
   scoria: ['tower', 'dune', 'graves', 'camp', 'shrine', 'den'], ash: ['graves', 'camp', 'circle', 'shrine', 'den']
 };
-const BKINDS = { moor: ['hamlet', 'hamlet', 'fort', 'castle'], thorn: ['fort', 'fort', 'hamlet', 'castle'], reach: ['temple', 'temple', 'castle', 'hamlet'], fen: ['hamlet', 'fort'], dunes: ['pyramid', 'pyramid', 'fort'], scoria: ['fort', 'castle', 'pyramid'], ash: ['fort', 'castle', 'fort'] };
+const BKINDS = { moor: ['hamlet', 'hamlet', 'fort', 'castle'], mosswood: ['hamlet', 'hamlet', 'fort'], willowmere: ['hamlet', 'fort'], thorn: ['fort', 'fort', 'hamlet', 'castle'], reach: ['temple', 'temple', 'castle', 'hamlet'], fen: ['hamlet', 'fort'], dunes: ['pyramid', 'pyramid', 'fort'], scoria: ['fort', 'castle', 'pyramid'], ash: ['fort', 'castle', 'fort'] };
 const BHALF = { hamlet: 31, fort: 27, castle: 35, pyramid: 25, temple: 17 }, BIGW = 560, DEEPW = 700, CAMPW = 330;
 const nearEcho = (x, r) => { for (let i = 0; i < (LORE_N[DIM] || 0); i++) if (abs(echoX(i) - x) < r) return true; return false; };
 function bigOf(k) {
@@ -3282,6 +3295,10 @@ function buildItems() {
   M('reed', 'Reed', 'fiber', 'reed', 'Hollow fen reeds. Thatch, baskets, paper.');
   defI('log', { name: 'Stalk Log', icon: SPR.i_wood, desc: 'Felled from lantern-stalks. Saw it, burn it, char it.' });
   M('bark', 'Bark', 'hide', 'bark', 'Stripped from felled stalks. Tans hides; brews a bitter tea.');
+  M('egg', 'Willow Egg', 'bowl', { a: '#fff1d0', b: '#e6c98c', c: '#a8845a', e: '#ffffff' }, 'A wild hen’s egg. Cook it, or carry it to a brewer.');
+  M('feather', 'Willow Feather', 'wing', { a: '#fff1d0', b: '#e6c98c', c: '#a8845a', e: '#ffffff' }, 'Soft, light and useful in brews and fletching.');
+  M('antler', 'Moss Antler', 'bone', { a: '#f4efe6', b: '#d8ccb8', c: '#a8987a', d: '#6a5a48', e: '#ffffff' }, 'A shed-looking tine from the moss deer. Strong enough for a handle.');
+  M('moonseed', 'Moonseed', 'berry', { a: '#e0d2ff', b: '#a58ae0', c: '#5a4a8a', d: '#3d2f5c', e: '#ffffff' }, 'A luminous seed that only grows in the quiet reaches of the Willowmere.');
   M('resin', 'Stalk Resin', 'nug', 'resin', 'Amber sap from felled stalks. Sticky, and it burns.');
   M('dirt', 'Loam', 'pile', 'loam', 'Soil. Pack it, mud it, sift it. Place 2 to fill a gap.', { type: 'block', tile: DIRT, cost: 2 });
   M('sand', 'Rustscale Sand', 'pile', 'sand', 'Melt it to glass, mix it to mortar. Place 2 to pour a drift.', { type: 'block', tile: SAND, cost: 2 });
@@ -3403,6 +3420,8 @@ function buildItems() {
   st('bloomery', 'Bloomery', BLOOMERY, 'Smelts ore with charcoal or coal. Pump the bellows to hold the heat.'); st('anvil', 'Stone Anvil', ANVIL, 'Smith sunmetal and bronze. Strike on the marks.');
   st('anvil2', 'Iron Anvil', ANVIL2, 'Smith anything. Strike on the marks.'); st('loom', 'Loom', LOOM, 'Weave in rhythm: A and D with the beat.');
   st('rack', 'Drying Rack', RACK, 'Hang hides, meat and mudbricks. Faster in the sun or by a fire.'); st('cauldron', 'Cauldron', CAULDRON, 'Brews. Stir steadily, ladle at the right colour.');
+  st('brewstand', 'Brewer’s Stand', BREW_STAND, 'A tier two brewing station. Makes measured infusions that a field cauldron cannot hold.');
+  st('moon_cauldron', 'Moon Cauldron', MOON_CAULDRON, 'A tier three vessel for delicate mooncraft and a living mirror draught.');
   st('mason', 'Mason\'s Bench', MASON, 'Chisel stone along its lines.'); st('post', 'Practice Post', POST, 'Hold a weapon and press F beside it: it calls out drills that teach that weapon\'s styles.'); st('sieve', 'Sieve', SIEVE, 'Shake loose gravel, sand, loam or ash for what hides in it.');
   IT.waystone.icon = outlined(STN_SPR[WAYSTONE].img); IT.charge.icon = outlined(STN_SPR[CHARGE].img); IT.bedroll.icon = outlined(STN_SPR[BEDROLL].img);
   // ---- sidearms and relics (the story keeps these ids) ----
@@ -3412,6 +3431,14 @@ function buildItems() {
   defI('smoke', { name: 'Smoke Pellet', type: 'arm', icon: SPR.i_smoke, stack: 30, desc: '[R] throw. Blinds whoever is caught in the cloud.' });
   M('frostflask', 'Frost Flask', 'jug', { a: '#ffffff', b: '#c9fff6', c: '#62a9bc', d: '#2a5a6a', e: '#ffffff' }, '[R] throw. Bursts into cold that slows everything it touches.', { type: 'arm', stack: 30 });
   M('arrow', 'Arrow', 'arrow', { a: '#e8edf2', b: '#8a6a48', e: '#f4efe6' }, 'Crafted bows need them. Dawnstring does not.', { stack: 300 });
+  M('swiftbrew', 'Quickstep Brew', 'vial', { a: '#c9fff6', b: '#62c7ac', c: '#247a70', d: '#164c52', e: '#ffffff' }, 'Drink for 40 seconds of quick, light-footed movement.', { type: 'food', food: 3, drink: true, consumeT: 58, brew: 'swift', stack: 3 });
+  M('mightbrew', 'Emberheart Brew', 'vial', { a: '#fff1a8', b: '#ff8a3d', c: '#c94a2e', d: '#6a2418', e: '#ffffff' }, 'Drink for 30 seconds of stronger attacks.', { type: 'food', food: 3, drink: true, consumeT: 68, brew: 'might', stack: 2 });
+  M('mirrordraught', 'Doublesoul Draught', 'vial', { a: '#e0d2ff', b: '#a58ae0', c: '#5a4a8a', d: '#24182f', e: '#8ff5e6' }, 'Drink to call a mirror Waker. It echoes your recent movement, then fights with its own mind for 40 seconds.', { type: 'food', food: 2, drink: true, consumeT: 82, brew: 'mirror', stack: 1 });
+  R('bench', 'brewstand', 1, { copper_bar: 2, glass: 2, stick: 4 });
+  R('mason', 'moon_cauldron', 1, { cauldron: 1, skyglass: 2, shard: 3 });
+  R('pot', 'swiftbrew', 2, { berries: 3, feather: 1, jug_w: 1 }, { lvl: 1, ret: { jug: 1 }, col: [111, 240, 224] });
+  R('pot', 'mightbrew', 1, { egg: 2, bark: 2, jug_w: 1 }, { lvl: 2, ret: { jug: 1 }, col: [226, 72, 59] });
+  R('pot', 'mirrordraught', 1, { moonseed: 1, glass_wing: 1, glowcap: 2, jug_w: 1 }, { lvl: 3, ret: { jug: 1 }, col: [165, 138, 224] });
   defI('wember', { name: "Warden's Ember", type: 'relic', stack: 1, icon: SPR.i_wember, desc: 'The first ember. Jump again in mid-air.' });
   defI('wember2', { name: 'Still Ember', type: 'relic', stack: 1, icon: SPR.i_wember2, desc: 'The second ember. Dodge twice in mid-air.' });
   defI('wember3', { name: 'Deep Ember', type: 'relic', stack: 1, icon: SPR.i_wember3, desc: 'The third ember. Molten cinder will not burn you.' });
@@ -3881,7 +3908,7 @@ const BENCHES = [
   { st: 'tink', n: "Tinker's Table", item: 'tinker', d: 'Gadgets you carry, traps and the ember ballista: lanterns, glider, claws, compass, gauges.' },
   { st: 'jewel', n: "Jeweller's Bench", item: 'jeweller', d: 'Trinkets you wear in your trinket slots: rings, charms and amulets that change how you move and fight.' },
   { st: 'oven', n: 'Hearth Oven', item: 'oven', d: 'Hot meals. A meal fills you up and gives a boon for a few minutes (one at a time).' },
-  { st: 'pot', n: 'Cauldron', item: 'cauldron', d: 'Brews: salves, tonics, antidotes, and flasks to throw.' },
+  { st: 'pot', n: 'Cauldron', item: 'cauldron', d: 'Brews: field tonics at a cauldron, stronger infusions at a brewer’s stand, and mooncraft at a moon cauldron.' },
   { st: 'altar', n: 'Offering Altar', item: 'offering_altar', d: 'Offerings that wake the guardians, the lamps that call the sky, and the keys between worlds.' },
   { st: 'mason', n: "Mason's Bench", item: 'mason', d: 'Cut stone: blocks, walls, statues, fountains, the stone anvil and the oven.' },
   { st: 'loom', n: 'Loom', item: 'loom', d: 'Workshop. Cloth, rugs, banners, bedrolls and bags.' },
@@ -3938,7 +3965,7 @@ function regroupRecipes() {
 }
 // the best anvil within reach, for the armourer's stand
 const anvilNear = () => nearStation(SLAGFORGE) ? 3 : nearStation(ANVIL2) ? 2 : nearStation(ANVIL) ? 1 : 0;
-const LVL_NEED = { anvil: ['', 'a stone anvil', 'an iron anvil', 'a Slagforge'], armr: ['', 'a stone anvil close by', 'an iron anvil close by', 'a Slagforge close by'] };
+const LVL_NEED = { anvil: ['', 'a stone anvil', 'an iron anvil', 'a Slagforge'], armr: ['', 'a stone anvil close by', 'an iron anvil close by', 'a Slagforge close by'], pot: ['', 'a cauldron', 'a brewer’s stand', 'a moon cauldron'] };
 // where an item is made, for its tooltip
 function madeAt(id) { const s = []; for (const r of RECIPES) if (r.out === id && !s.includes(r.st)) s.push(r.st); return s.map(benchName); }
 
@@ -4010,6 +4037,39 @@ function boons() {
   return BOON_C = b;
 }
 const boonMul = k => boons().mul[k] || 1, boonAdd = k => boons().add[k] || 0, boonHas = t => boons().tags.has(t), boonRes = k => boons().res[k] || 0;
+const brewActive = k => !!(G.brew && G.brew.k === k && G.brew.t > 0);
+const brewMul = k => k === 'swift' && brewActive(k) ? 1.28 : 1;
+const combatDmgMul = f => (f.dmgMul || 1) * (f === G.p && brewActive('might') ? 1.22 : 1);
+function drinkBrew(k) {
+  if (k === 'mirror') { spawnMirrorClone(); return; }
+  G.brew = { k, t: k === 'swift' ? 2400 : 1800 };
+  const name = k === 'swift' ? 'QUICKSTEP' : 'EMBERHEART', col = k === 'swift' ? '#8ff5e6' : '#ff8a3d';
+  numPop(G.p.x + 3, G.p.y - 12, name, col, 1.15); say(`${name} kindles for ${k === 'swift' ? '40' : '30'} seconds.`); sfx('charged', 0);
+}
+function spawnMirrorClone() {
+  const p = G.p, tape = G.cloneTape || [], W = heldOf(p), id = W && W.type === 'weapon' ? W.id : 'fists';
+  const f = newFighter(p.x - p.face * 12, p.y, { name: 'MIRROR WAKER', skin: p.skin, hat: p.hat, team: p.team || 'p', wid: id, hp: 48, maxhp: 48, dmgMul: .68, ai: newBrain(.5), isClone: true, cloneT: 2400, cloneIdx: max(0, tape.length - 18), brIn: false });
+  f.py = f.y; f.face = p.face; G.fighters.push(f); p.cloneCd = 3600;
+  burst(f.x + 3, f.y + 8, 18, ['#e0d2ff', '#8ff5e6', '#ffffff'], 1.8, 36, { glow: 1, g: -.01 });
+  numPop(p.x + 3, p.y - 12, 'DOUBLE SOUL', '#e0d2ff', 1.2); say('Your mirror repeats the last few steps, then reads its own fights.'); sfx('reflect', 0);
+}
+function recordCloneInput(I) {
+  if (!G.cloneTape) G.cloneTape = []; const tape = G.cloneTape;
+  tape.push({ md: I.md, jumpP: I.jumpP, jumpH: I.jumpH, down: I.down, lp: I.lp, rp: I.rp, l: I.l, r: I.r, dodgeP: I.dodgeP, wx: I.wx, wy: I.wy, faceAim: I.faceAim });
+  if (tape.length > 300) tape.splice(0, tape.length - 300);
+}
+function cloneThink(f) {
+  const foe = foesOf(f).find(e => !e.dead && !e.noHit && hypot(e.x - f.x, e.y - f.y) < 210);
+  if (foe) return aiThink(f);
+  const tape = G.cloneTape || [], src = tape[f.cloneIdx++];
+  if (src) return Object.assign({}, src);
+  return { md: 0, jumpP: false, jumpH: false, down: false, lp: false, rp: false, l: false, r: false, dodgeP: false, wx: f.x + f.face * 20, wy: f.y + 8, faceAim: true };
+}
+function tickBrews() {
+  if (G.brew && G.brew.t > 0 && --G.brew.t <= 0) { const n = G.brew.k === 'swift' ? 'Quickstep' : 'Emberheart'; G.brew = null; say(`The ${n} brew fades.`); }
+  const p = G.p; if (p && p.cloneCd > 0) p.cloneCd--;
+  for (const f of G.fighters) if (f.isClone && !f.gone) { if (--f.cloneT <= 0) { f.gone = true; burst(f.x + 3, f.y + 8, 12, ['#e0d2ff', '#8ff5e6'], 1.4, 25, { glow: 1 }); if (p) say('Your mirror folds back into the glass.'); } }
+}
 
 // ---------------- wearing trinkets ----------------
 function wearTrinket(id, slot) {
@@ -4047,7 +4107,9 @@ function tickMeal() {
 function drawMealHud(c) {
   if (WORLD.arena) return; const y = G.bless && G.bless.t > 0 ? 61 : 52; let x = 4;
   if (G.meal && G.meal.t > 0) { const B = MEALB[G.meal.k], s = ceil(G.meal.t / 60); x += textS(c, `MEAL: ${B.n}  ${floor(s / 60)}:${String(s % 60).padStart(2, '0')}`, x, y, G.meal.t < 600 && (G.time >> 3) & 1 ? '#8b8fa3' : B.c) + 8; }
-  if (G.rest > 0) textS(c, 'RESTED', x, y, '#ffd35a');
+  if (G.rest > 0) x += textS(c, 'RESTED', x, y, '#ffd35a') + 8;
+  if (G.brew && G.brew.t > 0) { const n = G.brew.k === 'swift' ? 'QUICKSTEP' : 'EMBERHEART', col = G.brew.k === 'swift' ? '#8ff5e6' : '#ff8a3d'; x += textS(c, `${n}  ${ceil(G.brew.t / 60)}s`, x, y, col) + 8; }
+  const clone = G.fighters.find(f => f.isClone && !f.gone && !f.dead); if (clone) textS(c, `MIRROR  ${ceil(clone.cloneT / 60)}s`, x, y, '#e0d2ff');
 }
 
 // ---------------- the items ----------------
@@ -4094,6 +4156,7 @@ function trinketItems() {
   meal('berry_pie', 'Emberberry Pie', ['.aaaaaa.', 'abebebea', 'abbbbbbc', 'dddddddd', '.dddddd.'], { a: '#f0c070', b: '#c93a2a', c: '#8a2a1a', d: '#c98a2b', e: '#ff6a4a' }, 35, 6, 'quick', 'A boon: QUICK. You walk faster for 4 minutes.');
   meal('hunter_pie', "Hunter's Pie", ['.aaaaaa.', 'abebebea', 'abbbbbbc', 'dddddddd', '.dddddd.'], { a: '#f0c070', b: '#8a4a2a', c: '#5a2a18', d: '#c98a2b', e: '#c98a5a' }, 50, 10, 'hearty', 'A boon: HEARTY. You heal between fights and take less, for 4 minutes.');
   meal('mush_soup', 'Mushroom Soup', bowl, { a: '#8a5a32', b: '#8a6a48', c: '#4a3220', e: '#c9b4d8' }, 28, 16, null, 'Warm and kind to wounds.');
+  meal('egg_scramble', 'Willow Omelet', ['..aaaa..', '.abbbba.', 'abebbbbc', '.cccccc.', '..d..d..'], { a: '#fff1a8', b: '#d8ba78', c: '#8a6a48', d: '#5a4030', e: '#ff8a3d' }, 42, 10, 'hearty', 'A restorative camp meal. HEARTY settles your breathing and helps healing for 4 minutes.');
   meal('honey_cake', 'Honey Cake', ['...e....', '..aaaa..', '.abbbba.', '.ffffff.', '.bbbbbb.', '.cccccc.'], { a: '#fff1a8', b: '#f0c070', c: '#a8702e', e: '#e2483b', f: '#ffb347' }, 40, 8, 'sweet', 'A boon: SWEET. Stamina comes back faster for 4 minutes.');
   meal('fire_roast', 'Fire Roast', ['..abbc..', '.abbbcc.', '.bbebcc.', '.bcccd..', '..cdd...', '...ww...', '....ww..'], PAL.cmeat, 60, 12, 'warm', 'A boon: WARM. The cold barely touches you, for 4 minutes.');
   meal('glow_stew', 'Glowcap Stew', bowl, { a: '#5a4030', b: '#2fb8a8', c: '#1e6a64', e: '#c8fff0' }, 35, 20, 'glow', 'A boon: GLOWING. You shed light for 4 minutes.');
@@ -4118,6 +4181,7 @@ R('oven', 'hunter_pie', 1, { flour: 2, cmeat: 2, salt: 1 }); R('oven', 'mush_sou
 R('oven', 'honey_cake', 1, { flour: 2, honey: 2, berries: 2 }); R('oven', 'fire_roast', 1, { meat: 3, salt: 1, bark: 1 });
 R('oven', 'glow_stew', 2, { glowcap: 2, meat: 1, jug_w: 1 }, { ret: { jug: 1 } }); R('oven', 'spiced_jerky', 2, { jerky: 2, cinder_gland: 1 });
 R('oven', 'miner_stew', 2, { rmorel: 2, meat: 1, salt: 1 }); R('oven', 'wakers_feast', 1, { hunter_pie: 1, berry_pie: 1, honey_cake: 1 });
+R('oven', 'egg_scramble', 1, { egg: 2, salt: 1, berries: 1 });
 R('oven', 'cmeat', 2, { meat: 2 }); R('oven', 'tea', 2, { fiber: 4, jug_w: 1 }, { ret: { jug: 1 } });
 // ---------------- saving ----------------
 const trinkSave = () => ({ trink: (G.trink || []).map(id => id || ''), meal: G.meal && G.meal.t > 0 ? { k: G.meal.k, id: G.meal.id, t: round(G.meal.t) } : null, rest: round(G.rest || 0) });
@@ -4204,7 +4268,7 @@ function sparks(x, y, n, dirx = 0, sp = 2.4, cols = SPARK) { for (let i = 0; i <
 function dust(x, y, n, col = '#b9bdd0', sp = .8) { for (let i = 0; i < n; i++) P(x + frand(-3, 3), y, frand(-1, 1) * sp, frand(-.7, -.1), frand(14, 28) | 0, col, { g: -.005, fr: .93 }); }
 
 // ---------------- drops ----------------
-function spawnDrop(id, n, x, y, vx, vy) { if (!IT[id] || n <= 0 || COOP.applying) return; for (const d of G.drops) if (d.id === id && d.t < 40 && abs(d.x + 3 - x) < 8 && abs(d.y + 3 - y) < 8 && d.n + n <= IT[id].stack) { d.n += n; return; } G.drops.push({ id, n, x: x - 3, y: y - 3, px: x - 3, py: y - 3, w: 6, h: 6, vx: vx === undefined ? frand(-1, 1) : vx, vy: vy === undefined ? frand(-2, -.8) : vy, t: 0, delay: 26, onGround: false }); }
+function spawnDrop(id, n, x, y, vx, vy, noBrSync = false) { if (!IT[id] || n <= 0 || COOP.applying) return; if (!noBrSync && WORLD.royale && typeof brQueueDrop === 'function') brQueueDrop(id, n, x, y, vx, vy); for (const d of G.drops) if (d.id === id && d.t < 40 && abs(d.x + 3 - x) < 8 && abs(d.y + 3 - y) < 8 && d.n + n <= IT[id].stack) { d.n += n; return; } G.drops.push({ id, n, x: x - 3, y: y - 3, px: x - 3, py: y - 3, w: 6, h: 6, vx: vx === undefined ? frand(-1, 1) : vx, vy: vy === undefined ? frand(-2, -.8) : vy, t: 0, delay: 26, onGround: false }); }
 function tickDrops() {
   const p = G.p, a = G.drops;
   for (let i = a.length - 1; i >= 0; i--) {
@@ -4282,7 +4346,7 @@ const hittable = t => !!t && t !== BEDROCK && !TP[t].ghost && !TP[t].liquid && !
 const solidHit = t => hittable(t) && TP[t].solid && !TP[t].dyn;
 const areaHit = t => solidHit(t) || (hittable(t) && TP[t].stalk);
 const isWeb = t => !!TP[t].part && !TP[t].dyn;
-function dirtyAt(tx, ty) { const c = chunks.get(floor(ty / CH) * 8192 + floor(tx / CH)); if (c) c.dirty = true; if (MODS_ON) netTile(ty * WW + tx); }
+function dirtyAt(tx, ty) { const c = chunks.get(floor(ty / CH) * 8192 + floor(tx / CH)); if (c) c.dirty = true; if (MODS_ON) netTile(ty * WW + tx); if (WORLD.royale && typeof brTileChanged === 'function') brTileChanged(ty * WW + tx); }
 
 // ---------------- which tool is in your hand ----------------
 const reachOf = tool => WORLD.mode === 1 ? 72 : tool.kind === 'hand' ? 30 : tool.kind === 'knife' ? 32 : 38;
@@ -4595,15 +4659,30 @@ function toolTick(p, I) {
 }
 // ---------------- eating and the hunger it answers ----------------
 function eat(it) {
-  const p = G.p; if (p.eatCd > 0) return; if (!WORLD.mode && G.food >= 99 && !(it.heal > 0 && p.hp < p.maxhp) && !it.buff) { say('You are full.'); return; }
-  removeItem(it.id, 1); p.eatCd = 30; G.food = min(100, (G.food || 0) + (it.food || 0)); if (it.heal) { p.hp = min(p.maxhp, p.hp + it.heal); numPop(p.x + 3, p.y - 4, '+' + it.heal, '#7ddc6f'); }
+  const p = G.p; if (p.eatCd > 0 || p.consume || countItem(it.id) < 1) return; if (!WORLD.mode && G.food >= 99 && !(it.heal > 0 && p.hp < p.maxhp) && !it.buff) { say('You are full.'); return; }
+  if (it.brew === 'mirror' && ((p.cloneCd || 0) > 0 || G.fighters.some(f => f.isClone && !f.gone && !f.dead))) { say('Your mirror is still finding its way home.'); sfx('deny'); return; }
+  const drink = !!it.drink || it.brew || it.id === 'tonic' || it.id === 'antidote';
+  p.consume = { id: it.id, drink: !!drink, t: 0, dur: it.consumeT || (drink ? 48 : it.meal ? 38 : 28) }; p.eatCd = p.consume.dur + 12; p.vx *= .45;
+  sfx(drink ? 'stir' : 'ui', 0);
+}
+function finishEat(it) {
+  const p = G.p; if (!p || !it || countItem(it.id) < 1) return;
+  removeItem(it.id, 1); G.food = min(100, (G.food || 0) + (it.food || 0)); if (it.heal) { p.hp = min(p.maxhp, p.hp + it.heal); numPop(p.x + 3, p.y - 4, '+' + it.heal, '#7ddc6f'); }
   if (it.meal) startMeal(it);
   if (it.buff === 'tonic') p.tonic = 1800; if (it.buff === 'ward') { p.ward = 1800; if (p.st) p.st.poison = p.st.bleed = 0; } if (it.buff === 'bandage') { p.bandT = 600; if (p.st) p.st.bleed = 0; }
-  sfx('pickup', 0); for (let k = 0; k < 6; k++) P(p.x + 3, p.y + 6, frand(-.8, .8), frand(-1.2, -.3), 18, fpick(['#ffd35a', '#f4efe6', '#e2483b']), { g: .08 });
+  if (it.brew) drinkBrew(it.brew);
+  sfx('pickup', 0); for (let k = 0; k < 6; k++) P(p.x + 3, p.y + 6, frand(-.8, .8), frand(-1.2, -.3), 18, fpick(it.brew ? ['#8ff5e6', '#c9fff6', '#b49cff'] : ['#ffd35a', '#f4efe6', '#e2483b']), { g: .08 });
   G.flags['ate_' + it.id] = true;
 }
+function tickConsume(p) {
+  if (!p || !p.consume) return false; const u = p.consume, it = IT[u.id];
+  if (p.dead || p.hurtT > 0) { p.consume = null; p.eatCd = 0; if (p === G.p) say('Interrupted. You keep the food.'); return false; }
+  u.t++; p.vx *= .7;
+  if (u.t >= u.dur) { p.consume = null; finishEat(it); }
+  return true;
+}
 function tickHunger() {
-  const p = G.p; if (!p || p.dead || WORLD.arena || WORLD.mode === 1) return;
+  const p = G.p; if (!p || p.dead || WORLD.arena && !WORLD.royale || WORLD.mode === 1) return;
   if (p.eatCd > 0) p.eatCd--; if (p.tonic > 0) p.tonic--; if (p.ward > 0) p.ward--;
   if (p.bandT > 0) { p.bandT--; if (p.bandT % 15 === 0 && p.hp < p.maxhp) p.hp++; }
   const spent = max(0, (p.lastStam === undefined ? p.stam : p.lastStam) - p.stam); p.lastStam = p.stam;
@@ -4632,7 +4711,7 @@ function splash(tx, ty) { for (let k = 0; k < 8; k++) P(tx * T + 4, ty * T + 4, 
 // ---------------- moving: ladders, ropes, gliders, claws ----------------
 function climbAt(f) { const cx = floor((f.x + 3) / T); for (let y = floor((f.y + 2) / T); y <= floor((f.y + f.h - 1) / T); y++) if (TP[tileAt(cx, y)].climb) return true; return false; }
 function travelTick(f, I, grav) {
-  if (!f.isPlayer || WORLD.arena || f.dead) return grav;
+  if (!f.isPlayer || WORLD.arena && !WORLD.royale || f.dead) return grav;
   if (f.dragT > 0) { f.dragT--; f.vx = approach(f.vx, sign(f.dragX - (f.x + 3)) * 2.2, .35); }
   const onC = climbAt(f);
   if (onC && (I.jumpH && !f.onGround || I.down || (I.jumpH && f.onGround && !I.md))) f.climbing = true;
@@ -4697,7 +4776,7 @@ function drawPhys(w, al) {
   }
 }
 function drawAim(c, S) {
-  const p = G.p, it = heldItem(); if (!p || p.dead || UI.open || G.dialog || WORLD.arena || G.cine) return;
+  const p = G.p, it = heldItem(); if (!p || p.dead || UI.open || G.dialog || WORLD.arena && !WORLD.royale || G.cine) return;
   // the support web, shown while you hold building parts or a hammer
   if (it && ((it.type === 'block' && isWeb(it.tile)) || (it.type === 'tool' && it.kind === 'hammer'))) {
     const vx0 = floor(G.cam.x / T) - 1, vx1 = vx0 + ceil(VS.vw / T) + 2, vy0 = floor(G.cam.y / T) - 1, vy1 = vy0 + ceil(VS.vh / T) + 2;
@@ -4983,7 +5062,7 @@ function weaponTool(W, m, k = 1) {
 }
 // the first time in a swing that the weapon meets the ground, it bites
 function terrainStrike(a, x, y, ux, uy) {
-  if (a.dug || WORLD.arena || a.f !== G.p || !a.W) return false;
+  if (a.dug || WORLD.arena && !WORLD.royale || a.f !== G.p || !a.W) return false;
   const gx = floor(x), gy = floor(y), tx = gx >> 3, ty = gy >> 3; if (!inW(tx, ty)) return false;
   const i = ty * WW + tx, t = tiles[i]; if (!NATURAL.has(t) || PLACED.has(i) || !cellAlive(gx, gy)) return false;
   a.dug = true; const tool = weaponTool(a.W, a.m, (a.charged ? 1.4 : 1) * (a.m.cr ? 2.2 : 1)), out = { n: 0, broke: 0, hard: 0, wrong: 0, mat: 0, direct: i, by: G.p, natural: 1 };
@@ -4993,7 +5072,7 @@ function terrainStrike(a, x, y, ux, uy) {
 }
 // a heavy landing leaves a pit
 function terrainSlam(a, cx, fy) {
-  if (WORLD.arena || a.f !== G.p || !a.W) return;
+  if (WORLD.arena && !WORLD.royale || a.f !== G.p || !a.W) return;
   const tool = weaponTool(a.W, a.m, a.m && a.m.cr ? 2.6 : 1.5); tool.kind = 'hammer';
   for (const dx of [-5, 0, 5]) { const x = cx + dx, gx = floor(x); let gy = floor(fy); while (gy < fy + 6 && !(NATURAL.has(tileAt(gx >> 3, gy >> 3)) && cellAlive(gx, gy))) gy++; if (gy >= fy + 6) continue; const out = { n: 0, broke: 0, hard: 0, wrong: 0, mat: 0, direct: (gy >> 3) * WW + (gx >> 3), by: G.p, natural: 1 }; crater(x, gy, 0, 1, tool, gearMul('mine') * (dx ? .7 : 1), out); emitYield(x, gy - 6); }
 }
@@ -5716,15 +5795,26 @@ function startAttack(f, btn, I, force) {
   if (!force && tryLink(f, btn)) return true;
   const set = MOVESETS[W.set], c = atkContext(f, I); let id = force || resolveMove(set, btn, c); if (!force && f === G.p) id = famGate(W.set, set, id, btn, c);
   let m = set.moves[id]; if (!m) return false;
-  if (force) { if (m.cost) { f.stam = max(0, f.stam - m.cost); f.stamDelay = 42; } }
+  if (force) { if (m.cost) { f.stam = max(0, f.stam - m.cost); f.stamDelay = 30; } }
   else if (m.rise && c.air) { if (!f.updraft) { id = btn === 'L' ? set.map.aChain[0] : set.map.ha; m = set.moves[id]; } else f.updraft = false; }
-  if (!force && m.cost) { if (f.stam < m.cost * .6) { if (f === G.p) sfx('deny'); id = resolveMove(set, 'L', c); if (f === G.p) id = famGate(W.set, set, id, 'L', c); m = set.moves[id]; if (m.rise && c.air) { id = set.map.aChain[0]; m = set.moves[id]; } } else { f.stam = max(0, f.stam - m.cost); f.stamDelay = 42; } }
+  // Player attacks have a deliberate stamina price: a short string is fine,
+  // but alternating a clean ECHO or REFRAIN refunds enough to keep the flow.
+  // This gives every click a decision without slowing enemy attack pacing.
+  if (f === G.p) {
+    const price = (btn === 'H' ? 14 : 8) + (m.cost || 0);
+    if (f.stam < price) { sfx('deny'); if (f === G.p) { G.feed.unshift({ name: 'CATCH YOUR BREATH', fresh: false, isNew: false, t: 0, flow: 1 }); if (G.feed.length > 5) G.feed.pop(); } return false; }
+    f.stam -= price; f.stamDelay = 30;
+  } else if (!force && m.cost) {
+    if (f.stam < m.cost * .6) { id = resolveMove(set, 'L', c); m = set.moves[id]; }
+    else { f.stam = max(0, f.stam - m.cost); f.stamDelay = 30; }
+  }
   const rep = f.hist.slice(-4).filter(h => h === id).length, fresh = !f.hist.slice(-3).includes(id);
   f.hist.push(id); if (f.hist.length > 8) f.hist.shift();
   const cadence = f === G.p && f.cadence, cadenceLink = !!(cadence && cadence.until >= G.time && cadence.btn !== btn && cadence.set === W.set), cadenceBase = cadenceLink ? { btn: cadence.btn, count: cadence.count, until: cadence.until, set: cadence.set } : null;
   if (f === G.p) f.cadence = null;
   f.face = c.side; f.state = 'attack'; f.chainT = 0; f.mineP = 0;
   const a = f.atk = { f, id, m, W, set, setName: W.set, btn, phase: 0, pt: 0, face: c.side, aimA: c.elev, hits: new Map(), charge: 0, charged: false, hit: false, air: c.air, fresh, stale: fresh ? 1.1 : ([1, .86, .72, .6, .5][rep] || .5), act: m.act, dashT: 0, dashN: 0, prevAng: 0, aimOff: 0, th: 0, crit: !!m.crit, dist: c.dist, tx: I.wx, ty: I.wy, shots: 0, shotI: 0, cadenceLink, cadenceBase };
+  if (f === G.p && WORLD.royale && ['bow', 'fangs', 'chuks'].includes(W.set)) a.gm = .78;
   // what you wear and how well you know the weapon change how each kind of blow comes out
   if (f === G.p && gearOn()) { const air = c.air, sh = m.kind === 'shot', spd = (sh ? gearMul('bow') : a.btn === 'L' ? gearMul('light') : 1) * (air ? (gearMul('air') + 1) / 2 : 1) * styleSpeed(W, id); a.tm = (W.wsp || 1) / spd; a.gm = (a.btn === 'H' ? gearMul('heavy') : 1) * (air ? (gearMul('air') + 1) / 2 : 1) * styleDmg(W, id); a.dk = gearMul('dash') * (air ? gearMul('air') : 1); a.critB = (gearHas('crit') ? .06 : 0) + (gearHas('keen') ? .08 : 0); }
   if (!force && f === G.p && btn === 'H' && id === set.map.h) { const art = artFor(W); if (art) a.artCharge = { min: 26, max: 96, into: art }; }
@@ -5818,7 +5908,7 @@ function fireArrows(a, count) {
     let vx, vy, g = A.g === undefined ? .05 : A.g;
     if (A.rain) { const tx = a.tx + (A.n > 1 ? (a.shotI - (A.n - 1) / 2) * 10 : 0) + frand(-3, 3), Tf = A.tf || 46; g = .16; vx = clamp((tx - sx) / Tf, -7, 7); vy = (a.ty - sy - .5 * g * Tf * Tf) / Tf; }
     else { const v = A.v || 6.5; if (A.radial) { const th = a.shotI / A.n * TAU; vx = cos(th) * v; vy = sin(th) * v; } else { const th = a.th + (A.spread ? (a.shotI - (A.n - 1) / 2) * A.spread : 0) + (A.burst ? frand(-.025, .025) : 0); vx = fc * cos(th) * v; vy = sin(th) * v; } }
-    spawnProj({ type: A.boom ? 'bomb' : 'arrow', owner: f, x: sx, y: sy, vx, vy, g, r: 3, dmg: max(1, round(a.W.dmg * m.dmg * a.stale * (f.dmgMul || 1))), pierce: !!A.pierce, boom: A.boom || 0, life: 190, kb: [m.kb[0], m.kb[1]], crit: a.crit, stagger: m.stagger, stop: m.stop, cadenceAtk: f === G.p ? a : null });
+    spawnProj({ type: A.boom ? 'bomb' : 'arrow', owner: f, x: sx, y: sy, vx, vy, g, r: 3, dmg: max(1, round(a.W.dmg * m.dmg * a.stale * (a.gm || 1) * combatDmgMul(f))), pierce: !!A.pierce, boom: A.boom || 0, life: 190, kb: [m.kb[0], m.kb[1]], crit: a.crit, stagger: m.stagger, stop: m.stop, cadenceAtk: f === G.p ? a : null });
   }
   fsx(f, 'bolt', 0); fsx(f, 'thrust', 0);
 }
@@ -5885,7 +5975,7 @@ function applyHit(a, e, hx, hy) {
   const P0 = f === G.p, sharp = P0 && f.sharp > 0;
   const crit = a.crit || Math.random() < .07 + (a.W.crit || 0) + (a.critB || 0) + (P0 ? boonAdd('crit') : 0);
   const beat = P0 ? cadenceStep(a) : 0;
-  let dmg = a.W.dmg * m.dmg * a.stale * (P0 ? 1 + rankI() * .04 + qBonus(a.W.id) + (sharp ? .2 : 0) : 1) * (crit && !a.crit ? 1.6 : 1) * (f.dmgMul || 1) * (a.gm || 1) * (P0 ? (a.btn === 'H' ? boonMul('hdmg') : 1) * (m.counter ? boonMul('counter') : 1) : 1) * cadenceMul(beat);
+  let dmg = a.W.dmg * m.dmg * a.stale * (P0 ? 1 + rankI() * .04 + qBonus(a.W.id) + (sharp ? .2 : 0) : 1) * (crit && !a.crit ? 1.6 : 1) * combatDmgMul(f) * (a.gm || 1) * (P0 ? (a.btn === 'H' ? boonMul('hdmg') : 1) * (m.counter ? boonMul('counter') : 1) : 1) * cadenceMul(beat);
   const lk = P0 ? flowPay(a, e) : null; if (lk) dmg *= lk.mul * (lk.tag ? boonMul('flow') : 1);
   dmg = max(1, round(dmg * frand(.93, 1.07)));
   let kx = m.kb[0] * a.face; if (m.kind === 'spin') kx = m.kb[0] * (sign((e.x + e.w / 2) - (f.x + 3)) || a.face);
@@ -5916,7 +6006,7 @@ function explode(x, y, r, dmg, by, cadenceAtk) {
   for (const e of foesOf(by)) { if (e.dead || e.noHit) continue; if (circBox(x, y, r, e)) { const beat = cadenceAtk ? cadenceStep(cadenceAtk) : 0, hx = e.x + e.w / 2, hy = e.y + e.h / 2, landed = strike(by, e, round(dmg * cadenceMul(beat)), (sign(e.x + e.w / 2 - x) || 1) * 3, -2.6, { stop: 4 + (beat >= 3 ? 3 : beat === 2 ? 1 : 0), shake: 2, stagger: beat >= 3 ? 48 : 0, hx, hy }); if (landed && cadenceAtk) cadenceHit(cadenceAtk, e, beat, hx, hy); } }
 }
 function fireProj(a) {
-  const f = a.f, m = a.m, fc = a.face, cx = f.x + 3, cy = f.y + 7, dm = f.dmgMul || 1;
+  const f = a.f, m = a.m, fc = a.face, cx = f.x + 3, cy = f.y + 7, dm = combatDmgMul(f);
   const cadenceAtk = f === G.p ? a : null; if (cadenceAtk) a.projectileOut = true;
   if (m.proj === 'wave') { const el = clamp(a.aimA, -.6, .6); spawnProj({ type: 'wave', owner: f, x: cx + fc * 10, y: cy + 2, vx: fc * cos(el) * 4.8, vy: sin(el) * 4.8, r: 11, dmg: round(a.W.dmg * 2.2 * dm), pierce: true, life: 46, kb: [3.5, -1.5], cadenceAtk }); fsx(f, 'wave', 0); }
   else if (m.proj === 'javelin') spawnProj({ type: 'javelin', owner: f, x: cx + fc * 8, y: cy, vx: fc * cos(a.th) * 6.4, vy: sin(a.th) * 6.4, g: .09, r: 4, dmg: round(a.W.dmg * 2.8 * dm), life: 130, kb: [4, -1], spr: a.W.held, cadenceAtk });
@@ -6299,7 +6389,7 @@ function tickLink(f) {
 }
 function linkHit(k, st) {
   const f = k.f, e = k.e, W = heldOf(f); k.hits++;
-  const fin = st.final && k.hits >= (st.multi || 1), dmg = max(1, round(W.dmg * st.hit * (f.dmgMul || 1) * (f === G.p ? 1.1 : 1) * frand(.95, 1.05) * (e.fighter && WORLD.arena ? .85 : 1)));
+  const fin = st.final && k.hits >= (st.multi || 1), dmg = max(1, round(W.dmg * st.hit * combatDmgMul(f) * (f === G.p ? 1.1 : 1) * frand(.95, 1.05) * (e.fighter && WORLD.arena ? .85 : 1)));
   const end = fin ? k.L.end : null, kx = end ? end[0] * k.face : 0, ky = end ? end[1] : 0, hx = e.x + e.w / 2, hy = e.y + e.h * .45;
   if (fin && e.st) e.st.held = 0; if (fin && e.remote) netHit(e, 0, 0, 0, false, ['rel', 0, 0], f);
   if (st.fx === 'arrow' || st.fx === 'rain') { const sx = f.x + 3 + f.face * 5, sy = f.y + 7; for (let i = 0; i < (st.fx === 'rain' ? 2 : 1); i++) { const tx = hx + frand(-3, 3), ty = st.fx === 'rain' ? hy - 140 : hy, d = hypot(tx - sx, ty - sy) || 1; spawnProj({ type: 'arrow', ghost: true, owner: f, x: st.fx === 'rain' ? tx + frand(-10, 10) : sx, y: st.fx === 'rain' ? ty : sy, vx: st.fx === 'rain' ? 0 : (tx - sx) / d * 9, vy: st.fx === 'rain' ? 8 : (ty - sy) / d * 9, g: 0, r: 2, dmg: 0, life: 22 }); } fsx(f, 'bolt', 0); }
@@ -6788,6 +6878,10 @@ function cadenceHit(a, e, beat, hx, hy) {
   const f = a.f, root = e.root || e, step = beat || 1, refrain = step >= 3;
   f.cadence = { btn: a.btn, count: refrain ? 1 : step, until: G.time + CADENCE_WINDOW, set: a.setName };
   if (step < 2) return;
+  // A clean alternating hit buys back the next beat's stamina. A REFRAIN
+  // restores enough to restart the string, so rhythm is the way to sustain
+  // offense instead of holding the attack button.
+  f.stam = min(f.maxstam, f.stam + (refrain ? 16 : 9)); f.stamDelay = 0;
   const col = refrain ? '#ffd35a' : '#8ff5e6', word = refrain ? 'REFRAIN' : 'ECHO';
   numPop(hx, hy - 17, word, col, refrain ? 1.25 : 1); sparks(hx, hy, refrain ? 14 : 8, 0, 2.8, refrain ? ['#ffd35a', '#fff1a8', '#ff8a3d'] : ['#8ff5e6', '#c9fff6', '#ffd35a']);
   G.combo.pts += refrain ? 5 : 2;
@@ -6917,6 +7011,7 @@ function killFighter(f, by) {
   if (f.hollow && !f.remote && netHost() && f.nid) sendAll({ t: 'hdie', id: f.nid, x: round(f.x), y: round(f.y), elite: f.elite || '' });
   f.hp = 0; f.dead = true; f.deadT = 0; f.atk = null; f.state = 'normal'; f.deaths++;
   burst(f.x + 3, f.y + 10, 40, f.skin === 4 ? FROST : SPARK, 3, 60, { glow: 1, g: .02 }); if (f === G.p) sfx('die', 0); else fsx(f, 'kill', 0);
+  if (f.isClone) { f.gone = true; return; }
   if (WORLD.arena) arenaDeath(f, by); else if (f === G.p) { G.deaths = (G.deaths || 0) + 1; G.dirty = true; }
   else if (f.hollow && !f.remote) hollowDrops(f);
 }
@@ -6936,7 +7031,7 @@ function tickFighter(f, I) {
   if (I.armP && f.hurtT <= 0) throwArm(f, I.wx, I.wy);
   if (I.jumpP) f.jbuf = 7; else if (f.jbuf > 0) f.jbuf--;
   if (f.onGround) { f.coyote = 6; f.airDash = airDashMax(f); f.updraft = true; f.dblUsed = false; } else if (f.coyote > 0) f.coyote--;
-  if (f.stamDelay > 0) f.stamDelay--; else f.stam = min(f.maxstam, f.stam + .6 * (f.isPlayer && !WORLD.arena ? (f.tonic > 0 ? 1.8 : 1) * (WORLD.mode !== 1 && G.food <= 0 ? .5 : 1) * gearMul('st') : 1));
+  if (f.stamDelay > 0) f.stamDelay--; else f.stam = min(f.maxstam, f.stam + (f.isPlayer && (!WORLD.arena || WORLD.royale) ? (f.tonic > 0 ? 1.8 : 1) * (WORLD.mode !== 1 && G.food <= 0 ? .5 : 1) * gearMul('st') : 1));
   f.regenT++;
   if (WORLD.arena && !WORLD.royale) { if (f.regenT > 240 && f.hp < f.maxhp && G.time % 4 === 0) f.hp++; }
   else if (f.isPlayer && f.regenT > 420 / DIFF().regen && G.time % max(1, round((WORLD.mode === 1 || G.food > 70 ? 40 : G.food > 30 ? 80 : 1e9) / DIFF().regen / blessRegen())) === 0 && f.hp < f.maxhp) f.hp++;
@@ -6950,7 +7045,7 @@ function tickFighter(f, I) {
     a = f.atk; const ok = f.state === 'normal' || (f.state === 'dodge' && f.dodgeT >= 2) || (f.state === 'attack' && a.phase === 2 && a.pt >= floor(a.m.rec * .38));
     if (ok) { const b = f.buf.b; f.buf = null; if (f.state === 'attack') endAttack(f); if (startAttack(f, b, I)) f.atkN++; }
   }
-  let grav = .26; const gp = f === G.p && gearOn(), maxV = 1.45 * (gp ? gearMul('walk') : 1);
+  let grav = .26; const gp = f === G.p && gearOn(), maxV = 1.45 * (gp ? gearMul('walk') : 1) * (f === G.p && typeof brewMul === 'function' ? brewMul('swift') : 1);
   if (gp && f.vy > 0 && (gearHas('feather') || gearHas('prismatic')) && I.jumpH && !f.onGround) grav = .17;
   if (f.state === 'dodge') {
     f.dodgeT++; f.vx = f.dodgeDir * 3.5 * (f.dodgeT > 8 ? .7 : 1) * (f === G.p ? gearMul('dodge') : 1); if (!f.dodgeGround) { f.vy = 0; grav = 0; }
@@ -7013,18 +7108,20 @@ function playerInput() {
 function tickPlayer() {
   const p = G.p, I = playerInput();
   if (WORLD.royale && !brInput(p, I)) return;
+  if (p.consume && !p.brUse) { tickConsume(p); I.md = 0; I.jumpP = I.jumpH = I.l = I.r = I.lp = I.rp = I.dodgeP = I.armP = false; }
+  recordCloneInput(I);
   tickFighter(p, I);
   if (WORLD.royale) brAfter(p, I);
   if (p.dead) { if (!WORLD.royale && p.deadT > (WORLD.arena ? 150 : 190)) respawnPlayer(); return; }
-  if (WORLD.arena) return;
+  if (WORLD.arena && !WORLD.royale) return;
   // ---- tools, blocks, consumables ----
   toolTick(p, I);
   const hi = heldItem(); if (hi && hi.type === 'weapon') G.lastWeapon = G.sel;
-  if (pressed.KeyH && !G.dialog) useHeal(countItem('salve') ? 'salve' : 'glowcap');
+  if (!WORLD.royale && pressed.KeyH && !G.dialog) useHeal(countItem('salve') ? 'salve' : 'glowcap');
   if (pressed.KeyT && !G.dialog && !UI.open) cycleArm(p);
-  if (!UI.open && !G.dialog && !G.cine) { if (pressed.KeyV) tryStyle(p, I); if (pressed.KeyX) swapOff(p, I); }
-  tickStyles(p, I);
-  if (pressed.KeyF && !UI.open) interact();
+  if (!WORLD.royale && !UI.open && !G.dialog && !G.cine) { if (pressed.KeyV) tryStyle(p, I); if (pressed.KeyX) swapOff(p, I); }
+  if (!WORLD.royale) tickStyles(p, I);
+  if (!WORLD.royale && pressed.KeyF && !UI.open) interact();
 }
 function respawnPlayer() {
   const p = G.p;
@@ -7147,6 +7244,7 @@ function drawRig(x, P, S, wp, wp2) {
     x.restore();
   }
   armDraw(x, shx, shy, P.armA, P.armExt, S.arm, S.hand);
+  if (P.consumeIcon) { const L = ARM * clamp(P.armExt, .3, 1), hx = shx + cos(P.armA) * L, hy = shy + sin(P.armA) * L; x.drawImage(P.consumeIcon, round(hx - 3), round(hy - 7), 6, 6); }
   x.restore();
 }
 function fighterPose(f, al) {
@@ -7170,6 +7268,7 @@ function fighterPose(f, al) {
   if (st && (st.hook > 0 || st.reel > 0 || st.held > 0)) { P.lean = -.35; P.head = -.35 + sin(G.time * .3) * .1; P.armA = 2.4; P.armB = 2.7; P.l1a = .5; P.l2a = -.4; P.wAng = 2.2; if (!f.atk) return P; }
   if (f.throwT > 0 && !f.atk) { const u = 1 - f.throwT / 12; P.armA = lerp(-2.4, f.throwA || 0, ease.out(min(1, u * 2))); P.armExt = 1; P.lean = .25 * sin(u * PI); P.wAng = idle; }
   if (f.atk) atkPose(P, f.atk, al);
+  if (f.consume) { P.lean = lerp(P.lean, -.12, .8); P.head = lerp(P.head, -.14, .8); P.armA = f.consume.drink ? -1.3 : -1.58; P.armExt = .82; P.consumeIcon = IT[f.consume.id] && IT[f.consume.id].icon; }
   if (isW && it.chuks) { const a = f.atk; if (a && a.phase === 1 && a.m.kind === 'swing') P.nA = swingAng(a, max(0, a.pt + al - 2.2)) + (a.m.to > a.m.from ? -.5 : .5); else if (a && (a.m.kind === 'thrust' || a.m.kind === 'shot') && a.phase === 1) P.nA = P.wAng; else if (a && (a.m.kind === 'spin' || a.m.kind === 'flip')) P.nA = P.wAng + .35; else P.nA = PI / 2 + sin(t * .07) * .12 - P.lean; }
   else if (f.isPlayer && (f.toolT > 0 || f.toolCharge > 0) && (!it || it.type === 'tool' || it.fist)) {
     // the tool rises behind you, comes down along your aim, bites, and comes back
@@ -7311,12 +7410,13 @@ function spawnTick() {
   spawnTick0();
 }
 function spawnTick0() {
-  if (WORLD.arena || WORLD.mode === 1 || G.boss || G.duel || (G.dialog && !netLive()) || G.cine || G.time < 500 || --G.spawnT > 0) return; G.spawnT = 120 + frand(150); if (DIM) { dimSpawn(); return; }
-  const p = G.p, ptx = floor(p.x / T), pty = floor(p.y / T), realm = realmAt(ptx, pty), night = G.dn < .3, under = realm === 'under' || realm === 'deep';
+  if (WORLD.arena || WORLD.mode === 1 || G.boss || G.duel || (G.dialog && !netLive()) || G.cine || G.time < 500 || --G.spawnT > 0) return;
+  const night = G.dn < .3; G.spawnT = night ? 80 + frand(100) : 230 + frand(180); if (DIM) { dimSpawn(); return; }
+  const p = G.p, ptx = floor(p.x / T), pty = floor(p.y / T), realm = realmAt(ptx, pty), under = realm === 'under' || realm === 'deep';
   if (placeAt(ptx, pty) === 'village' || abs(ptx - SPAWN_X) < VIL_W + 12 && !under) return;
   let n = 0, nh = 0; for (const e of G.enemies) if (!e.dead) n++; for (const f of G.fighters) if (f.hollow && !f.dead) nh++;
   if (G.ev && eventSpawn()) return;
-  if (n + nh >= (realm === 'deep' ? 5 : under ? 5 : realm === 'drift' ? 3 : night ? 5 : 3)) return;
+  if (n + nh >= (realm === 'deep' ? 5 : under ? 5 : realm === 'drift' ? 3 : night ? 7 : 2)) return;
   const edge = ceil(VS.vw / T / 2) + 4; // just past the edge of the screen
   if (realm === 'drift') {
     for (let tries = 0; tries < 10; tries++) { const x = p.x + (Math.random() < .5 ? -1 : 1) * frand(edge * T, edge * T + 100), y = p.y + frand(-60, 30); if (x < 40 || x > WW * T - 40 || boxHits(x, y, 18, 6)) continue; const e = mkEnemy(Math.random() < .85 ? 'skyray' : 'bat', x, y); e.hx = x; e.hy = y; G.enemies.push(e); return; }
@@ -7709,7 +7809,7 @@ const DROPS = {
   mite: [['snow', 1, 1, 3], ['glowcap', .25, 1, 1], ['shard', .06, 1, 1]], bat: [['membrane', .7, 1, 1], ['cinder', .4, 1, 1]],
   skyray: [['skysilk', 1, 1, 2], ['membrane', .3, 1, 1], ['glowcap', .2, 1, 1]], rustback: [['rust_plate', .9, 1, 2], ['copper_ore', .5, 2, 3], ['iron_ore', .4, 1, 3], ['shard', .1, 1, 1]],
   cinderling: [['cinder', 1, 1, 3], ['cinder_gland', .5, 1, 1], ['shard', .25, 1, 1]],
-  ashhare: [['meat', 1, 1, 1], ['hide', .8, 1, 1], ['bone', .3, 1, 1]], thornback: [['meat', 1, 2, 3], ['hide', 1, 1, 2], ['tusk', .7, 1, 2], ['bone', .5, 1, 2]],
+  ashhare: [['meat', 1, 1, 1], ['hide', .8, 1, 1], ['bone', .3, 1, 1]], willowhen: [['egg', .9, 1, 2], ['feather', 1, 1, 3], ['meat', .5, 1, 1]], mossdeer: [['meat', 1, 1, 3], ['hide', .75, 1, 2], ['antler', .65, 1, 1], ['moonseed', .08, 1, 1]], thornback: [['meat', 1, 2, 3], ['hide', 1, 1, 2], ['tusk', .7, 1, 2], ['bone', .5, 1, 2]],
   glassfly: [['glass_wing', .85, 1, 1], ['snow', .3, 1, 1]], lurker: [['lurker_oil', 1, 1, 2], ['hide', .7, 1, 1], ['meat', .8, 1, 2], ['bone', .4, 1, 2]],
   serpent: [['scale', 1, 2, 4], ['venom', .8, 1, 1], ['meat', .7, 2, 3], ['bone', .5, 2, 3]], crawler: [['chitin', .9, 1, 2], ['venom', .45, 1, 1]],
   golem: [['geode_core', 1, 1, 1], ['snow', 1, 3, 5], ['rock', 1, 2, 4], ['shard', .3, 1, 2]]
@@ -7719,6 +7819,8 @@ function buildMobSprites() {
   const S = (k, rows, pal) => { MOBSPR[k] = spr(rows, pal); };
   const hare = { a: '#e6e0f0', b: '#b8b2c0', c: '#8d8794', e: '#120d1f', p: '#ff9a8a' };
   S('hare0', ['.aa.....', '..a.....', '..bbb...', '.bbebbb.', 'bbbbbbbc', '.cc..cc.'], hare); S('hare1', ['..aa....', '...a....', '..bbbb..', '.bbebbbb', 'cbbbbbb.', 'c.....cc'], hare);
+  S('hen0', ['..aaaa..', '.abbbbc.', 'abbbebbc', '..bddbbc', '.bb..bb.', '.cc..cc.'], { a: '#f0d070', b: '#c98a2b', c: '#5a4030', d: '#c94a4e', e: '#1d131b' });
+  S('deer0', ['...aa....', '..abbaa..', '.abbbba..', 'abbbebbb.', '.bbbbbbbc', '..c..c..c'], { a: '#c98a64', b: '#a87050', c: '#5a4030', e: '#1d131b' });
   const boar = { t: '#c9a0a0', b: '#5a3a3a', B: '#3a2424', e: '#ff6a4a', w: '#f4ead8', c: '#2a1818' };
   S('boar0', ['...t.t.t.....', '..tbtbtbt....', '.bbbbbbbbbb..', 'bbbbbbbbbbbbe', 'BbbbbbbbbbbbbW', '.BBbbbbbbbbw.', '.cc..cc..cc..', '.cc...c...c..'], Object.assign({ W: '#f4ead8' }, boar));
   S('boar1', ['...t.t.t.....', '..tbtbtbt....', '.bbbbbbbbbb..', 'bbbbbbbbbbbbe', 'BbbbbbbbbbbbbW', '.BBbbbbbbbbw.', '..cc..cc..c..', '..c...cc..cc.'], Object.assign({ W: '#f4ead8' }, boar));
@@ -7744,6 +7846,14 @@ mob('ashhare', { w: 7, h: 5, hp: 10, dmg: 0, contact: false, name: 'Ashhare', ca
   }
   moveBody(e);
 }, (e, x, y, o) => drawEnt(32, 16, 20, c => { c.scale(e.dir, 1); c.drawImage(e.onGround ? MOBSPR.hare0 : MOBSPR.hare1, -4, -6); }, x + e.w / 2, y + e.h, { flash: o.flash, ly: -3 }));
+function grazeAI(e, p, dx, dist, pace, leap, range) {
+  e.vy = min(e.vy + .22, 5); if (!e.onGround) { moveBody(e); return; }
+  e.vx *= .72; const flee = dist < range && !p.dead; if (flee) e.dir = -sign(dx) || 1;
+  if (e.t > (flee ? 8 : e.wait)) { e.t = 0; e.wait = 60 + frand(150); if (flee || Math.random() < .45) { if (e.hitWall) e.dir *= -1; e.vy = flee ? -leap : -leap * .56; e.vx = e.dir * (flee ? pace : pace * .35); } else e.dir = Math.random() < .5 ? 1 : -1; }
+  moveBody(e);
+}
+mob('willowhen', { w: 8, h: 6, hp: 8, dmg: 0, contact: false, name: 'Willow Hen', canStep: true }, (e, p, dx, dy, dist) => grazeAI(e, p, dx, dist, 1.8, 2.2, 55), (e, x, y, o) => drawEnt(24, 16, 18, c => { c.scale(e.dir, 1); c.drawImage(MOBSPR.hen0, -4, -7); }, x + e.w / 2, y + e.h, { flash: o.flash, ly: -3 }));
+mob('mossdeer', { w: 10, h: 9, hp: 18, dmg: 0, contact: false, name: 'Moss Deer', canStep: true }, (e, p, dx, dy, dist) => grazeAI(e, p, dx, dist, 2.1, 2.8, 96), (e, x, y, o) => drawEnt(32, 24, 24, c => { c.scale(e.dir, 1); c.drawImage(MOBSPR.deer0, -5, -9); }, x + e.w / 2, y + e.h, { flash: o.flash, ly: -4 }));
 // ---- thornback ----
 mob('thornback', { w: 13, h: 8, hp: 58, dmg: 13, contact: false, kbRes: .45, name: 'Thornback', canStep: true }, (e, p, dx, dy, dist) => {
   e.vy = min(e.vy + .25, 5);
@@ -7852,14 +7962,14 @@ function spawnMob(type, tx, ty) {
   if (type === 'serpent') { e.state = 'burrow'; e.noHit = true; }
   G.enemies.push(e); return e;
 }
-// surface creatures by biome: [type, weight, night only?]
+// surface creatures by biome: [type, weight, night only?, day only?]
 const BIOME_MOBS = {
-  moor: [['ashhare', 3], ['thornback', 2], ['mote', 3], ['husk', 2, 1]], thorn: [['thornback', 4], ['ashhare', 2], ['husk', 2, 1], ['mote', 1]],
+  moor: [['ashhare', 3], ['thornback', 2], ['mote', 3], ['husk', 2, 1]], mosswood: [['mossdeer', 5, 0, 1], ['ashhare', 2], ['thornback', 1], ['mote', 2], ['husk', 1, 1]], willowmere: [['willowhen', 6, 0, 1], ['mossdeer', 3, 0, 1], ['ashhare', 1], ['mote', 2], ['husk', 1, 1]], thorn: [['thornback', 4], ['ashhare', 2], ['husk', 2, 1], ['mote', 1]],
   reach: [['mite', 4], ['glassfly', 2], ['ashhare', 1], ['husk', 1, 1]], ash: [['mote', 3], ['husk', 3], ['bat', 1, 1]],
   scoria: [['rustback', 4], ['mote', 2], ['husk', 1, 1]], fen: [['lurker', 0], ['mote', 2], ['ashhare', 1], ['bat', 2, 1], ['husk', 1, 1]],
   dunes: [['serpent', 1], ['ashhare', 2], ['glassfly', 1], ['husk', 1, 1], ['mote', 1]]
 };
-function pickMob(list, night) { const L = list.filter(m => m[1] > 0 && (!m[2] || night)); let s = 0; for (const m of L) s += m[1]; let r = Math.random() * s; for (const m of L) { r -= m[1]; if (r <= 0) return m[0]; } return L.length ? L[0][0] : 'mote'; }
+function pickMob(list, night) { const L = list.filter(m => m[1] > 0 && (!m[2] || night) && (!m[3] || !night)); let s = 0; for (const m of L) s += m[1]; let r = Math.random() * s; for (const m of L) { r -= m[1]; if (r <= 0) return m[0]; } return L.length ? L[0][0] : 'mote'; }
 // fen lurkers are placed in water near the player instead of on the ground
 function trySpecialSpawn(realm, b, ptx, pty, night) {
   if (realm === 'surface' && b === 'fen' && Math.random() < .45 && G.enemies.filter(e => e.type === 'lurker').length < 2) {
@@ -9230,9 +9340,9 @@ function drawHUD(c) {
   c.drawImage(SPR.heart, 3, 3); bar(c, 15, 4, 72, 7, p.hp / p.maxhp, p.hp < 30 && (G.time >> 3) & 1 ? '#ff9a8a' : '#e2483b', '#8f2233'); textO(c, ceil(max(0, p.hp)), 91, 4, '#fff');
   if (!A && gearOn()) { drawGearHud(c); drawStyleHud(c); drawFamHud(c); drawDrill(c); }
   bar(c, 15, 14, 72, 4, p.stam / p.maxstam, p.stam < 22 ? '#ffd35a' : '#7ddc6f', p.stam < 22 ? '#b85a1e' : '#2f8a43');
-  if (!A && WORLD.mode !== 1) { const f = G.food / 100; bar(c, 15, 20, 72, 2, f, f < .25 && (G.time >> 4) & 1 ? '#ff9a8a' : '#e0a050', '#7a4a1a'); if (f < .3) textO(c, f <= 0 ? 'STARVING' : 'HUNGRY', 91, 16, '#e0a050'); }
+  if ((!A || WORLD.royale) && WORLD.mode !== 1) { const f = G.food / 100; bar(c, 15, 20, 72, 2, f, f < .25 && (G.time >> 4) & 1 ? '#ff9a8a' : '#e0a050', '#7a4a1a'); if (f < .3) textO(c, f <= 0 ? 'STARVING' : 'HUNGRY', 91, 16, '#e0a050'); }
   if (p.riposte > 0 && (G.time >> 2) & 1) textO(c, 'RIPOSTE READY', 15, 22, '#8ff5e6');
-  else if (!UI.open) textS(c, WORLD.royale ? '[F] open chests  [H] heal  [M] map  [TAB] who is left  [R] sidearm  [E] pack' : A ? '[TAB] scores  [C] forms  [P] menu  1-6 weapons  [R] sidearm [T] swap' : '[E] pack  [K] knap  [F] use  [J] journal  [P] menu', 4, 25, '#8b8fa3');
+  else if (!UI.open) textS(c, WORLD.royale ? '[LMB] mine  [F] chest / station  [B] recipes  [K] knap  [P] pact  [M] map' : A ? '[TAB] scores  [C] forms  [P] menu  1-6 weapons  [R] sidearm [T] swap' : '[E] pack  [K] knap  [F] use  [J] journal  [P] menu', 4, WORLD.royale ? 35 : 25, '#8b8fa3');
   if (!A && G.jNew && (G.time >> 4) & 1) textS(c, 'NEW JOURNAL ENTRY [J]', 4, 32, '#ffd35a');
   drawBless(c); drawMealHud(c); drawGadgetHud(c); drawCoopHud(c);
   if (G.savedNote) { const t = G.savedNote.t; c.globalAlpha = clamp((120 - t) / 30, 0, 1); textS(c, G.savedNote.ok ? (SAVE.db ? 'saved to your account' : 'saved') : 'could not save', 4, A ? 32 : 42, '#7ddc6f'); c.globalAlpha = 1; }
@@ -9581,7 +9691,7 @@ function openStation(tx, ty) {
   stnState(ty * WW + tx, t); netLock(ty * WW + tx, true); G.flags['used_' + kind] = true; learn('stations');
 }
 function stnList(kind, t) {
-  const lvl = kind === 'armr' ? anvilNear() : t === ANVIL2 ? 2 : t === SLAGFORGE ? 3 : 1;
+  const lvl = kind === 'armr' ? anvilNear() : kind === 'pot' ? (t === MOON_CAULDRON ? 3 : t === BREW_STAND ? 2 : 1) : t === ANVIL2 ? 2 : t === SLAGFORGE ? 3 : 1;
   return RECIPES.map((r, i) => ({ r, i })).filter(e => e.r.st === kind && (e.r.lvl !== 3 || lvl === 3 || G.flags.seen1 || WORLD.mode === 1)).map(e => ({ r: e.r, i: e.i, can: canCraft(e.r) && (!e.r.lvl || e.r.lvl <= lvl), lvlOk: !e.r.lvl || e.r.lvl <= lvl })).sort((a, b) => (b.can - a.can) || (b.lvlOk - a.lvlOk));
 }
 function stnBox() { const w = min(VS.uw - 10, 372), h = min(VS.uh - 48, 214), x = round((VS.uw - w) / 2), y = round((VS.uh - h) / 2) - 10; return { x, y, w, h }; }
@@ -9602,7 +9712,7 @@ function drawStation(c) {
     drawText(c, r.out ? IT[r.out].name : 'Sift ' + IT[outId].name.toLowerCase(), x + 21, y + 1, e.can ? '#fff' : '#8b8fa3');
     let nx = x + 21; const parts = Object.keys(r.need).map(q => [`${r.need[q]} ${IT[q].name}`, countItem(q) >= r.need[q] || WORLD.mode === 1]);
     if (r.fuel) parts.push([`${r.fuel} fuel`, fuelHave() >= r.fuel || WORLD.mode === 1]); for (const q of r.keep || []) parts.push([`(${IT[q].name})`, hasItem(q) || WORLD.mode === 1]);
-    if (!e.lvlOk) parts.unshift(['needs ' + LVL_NEED[S.kind === 'armr' ? 'armr' : 'anvil'][e.r.lvl], false]);
+    if (!e.lvlOk) parts.unshift(['needs ' + LVL_NEED[S.kind === 'armr' ? 'armr' : S.kind === 'pot' ? 'pot' : 'anvil'][e.r.lvl], false]);
     for (const [s, ok] of parts) { if (nx > x + L.w - 8) break; nx += drawText(c, s, nx, y + 10, ok ? '#7ddc6f' : '#e2483b') + 4; }
     if (hov) { tip = r.out ? itemTip(IT[r.out]) : [['Shake out of it:', '#ffd35a'], [r.loot.map(l => IT[l[0]].name).join(', '), '#b9bdd0']]; if (r.temp && !craftEasy()) tip.push([`needs heat ${r.temp}${r.shut ? ', damper shut' : ''}`, '#ff8a3d']); if (r.t) tip.push([`takes ${round(r.t / 60)}s`, '#8ff5e6']); if (r.band) tip.push([`heat band ${r.band}`, '#ff8a3d']); }
     hit(x, y, L.w, 18, () => pickRecipe(e, S, st));
@@ -9617,7 +9727,7 @@ function drawStation(c) {
 }
 const smsg = (s, col) => { UI.msg = { s, col, t: 150 }; };
 function pickRecipe(e, S, st) {
-  const r = e.r; if (!e.lvlOk) { sfx('deny'); smsg('This needs ' + LVL_NEED[S.kind === 'armr' ? 'armr' : 'anvil'][r.lvl] + '.', '#e2483b'); return; }
+  const r = e.r; if (!e.lvlOk) { sfx('deny'); smsg('This needs ' + LVL_NEED[S.kind === 'armr' ? 'armr' : S.kind === 'pot' ? 'pot' : 'anvil'][r.lvl] + '.', '#e2483b'); return; }
   if (!canCraft(r)) { sfx('deny'); smsg('You are missing something.', '#e2483b'); return; }
   if (PASSIVE[S.kind]) {
     const k = st.slots.indexOf(null); if (k < 0) { sfx('deny'); smsg('Every slot is full.', '#e2483b'); return; }
@@ -10044,7 +10154,7 @@ function drawBook(c) {
     const e = list[k + UI.scroll]; if (!e) break; const r = e.r, yy = ry + k * 19, hov = inR(rx, yy, rw, 18), outId = r.out || Object.keys(r.need)[0];
     if (hov) { c.fillStyle = '#2b2740'; c.fillRect(rx, yy, rw, 18); }
     slotBox(c, rx, yy, false, hov && e.can); c.globalAlpha = e.can ? 1 : .45; drawStack(c, { id: outId, n: r.out ? r.n : 1 }, rx, yy); c.globalAlpha = 1;
-    drawText(c, (r.out ? IT[r.out].name : 'Sift ' + IT[outId].name.toLowerCase()) + (r.lvl ? '  (' + LVL_NEED[r.st === 'armr' ? 'armr' : 'anvil'][r.lvl] + ')' : ''), rx + 21, yy + 1, e.can ? '#fff' : '#8b8fa3');
+    drawText(c, (r.out ? IT[r.out].name : 'Sift ' + IT[outId].name.toLowerCase()) + (r.lvl ? '  (' + LVL_NEED[r.st === 'armr' ? 'armr' : r.st === 'pot' ? 'pot' : 'anvil'][r.lvl] + ')' : ''), rx + 21, yy + 1, e.can ? '#fff' : '#8b8fa3');
     let nx = rx + 21; for (const q in r.need) { if (nx > rx + rw - 12) { drawText(c, '...', nx, yy + 10, '#8b8fa3'); break; } const hv = countItem(q); nx += drawText(c, `${r.need[q]} ${IT[q].name}`, nx, yy + 10, hv >= r.need[q] || WORLD.mode === 1 ? '#7ddc6f' : '#e2483b') + 4; }
     if (hov) tip = r.out ? itemTip(IT[r.out]) : [['Shake out of it:', '#ffd35a'], [r.loot.map(l => IT[l[0]].name).join(', '), '#b9bdd0']];
   }
@@ -10324,7 +10434,7 @@ function arenaTick() {
 //  storm clock and the echoes; every computer runs its own Waker and
 //  shares it as presence, exactly like the Cinder Ring.
 // ============================================================
-const BRW = 520, BRH = 140, BRSKY = 17, BR_MAX = 12, BR_FILL = 8;
+const BRW = 640, BRH = 140, BRSKY = 17, BR_MAX = 12, BR_FILL = 8;
 const BR_TIERS = ['COMMON', 'UNCOMMON', 'RARE', 'EPIC', 'LEGENDARY'], BR_TCOL = ['#c8c4d4', '#7ddc6f', '#5aa8ff', '#c77dff', '#ffd35a'];
 const BR_MATT = { wood: 0, flint: 0, bone: 0, stone: 0, copper: 1, bronze: 1, rust: 2, chitin: 2, iron: 2, steel: 3, glass: 3, deep: 4, ember: 4 };
 const BR_OLD = { sword: 0, spear: 0, fangs: 1, maul: 2, bow: 1, nunchaku: 1, kblade: 4, kmaul: 4, vpike: 3, vfangs: 3 };
@@ -10334,13 +10444,14 @@ const BR_WALL = { moor: W_DIRT, thorn: W_DIRT, dunes: W_SAND, reach: W_STONE, as
 const BR_PNAMES = { moor: ['HEARTHWICK', 'MILLSTEAD', 'LANTERN GREEN'], thorn: ['THORNWOOD', 'BRAMBLE CAMP', 'THE TANGLE'], dunes: ['SUNKEN SPIRE', 'DUSTWATCH', 'RUSTFALL RUINS'], reach: ['COLDGLASS KEEP', 'FROSTGATE', 'STILLWATCH'], ash: ['CINDER WORKS', 'SLAG HOLLOW', 'THE KILNS'] };
 const BR_BOTN = ['WREN', 'KESTREL', 'MARROW', 'TINDER', 'SORREL', 'FLINT', 'ROOK', 'BRAMBLE', 'EMBERLY', 'SALTWICK', 'HOLLIS', 'VESK', 'ODA', 'TALLOW'];
 // storm phases: seconds of waiting, seconds of closing, share of the map still safe after, damage per second outside
-const STORM = [[55, 25, .6, 1], [35, 20, .36, 2], [28, 18, .18, 4], [24, 15, .08, 6], [20, 15, 0, 10]];
-const BR_DROP = 22 * 60;
+const STORM = [[85, 35, .6, 1], [55, 25, .36, 2], [40, 22, .18, 4], [34, 18, .08, 6], [28, 18, 0, 10]];
+const BR_DROP = 30 * 60, BR_EVENT_AT = BR_DROP + 150 * 60;
 const BR = {
   on: false, via: 'solo', code: 'open', phase: '', mi: '', seed: 0, t: 0, ro: [], nb: 0, lead: true, leaderId: '', people: new Map(),
   cd: 0, cdAt: 0, cdMax: 0, chests: [], open: new Set(), mine: new Set(), zones: [], storm: null, bots: new Map(), bk: [], bkSeq: 0, bkSeen: new Map(),
   dlSeen: new Set(), dl: null, place: 0, spec: null, specT: 0, overT: 0, winner: '', winMe: false, pois: [], segs: BR_BIOMES.slice(), segW: BRW / 5, mapCv: null,
-  note: '', noteT: 0, chan: null, inStorm: false, poiNow: '', mapOpen: false, total: 0, lastAlive: 0, lobbyT: 0, err: ''
+  note: '', noteT: 0, chan: null, inStorm: false, poiNow: '', mapOpen: false, total: 0, lastAlive: 0, lastTeams: 0, lobbyT: 0, err: '',
+  cache: null, pactWith: '', pactFrom: '', teammate: '', dropsOut: [], dropSeq: 0, dropSeen: new Map(), tileOut: new Map(), applying: false
 };
 const brOn = () => WORLD.royale && BR.on;
 const brTag = f => !f ? '' : f === G.p ? (NET.me || 'me') : f.botTag || f.peer || '';
@@ -10355,16 +10466,23 @@ function brItems() {
   defI('br_draught', { name: 'Heartroot Draught', type: 'brheal', heal: 60, cap: 100, use: 150, stack: 3, icon: icon('jug', v('#ffb0b0', '#e2483b', '#8f2233', '#4a1018', '#ffd0d0')), desc: 'Heals 60. Drink it somewhere safe.' });
   defI('br_shard', { name: 'Ward Shard', type: 'brheal', ward: 25, cap: 50, use: 80, stack: 6, icon: icon('stone', v('#e0f4ff', '#8fd0ff', '#4a8adf', '#22406a', '#ffffff')), desc: '+25 ward, up to 50. Ward takes blows before your health does.' });
   defI('br_ward', { name: 'Greatward Flask', type: 'brheal', ward: 50, cap: 100, use: 160, stack: 3, icon: icon('vial', v('#e0f4ff', '#5aa8ff', '#2a62c0', '#14305a', '#ffffff')), desc: '+50 ward, up to 100.' });
+  defI('br_emberlight', { name: 'Emberlight', type: 'brheal', ward: 35, cap: 100, use: 55, stack: 2, icon: icon('vial', v('#fff1a8', '#ffb347', '#e2542b', '#6a2418', '#ffffff')), desc: 'The Ember Cache prize: drink for 35 ward.' });
 }
-function brRollTier(rare) { const r = Math.random(); return rare ? (r < .3 ? 2 : r < .78 ? 3 : 4) : (r < .4 ? 0 : r < .7 ? 1 : r < .89 ? 2 : r < .975 ? 3 : 4); }
-function brLoot(rare) {
-  const P = brPool(), k = brRollTier(rare), pool = P[k].length ? P[k] : P[0], out = [[fpick(pool), 1]];
-  const n = rare ? 2 : 1 + (Math.random() < .55 ? 1 : 0);
-  for (let i = 0; i < n; i++) {
-    const r = Math.random();
-    out.push(r < .27 ? ['br_salve', 2] : r < .38 ? ['br_draught', 1] : r < .62 ? ['br_shard', 2] : r < .7 ? ['br_ward', 1] : r < .84 ? [fpick(['shuriken', 'flask', 'smoke']), fpick([2, 3])] : r < .9 ? ['hook', 1] : ['arrow', 15]);
-  }
-  if (IT[out[0][0]].ammo && !out.some(o => o[0] === 'arrow')) out.push(['arrow', 20]);
+function brRollTier(rare) { const r = Math.random(); return rare ? (r < .78 ? 1 : 2) : (r < .82 ? 0 : 1); }
+function brLoot(rare, event = false) {
+  const out = [];
+  // Chests are trail caches now: a weapon is possible, while food and craft
+  // materials are the reliable find. The center cache is the one exception.
+  if (event) return [['br_emberlight', 1], [fpick(['copper_ore', 'tin_ore', 'coal']), 3], ['berries', 3], ['br_shard', 1]];
+  if (Math.random() < (rare ? .72 : .28)) { const P = brPool(), k = brRollTier(rare), pool = P[k].length ? P[k] : P[0]; if (pool.length) out.push([fpick(pool), 1]); }
+  const bundles = [
+    [['stick', randi(2, 4)], ['fiber', randi(1, 3)]],
+    [['rock', randi(1, 3)], ...(Math.random() < .65 ? [['flint', 1]] : [])],
+    [[fpick(['berries', 'meat', 'egg']), randi(1, 3)], ...(Math.random() < .45 ? [['salt', 1]] : [])],
+    [[fpick(['copper_ore', 'tin_ore', 'coal']), randi(1, 2)], ['br_salve', 1]]
+  ];
+  const bundleN = rare ? 3 : 2; for (let i = 0; i < bundleN; i++) out.push(...bundles.splice(randi(0, bundles.length - 1), 1)[0]);
+  if (rare && Math.random() < .3) out.push(['br_shard', 1]);
   return out;
 }
 
@@ -10389,7 +10507,7 @@ function brEase(x, dir, gy) { for (let k = 1; k < 30; k++) { const xx = x + dir 
 function brChest(x, y, rare, o = {}) {
   if (!inW(x, y) || tiles[y * WW + x] !== AIR || !TP[tileAt(x, y + 1)].solid && tileAt(x, y + 1) !== PLATFORM) return null;
   for (const c of BR.chests) if (abs(c.x - x) < 3 && abs(c.y - y) < 3) return null;
-  const c = { i: BR.chests.length, x, y, rare: !!rare, cave: !!o.cave, high: !!o.high, open: false, t: 0 }; BR.chests.push(c); return c;
+  const c = { i: BR.chests.length, x, y, rare: !!rare, cave: !!o.cave, high: !!o.high, event: !!o.event, open: false, t: 0 }; BR.chests.push(c); if (c.event) BR.cache = c; return c;
 }
 function brTree(x, gy, b) {
   const kind = b === 'thorn' ? 3 : b === 'moor' ? 0 : b === 'reach' ? 1 : 2, th = kind === 0 ? 7 + randi(0, 7) : kind === 1 ? 5 + randi(0, 5) : 5 + randi(0, 4);
@@ -10456,6 +10574,14 @@ function genRoyale(seed) {
     for (let xx = x; xx <= x + 7; xx++) if (tileAt(xx, py) === AIR) tiles[py * WW + xx] = PLATFORM;
     brChest(x + 3, py - 1, false, { high: true }); reserve(x - 1, x + 8, 1);
   }
+  // A marked Ember Cache arrives late, after the first scramble for shelter.
+  // It brings a small ward and the ingredients for a real craft, not an endgame weapon.
+  let ex = BRW >> 1;
+  for (let d = 0; d < 70 && (RESV[ex] || abs(heights[ex - 1] - heights[ex]) > 1 || abs(heights[ex + 1] - heights[ex]) > 1); d++) {
+    const q = d & 1 ? (BRW >> 1) + ((d + 1) >> 1) : (BRW >> 1) - (d >> 1); if (q > 24 && q < BRW - 24 && !RESV[q] && abs(heights[q - 1] - heights[q]) <= 1 && abs(heights[q + 1] - heights[q]) <= 1) { ex = q; break; }
+  }
+  brChest(ex, heights[ex] - 1, true, { high: true, event: true });
+  if (!BR.cache) for (let d = 0; d < BRW; d++) { const q = (BRW >> 1) + (d & 1 ? (d + 1) >> 1 : -(d >> 1)); if (q < 20 || q >= BRW - 20 || RESV[q] || abs(heights[q - 1] - heights[q]) > 1 || abs(heights[q + 1] - heights[q]) > 1 || BR.chests.some(c => abs(c.x - q) < 4)) continue; if (brChest(q, heights[q] - 1, true, { event: true })) break; }
   for (let x = 0; x < BRW; x++) { let y = 0; while (y < BRH && !TP[tiles[y * WW + x]].solid) y++; SKYL[x] = max(heights[x] + 3, min(y + 3, BRH)); }
   for (const q of PROPS) bucketAdd(PROPB, q); for (const q of FGP) bucketAdd(FGPB, q);
   MODS_ON = false; brMapArt();
@@ -10491,6 +10617,18 @@ function brPOI(b, cx, name) {
     for (const [ox, h] of [[-15, 6], [-9, 9], [7, 7], [14, 5]]) for (let y = gy - h; y < gy; y++) { tiles[y * WW + cx + ox] = y < gy - h + 2 && rand() < .5 ? AIR : CINDERBRICK; walls[y * WW + cx + ox + 1] = W_RUIN; }
     for (let x = cx - 9; x <= cx + 7; x++) tiles[(gy - 9) * WW + x] = PLATFORM;
     vent(cx - 3, gy - 22); brChest(cx - 12, gy - 1, false); brChest(cx + 2, gy - 1, false); brChest(cx - 1, gy - 10, true, { high: true }); brChest(cx + 11, gy - 1, false);
+  }
+  // A shared field kit keeps each settlement useful: forage, cook, then craft.
+  const kit = [BENCH, FIRE, CAULDRON, SIEVE], starts = [23, -23, 19, -19, 15, -15, 11, -11, 7, -7, 3, -3];
+  for (const start of starts) {
+    const dir = start < 0 ? -1 : 1, spots = []; let clear = true;
+    for (let k = 0; k < kit.length; k++) {
+      const x = cx + start + dir * k; if (x < 3 || x > BRW - 4) { clear = false; break; }
+      const y = heights[x] - 1, i = y * WW + x;
+      if (tiles[i] !== AIR || !TP[tiles[i + WW]].solid || BR.chests.some(c => abs(c.x - x) < 3 && abs(c.y - y) < 3)) { clear = false; break; }
+      spots.push([x, y]);
+    }
+    if (clear) { spots.forEach(([x, y], i) => dyn(x, y, kit[i])); break; }
   }
   reserve(cx - 28, cx + 28, 2);
 }
@@ -10563,10 +10701,15 @@ function brQuickUse(p) {
 
 // ---------------- chests ----------------
 function brNearChest(f, r = 16) { let best = null, bd = r; for (const c of BR.chests) { if (c.open) continue; const d = abs(c.x * T + 4 - (f.x + 3)) + abs((c.y + 1) * T - (f.y + f.h)) * .7; if (d < bd) { bd = d; best = c; } } return best; }
+function brNearStation(f, r = 6) {
+  const px = floor((f.x + 3) / T), py = floor((f.y + f.h / 2) / T); let best = null, bd = r + 1;
+  for (const o of tileObjs.values()) { if (!STATIONS[o.id] || o.id === POST) continue; const d = abs(o.x - px) + abs(o.y - py) * .5; if (d < bd) { bd = d; best = o; } }
+  return best;
+}
 function brOpenChest(c, f) {
-  if (!c || c.open) return; c.open = true; c.t = 0; BR.mine.add(c.i);
+  if (!c || c.open) return; if (c.event && BR.t < BR_EVENT_AT) { if (f === G.p) { BR.note = 'THE EMBER CACHE IS STILL SLEEPING'; BR.noteT = 100; sfx('deny'); } return; } c.open = true; c.t = 0; BR.mine.add(c.i);
   const px = c.x * T + 4, py = c.y * T + 2; sfx('craft', 0); burst(px, py, 14, c.rare ? ['#ffd35a', '#fff1a8'] : ['#ffb347', '#c98a5a'], 1.6, 30, { glow: 1 });
-  const loot = brLoot(c.rare);
+  const loot = brLoot(c.rare, c.event);
   if (f === G.p) { loot.forEach(([id, n], k) => spawnDrop(id, n, px - 3, py - 4, (k - (loot.length - 1) / 2) * 1.1, -2.4 - k * .2)); return; }
   if (f && f.br) for (const [id, n] of loot) brBotTake(f, id, n);
 }
@@ -10583,7 +10726,7 @@ function brSpill(f) {
   else if (f.br) { if (f.wid && f.wid !== 'fists') out.push([f.wid, 1]); if (f.br.heals > 0) out.push(['br_salve', min(4, f.br.heals)]); if (f.br.wards > 0) out.push(['br_shard', min(4, f.br.wards)]); }
   return out;
 }
-function brDropPile(x, y, items) { items.forEach(([id, n], k) => { if (IT[id] && n > 0) spawnDrop(id, n, x + frand(-3, 3), y - 4, (k - (items.length - 1) / 2) * .9, -2 - frand(1)); }); }
+function brDropPile(x, y, items) { items.forEach(([id, n], k) => { if (IT[id] && n > 0) spawnDrop(id, n, x + frand(-3, 3), y - 4, (k - (items.length - 1) / 2) * .9, -2 - frand(1), true); }); }
 
 // ---------------- starting a match ----------------
 function brNewBot(i, skill) {
@@ -10595,8 +10738,8 @@ function brSkill() { const d = SETTINGS.diff; return d === 'hard' ? frand(.58, .
 // everyone runs this with the same seed, so everyone stands on the same island
 function brEnterMatch(mi, seed, roster, nb) {
   const nick = G.nick, skin = G.skin;
-  genRoyale(seed); freshSession(); G.nick = nick; G.skin = skin; G.clock = [.3, .36, .2, .58][seed % 4]; updateSun();
-  Object.assign(BR, { mapHide: false, mi, seed, t: 0, ro: roster.slice(), nb, phase: 'drop', open: new Set(), mine: new Set(), bots: new Map(), bk: [], bkSeq: 0, bkSeen: new Map(), dlSeen: new Set(), dl: null, place: 0, spec: null, specT: 0, overT: 0, winner: '', winMe: false, chan: null, note: '', noteT: 0, inStorm: false, poiNow: '', mapOpen: false, lastAlive: 0 });
+  genRoyale(seed); freshSession(); WORLD.mode = 0; G.nick = nick; G.skin = skin; G.clock = [.3, .36, .2, .58][seed % 4]; updateSun();
+  Object.assign(BR, { mapHide: false, mi, seed, t: 0, ro: roster.slice(), nb, phase: 'drop', open: new Set(), mine: new Set(), bots: new Map(), bk: [], bkSeq: 0, bkSeen: new Map(), dlSeen: new Set(), dl: null, place: 0, spec: null, specT: 0, overT: 0, winner: '', winMe: false, chan: null, note: '', noteT: 0, inStorm: false, poiNow: '', mapOpen: false, lastAlive: 0, lastTeams: 0, cache: null, cacheAnnounced: false, pactWith: '', pactFrom: '', teammate: '', dropsOut: [], dropSeq: 0, dropSeen: new Map(), tileOut: new Map(), applying: false });
   BR.zones = brZones(seed); BR.storm = brStormAt(0); NET.deathN = 0; NET.kb = ['', 0]; NET.hits = []; NET.shots = []; NET.seen.clear();
   inv = new Array(INV_N).fill(null); G.sel = 0;
   G.p = newPlayer(); Object.assign(G.p, { name: G.nick, brIn: true, ward: 0, onBarge: true, noHit: true, team: 'me' }); G.fighters = [G.p]; G.npcs = []; G.enemies = [];
@@ -10628,16 +10771,17 @@ function brTick() {
   // spectating after you fall
   if (p.dead && BR.phase !== 'over') { const s = BR.spec; if (!s || s.dead || s.gone || !G.fighters.includes(s)) { BR.specT++; if (BR.specT > 50) { BR.spec = brAlive().find(f => f !== p) || null; BR.specT = 0; } } if (pressed.KeyD || pressed.ArrowRight || pressed.KeyA || pressed.ArrowLeft) brSpecNext(pressed.KeyA || pressed.ArrowLeft ? -1 : 1); }
   // who is left
-  const alive = brAlive(); BR.lastAlive = alive.length;
-  if (BR.phase === 'fight' && alive.length <= 1 && BR.t > BR_DROP + 60) brOver(alive[0] || null);
+  const alive = brAlive(), teams = new Set(alive.map(f => f.team)); BR.lastAlive = alive.length; BR.lastTeams = teams.size;
+  if (BR.phase === 'fight' && teams.size <= 1 && BR.t > BR_DROP + 60) brOver(alive[0] || null);
+  if (!BR.cacheAnnounced && BR.t >= BR_EVENT_AT) { BR.cacheAnnounced = true; BR.note = 'THE EMBER CACHE IS OPEN  ·  FIND THE GOLD MARK'; BR.noteT = 240; sfx('quest', 0); }
   if (BR.phase === 'over') { BR.overT++; if (BR.via !== 'solo' && BR.overT > 60 * 14) brBackToLobby(); }
   if (BR.via !== 'solo') brNetTick();
 }
 const brAlive = () => G.fighters.filter(f => f.brIn && !f.dead && !f.gone);
 function brSpecNext(d) { const a = brAlive().filter(f => f !== G.p); if (!a.length) return; const i = a.indexOf(BR.spec); BR.spec = a[((i < 0 ? 0 : i + d) % a.length + a.length) % a.length]; sfx('ui'); }
 function brOver(w) {
-  BR.phase = 'over'; BR.overT = 0; BR.winner = w ? w.name : ''; BR.winMe = w === G.p;
-  if (BR.winMe) { BR.place = 1; G.banner = { text: 'YOU ARE THE LAST EMBER', sub: G.p.kills + ' taken down. The ashfall settles.', t: 0 }; sfx('quest', 0); G.flash = .5; G.flashCol = '255,211,90'; for (let i = 0; i < 40; i++) P(G.p.x + 3 + frand(-60, 60), G.p.y - frand(10, 80), frand(-.5, .5), frand(.3, 1), 90, fpick(['#ffd35a', '#ff8a3d', '#fff1a8']), { glow: 1, g: .01 }); }
+  BR.phase = 'over'; BR.overT = 0; BR.winner = w ? w.name : ''; BR.winMe = !!(w && G.p && w.team === G.p.team);
+  if (BR.winMe) { BR.place = 1; G.banner = { text: w === G.p ? 'YOU ARE THE LAST EMBER' : 'YOUR PACT OUTLASTED THE ASHFALL', sub: G.p.kills + ' taken down. The ashfall settles.', t: 0 }; sfx('quest', 0); G.flash = .5; G.flashCol = '255,211,90'; for (let i = 0; i < 40; i++) P(G.p.x + 3 + frand(-60, 60), G.p.y - frand(10, 80), frand(-.5, .5), frand(.3, 1), 90, fpick(['#ffd35a', '#ff8a3d', '#fff1a8']), { glow: 1, g: .01 }); }
   else G.banner = { text: w ? w.name + ' IS THE LAST EMBER' : 'THE ASHFALL TOOK EVERYONE', sub: BR.place ? 'you placed #' + BR.place : '', t: 0 };
   if (w && w !== G.p) BR.spec = w;
 }
@@ -10664,15 +10808,36 @@ function brInput(p, I) {
   if (p.dead) return true;
   if (p.glide) { I.lp = I.rp = I.l = I.r = I.dodgeP = I.armP = I.jumpP = false; }
   if (p.brUse) { I.lp = I.rp = I.l = I.r = I.dodgeP = I.armP = false; I.md = 0; }
+  if (p.consume) { I.lp = I.rp = I.l = I.r = I.dodgeP = I.armP = I.jumpP = I.jumpH = false; I.md = 0; }
   const it = heldItem();
   if (it && it.type === 'brheal' && !UI.open) { if (I.lp && !p.brUse) brStartUse(p, it.id); I.lp = I.l = false; }
   if (!UI.open && !G.dialog) {
-    if (pressed.KeyF) { const c = brNearChest(p); if (c) brOpenChest(c, p); }
+    if (pressed.KeyF) { const c = brNearChest(p); if (c) brOpenChest(c, p); else { const s = brNearStation(p); if (s) openStation(s.x, s.y); } }
     if (pressed.KeyH) brQuickUse(p);
     if (pressed.KeyT) cycleArm(p);
+    if (pressed.KeyB) toggleUI('book');
+    if (pressed.KeyK && (hasItem('rock') || hasItem('flint'))) toggleUI('knap');
+    if (pressed.KeyP) brOfferPact(p);
   }
   return true;
 }
+function brOfferPact(p) {
+  if (BR.pactFrom) { brFormPact(BR.pactFrom); return; }
+  if (BR.teammate) { BR.note = 'PACT WITH ' + (NET.peers.get(BR.teammate)?.name || 'YOUR ALLY').toUpperCase(); BR.noteT = 120; return; }
+  let best = null, bd = 76;
+  for (const f of NET.peers.values()) { if (f.dead || f.gone || !f.brIn || f.team === p.team) continue; const d = hypot(f.x - p.x, f.y - p.y); if (d < bd) { bd = d; best = f; } }
+  if (!best) { BR.note = 'MOVE CLOSE TO A WAKER AND PRESS P TO OFFER A PACT'; BR.noteT = 150; sfx('deny'); return; }
+  BR.pactWith = best.peer; BR.note = 'PACT OFFER SENT TO ' + best.name.toUpperCase(); BR.noteT = 120; sfx('ui');
+}
+function brFormPact(id) {
+  const p = G.p, f = NET.peers.get(id); if (!p || !f || BR.teammate || BR.pactWith !== id && BR.pactFrom !== id) return;
+  const team = 'P:' + [brMe(), id].sort().map(v => String(v).replace(/[^\w-]/g, '').slice(0, 24)).join(':'); p.team = team; f.team = team; BR.teammate = id; BR.pactWith = ''; BR.pactFrom = '';
+  BR.note = 'PACT FORGED WITH ' + f.name.toUpperCase(); BR.noteT = 180; sfx('quest', 0); burst(p.x + 3, p.y + 8, 18, ['#8ff5e6', '#ffffff', '#ffd35a'], 2, 32, { glow: 1 });
+}
+function brTileChanged(i) { if (!BR.on || !WORLD.royale || BR.applying || !Number.isInteger(i) || i < 0 || i >= tiles.length) return; BR.tileOut.set(i, [i, tiles[i], walls[i]]); if (BR.tileOut.size > 1600) BR.tileOut.delete(BR.tileOut.keys().next().value); }
+function brTilePacket() { const a = []; for (const [i, v] of BR.tileOut) { a.push(v); BR.tileOut.delete(i); if (a.length >= 40) break; } return a; }
+function brQueueDrop(id, n, x, y, vx, vy) { if (!BR.on || !WORLD.royale || !IT[id] || BR.dropsOut.length >= 120) return; BR.dropsOut.push([++BR.dropSeq, id, n, round(x), round(y), round(vx || 0), round(vy || 0)]); }
+function brDropPacket() { return BR.dropsOut.splice(0, 18); }
 function brAfter(p, I) { brGlide(p, I); brTickUse(p); }
 // the camera follows whoever you are watching
 function brCamTarget() {
@@ -10824,7 +10989,8 @@ function brSend() {
       st: p.dead ? 4 : p.state === 'dodge' ? 2 : p.hurtT > 0 ? 3 : a ? 1 : 0, dd: p.dodgeDir, hp: max(0, round(p.hp)), k: p.kills, d: p.deaths,
       m: a ? a.id : '', an: p.atkN, mp: a ? a.phase : 0, mt: a ? a.pt : 0, ma: a ? r2(a.aimA) : 0, md: a ? round(a.dist) : 0, mc: a ? a.charge : 0, mf: a ? a.face : p.face, rp: p.riposte > 0 ? 1 : 0, sp: p.inv > 30 ? 1 : 0,
       hs: NET.hits, ps: NET.shots, kb: NET.kb, sx: p.st ? [p.st.pin > 0 ? (p.st.pinS || 0) + 2 : 0, p.st.burn > 0 ? 1 : 0, p.st.blind > 0 ? 1 : 0, p.st.hook > 0 || p.st.reel > 0 ? 1 : 0] : 0, lk: p.state === 'link' ? 1 : 0,
-      wd: round(p.ward || 0), gl: p.glide ? 1 : 0, ob: p.onBarge ? 1 : 0, al: p.dead ? 0 : 1, pl: BR.place | 0, oc: [...BR.mine], dl: BR.dl || 0
+      wd: round(p.ward || 0), gl: p.glide ? 1 : 0, ob: p.onBarge ? 1 : 0, al: p.dead ? 0 : 1, pl: BR.place | 0, oc: [...BR.mine], dl: BR.dl || 0,
+      pt: typeof p.team === 'string' ? p.team.slice(0, 80) : 'me', po: BR.pactWith || '', td: brTilePacket(), dp: brDropPacket()
     });
   }
   if (BR.lead) {
@@ -10866,7 +11032,25 @@ function brSaw(id, q, s) {
   if (!f && BR.ro.includes(id)) { f = newFighter(num(s.x, 600), num(s.y, 300), { remote: true, peer: id, team: 'r:' + id, snaps: [], spawnT: 0, name: q.n, skin: q.sk, brIn: true, ward: 0, guest: q.guest }); NET.peers.set(id, f); G.fighters.push(f); }
   if (f && typeof s.x === 'number') {
     netApply(f, s); f.ward = clamp(num(s.wd) | 0, 0, 100); f.glide = !!s.gl; f.onBarge = !!s.ob; f.noHit = !!s.ob;
+    if (typeof s.pt === 'string' && s.pt.length <= 80 && /^P:[\w:-]+$/.test(s.pt)) f.team = s.pt;
+    const team = 'P:' + [brMe(), id].sort().map(v => String(v).replace(/[^\w-]/g, '').slice(0, 24)).join(':');
+    if (f.team === team && !BR.teammate) { G.p.team = team; BR.teammate = id; BR.pactWith = ''; BR.pactFrom = ''; BR.note = 'PACT FORGED WITH ' + f.name.toUpperCase(); BR.noteT = 180; sfx('quest', 0); }
     if (s.al === 0 && !f.dead) { f.dead = true; f.deadT = 0; f.hp = 0; }
+  }
+  if (s.po === brMe() && !BR.teammate && !BR.pactFrom) { BR.pactFrom = id; BR.note = 'PACT OFFER FROM ' + (f ? f.name : q.n).toUpperCase() + '  ·  PRESS P TO ACCEPT'; BR.noteT = 180; }
+  if (s.po === brMe() && BR.pactWith === id) brFormPact(id);
+  if (Array.isArray(s.td) && s.td.length) {
+    BR.applying = true;
+    try { for (const row of s.td.slice(0, 40)) {
+      if (!Array.isArray(row) || row.length < 3) continue; const i = num(row[0]) | 0, t = num(row[1]) | 0, w = num(row[2]) | 0;
+      if (i < 0 || i >= tiles.length || !TP[t] || w < 0 || w > 31) continue;
+      const x = i % WW, y = (i / WW) | 0; if (tiles[i] !== t) setTile(x, y, t); walls[i] = w; dirtyAt(x, y);
+    } } finally { BR.applying = false; }
+  }
+  if (Array.isArray(s.dp)) for (const row of s.dp.slice(0, 18)) {
+    if (!Array.isArray(row) || row.length < 7 || !IT[row[1]]) continue; const seq = num(row[0]) | 0, last = BR.dropSeen.get(id) || 0; if (seq <= last) continue; BR.dropSeen.set(id, seq);
+    const n = clamp(num(row[2]) | 0, 1, 99), x = clamp(num(row[3]), 0, WW * T), y = clamp(num(row[4]), 0, WH * T), vx = clamp(num(row[5]), -4, 4), vy = clamp(num(row[6]), -5, 5);
+    spawnDrop(row[1], n, x, y, vx, vy, true);
   }
   if (Array.isArray(s.oc)) for (const i of s.oc.slice(0, 200)) { const c = BR.chests[i | 0]; if (c && !c.open) { c.open = true; c.t = 0; } }
   if (Array.isArray(s.dl) && s.dl.length === 4) { const key = id + ':' + s.dl[0]; if (!BR.dlSeen.has(key)) { BR.dlSeen.add(key); brDropPile(num(s.dl[1]), num(s.dl[2]), brItemsOk(s.dl[3])); } }
@@ -11072,7 +11256,7 @@ function brWorld(w, al, cx, cy) {
   for (const ch of BR.chests) {
     const px = ch.x * T, py = ch.y * T; if (px < vx0 || px > vx1 || py < cy - 20 || py > cy + VS.vh + 20) continue;
     if (ch.open) { w.globalAlpha = .55; w.drawImage(q.img, px + q.ox, py + q.oy + 1); w.globalAlpha = 1; w.fillStyle = '#2a1e16'; w.fillRect(px + q.ox + 1, py + q.oy + 1, q.img.width - 2, 2); }
-    else { w.drawImage(q.img, px + q.ox, py + q.oy); if (ch.rare) { w.fillStyle = '#ffd35a'; w.fillRect(px + q.ox + 1, py + q.oy, q.img.width - 2, 1); } }
+    else { w.drawImage(q.img, px + q.ox, py + q.oy); if (ch.rare || ch.event) { w.fillStyle = ch.event ? '#8ff5e6' : '#ffd35a'; w.fillRect(px + q.ox + 1, py + q.oy, q.img.width - 2, 1); } if (ch.event) { w.globalAlpha = .22 + .16 * sin(G.time * .08); w.fillStyle = '#8ff5e6'; w.fillRect(px - 2, py - 2, 13, 11); w.globalAlpha = 1; } }
   }
   if (BR.phase === 'drop' || BR.t < BR_DROP + 240) { const b = brBarge(min(BR.t, BR_DROP) + max(0, BR.t - BR_DROP)); if (b.x > cx - 80 && b.x < cx + VS.vw + 80) brDrawBarge(w, { x: BR.t > BR_DROP ? b.x + b.dir * (BR.t - BR_DROP) * 3 : b.x, y: b.y - max(0, BR.t - BR_DROP) * .3, dir: b.dir }, al); }
 }
@@ -11116,7 +11300,7 @@ function brStrip(c, x, y, w, h) {
 }
 function brHud(c) {
   const p = G.p, uw = VS.uw, uh = VS.uh, z = BR.storm, alive = BR.lastAlive;
-  if ((p.ward || 0) > 0) { bar(c, 15, 20, 72, 3, p.ward / 100, '#8fd0ff', '#2a62c0'); textO(c, round(p.ward), 91, 17, '#8fd0ff'); }
+  if ((p.ward || 0) > 0) { bar(c, 15, 26, 72, 3, p.ward / 100, '#8fd0ff', '#2a62c0'); textO(c, round(p.ward), 91, 24, '#8fd0ff'); }
   // the storm strip and its clock
   const sw = clamp(uw - 280, 140, 260), sx = round((uw - sw) / 2); brStrip(c, sx, 4, sw, 9);
   let msg = '', col = '#fff';
@@ -11127,8 +11311,9 @@ function brHud(c) {
   else msg = 'the ashfall has closed';
   textC(c, msg, uw / 2, 17, col, 1, textO);
   // who is left
-  const bw = 96, bx = uw - bw - 4; c.fillStyle = 'rgba(18,13,31,.66)'; c.fillRect(bx, 4, bw, 22); c.fillStyle = '#ff8a3d'; c.fillRect(bx, 4, 2, 22);
+  const bw = 96, bx = uw - bw - 4, paired = !!BR.teammate; c.fillStyle = 'rgba(18,13,31,.66)'; c.fillRect(bx, 4, bw, paired ? 31 : 22); c.fillStyle = '#ff8a3d'; c.fillRect(bx, 4, 2, paired ? 31 : 22);
   textO(c, alive + ' LEFT', bx + 7, 7, '#fff1a8', 1); drawText(c, p.kills + ' taken down', bx + 7, 16, '#d8d4e6');
+  if (paired) drawText(c, 'PACTED', bx + 7, 25, '#8ff5e6');
   if (BR.inStorm && (G.time >> 4) & 1) textC(c, 'YOU ARE IN THE ASHFALL', uw / 2, round(uh * .3), '#ff9adf', 1, textO);
   if (BR.noteT > 0) { c.globalAlpha = min(1, BR.noteT / 30); textC(c, BR.note, uw / 2, round(uh * .66), '#fff', 1, textO); c.globalAlpha = 1; }
   if (p.brUse) { const u = p.brUse, it = IT[u.id], hb = hotbarLayout(), w2 = 110, x2 = round((uw - w2) / 2), y2 = hb.y - 24; textC(c, (it.ward ? 'MENDING YOUR WARD' : 'APPLYING ' + it.name.toUpperCase()), uw / 2, y2 - 9, it.ward ? '#8fd0ff' : '#7ddc6f', 1, textO); bar(c, x2, y2, w2, 4, u.t / u.dur, it.ward ? '#8fd0ff' : '#7ddc6f', '#2b2740'); }
@@ -11148,7 +11333,7 @@ function brMap(c) {
   const s = w / (BRW * T), oy = sy0 * 2 * T * s, z = BR.storm;
   if (z) { c.fillStyle = 'rgba(150,60,170,.45)'; c.fillRect(x, y, round(z.L * s), h); c.fillRect(x + round(z.R * s), y, w - round(z.R * s), h); c.fillStyle = '#ffffff'; c.fillRect(x + round(z.nL * s), y, 1, h); c.fillRect(x + round(z.nR * s), y, 1, h); }
   for (const q of BR.pois) { const X = x + round(q.x * T * s), Y = y + round(heights[q.x] * T * s - oy) - 14; textC(c, q.name, X, max(y + 2, Y), '#fff1a8', 1, textO); }
-  for (const ch of BR.chests) if (!ch.open && !ch.cave) { c.fillStyle = ch.rare ? '#ffd35a' : 'rgba(255,200,120,.7)'; c.fillRect(x + round(ch.x * T * s), y + round(ch.y * T * s - oy), 1, 1); }
+  for (const ch of BR.chests) if (!ch.open && !ch.cave) { c.fillStyle = ch.event ? '#8ff5e6' : ch.rare ? '#ffd35a' : 'rgba(255,200,120,.7)'; c.fillRect(x + round(ch.x * T * s), y + round(ch.y * T * s - oy), ch.event ? 3 : 1, ch.event ? 3 : 1); }
   const p = G.p, me = p.onBarge ? brBarge() : p, my = clamp(round((me.y + 10) * s - oy), 2, h - 2); c.fillStyle = '#ffd35a'; c.fillRect(x + round((me.x + 3) * s) - 2, y + my - 2, 5, 5); c.fillStyle = INK; c.fillRect(x + round((me.x + 3) * s), y + my, 1, 1);
   if (p.onBarge) textC(c, 'SPACE to leap here', x + round((me.x + 3) * s), y + my + 6, '#ffd35a', 1, textO);
 }
@@ -12765,7 +12950,7 @@ function bgLayer(k, col, hiA) {
 }
 function regionMix(x) {
   if (WORLD.arena) return WORLD.royale ? brRegionMix(x) : [['ash', 1]];
-  const BGK = { reach: 'reach', moor: 'moor', fen: 'moor', thorn: 'moor', ash: 'ash', scoria: 'scoria', dunes: 'scoria' }, acc = { reach: 0, moor: 0, ash: 0, scoria: 0 };
+  const BGK = { reach: 'reach', moor: 'moor', mosswood: 'moor', willowmere: 'moor', fen: 'moor', thorn: 'moor', ash: 'ash', scoria: 'scoria', dunes: 'scoria' }, acc = { reach: 0, moor: 0, ash: 0, scoria: 0 };
   let tot = 0;
   if (WORLD.endless) { const [t, h] = climate(x), w = bweights(t, h); for (const b in w) if (w[b] > .001) { acc[BGK[b] || 'moor'] += w[b]; tot += w[b]; } }
   else for (const sg of SEGS) { const w = segW(sg, x, 60); if (w > .001) { acc[BGK[sg.b] || 'moor'] += w; tot += w; } }
@@ -12881,7 +13066,7 @@ function renderView(al) {
   for (const fi of G.fires) if (fi.x1 > cx - 60 && fi.x0 < cx + VS.vw + 60) for (let X = fi.x0; X < fi.x1; X += 12) addLight(X, fi.y - 4, .8, .4, .12);
   for (const e of G.enemies) if (e.type === 'cinderling' && !e.dead && e.x > cx - 60 && e.x < cx + VS.vw + 60) addLight(e.x + 4, e.y + 4, .7, .32, .1);
   for (let k = kx0; k <= kx1; k++) { const bk = PROPB.get(k); if (bk) for (const q of bk) if (q.light && q.x > cx - 120 && q.x < cx + VS.vw + 120 && q.y > cy - 120 && q.y < cy + VS.vh + 120) { const fl = .93 + .07 * sin(G.time * .21 + q.x); addLight(q.x + (q.img.width >> 1), q.y + (q.lyo !== undefined ? q.lyo : q.img.height * .6), q.light[0] * fl, q.light[1] * fl, q.light[2] * fl); } }
-  if (!WORLD.arena) stationLights();
+  if (!WORLD.arena || WORLD.royale) stationLights();
   for (const o of tileObjs.values()) if (o.id === PEDESTAL && pedItem(o) && o.x > vx0 - 20 && o.x < vx1 + 20) addLight(o.x * T + 4, o.y * T - 6, .5, .45, .3);
   const pods = [];
   for (const [tx, tr] of treeTops) {
@@ -12913,7 +13098,7 @@ function renderView(al) {
   for (const o of tileObjs.values()) if (o.id === PEDESTAL && o.x >= vx0 - 2 && o.x <= vx1 + 2 && o.y >= vy0 - 2 && o.y <= vy1 + 2) { w.drawImage(SPR.pedestal, o.x * T - 1, o.y * T - 4); const it = pedItem(o); if (it) { const ic = IT[it].icon; w.drawImage(ic, o.x * T + 4 - (ic.width >> 1), o.y * T - 14 + round(sin(G.time * .06) * 1.5)); } }
   for (let k = kx0; k <= kx1; k++) { const bk = PROPB.get(k); if (bk) for (const q of bk) if (q.rf !== RFRAME && q.x < cx + VS.vw && q.x + q.img.width > cx && q.y < cy + VS.vh && q.y + q.img.height > cy) { q.rf = RFRAME; w.drawImage(q.img, q.x, q.y); } }
   for (const [tx, tr] of treeTops) { if (tx < vx0 - 6 || tx > vx1 + 6) continue; const sw = round(sin(G.time * .02 + tr.ph) * 1.3); w.drawImage(SPR.top[tr.kind][tr.v].cv, tx * T + 4 - 23 + sw, tr.y * T + 1 - 31); }
-  if (!WORLD.arena) { drawPhys(w, al); drawStationsWorld(w); }
+  if (!WORLD.arena || WORLD.royale) { drawPhys(w, al); drawStationsWorld(w); }
   for (const d of G.drops) { const ic = IT[d.id].icon, x = lerp(d.px, d.x, al) + 3, y = lerp(d.py, d.y, al) + 3 + sin(d.t * .1), k = ic.width > 12 ? .7 : 1; w.drawImage(ic, round(x - ic.width * k / 2), round(y - ic.height * k / 2), round(ic.width * k), round(ic.height * k)); }
   if (WORLD.royale) brWorld(w, al, cx, cy);
   for (const q of G.parts) { if (q.glow) continue; w.globalAlpha = min(1, q.life / q.max * 2); w.fillStyle = q.col; w.fillRect(floor(q.x), floor(q.y), q.sz, q.sz); } w.globalAlpha = 1;
@@ -13102,7 +13287,7 @@ function drawTags(c, cx, cy, al) {
 function ambient() {
   const b = G.biome, cx = G.cam.x, cy = G.cam.y;
   if (b === 'reach' && G.time % 3 === 0) P(cx + frand(-20, VS.vw + 60), cy - 4, frand(-.5, -.15), frand(.3, .7), 340, fpick(['#ffffff', '#dcf7f5', '#b4e6e8']), { g: 0, fr: 1 });
-  else if (b === 'moor' && G.time % 7 === 0) P(cx + frand(VS.vw), cy + VS.vh * frand(.4, 1.1), frand(-.15, .15), frand(-.35, -.12), 260, fpick(['#ffa07c', '#f06a55', '#ffc2a0']), { g: -.0008, fr: .998, glow: G.dn < .5 ? 1 : 0 });
+  else if ((b === 'moor' || b === 'mosswood' || b === 'willowmere') && G.time % 7 === 0) P(cx + frand(VS.vw), cy + VS.vh * frand(.4, 1.1), frand(-.15, .15), frand(-.35, -.12), 260, fpick(b === 'mosswood' ? ['#b2e38a', '#6ba653', '#d5d37a'] : b === 'willowmere' ? ['#c9fff6', '#8fd0d8', '#b4e6c2'] : ['#ffa07c', '#f06a55', '#ffc2a0']), { g: -.0008, fr: .998, glow: G.dn < .5 ? 1 : 0 });
   else if (b === 'scoria' && G.time % 4 === 0) P(cx + VS.vw + 4, cy + frand(VS.vh), frand(-2.2, -1.2), frand(-.1, .2), 260, fpick(['#d67645', '#bd5a36', '#f0b070']), { g: 0, fr: 1 });
   else if ((b === 'ash' || b === 'ring') && G.time % 4 === 0) { if (Math.random() < .5) P(cx + frand(VS.vw), cy + VS.vh * frand(.3, 1), frand(-.2, .2), frand(-.5, -.2), 200, fpick(SPARK), { g: -.002, fr: 1, glow: 1 }); else P(cx + frand(VS.vw + 40), cy - 4, frand(-.4, -.1), frand(.3, .6), 340, '#a19baa', { g: 0, fr: 1 }); }
   else if (b === 'deep' && G.time % 9 === 0) P(cx + frand(VS.vw), cy + frand(VS.vh), frand(-.1, .1), frand(-.1, .1), 200, fpick(['#4fd8c8', '#8ff5e6']), { g: 0, fr: 1, glow: 1 });
@@ -13134,10 +13319,10 @@ function tick() {
   if (G.dialog && !WORLD.arena && !netLive()) { tickParts(); tickStory(); tickCam(); endTick(); return; }
   coopTick();
   refreshFoes(); tickPlayer();
-  for (const f of G.fighters) { if (f === G.p) continue; if (f.remote) { if (f.coop || f.ghostH) coopReplay(f); else tickRemote(f); } else if (f.ai) { if (f.onBarge) brBotRide(f); else { tickFighter(f, f.brBot ? brBotThink(f) : aiThink(f)); if (f.brBot) brBotAfter(f); } } }
+  for (const f of G.fighters) { if (f === G.p) continue; if (f.remote) { if (f.coop || f.ghostH) coopReplay(f); else tickRemote(f); } else if (f.ai || f.isClone) { if (f.onBarge) brBotRide(f); else { tickFighter(f, f.brBot ? brBotThink(f) : f.isClone ? cloneThink(f) : aiThink(f)); if (f.brBot) brBotAfter(f); } } }
   if (G.duel) tickDuel();
   tickEnemies(); spawnTick(); tickDrops(); tickProjs(); tickParts(); tickStory(); tickStructs(); if (!netGuest()) tickLiquids(); tickCam(); ambient();
-  if (!WORLD.arena) { tickFalling(); tickFelled(); tickRubble(); tickDoors(); tickDrill(); tickStations(); if (!G.away) tickHunger(); if (!netGuest()) tickRegrow(); tickDims(); tickLairs(); tickBless(); tickFurniture(); tickMeal(); if (G.time % 20 === 0) { mapReveal(); G.magR = hasUtil('magnet') ? 76 : 36; } }
+  if (!WORLD.arena || WORLD.royale) { tickFalling(); tickFelled(); tickRubble(); tickDoors(); tickDrill(); tickStations(); if (!G.away) tickHunger(); tickBrews(); if (!WORLD.royale && !netGuest()) tickRegrow(); if (!WORLD.royale) { tickDims(); tickLairs(); tickBless(); tickFurniture(); tickMeal(); if (G.time % 20 === 0) { mapReveal(); G.magR = hasUtil('magnet') ? 76 : 36; } } }
   if (WORLD.arena) arenaTick();
   if (G.combo.t > 0 && --G.combo.t <= 0) { G.combo.n = 0; G.combo.pts = 0; }
   if (G.slowT > 0) G.slowT--; if (G.selT > 0) G.selT--;
@@ -13196,7 +13381,7 @@ function freshSession() {
     boss: null, duel: null, flash: 0, spawnT: 200, biome: '', biomeT: 0, sel: 0, selT: 0, known: new Set(), movesUsed: new Set(), journal: ['waking', 'forge'], jNew: false, q: 0, qFlash: 0, says: [], sayCur: null,
     note: null, banner: null, dialog: null, kills: 0, deaths: 0, played: 0, dirty: false, saveT: 0, savedNote: null, clock: .1, introI: 0, introT: 0, echoT: 60,
     leads: new Set(), pin: null, found: new Set(), linksKnown: new Set(), fam: {}, arts: new Set(), artk: {}, respawn: null, fires: [], smokes: [], stuck: [], link: null, zoom: 1, zoomT: 1, armT: 0, linkBanner: null, leadDone: null, cine: null, bars: 0,
-    falling: [], felled: [], rubble: [], autoDoors: [], regrow: [], lairs: new Set(), bless: null, blessUsed: {}, ev: null, dev: null, devT: 2400, evClock: undefined, dhaz: [], echoes: new Set(), beasts: {}, gear: { head: null, body: null, legs: null, feet: null, off: null }, trink: [], meal: null, rest: 0, nearWarm: false, nearFount: false, mast: {}, pairsKnown: new Set(), drill: null, food: 100, worn: new Set(), spy: false, lampOff: false, quality: {}, reqs: null, seen: null, hintT: -999
+    falling: [], felled: [], rubble: [], autoDoors: [], regrow: [], lairs: new Set(), bless: null, blessUsed: {}, ev: null, dev: null, devT: 2400, evClock: undefined, dhaz: [], echoes: new Set(), beasts: {}, gear: { head: null, body: null, legs: null, feet: null, off: null }, trink: [], meal: null, brew: null, cloneTape: [], rest: 0, nearWarm: false, nearFount: false, mast: {}, pairsKnown: new Set(), drill: null, food: 100, worn: new Set(), spy: false, lampOff: false, quality: {}, reqs: null, seen: null, hintT: -999
   });
   for (const k in YACC) delete YACC[k]; INV_N = packCap(); mapReset();
   UI.open = null; UI.held = null; UI.scroll = 0; acc = 0;
@@ -13235,12 +13420,14 @@ addEventListener('keydown', e => {
   if (G.state === 'brlobby') { if (k === 'Escape') { brLeave(); sfx('ui'); } return; }
   if (G.state !== 'play') { if (k === 'Escape') { if (G.state === 'accounts' && !ACCOUNT.active) return; G.state = ['create', 'wcopy', 'wpaste'].includes(G.state) ? 'worlds' : 'title'; if (G.state === 'accounts') ACCOUNT.form = 'list'; if (G.state === 'title' && COOP.role) coopLeave(); sfx('ui'); } return; }
   if (G.dialog) { if (k === 'KeyF' || k === 'Space' || k === 'Enter' || k === 'KeyE') { dialogAdvance(); pressed[k] = false; } return; }
-  if (k === 'Escape' || k === 'KeyP') { if (UI.open) { closeUI(); sfx('ui'); } else toggleUI('pause'); return; }
+  if (k === 'Escape' || k === 'KeyP' && !WORLD.royale) { if (UI.open) { closeUI(); sfx('ui'); } else toggleUI('pause'); return; }
   if ((k === 'Enter' || k === 'NumpadEnter') && chatKey()) return;
   if (k === 'KeyM' && WORLD.royale) { if (G.p && G.p.onBarge) BR.mapHide = !BR.mapHide; else BR.mapOpen = !BR.mapOpen; sfx('ui'); return; }
   if (k === 'KeyO' || k === 'KeyM' && (WORLD.arena || !hasUtil('fieldmap'))) { muted = !muted; G.banner = { text: muted ? 'SOUND OFF' : 'SOUND ON', sub: '[O] toggles sound', t: 0 }; return; }
   if (k === 'KeyM') { toggleUI('map'); return; }
   if (k === 'KeyC') { toggleUI('codex'); return; }
+  if (WORLD.royale && k === 'KeyB') { toggleUI('book'); return; }
+  if (WORLD.royale && k === 'KeyK' && (hasItem('rock') || hasItem('flint'))) { toggleUI('knap'); return; }
   if (k === 'KeyG' && !UI.open) { dropSelected(e.shiftKey); return; }
   if (k.startsWith('Digit')) { const n = +k[5], i = n === 0 ? 9 : n - 1; if (i < hotN()) { G.sel = i; G.selT = 120; if (G.p.atk && G.p.atk.phase < 2) endAttack(G.p); } return; }
   if (WORLD.royale && k === 'KeyE') { toggleUI('inv'); return; }

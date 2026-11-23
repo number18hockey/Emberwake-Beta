@@ -75,7 +75,7 @@ function sparks(x, y, n, dirx = 0, sp = 2.4, cols = SPARK) { for (let i = 0; i <
 function dust(x, y, n, col = '#b9bdd0', sp = .8) { for (let i = 0; i < n; i++) P(x + frand(-3, 3), y, frand(-1, 1) * sp, frand(-.7, -.1), frand(14, 28) | 0, col, { g: -.005, fr: .93 }); }
 
 // ---------------- drops ----------------
-function spawnDrop(id, n, x, y, vx, vy) { if (!IT[id] || n <= 0 || COOP.applying) return; for (const d of G.drops) if (d.id === id && d.t < 40 && abs(d.x + 3 - x) < 8 && abs(d.y + 3 - y) < 8 && d.n + n <= IT[id].stack) { d.n += n; return; } G.drops.push({ id, n, x: x - 3, y: y - 3, px: x - 3, py: y - 3, w: 6, h: 6, vx: vx === undefined ? frand(-1, 1) : vx, vy: vy === undefined ? frand(-2, -.8) : vy, t: 0, delay: 26, onGround: false }); }
+function spawnDrop(id, n, x, y, vx, vy, noBrSync = false) { if (!IT[id] || n <= 0 || COOP.applying) return; if (!noBrSync && WORLD.royale && typeof brQueueDrop === 'function') brQueueDrop(id, n, x, y, vx, vy); for (const d of G.drops) if (d.id === id && d.t < 40 && abs(d.x + 3 - x) < 8 && abs(d.y + 3 - y) < 8 && d.n + n <= IT[id].stack) { d.n += n; return; } G.drops.push({ id, n, x: x - 3, y: y - 3, px: x - 3, py: y - 3, w: 6, h: 6, vx: vx === undefined ? frand(-1, 1) : vx, vy: vy === undefined ? frand(-2, -.8) : vy, t: 0, delay: 26, onGround: false }); }
 function tickDrops() {
   const p = G.p, a = G.drops;
   for (let i = a.length - 1; i >= 0; i--) {

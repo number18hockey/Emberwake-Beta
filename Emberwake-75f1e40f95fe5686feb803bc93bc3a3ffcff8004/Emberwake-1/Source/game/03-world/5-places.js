@@ -81,11 +81,11 @@ function withRng(seed, fn) { const keep = rng; rng = mulberry32(seed >>> 0); try
 
 // ---------------- where the new places go ----------------
 const SKINDS2 = {
-  moor: ['hut', 'camp', 'circle', 'tower', 'well', 'graves', 'shrine', 'mill', 'mill', 'den'], thorn: ['camp', 'hut', 'tower', 'circle', 'shrine', 'den', 'den'],
+  moor: ['hut', 'camp', 'circle', 'tower', 'well', 'graves', 'shrine', 'mill', 'mill', 'den'], mosswood: ['hut', 'camp', 'circle', 'well', 'den', 'shrine', 'mill'], willowmere: ['stilt', 'stilt', 'hut', 'wreck', 'shrine', 'den'], thorn: ['camp', 'hut', 'tower', 'circle', 'shrine', 'den', 'den'],
   reach: ['camp', 'circle', 'tower', 'shrine', 'shrine', 'den'], fen: ['stilt', 'stilt', 'hut', 'wreck', 'shrine'], dunes: ['dune', 'well', 'graves', 'wreck', 'wreck', 'shrine'],
   scoria: ['tower', 'dune', 'graves', 'camp', 'shrine', 'den'], ash: ['graves', 'camp', 'circle', 'shrine', 'den']
 };
-const BKINDS = { moor: ['hamlet', 'hamlet', 'fort', 'castle'], thorn: ['fort', 'fort', 'hamlet', 'castle'], reach: ['temple', 'temple', 'castle', 'hamlet'], fen: ['hamlet', 'fort'], dunes: ['pyramid', 'pyramid', 'fort'], scoria: ['fort', 'castle', 'pyramid'], ash: ['fort', 'castle', 'fort'] };
+const BKINDS = { moor: ['hamlet', 'hamlet', 'fort', 'castle'], mosswood: ['hamlet', 'hamlet', 'fort'], willowmere: ['hamlet', 'fort'], thorn: ['fort', 'fort', 'hamlet', 'castle'], reach: ['temple', 'temple', 'castle', 'hamlet'], fen: ['hamlet', 'fort'], dunes: ['pyramid', 'pyramid', 'fort'], scoria: ['fort', 'castle', 'pyramid'], ash: ['fort', 'castle', 'fort'] };
 const BHALF = { hamlet: 31, fort: 27, castle: 35, pyramid: 25, temple: 17 }, BIGW = 560, DEEPW = 700, CAMPW = 330;
 const nearEcho = (x, r) => { for (let i = 0; i < (LORE_N[DIM] || 0); i++) if (abs(echoX(i) - x) < r) return true; return false; };
 function bigOf(k) {

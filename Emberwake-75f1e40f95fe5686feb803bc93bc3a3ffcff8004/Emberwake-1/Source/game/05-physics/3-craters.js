@@ -260,7 +260,7 @@ function weaponTool(W, m, k = 1) {
 }
 // the first time in a swing that the weapon meets the ground, it bites
 function terrainStrike(a, x, y, ux, uy) {
-  if (a.dug || WORLD.arena || a.f !== G.p || !a.W) return false;
+  if (a.dug || WORLD.arena && !WORLD.royale || a.f !== G.p || !a.W) return false;
   const gx = floor(x), gy = floor(y), tx = gx >> 3, ty = gy >> 3; if (!inW(tx, ty)) return false;
   const i = ty * WW + tx, t = tiles[i]; if (!NATURAL.has(t) || PLACED.has(i) || !cellAlive(gx, gy)) return false;
   a.dug = true; const tool = weaponTool(a.W, a.m, (a.charged ? 1.4 : 1) * (a.m.cr ? 2.2 : 1)), out = { n: 0, broke: 0, hard: 0, wrong: 0, mat: 0, direct: i, by: G.p, natural: 1 };
@@ -270,7 +270,7 @@ function terrainStrike(a, x, y, ux, uy) {
 }
 // a heavy landing leaves a pit
 function terrainSlam(a, cx, fy) {
-  if (WORLD.arena || a.f !== G.p || !a.W) return;
+  if (WORLD.arena && !WORLD.royale || a.f !== G.p || !a.W) return;
   const tool = weaponTool(a.W, a.m, a.m && a.m.cr ? 2.6 : 1.5); tool.kind = 'hammer';
   for (const dx of [-5, 0, 5]) { const x = cx + dx, gx = floor(x); let gy = floor(fy); while (gy < fy + 6 && !(NATURAL.has(tileAt(gx >> 3, gy >> 3)) && cellAlive(gx, gy))) gy++; if (gy >= fy + 6) continue; const out = { n: 0, broke: 0, hard: 0, wrong: 0, mat: 0, direct: (gy >> 3) * WW + (gx >> 3), by: G.p, natural: 1 }; crater(x, gy, 0, 1, tool, gearMul('mine') * (dx ? .7 : 1), out); emitYield(x, gy - 6); }
 }

@@ -53,7 +53,7 @@ function drawBook(c) {
     const e = list[k + UI.scroll]; if (!e) break; const r = e.r, yy = ry + k * 19, hov = inR(rx, yy, rw, 18), outId = r.out || Object.keys(r.need)[0];
     if (hov) { c.fillStyle = '#2b2740'; c.fillRect(rx, yy, rw, 18); }
     slotBox(c, rx, yy, false, hov && e.can); c.globalAlpha = e.can ? 1 : .45; drawStack(c, { id: outId, n: r.out ? r.n : 1 }, rx, yy); c.globalAlpha = 1;
-    drawText(c, (r.out ? IT[r.out].name : 'Sift ' + IT[outId].name.toLowerCase()) + (r.lvl ? '  (' + LVL_NEED[r.st === 'armr' ? 'armr' : 'anvil'][r.lvl] + ')' : ''), rx + 21, yy + 1, e.can ? '#fff' : '#8b8fa3');
+    drawText(c, (r.out ? IT[r.out].name : 'Sift ' + IT[outId].name.toLowerCase()) + (r.lvl ? '  (' + LVL_NEED[r.st === 'armr' ? 'armr' : r.st === 'pot' ? 'pot' : 'anvil'][r.lvl] + ')' : ''), rx + 21, yy + 1, e.can ? '#fff' : '#8b8fa3');
     let nx = rx + 21; for (const q in r.need) { if (nx > rx + rw - 12) { drawText(c, '...', nx, yy + 10, '#8b8fa3'); break; } const hv = countItem(q); nx += drawText(c, `${r.need[q]} ${IT[q].name}`, nx, yy + 10, hv >= r.need[q] || WORLD.mode === 1 ? '#7ddc6f' : '#e2483b') + 4; }
     if (hov) tip = r.out ? itemTip(IT[r.out]) : [['Shake out of it:', '#ffd35a'], [r.loot.map(l => IT[l[0]].name).join(', '), '#b9bdd0']];
   }

@@ -96,7 +96,7 @@ function openStation(tx, ty) {
   stnState(ty * WW + tx, t); netLock(ty * WW + tx, true); G.flags['used_' + kind] = true; learn('stations');
 }
 function stnList(kind, t) {
-  const lvl = kind === 'armr' ? anvilNear() : t === ANVIL2 ? 2 : t === SLAGFORGE ? 3 : 1;
+  const lvl = kind === 'armr' ? anvilNear() : kind === 'pot' ? (t === MOON_CAULDRON ? 3 : t === BREW_STAND ? 2 : 1) : t === ANVIL2 ? 2 : t === SLAGFORGE ? 3 : 1;
   return RECIPES.map((r, i) => ({ r, i })).filter(e => e.r.st === kind && (e.r.lvl !== 3 || lvl === 3 || G.flags.seen1 || WORLD.mode === 1)).map(e => ({ r: e.r, i: e.i, can: canCraft(e.r) && (!e.r.lvl || e.r.lvl <= lvl), lvlOk: !e.r.lvl || e.r.lvl <= lvl })).sort((a, b) => (b.can - a.can) || (b.lvlOk - a.lvlOk));
 }
 function stnBox() { const w = min(VS.uw - 10, 372), h = min(VS.uh - 48, 214), x = round((VS.uw - w) / 2), y = round((VS.uh - h) / 2) - 10; return { x, y, w, h }; }
@@ -117,7 +117,7 @@ function drawStation(c) {
     drawText(c, r.out ? IT[r.out].name : 'Sift ' + IT[outId].name.toLowerCase(), x + 21, y + 1, e.can ? '#fff' : '#8b8fa3');
     let nx = x + 21; const parts = Object.keys(r.need).map(q => [`${r.need[q]} ${IT[q].name}`, countItem(q) >= r.need[q] || WORLD.mode === 1]);
     if (r.fuel) parts.push([`${r.fuel} fuel`, fuelHave() >= r.fuel || WORLD.mode === 1]); for (const q of r.keep || []) parts.push([`(${IT[q].name})`, hasItem(q) || WORLD.mode === 1]);
-    if (!e.lvlOk) parts.unshift(['needs ' + LVL_NEED[S.kind === 'armr' ? 'armr' : 'anvil'][e.r.lvl], false]);
+    if (!e.lvlOk) parts.unshift(['needs ' + LVL_NEED[S.kind === 'armr' ? 'armr' : S.kind === 'pot' ? 'pot' : 'anvil'][e.r.lvl], false]);
     for (const [s, ok] of parts) { if (nx > x + L.w - 8) break; nx += drawText(c, s, nx, y + 10, ok ? '#7ddc6f' : '#e2483b') + 4; }
     if (hov) { tip = r.out ? itemTip(IT[r.out]) : [['Shake out of it:', '#ffd35a'], [r.loot.map(l => IT[l[0]].name).join(', '), '#b9bdd0']]; if (r.temp && !craftEasy()) tip.push([`needs heat ${r.temp}${r.shut ? ', damper shut' : ''}`, '#ff8a3d']); if (r.t) tip.push([`takes ${round(r.t / 60)}s`, '#8ff5e6']); if (r.band) tip.push([`heat band ${r.band}`, '#ff8a3d']); }
     hit(x, y, L.w, 18, () => pickRecipe(e, S, st));
@@ -132,7 +132,7 @@ function drawStation(c) {
 }
 const smsg = (s, col) => { UI.msg = { s, col, t: 150 }; };
 function pickRecipe(e, S, st) {
-  const r = e.r; if (!e.lvlOk) { sfx('deny'); smsg('This needs ' + LVL_NEED[S.kind === 'armr' ? 'armr' : 'anvil'][r.lvl] + '.', '#e2483b'); return; }
+  const r = e.r; if (!e.lvlOk) { sfx('deny'); smsg('This needs ' + LVL_NEED[S.kind === 'armr' ? 'armr' : S.kind === 'pot' ? 'pot' : 'anvil'][r.lvl] + '.', '#e2483b'); return; }
   if (!canCraft(r)) { sfx('deny'); smsg('You are missing something.', '#e2483b'); return; }
   if (PASSIVE[S.kind]) {
     const k = st.slots.indexOf(null); if (k < 0) { sfx('deny'); smsg('Every slot is full.', '#e2483b'); return; }

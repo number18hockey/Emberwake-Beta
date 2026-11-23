@@ -62,12 +62,13 @@ function spawnTick() {
   spawnTick0();
 }
 function spawnTick0() {
-  if (WORLD.arena || WORLD.mode === 1 || G.boss || G.duel || (G.dialog && !netLive()) || G.cine || G.time < 500 || --G.spawnT > 0) return; G.spawnT = 120 + frand(150); if (DIM) { dimSpawn(); return; }
-  const p = G.p, ptx = floor(p.x / T), pty = floor(p.y / T), realm = realmAt(ptx, pty), night = G.dn < .3, under = realm === 'under' || realm === 'deep';
+  if (WORLD.arena || WORLD.mode === 1 || G.boss || G.duel || (G.dialog && !netLive()) || G.cine || G.time < 500 || --G.spawnT > 0) return;
+  const night = G.dn < .3; G.spawnT = night ? 80 + frand(100) : 230 + frand(180); if (DIM) { dimSpawn(); return; }
+  const p = G.p, ptx = floor(p.x / T), pty = floor(p.y / T), realm = realmAt(ptx, pty), under = realm === 'under' || realm === 'deep';
   if (placeAt(ptx, pty) === 'village' || abs(ptx - SPAWN_X) < VIL_W + 12 && !under) return;
   let n = 0, nh = 0; for (const e of G.enemies) if (!e.dead) n++; for (const f of G.fighters) if (f.hollow && !f.dead) nh++;
   if (G.ev && eventSpawn()) return;
-  if (n + nh >= (realm === 'deep' ? 5 : under ? 5 : realm === 'drift' ? 3 : night ? 5 : 3)) return;
+  if (n + nh >= (realm === 'deep' ? 5 : under ? 5 : realm === 'drift' ? 3 : night ? 7 : 2)) return;
   const edge = ceil(VS.vw / T / 2) + 4; // just past the edge of the screen
   if (realm === 'drift') {
     for (let tries = 0; tries < 10; tries++) { const x = p.x + (Math.random() < .5 ? -1 : 1) * frand(edge * T, edge * T + 100), y = p.y + frand(-60, 30); if (x < 40 || x > WW * T - 40 || boxHits(x, y, 18, 6)) continue; const e = mkEnemy(Math.random() < .85 ? 'skyray' : 'bat', x, y); e.hx = x; e.hy = y; G.enemies.push(e); return; }

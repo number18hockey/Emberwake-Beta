@@ -32,7 +32,7 @@ function chestAt(x, y, key) { if (!inW(x, y)) return; dyn(x, y, CHEST); LOOT.set
 function groundAt(x) { let y = max(2, heights[x] - 26); while (y < WH - 4 && !TP[tiles[y * WW + x]].solid) y++; return y; }
 function buildStructures(free) {
   const n = WORLD.size === 0 ? 9 : WORLD.size === 1 ? 13 : 20, made = {};
-  const KINDS = { moor: ['hut', 'camp', 'circle', 'tower', 'well', 'graves'], thorn: ['camp', 'hut', 'tower', 'circle'], reach: ['camp', 'circle', 'tower'], fen: ['stilt', 'stilt', 'hut'], dunes: ['dune', 'dune', 'well', 'graves'], scoria: ['tower', 'dune', 'camp'], ash: ['graves'] };
+  const KINDS = { moor: ['hut', 'camp', 'circle', 'tower', 'well', 'graves'], mosswood: ['hut', 'camp', 'circle', 'well', 'den'], willowmere: ['stilt', 'stilt', 'hut', 'wreck'], thorn: ['camp', 'hut', 'tower', 'circle'], reach: ['camp', 'circle', 'tower'], fen: ['stilt', 'stilt', 'hut'], dunes: ['dune', 'dune', 'well', 'graves'], scoria: ['tower', 'dune', 'camp'], ash: ['graves'] };
   for (let k = 0, tries = 0; k < n && tries < n * 40; tries++) {
     const x = randi(24, WW - 30), b = biomeAt(x), kinds = KINDS[b]; if (!kinds || !free(x, 9)) continue;
     let kind = kinds[randi(0, kinds.length - 1)]; if ((made[kind] || 0) > n / 3) continue;
@@ -136,7 +136,7 @@ function skyRuins() {
 
 // cliffs a Waker cannot jump get a way up: low ones grow a talus of steps, tall ones carry ivy, glass roots or old chains
 function makeTraversable() {
-  const fill = x => { const b = biomeAt(x); return b === 'reach' ? SNOW : b === 'scoria' || b === 'dunes' ? SAND : b === 'ash' ? ASH : b === 'fen' ? MUD : DIRT; };
+  const fill = x => { const b = biomeAt(x); return b === 'reach' ? SNOW : b === 'scoria' || b === 'dunes' ? SAND : b === 'ash' ? ASH : b === 'fen' || b === 'willowmere' ? MUD : DIRT; };
   const aid = x => { const b = biomeAt(x); return b === 'reach' ? GLASSROOT : b === 'scoria' || b === 'dunes' || b === 'ash' ? RUSTCHAIN : CREEPER; };
   const free = x => x > 0 && x < WW - 1 && (RESV[x] | 0) < 2, soft = i => !tiles[i] || (TP[tiles[i]].decor && !TP[tiles[i]].dyn);
   const S = new Int16Array(WW);
