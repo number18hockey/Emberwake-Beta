@@ -1,0 +1,107 @@
+diff a/Emberwake-75f1e40f95fe5686feb803bc93bc3a3ffcff8004/Emberwake-1/Emberwake.html b/Emberwake-75f1e40f95fe5686feb803bc93bc3a3ffcff8004/Emberwake-1/Emberwake.html	(rejected hunks)
+@@ -10434,7 +10435,7 @@ function arenaTick() {
+ //  storm clock and the echoes; every computer runs its own Waker and
+ //  shares it as presence, exactly like the Cinder Ring.
+ // ============================================================
+-const BRW = 640, BRH = 140, BRSKY = 17, BR_MAX = 12, BR_FILL = 8;
++const BRW = 960, BRH = 160, BRSKY = 17, BR_MAX = 32, BR_FILL = 32;
+ const BR_TIERS = ['COMMON', 'UNCOMMON', 'RARE', 'EPIC', 'LEGENDARY'], BR_TCOL = ['#c8c4d4', '#7ddc6f', '#5aa8ff', '#c77dff', '#ffd35a'];
+ const BR_MATT = { wood: 0, flint: 0, bone: 0, stone: 0, copper: 1, bronze: 1, rust: 2, chitin: 2, iron: 2, steel: 3, glass: 3, deep: 4, ember: 4 };
+ const BR_OLD = { sword: 0, spear: 0, fangs: 1, maul: 2, bow: 1, nunchaku: 1, kblade: 4, kmaul: 4, vpike: 3, vfangs: 3 };
+@@ -10444,17 +10445,56 @@ const BR_WALL = { moor: W_DIRT, thorn: W_DIRT, dunes: W_SAND, reach: W_STONE, as
+ const BR_PNAMES = { moor: ['HEARTHWICK', 'MILLSTEAD', 'LANTERN GREEN'], thorn: ['THORNWOOD', 'BRAMBLE CAMP', 'THE TANGLE'], dunes: ['SUNKEN SPIRE', 'DUSTWATCH', 'RUSTFALL RUINS'], reach: ['COLDGLASS KEEP', 'FROSTGATE', 'STILLWATCH'], ash: ['CINDER WORKS', 'SLAG HOLLOW', 'THE KILNS'] };
+ const BR_BOTN = ['WREN', 'KESTREL', 'MARROW', 'TINDER', 'SORREL', 'FLINT', 'ROOK', 'BRAMBLE', 'EMBERLY', 'SALTWICK', 'HOLLIS', 'VESK', 'ODA', 'TALLOW'];
+ // storm phases: seconds of waiting, seconds of closing, share of the map still safe after, damage per second outside
+-const STORM = [[85, 35, .6, 1], [55, 25, .36, 2], [40, 22, .18, 4], [34, 18, .08, 6], [28, 18, 0, 10]];
+-const BR_DROP = 30 * 60, BR_EVENT_AT = BR_DROP + 150 * 60;
++const STORM = [[340, 140, .6, 1], [220, 100, .36, 2], [160, 88, .18, 4], [136, 72, .08, 6], [112, 72, 0, 10]];
++const BR_DROP = 60 * 60, BR_EVENT_AT = BR_DROP + 15 * 60 * 60;
+ const BR = {
+-  on: false, via: 'solo', code: 'open', phase: '', mi: '', seed: 0, t: 0, ro: [], nb: 0, lead: true, leaderId: '', people: new Map(),
++  on: false, via: 'solo', code: 'open', matchType: 'unranked', kit: 'miner', rewarded: false, phase: '', mi: '', seed: 0, t: 0, ro: [], nb: 0, lead: true, leaderId: '', people: new Map(),
+   cd: 0, cdAt: 0, cdMax: 0, chests: [], open: new Set(), mine: new Set(), zones: [], storm: null, bots: new Map(), bk: [], bkSeq: 0, bkSeen: new Map(),
+   dlSeen: new Set(), dl: null, place: 0, spec: null, specT: 0, overT: 0, winner: '', winMe: false, pois: [], segs: BR_BIOMES.slice(), segW: BRW / 5, mapCv: null,
+   note: '', noteT: 0, chan: null, inStorm: false, poiNow: '', mapOpen: false, total: 0, lastAlive: 0, lastTeams: 0, lobbyT: 0, err: '',
+-  cache: null, pactWith: '', pactFrom: '', teammate: '', dropsOut: [], dropSeq: 0, dropSeen: new Map(), tileOut: new Map(), applying: false
++  cache: null, pactWith: '', pactFrom: '', teammate: '', dropsOut: [], dropSeq: 0, dropSeen: new Map(), tileOut: new Map(), applying: false, caves: []
+ };
+ const brOn = () => WORLD.royale && BR.on;
+ const brTag = f => !f ? '' : f === G.p ? (NET.me || 'me') : f.botTag || f.peer || '';
++const BR_KITS = [
++  { id: 'miner', name: 'MINER', unlock: 0, desc: 'Ore, a flint pick and torches. Explore underground and craft up.', items: [['flint_pick', 1], ['torch', 3], ['rock', 3], ['br_salve', 1], ['spear', 1]] },
++  { id: 'scavenger', name: 'SCAVENGER', unlock: 1, desc: 'A knife, rope and map. Reach structures before the crowd.', items: [['flint_knife', 1], ['rope', 2], ['fieldmap', 1], ['br_salve', 1], ['sword', 1]] },
++  { id: 'forager', name: 'FORAGER', unlock: 2, desc: 'Food, fiber and a bow. Sustain yourself and fight from range.', items: [['bow', 1], ['arrow', 12], ['berries', 5], ['fiber', 4], ['spear', 1]] },
++  { id: 'ranger', name: 'RANGER', unlock: 4, desc: 'A bow, arrows and a glider. Scout high ground and pick fights.', items: [['bow', 1], ['arrow', 18], ['glider', 1], ['br_salve', 1], ['spear', 1]] }
++];
++function brProfile() {
++  const key = 'ew2.br.' + (typeof accountId === 'function' ? accountId() : 'none');
++  try {
++    const raw = typeof LS === 'object' ? JSON.parse(LS.get(key) || '{}') : {};
++    return { xp: max(0, num(raw.xp) | 0), elo: clamp(num(raw.elo, 1000) | 0, 0, 9999), wins: max(0, num(raw.wins) | 0), matches: max(0, num(raw.matches) | 0), kills: max(0, num(raw.kills) | 0) };
++  } catch (e) { return { xp: 0, elo: 1000, wins: 0, matches: 0, kills: 0 }; }
++}
++function brSaveProfile(p) {
++  const key = 'ew2.br.' + (typeof accountId === 'function' ? accountId() : 'none');
++  if (typeof LS === 'object' && !LS.set(key, JSON.stringify(p))) { console.warn('Could not save Battle Royale progression'); return false; }
++  return true;
++}
++function brPassLevel() { return floor(brProfile().xp / 1000); }
++function brKit(id = BR.kit) { return BR_KITS.find(k => k.id === id && k.unlock <= brPassLevel()) || BR_KITS[0]; }
++function brGrantKit() {
++  const kit = brKit(FORM.brkit || BR.kit);
++  BR.kit = kit.id;
++  for (const [id, n] of kit.items) if (IT[id]) addItem(id, n);
++}
++function brRewardMatch() {
++  if (BR.rewarded || !G.p || !BR.place) return;
++  BR.rewarded = true;
++  const p = brProfile(), won = BR.winMe, place = clamp(BR.place, 1, max(1, BR.total));
++  const ranked = BR.matchType === 'ranked' && BR.via !== 'solo';
++  const xp = 100 + max(0, BR.total - place) * 20 + G.p.kills * 50 + (won ? 300 : 0);
++  p.xp += xp; p.matches++; p.kills += G.p.kills; if (won) p.wins++;
++  if (ranked) {
++    const progress = BR.total > 1 ? (BR.total - place) / (BR.total - 1) : won ? 1 : 0;
++    p.elo = clamp(p.elo + round((progress - .5) * 32), 0, 9999);
++  }
++  brSaveProfile(p);
++  BR.rewardText = `+${xp} PASS XP` + (ranked ? `  ·  ELO ${p.elo}` : '');
++}
+ 
+ // ---------------- loot ----------------
+ const brTier = id => { const it = IT[id]; if (!it || it.type !== 'weapon' || it.fist) return -1; return it.tier ? (BR_MATT[it.tier] ?? 0) : (BR_OLD[id] ?? 0); };
+@@ -10535,14 +10576,24 @@ function genRoyale(seed) {
+     if (x < 2 || x >= BRW - 2) for (let y = 0; y < gy; y++) tiles[y * WW + x] = BEDROCK;
+     SKYL[x] = gy + 3;
+   }
+-  // tunnels under the hills: two or three, each with a chest or two at its far end
+-  for (let k = 0; k < 3; k++) {
++  // Tunnels lead to sealed mine rooms with supplies worth the dangerous descent.
++  for (let k = 0; k < 5; k++) {
+     let x = randi(40, BRW - 80), y = heights[x] + 1, dir = rand() < .5 ? -1 : 1, len = randi(50, 90), ent = x;
+     for (let s = 0; s < len; s++) {
+       const dy = s < 10 ? 1 : s > len - 10 ? -1 : (rand() < .2 ? (rand() < .5 ? -1 : 1) : 0); x += dir; y = clamp(y + dy, heights[clamp(x, 0, BRW - 1)] + 2, BRH - 12);
+       if (x < 20 || x > BRW - 21) break;
+       for (let oy = -2; oy <= 1; oy++) for (let ox = 0; ox <= 1; ox++) { const xx = x + ox, yy = y + oy; if (inW(xx, yy) && tiles[yy * WW + xx] !== BEDROCK) tiles[yy * WW + xx] = AIR; }
+       if (s % 14 === 7) { const ty = y - 2; if (tileAt(x, ty - 1) !== AIR) dyn(x, ty, TORCH); }
++      if (s === (len >> 1)) {
++        const rx = x, ry = y + 1;
++        for (let ox = -7; ox <= 7; ox++) for (let oy = -4; oy <= 4; oy++) {
++          const xx = rx + ox, yy = ry + oy; if (!inW(xx, yy) || tiles[yy * WW + xx] === BEDROCK) continue;
++          const edge = abs(ox) === 7 || abs(oy) === 4;
++          tiles[yy * WW + xx] = edge ? STONE : AIR; walls[yy * WW + xx] = W_BRICK;
++        }
++        for (let ox = -6; ox <= 6; ox++) tiles[(ry + 4) * WW + rx + ox] = BRICK;
++        dyn(rx, ry - 2, TORCH); BR.caves.push({ x: rx, y: ry }); brChest(rx, ry + 3, rand() < .65, { cave: true });
++      }
+     }
+     for (let yy = heights[ent] - 1; yy <= heights[ent] + 3; yy++) for (let xx = ent - 1; xx <= ent + 1; xx++) if (inW(xx, yy) && tiles[yy * WW + xx] !== BEDROCK && yy >= heights[ent]) tiles[yy * WW + xx] = AIR;
+     for (let q = 0; q < 2; q++) { const qx = x - q * 4 * dir; let fy = y; while (fy < BRH - 4 && !solidAt(qx, fy + 1)) fy++; brChest(qx, fy, q === 0, { cave: true }); }
+@@ -10619,7 +10670,7 @@ function brPOI(b, cx, name) {
+     vent(cx - 3, gy - 22); brChest(cx - 12, gy - 1, false); brChest(cx + 2, gy - 1, false); brChest(cx - 1, gy - 10, true, { high: true }); brChest(cx + 11, gy - 1, false);
+   }
+   // A shared field kit keeps each settlement useful: forage, cook, then craft.
+-  const kit = [BENCH, FIRE, CAULDRON, SIEVE], starts = [23, -23, 19, -19, 15, -15, 11, -11, 7, -7, 3, -3];
++  const kit = [BENCH, FIRE, CAULDRON, SIEVE, ARMOURY], starts = [23, -23, 19, -19, 15, -15, 11, -11, 7, -7, 3, -3];
+   for (const start of starts) {
+     const dir = start < 0 ? -1 : 1, spots = []; let clear = true;
+     for (let k = 0; k < kit.length; k++) {

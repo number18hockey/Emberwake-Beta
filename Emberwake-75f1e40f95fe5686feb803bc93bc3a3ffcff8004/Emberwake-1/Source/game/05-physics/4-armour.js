@@ -103,7 +103,7 @@ function gearStats() {
   g.prot = round(g.prot); g.dr = g.prot / (g.prot + 60);
   return GEAR_C = g;
 }
-const gearOn = () => !WORLD.arena && !!G.p;
+const gearOn = () => (!WORLD.arena || WORLD.royale) && !!G.p;
 function gearMul(kind) {
   if (!gearOn()) return blessMul(kind); const g = gearStats(); let v = (g.cls[kind] !== undefined ? g.cls[kind] : 1) * blessMul(kind);
   if (kind === 'mine') v *= g.mine;
@@ -171,7 +171,7 @@ function wearAt(i) { const s = inv[i]; if (!s) return; const it = IT[s.id]; if (
 function drawGearPanel(c, x, y) {
   if (!SLOT_G) { SLOT_G = {}; for (const k in SLOT_GLYPH) SLOT_G[k] = spr(SLOT_GLYPH[k], { a: '#3d3a52' }); }
   const g = gearStats(); let tip = null;
-  panel(c, x - 5, y - 16, 199, 76, 'WORN'); hit(x - 5, y - 16, 199, 76, () => { });
+  panel(c, x - 5, y - 16, 199, 76, 'WORN  ·  CLICK A SLOT TO REMOVE'); hit(x - 5, y - 16, 199, 76, () => { });
   GEAR_SLOTS.forEach((s, k) => {
     const sx = x + k * 19, sy = y, hov = inR(sx, sy, 18, 18), cur = G.gear[s], h = UI.held, fits = h && IT[h.id] && IT[h.id].type === 'armor' && IT[h.id].slot === s;
     slotBox(c, sx, sy, fits, hov); if (cur) drawStack(c, cur, sx, sy); else c.drawImage(SLOT_G[s], sx + 6, sy + 7);
@@ -182,8 +182,9 @@ function drawGearPanel(c, x, y) {
   const tx = x + 104; textS(c, `PROT ${g.prot}`, tx, y - 1, '#e8edf2'); textS(c, `-${round(g.dr * 100)}%`, tx + 50, y - 1, '#8b8fa3');
   textS(c, `LOAD ${round(g.load * 10) / 10}`, tx, y + 8, '#e8edf2'); textS(c, g.cls.n, tx + 50, y + 8, g.cls.col);
   if (g.set) textS(c, AMAT[g.set].set.split(':')[0].toUpperCase() + ' SET', tx, y + 17, '#ffd35a');
-  drawText(c, wrapText(g.cls.d, 188)[0] || '', x - 2, y + 21, '#6a6485');
-  { const t2 = drawTrinketRow(c, x, y + 31); if (t2) tip = t2; }
+  drawText(c, 'Right-click pack armour to wear.', x - 2, y + 21, '#8ff5e6');
+  drawText(c, 'Click a worn slot to unequip it.', x - 2, y + 30, '#8ff5e6');
+  { const t2 = drawTrinketRow(c, x, y + 40); if (t2) tip = t2; }
   return tip;
 }
 function drawGearHud(c) {

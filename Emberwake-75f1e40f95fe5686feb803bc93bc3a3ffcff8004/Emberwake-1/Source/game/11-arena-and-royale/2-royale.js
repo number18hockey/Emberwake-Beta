@@ -8,7 +8,7 @@
 //  storm clock and the echoes; every computer runs its own Waker and
 //  shares it as presence, exactly like the Cinder Ring.
 // ============================================================
-const BRW = 640, BRH = 140, BRSKY = 17, BR_MAX = 12, BR_FILL = 8;
+const BRW = 2880, BRH = 180, BRSKY = 17, BR_MAX = 32, BR_FILL = 32;
 const BR_TIERS = ['COMMON', 'UNCOMMON', 'RARE', 'EPIC', 'LEGENDARY'], BR_TCOL = ['#c8c4d4', '#7ddc6f', '#5aa8ff', '#c77dff', '#ffd35a'];
 const BR_MATT = { wood: 0, flint: 0, bone: 0, stone: 0, copper: 1, bronze: 1, rust: 2, chitin: 2, iron: 2, steel: 3, glass: 3, deep: 4, ember: 4 };
 const BR_OLD = { sword: 0, spear: 0, fangs: 1, maul: 2, bow: 1, nunchaku: 1, kblade: 4, kmaul: 4, vpike: 3, vfangs: 3 };
@@ -18,17 +18,56 @@ const BR_WALL = { moor: W_DIRT, thorn: W_DIRT, dunes: W_SAND, reach: W_STONE, as
 const BR_PNAMES = { moor: ['HEARTHWICK', 'MILLSTEAD', 'LANTERN GREEN'], thorn: ['THORNWOOD', 'BRAMBLE CAMP', 'THE TANGLE'], dunes: ['SUNKEN SPIRE', 'DUSTWATCH', 'RUSTFALL RUINS'], reach: ['COLDGLASS KEEP', 'FROSTGATE', 'STILLWATCH'], ash: ['CINDER WORKS', 'SLAG HOLLOW', 'THE KILNS'] };
 const BR_BOTN = ['WREN', 'KESTREL', 'MARROW', 'TINDER', 'SORREL', 'FLINT', 'ROOK', 'BRAMBLE', 'EMBERLY', 'SALTWICK', 'HOLLIS', 'VESK', 'ODA', 'TALLOW'];
 // storm phases: seconds of waiting, seconds of closing, share of the map still safe after, damage per second outside
-const STORM = [[85, 35, .6, 1], [55, 25, .36, 2], [40, 22, .18, 4], [34, 18, .08, 6], [28, 18, 0, 10]];
-const BR_DROP = 30 * 60, BR_EVENT_AT = BR_DROP + 150 * 60;
+const STORM = [[340, 140, .6, 1], [220, 100, .36, 2], [160, 88, .18, 4], [136, 72, .08, 6], [112, 72, 0, 10]];
+const BR_DROP = 180 * 60, BR_EVENT_AT = BR_DROP + 15 * 60 * 60;
 const BR = {
-  on: false, via: 'solo', code: 'open', phase: '', mi: '', seed: 0, t: 0, ro: [], nb: 0, lead: true, leaderId: '', people: new Map(),
+  on: false, via: 'solo', code: 'open', matchType: 'unranked', kit: 'miner', rewarded: false, phase: '', mi: '', seed: 0, t: 0, ro: [], nb: 0, lead: true, leaderId: '', people: new Map(),
   cd: 0, cdAt: 0, cdMax: 0, chests: [], open: new Set(), mine: new Set(), zones: [], storm: null, bots: new Map(), bk: [], bkSeq: 0, bkSeen: new Map(),
   dlSeen: new Set(), dl: null, place: 0, spec: null, specT: 0, overT: 0, winner: '', winMe: false, pois: [], segs: BR_BIOMES.slice(), segW: BRW / 5, mapCv: null,
   note: '', noteT: 0, chan: null, inStorm: false, poiNow: '', mapOpen: false, total: 0, lastAlive: 0, lastTeams: 0, lobbyT: 0, err: '',
-  cache: null, pactWith: '', pactFrom: '', teammate: '', dropsOut: [], dropSeq: 0, dropSeen: new Map(), tileOut: new Map(), applying: false
+  cache: null, pactWith: '', pactFrom: '', teammate: '', dropsOut: [], dropSeq: 0, dropSeen: new Map(), tileOut: new Map(), applying: false, caves: []
 };
 const brOn = () => WORLD.royale && BR.on;
 const brTag = f => !f ? '' : f === G.p ? (NET.me || 'me') : f.botTag || f.peer || '';
+const BR_KITS = [
+  { id: 'miner', name: 'MINER', unlock: 0, desc: 'Ore, a flint pick and torches. Explore underground and craft up.', items: [['flint_pick', 1], ['torch', 3], ['rock', 3], ['br_salve', 1], ['spear', 1]] },
+  { id: 'scavenger', name: 'SCAVENGER', unlock: 1, desc: 'A knife, rope and map. Reach structures before the crowd.', items: [['flint_knife', 1], ['rope', 2], ['fieldmap', 1], ['br_salve', 1], ['sword', 1]] },
+  { id: 'forager', name: 'FORAGER', unlock: 2, desc: 'Food, fiber and a bow. Sustain yourself and fight from range.', items: [['bow', 1], ['arrow', 12], ['berries', 5], ['fiber', 4], ['spear', 1]] },
+  { id: 'ranger', name: 'RANGER', unlock: 4, desc: 'A bow, arrows and a glider. Scout high ground and pick fights.', items: [['bow', 1], ['arrow', 18], ['glider', 1], ['br_salve', 1], ['spear', 1]] }
+];
+function brProfile() {
+  const key = 'ew2.br.' + (typeof accountId === 'function' ? accountId() : 'none');
+  try {
+    const raw = typeof LS === 'object' ? JSON.parse(LS.get(key) || '{}') : {};
+    return { xp: max(0, num(raw.xp) | 0), elo: clamp(num(raw.elo, 1000) | 0, 0, 9999), wins: max(0, num(raw.wins) | 0), matches: max(0, num(raw.matches) | 0), kills: max(0, num(raw.kills) | 0) };
+  } catch (e) { return { xp: 0, elo: 1000, wins: 0, matches: 0, kills: 0 }; }
+}
+function brSaveProfile(p) {
+  const key = 'ew2.br.' + (typeof accountId === 'function' ? accountId() : 'none');
+  if (typeof LS === 'object' && !LS.set(key, JSON.stringify(p))) { console.warn('Could not save Battle Royale progression'); return false; }
+  return true;
+}
+function brPassLevel() { return floor(brProfile().xp / 1000); }
+function brKit(id = BR.kit) { return BR_KITS.find(k => k.id === id && k.unlock <= brPassLevel()) || BR_KITS[0]; }
+function brGrantKit() {
+  const kit = brKit(FORM.brkit || BR.kit);
+  BR.kit = kit.id;
+  for (const [id, n] of kit.items) if (IT[id]) addItem(id, n);
+}
+function brRewardMatch() {
+  if (BR.rewarded || !G.p || !BR.place) return;
+  BR.rewarded = true;
+  const p = brProfile(), won = BR.winMe, place = clamp(BR.place, 1, max(1, BR.total));
+  const ranked = BR.matchType === 'ranked' && BR.via !== 'solo';
+  const xp = 100 + max(0, BR.total - place) * 20 + G.p.kills * 50 + (won ? 300 : 0);
+  p.xp += xp; p.matches++; p.kills += G.p.kills; if (won) p.wins++;
+  if (ranked) {
+    const progress = BR.total > 1 ? (BR.total - place) / (BR.total - 1) : won ? 1 : 0;
+    p.elo = clamp(p.elo + round((progress - .5) * 32), 0, 9999);
+  }
+  brSaveProfile(p);
+  BR.rewardText = `+${xp} PASS XP` + (ranked ? `  ·  ELO ${p.elo}` : '');
+}
 
 // ---------------- loot ----------------
 const brTier = id => { const it = IT[id]; if (!it || it.type !== 'weapon' || it.fist) return -1; return it.tier ? (BR_MATT[it.tier] ?? 0) : (BR_OLD[id] ?? 0); };
@@ -89,12 +128,28 @@ function brTree(x, gy, b) {
   for (let y = 1; y <= th; y++) tiles[(gy - y) * WW + x] = [TRUNK, TRUNK2, TRUNK3, TRUNK4][kind];
   treeTops.set(x, { y: gy - th, kind, v: randi(0, 2), ph: rand(TAU) });
 }
+function brSkyhouse(cx, cy) {
+  for (let x = cx - 8; x <= cx + 8; x++) {
+    tiles[(cy - 10) * WW + x] = CUTSTONE;
+    tiles[(cy - 1) * WW + x] = CUTSTONE;
+    for (let y = cy - 9; y < cy - 1; y++) {
+      walls[y * WW + x] = W_CUT;
+      if (x === cx - 8 || x === cx + 8) tiles[y * WW + x] = CUTSTONE;
+    }
+  }
+  for (let y = cy - 4; y <= cy - 2; y++) tiles[y * WW + cx + 8] = AIR;
+  for (const x of [cx - 8, cx + 8]) {
+    for (let y = cy - 13; y < cy - 10; y++) tiles[y * WW + x] = CUTSTONE;
+  }
+  dyn(cx - 3, cy - 2, OBELISK); dyn(cx + 2, cy - 2, TORCH);
+  brChest(cx + 5, cy - 2, true, { high: true });
+}
 function genRoyale(seed) {
   SEED = seed >>> 0; rng = mulberry32(SEED); DIM = 0; resetWorld(BRW, BRH); WORLD.arena = true; WORLD.royale = true; WORLD.endless = 0;
   SPAWN_X = BRW >> 1; SHRINE_X = SHRINE2_X = MINE_X = FORGE_X = GATE_X = SKY_X = BLADE_X = SPIRE_X = REACH_X = RUST_X = -100000; SHRINE_Y = SHRINE2_Y = GATE_Y = MINE_Y = FORGE_Y = SKY_Y = 0;
   BASE_Y = 74; DEEP_Y = 9999; DRIFT_Y = -99; VIL_Y = -999;
   const order = BR_BIOMES.slice(); for (let i = order.length - 1; i > 0; i--) { const j = randi(0, i); const q = order[i]; order[i] = order[j]; order[j] = q; }
-  BR.segs = order; BR.segW = BRW / order.length; BR.chests = []; BR.pois = [];
+  BR.segs = order; BR.segW = BRW / order.length; BR.chests = []; BR.pois = []; BR.caves = [];
   // the shape of the land: rolling hills, steeper in the Reach, flatter in the dunes, cliffs at the edges of the world
   const a1 = rand(TAU), a2 = rand(TAU), a3 = rand(TAU);
   for (let x = 0; x < BRW; x++) {
@@ -109,14 +164,24 @@ function genRoyale(seed) {
     if (x < 2 || x >= BRW - 2) for (let y = 0; y < gy; y++) tiles[y * WW + x] = BEDROCK;
     SKYL[x] = gy + 3;
   }
-  // tunnels under the hills: two or three, each with a chest or two at its far end
-  for (let k = 0; k < 3; k++) {
-    let x = randi(40, BRW - 80), y = heights[x] + 1, dir = rand() < .5 ? -1 : 1, len = randi(50, 90), ent = x;
+  // Long mine roads lead to reinforced rooms with a cache at their heart.
+  for (let k = 0; k < 12; k++) {
+    let x = randi(40, BRW - 80), y = heights[x] + 1, dir = rand() < .5 ? -1 : 1, len = randi(70, 120), ent = x;
     for (let s = 0; s < len; s++) {
       const dy = s < 10 ? 1 : s > len - 10 ? -1 : (rand() < .2 ? (rand() < .5 ? -1 : 1) : 0); x += dir; y = clamp(y + dy, heights[clamp(x, 0, BRW - 1)] + 2, BRH - 12);
       if (x < 20 || x > BRW - 21) break;
       for (let oy = -2; oy <= 1; oy++) for (let ox = 0; ox <= 1; ox++) { const xx = x + ox, yy = y + oy; if (inW(xx, yy) && tiles[yy * WW + xx] !== BEDROCK) tiles[yy * WW + xx] = AIR; }
       if (s % 14 === 7) { const ty = y - 2; if (tileAt(x, ty - 1) !== AIR) dyn(x, ty, TORCH); }
+      if (s === (len >> 1) && y + 7 < BRH - 3) {
+        const rx = x, ry = y + 1;
+        for (let ox = -8; ox <= 8; ox++) for (let oy = -5; oy <= 5; oy++) {
+          const xx = rx + ox, yy = ry + oy; if (!inW(xx, yy) || tiles[yy * WW + xx] === BEDROCK) continue;
+          const edge = abs(ox) === 8 || abs(oy) === 5;
+          tiles[yy * WW + xx] = edge ? STONE : AIR; walls[yy * WW + xx] = W_BRICK;
+        }
+        for (let ox = -7; ox <= 7; ox++) tiles[(ry + 5) * WW + rx + ox] = BRICK;
+        dyn(rx, ry - 2, TORCH); BR.caves.push({ x: rx, y: ry }); brChest(rx, ry + 4, rand() < .65, { cave: true });
+      }
     }
     for (let yy = heights[ent] - 1; yy <= heights[ent] + 3; yy++) for (let xx = ent - 1; xx <= ent + 1; xx++) if (inW(xx, yy) && tiles[yy * WW + xx] !== BEDROCK && yy >= heights[ent]) tiles[yy * WW + xx] = AIR;
     for (let q = 0; q < 2; q++) { const qx = x - q * 4 * dir; let fy = y; while (fy < BRH - 4 && !solidAt(qx, fy + 1)) fy++; brChest(qx, fy, q === 0, { cave: true }); }
@@ -127,10 +192,13 @@ function genRoyale(seed) {
     const cx = round((i + .5) * BR.segW + rand(-BR.segW * .18, BR.segW * .18)), names = BR_PNAMES[b], name = names.find(n => !used.has(n) && rand() < .6) || names[0]; used.add(name);
     withRng(hh(cx, 2201, SEED) * 4294967296, () => brPOI(b, cx, name));
   });
-  // floating isles with a rare chest each, and a vent beneath to reach them
-  for (let k = 0; k < 3; k++) {
-    const cx = round((k + .5) * BRW / 3 + rand(-50, 50)), cy = heights[cx] - 26 - randi(0, 6), a = 7 + randi(0, 3);
-    if (island(cx, cy, a, 4, false)) { for (let y = cy - 4; y < cy; y++) for (let x = cx - 3; x <= cx + 3; x++) if (inW(x, y)) tiles[y * WW + x] = AIR; let gy = cy; while (gy < cy + 6 && !solidAt(cx, gy)) gy++; brChest(cx, gy - 1, true, { high: true }); const vx = cx + (rand() < .5 ? -1 : 1) * (a + 3); vent(vx, cy - 8); }
+  // Broad, taller sky-isles carry shrines and caches above the battle.
+  for (let k = 0; k < 9; k++) {
+    const cx = round((k + .5) * BRW / 9 + rand(-90, 90)), cy = heights[cx] - 32 - randi(0, 10), a = 10 + randi(0, 4);
+    if (island(cx, cy, a, 7, false)) {
+      for (let y = cy - 11; y < cy; y++) for (let x = cx - 8; x <= cx + 8; x++) if (inW(x, y) && tiles[y * WW + x] !== BEDROCK) tiles[y * WW + x] = AIR;
+      brSkyhouse(cx, cy); const vx = cx + (rand() < .5 ? -1 : 1) * (a + 4); vent(vx, cy - 12);
+    }
   }
   // trees, grass and rocks between the places
   for (let x = 8; x < BRW - 8; x++) {
@@ -141,12 +209,12 @@ function genRoyale(seed) {
   }
   // chests out in the open, about one every thirty paces
   for (let x = 20; x < BRW - 20; x += 22 + randi(0, 16)) { if (RESV[x]) continue; const gy = heights[x]; if (abs(heights[x - 1] - gy) <= 1 && abs(heights[x + 1] - gy) <= 1) brChest(x, gy - 1, rand() < .1); }
-  // a few watch platforms with a chest on top
-  for (let k = 0; k < 6; k++) {
-    const x = randi(30, BRW - 40); if (RESV[x] || RESV[x + 7]) continue; const gy = min(heights[x], heights[x + 7]), py = gy - 6;
-    for (let y = py + 1; y <= max(heights[x], heights[x + 7]) - 1; y++) { if (tileAt(x, y) === AIR) tiles[y * WW + x] = BEAM; if (tileAt(x + 7, y) === AIR) tiles[y * WW + x + 7] = BEAM; }
-    for (let xx = x; xx <= x + 7; xx++) if (tileAt(xx, py) === AIR) tiles[py * WW + xx] = PLATFORM;
-    brChest(x + 3, py - 1, false, { high: true }); reserve(x - 1, x + 8, 1);
+  // Taller, wider watch platforms make new landmarks visible across each land.
+  for (let k = 0; k < 18; k++) {
+    const x = randi(30, BRW - 50); if (RESV[x] || RESV[x + 12]) continue; const gy = min(heights[x], heights[x + 12]), py = gy - 10;
+    for (let y = py + 1; y <= max(heights[x], heights[x + 12]) - 1; y++) { if (tileAt(x, y) === AIR) tiles[y * WW + x] = BEAM; if (tileAt(x + 12, y) === AIR) tiles[y * WW + x + 12] = BEAM; }
+    for (let xx = x; xx <= x + 12; xx++) if (tileAt(xx, py) === AIR) tiles[py * WW + xx] = PLATFORM;
+    brChest(x + 5, py - 1, false, { high: true }); reserve(x - 1, x + 13, 1);
   }
   // A marked Ember Cache arrives late, after the first scramble for shelter.
   // It brings a small ward and the ingredients for a real craft, not an endgame weapon.
@@ -164,36 +232,36 @@ function genRoyale(seed) {
 function brPOI(b, cx, name) {
   const gy = heights[cx]; BR.pois.push({ name, x: cx, b });
   if (b === 'moor') {
-    brFlat(cx - 26, cx + 26, gy); brEase(cx - 26, -1, gy); brEase(cx + 26, 1, gy);
-    house(cx - 22, gy, 11, 6, 4, { door: 2, name }); house(cx - 5, gy, 11, 9, 4, { door: 2, floors: 2 }); house(cx + 12, gy, 10, 6, 3, { door: 2 });
-    for (let x = cx - 24; x <= cx + 24; x++) for (let y = gy - 4; y < gy; y++) if (tiles[y * WW + x] === DOORC) tiles[y * WW + x] = DOORO;
-    brChest(cx - 17, gy - 1, false); brChest(cx, gy - 1, false); brChest(cx + 1, gy - 5, true); brChest(cx + 16, gy - 1, false);
-    dyn(cx - 24, gy - 1, TORCH); dyn(cx + 24, gy - 1, TORCH);
+    brFlat(cx - 34, cx + 34, gy); brEase(cx - 34, -1, gy); brEase(cx + 34, 1, gy);
+    house(cx - 29, gy, 14, 8, 5, { door: 3, name }); house(cx - 7, gy, 14, 12, 5, { door: 3, floors: 3 }); house(cx + 15, gy, 14, 8, 4, { door: 3 });
+    for (let x = cx - 32; x <= cx + 32; x++) for (let y = gy - 5; y < gy; y++) if (tiles[y * WW + x] === DOORC) tiles[y * WW + x] = DOORO;
+    brChest(cx - 24, gy - 1, false); brChest(cx, gy - 1, false); brChest(cx + 1, gy - 8, true); brChest(cx + 24, gy - 1, false);
+    dyn(cx - 32, gy - 1, TORCH); dyn(cx + 32, gy - 1, TORCH);
   } else if (b === 'thorn') {
-    brFlat(cx - 18, cx + 18, gy); brEase(cx - 18, -1, gy); brEase(cx + 18, 1, gy);
-    for (const [ox, w] of [[-14, 7], [5, 8]]) { const x0 = cx + ox; for (let k = 0; k < w; k++) { const hgt = round((1 - abs(k - (w - 1) / 2) / (w / 2)) * 4); for (let y = gy - hgt; y < gy; y++) if (y === gy - hgt || k === 0 || k === w - 1) tiles[y * WW + x0 + k] = THATCH; else walls[y * WW + x0 + k] = W_WATTLE; } }
+    brFlat(cx - 26, cx + 26, gy); brEase(cx - 26, -1, gy); brEase(cx + 26, 1, gy);
+    for (const [ox, w] of [[-20, 10], [8, 11]]) { const x0 = cx + ox; for (let k = 0; k < w; k++) { const hgt = round((1 - abs(k - (w - 1) / 2) / (w / 2)) * 7); for (let y = gy - hgt; y < gy; y++) if (y === gy - hgt || k === 0 || k === w - 1) tiles[y * WW + x0 + k] = THATCH; else walls[y * WW + x0 + k] = W_WATTLE; } }
     dyn(cx - 2, gy - 1, CAMP);
-    brChest(cx - 11, gy - 1, false); brChest(cx + 9, gy - 1, true); brChest(cx + 15, gy - 1, false);
-    for (const ox of [-17, 17]) brTree(cx + ox, gy, 'thorn');
+    brChest(cx - 17, gy - 1, false); brChest(cx + 13, gy - 1, true); brChest(cx + 22, gy - 1, false);
+    for (const ox of [-23, 23]) brTree(cx + ox, gy, 'thorn');
   } else if (b === 'dunes') {
-    brFlat(cx - 14, cx + 14, gy); brEase(cx - 14, -1, gy); brEase(cx + 14, 1, gy);
-    tower(cx - 4, gy, 9, 20, { ruin: true, name }); brChest(cx, gy - 1, false); brChest(cx - 1, gy - 5, false); brChest(cx + 1, gy - 13, false); brChest(cx, gy - 21, true, { high: true });
-    for (const ox of [-12, 10]) for (let y = gy - 3; y < gy; y++) tiles[y * WW + cx + ox] = SANDSTONE;
+    brFlat(cx - 22, cx + 22, gy); brEase(cx - 22, -1, gy); brEase(cx + 22, 1, gy);
+    tower(cx - 6, gy, 13, 30, { ruin: true, name }); brChest(cx, gy - 1, false); brChest(cx - 2, gy - 7, false); brChest(cx + 2, gy - 18, false); brChest(cx, gy - 31, true, { high: true });
+    for (const ox of [-20, 18]) for (let y = gy - 5; y < gy; y++) tiles[y * WW + cx + ox] = SANDSTONE;
   } else if (b === 'reach') {
-    brFlat(cx - 20, cx + 20, gy); brEase(cx - 20, -1, gy); brEase(cx + 20, 1, gy);
-    for (let x = cx - 16; x <= cx + 16; x++) { for (let y = gy - 9; y < gy; y++) walls[y * WW + x] = W_BRICK; tiles[(gy - 9) * WW + x] = abs(x - cx) < 15 ? PLATFORM : BRICK; if (abs(x - cx) % 3 === 0) tiles[(gy - 10) * WW + x] = BRICK; }
-    for (const s of [-1, 1]) { for (let y = gy - 9; y < gy - 3; y++) tiles[y * WW + cx + s * 16] = BRICK; for (let y = gy - 13; y < gy - 9; y++) { tiles[y * WW + cx + s * 16] = BRICK; tiles[y * WW + cx + s * 15] = BRICK; } }
-    for (let x = cx - 6; x <= cx + 6; x++) tiles[(gy - 5) * WW + x] = PLATFORM;
-    brChest(cx - 10, gy - 1, false); brChest(cx + 10, gy - 1, false); brChest(cx, gy - 6, true); brChest(cx + 12, gy - 10, false, { high: true });
-    dyn(cx - 13, gy - 4, TORCH); dyn(cx + 13, gy - 4, TORCH);
+    brFlat(cx - 28, cx + 28, gy); brEase(cx - 28, -1, gy); brEase(cx + 28, 1, gy);
+    for (let x = cx - 22; x <= cx + 22; x++) { for (let y = gy - 13; y < gy; y++) walls[y * WW + x] = W_BRICK; tiles[(gy - 13) * WW + x] = abs(x - cx) < 21 ? PLATFORM : BRICK; if (abs(x - cx) % 4 === 0) tiles[(gy - 14) * WW + x] = BRICK; }
+    for (const s of [-1, 1]) { for (let y = gy - 13; y < gy - 4; y++) tiles[y * WW + cx + s * 22] = BRICK; for (let y = gy - 19; y < gy - 13; y++) { tiles[y * WW + cx + s * 22] = BRICK; tiles[y * WW + cx + s * 21] = BRICK; } }
+    for (let x = cx - 9; x <= cx + 9; x++) tiles[(gy - 7) * WW + x] = PLATFORM;
+    brChest(cx - 15, gy - 1, false); brChest(cx + 15, gy - 1, false); brChest(cx, gy - 8, true); brChest(cx + 18, gy - 14, false, { high: true });
+    dyn(cx - 19, gy - 7, TORCH); dyn(cx + 19, gy - 7, TORCH);
   } else {
-    brFlat(cx - 18, cx + 18, gy); brEase(cx - 18, -1, gy); brEase(cx + 18, 1, gy);
-    for (const [ox, h] of [[-15, 6], [-9, 9], [7, 7], [14, 5]]) for (let y = gy - h; y < gy; y++) { tiles[y * WW + cx + ox] = y < gy - h + 2 && rand() < .5 ? AIR : CINDERBRICK; walls[y * WW + cx + ox + 1] = W_RUIN; }
-    for (let x = cx - 9; x <= cx + 7; x++) tiles[(gy - 9) * WW + x] = PLATFORM;
-    vent(cx - 3, gy - 22); brChest(cx - 12, gy - 1, false); brChest(cx + 2, gy - 1, false); brChest(cx - 1, gy - 10, true, { high: true }); brChest(cx + 11, gy - 1, false);
+    brFlat(cx - 26, cx + 26, gy); brEase(cx - 26, -1, gy); brEase(cx + 26, 1, gy);
+    for (const [ox, h] of [[-22, 9], [-13, 13], [11, 10], [20, 7]]) for (let y = gy - h; y < gy; y++) { tiles[y * WW + cx + ox] = y < gy - h + 3 && rand() < .5 ? AIR : CINDERBRICK; walls[y * WW + cx + ox + 1] = W_RUIN; }
+    for (let x = cx - 14; x <= cx + 12; x++) tiles[(gy - 13) * WW + x] = PLATFORM;
+    vent(cx - 4, gy - 28); brChest(cx - 18, gy - 1, false); brChest(cx + 3, gy - 1, false); brChest(cx - 1, gy - 14, true, { high: true }); brChest(cx + 17, gy - 1, false);
   }
   // A shared field kit keeps each settlement useful: forage, cook, then craft.
-  const kit = [BENCH, FIRE, CAULDRON, SIEVE], starts = [23, -23, 19, -19, 15, -15, 11, -11, 7, -7, 3, -3];
+  const kit = [BENCH, FIRE, CAULDRON, SIEVE, ARMOURY], starts = [23, -23, 19, -19, 15, -15, 11, -11, 7, -7, 3, -3];
   for (const start of starts) {
     const dir = start < 0 ? -1 : 1, spots = []; let clear = true;
     for (let k = 0; k < kit.length; k++) {
