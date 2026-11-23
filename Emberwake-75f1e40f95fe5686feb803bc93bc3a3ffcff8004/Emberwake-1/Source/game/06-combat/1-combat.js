@@ -34,8 +34,8 @@ const MOVESETS = {
       long_thrust: mv('Long Thrust', 'H', 'RMB + forward key', { kind: 'thrust', lo: -30, hi: 30, wind: 9, act: 7, rec: 16, dmg: 1.9, kb: [4.2, -.6], reach: 1.5, step: 2.6, cost: 12, stop: 5, shake: 3 }),
       cyclone: mv('Cyclone', 'H', 'RMB + S, or cursor on yourself', { kind: 'spin', turns: 2, wind: 5, act: 20, rec: 13, dmg: .8, kb: [1.6, -1.1], multi: 6, cost: 16, ctrl: .8, reach: 1.05 }),
       warding_kick: mv('Warding Kick', 'H', 'RMB + back key', { kind: 'kick', act: 5, rec: 12, dmg: .6, kb: [5.6, -1.6], stagger: 60, cost: 8, stop: 5, shake: 3, blunt: 1 }),
-      sky_cut1: mv('Sky Cut', 'L', 'LMB in the air', { from: -115, to: 60, wind: 3, rec: 9, dmg: .95, kb: [1, -.9], float: 1 }),
-      sky_cut2: mv('Sky Wheel', 'L', 'LMB, LMB in the air', { kind: 'flip', turns: 1, wind: 3, act: 9, rec: 9, dmg: 1.2, kb: [1.4, -1.6], float: 1, stop: 3 }),
+      sky_cut1: mv('Sky Cut', 'L', 'LMB in the air', { from: -115, to: 60, wind: 3, rec: 9, dmg: .95, kb: [1, -.9] }),
+      sky_cut2: mv('Sky Wheel', 'L', 'LMB, LMB in the air', { kind: 'flip', turns: 1, wind: 3, act: 9, rec: 9, dmg: 1.2, kb: [1.4, -1.6], stop: 3 }),
       updraft: mv('Updraft', 'L', 'LMB in the air, aim up', { from: 80, to: -130, center: -60, aimed: 25, wind: 3, act: 6, rec: 12, dmg: 1.1, kb: [.4, -3.6], rise: -3.5, launch: 1 }),
       talon_dive: mv('Talon Dive', 'L', 'LMB in the air + S, or aim down', { kind: 'thrust', lo: 60, hi: 90, wind: 3, act: 16, rec: 8, dmg: 1.2, kb: [0, 1.5], pogo: 1, fall: 3.2, endOnLand: 1 }),
       crescent_dive: mv('Crescent Dive', 'H', 'RMB in the air', { from: -110, to: 80, aimed: 0, wind: 6, act: 11, rec: 14, dmg: 1.7, kb: [2.6, 2.2], dash: { v: 3.7, t: 11, vy: 3.7 }, cost: 12, endOnLand: 1, stop: 5, shake: 3, big: 1 }),
@@ -64,12 +64,12 @@ const MOVESETS = {
       impale: mv('Impaling Charge', 'H', 'RMB + forward key', { kind: 'thrust', lo: -15, hi: 15, wind: 8, act: 14, rec: 18, dmg: 1.3, kb: [2.6, -.8], dash: { v: 3.9, t: 14, fixed: 1 }, multi: 5, reach: 1.1, cost: 14, stop: 3, shake: 2 }),
       windmill: mv('Windmill', 'H', 'RMB + S, or cursor on yourself', { kind: 'spin', turns: 3, wind: 5, act: 24, rec: 13, dmg: .7, kb: [1.8, -1], multi: 5, cost: 16, ctrl: .8, wheel: 1 }),
       shove: mv('Pole Shove', 'H', 'RMB + back key', { kind: 'thrust', lo: 0, hi: 0, act: 4, rec: 12, dmg: .6, kb: [5.8, -1.4], reach: .6, stagger: 60, cost: 8, stop: 5, shake: 3, blunt: 1 }),
-      air_jab: mv('Sky Sting', 'L', 'LMB in the air', { kind: 'thrust', lo: -35, hi: 35, wind: 2, rec: 9, dmg: .95, kb: [1.2, -.6], float: 1 }),
-      air_sweep: mv('Kite Sweep', 'L', 'LMB, LMB in the air', { from: -120, to: 80, wind: 3, act: 6, dmg: 1.15, kb: [1.6, -1.2], float: 1 }),
+      air_jab: mv('Sky Sting', 'L', 'LMB in the air', { kind: 'thrust', lo: -35, hi: 35, wind: 2, rec: 9, dmg: .95, kb: [1.2, -.6] }),
+      air_sweep: mv('Kite Sweep', 'L', 'LMB, LMB in the air', { from: -120, to: 80, wind: 3, act: 6, dmg: 1.15, kb: [1.6, -1.2] }),
       rising_lance: mv('Rising Lance', 'L', 'LMB in the air, aim up', { kind: 'thrust', lo: -90, hi: -40, wind: 3, act: 6, rec: 12, dmg: 1.1, kb: [.4, -3.4], rise: -3.4, launch: 1 }),
       heron_dive: mv('Heron Dive', 'L', 'LMB in the air + S, or aim down', { kind: 'thrust', lo: 55, hi: 90, wind: 3, act: 16, rec: 8, dmg: 1.25, kb: [0, 1.5], pogo: 1, fall: 3.4, endOnLand: 1 }),
       dragoon: mv('Dragoon Dive', 'H', 'RMB in the air', { kind: 'thrust', lo: 30, hi: 60, wind: 5, act: 12, rec: 14, dmg: 1.8, kb: [2.8, 2], dash: { v: 5, t: 12, along: 1, fixed: 1 }, cost: 12, endOnLand: 1, stop: 5, shake: 3 }),
-      gyre: mv('Gyre', 'H', 'RMB in the air, aim up', { kind: 'spin', turns: 3, wind: 4, act: 26, rec: 10, dmg: .65, kb: [1.2, -1.6], multi: 5, hover: 1, cost: 14, ctrl: .9, heli: 1 }),
+      gyre: mv('Gyre', 'H', 'RMB in the air, aim up', { kind: 'spin', turns: 3, wind: 4, act: 26, rec: 10, dmg: .65, kb: [1.2, -1.6], multi: 5, cost: 14, ctrl: .9, heli: 1 }),
       skyfall: mv('Skyfall', 'H', 'RMB in the air + S, or aim down', { kind: 'plunge', wind: 9, act: 99, rec: 20, dmg: 1.4, kb: [1.5, 2], cost: 14, landShock: SHOCK, stop: 6, shake: 7, big: 1 }),
       gale_rush: mv('Gale Rush', 'L', 'attack while dodging', { kind: 'thrust', lo: -15, hi: 15, wind: 1, act: 8, rec: 12, dmg: 1.4, kb: [2, -1], dash: { v: 4.6, t: 8, fixed: 1 }, iframe: 7, reach: 1.1, stop: 3 }),
       riposte: mv('Riposte', 'L', 'attack after a perfect dodge', { kind: 'thrust', lo: -30, hi: 30, wind: 1, rec: 12, dmg: 2.8, kb: [5, -1.5], reach: 1.35, step: 3.4, stop: 8, shake: 5, crit: 1 })
@@ -95,8 +95,8 @@ const MOVESETS = {
       lunging: mv('Lunging Fangs', 'H', 'RMB + forward key', { kind: 'thrust', lo: -20, hi: 20, wind: 5, act: 8, rec: 13, dmg: .9, kb: [2.6, -.6], multi: 4, dash: { v: 4.6, t: 8, fixed: 1 }, cost: 10, stop: 3 }),
       whirl: mv('Whirl', 'H', 'RMB + S, or cursor on yourself', { kind: 'spin', turns: 3, wind: 3, act: 18, rec: 11, dmg: .5, kb: [1.4, -.8], multi: 3, cost: 12, ctrl: .9 }),
       smoke_kick: mv('Smoke Kick', 'H', 'RMB + back key', { kind: 'kick', wind: 3, rec: 11, dmg: .6, kb: [5, -1.8], stagger: 55, cost: 8, stop: 4 }),
-      air_nick: mv('Sky Nick', 'L', 'LMB in the air', { from: -100, to: 55, wind: 2, act: 3, rec: 6, dmg: .85, kb: [.8, -.7], float: 1 }),
-      air_nick2: mv('Sky Reel', 'L', 'LMB, LMB in the air', { kind: 'flip', turns: 1, wind: 2, act: 7, rec: 7, dmg: .9, kb: [1, -1.2], float: 1, multi: 4 }),
+      air_nick: mv('Sky Nick', 'L', 'LMB in the air', { from: -100, to: 55, wind: 2, act: 3, rec: 6, dmg: .85, kb: [.8, -.7] }),
+      air_nick2: mv('Sky Reel', 'L', 'LMB, LMB in the air', { kind: 'flip', turns: 1, wind: 2, act: 7, rec: 7, dmg: .9, kb: [1, -1.2], multi: 4 }),
       wasp_rise: mv('Wasp Rise', 'L', 'LMB in the air, aim up', { kind: 'thrust', lo: -90, hi: -40, wind: 2, act: 6, rec: 10, dmg: .7, kb: [.3, -3], multi: 3, pump: 2, rise: -3.6, launch: 1 }),
       stinger: mv('Stinger', 'L', 'LMB in the air + S, or aim down', { kind: 'thrust', lo: 55, hi: 90, wind: 2, act: 16, rec: 7, dmg: 1.1, kb: [0, 1.5], pogo: 1, fall: 3.8, endOnLand: 1 }),
       talon_rush: mv('Talon Rush', 'H', 'RMB in the air', { kind: 'thrust', lo: 25, hi: 60, wind: 4, act: 11, rec: 12, dmg: .8, kb: [1.6, 1.5], multi: 4, dash: { v: 5.2, t: 11, along: 1, fixed: 1 }, cost: 10, endOnLand: 1 }),
@@ -125,8 +125,8 @@ const MOVESETS = {
       ram: mv('Battering Ram', 'H', 'RMB + forward key', { kind: 'thrust', lo: -10, hi: 10, wind: 9, act: 12, rec: 18, dmg: 1.6, kb: [5.5, -1.2], dash: { v: 3.7, t: 12, fixed: 1 }, cost: 14, stop: 6, shake: 4, blunt: 1, armor: 1, reach: .8 }),
       grave_spin: mv('Grave Spin', 'H', 'RMB + S, or cursor on yourself', { kind: 'spin', turns: 2, wheel: 1, wind: 8, act: 26, rec: 16, dmg: .9, kb: [2.4, -1.4], multi: 8, cost: 18, ctrl: .7, armor: 1, stop: 3, shake: 2 }),
       boot: mv('Boot', 'H', 'RMB + back key', { kind: 'kick', wind: 5, rec: 13, dmg: .7, kb: [6, -1.6], stagger: 60, cost: 8, stop: 5, shake: 3, blunt: 1 }),
-      air_swat: mv('Sky Swat', 'L', 'LMB in the air', { from: -115, to: 60, wind: 5, act: 6, rec: 11, kb: [2, -.8], float: 1, stop: 4, big: 1 }),
-      air_wheel: mv('Mill Wheel', 'L', 'LMB, LMB in the air', { kind: 'flip', turns: 1, wind: 4, act: 10, rec: 11, dmg: 1.3, kb: [2, -1.6], float: 1, stop: 4 }),
+      air_swat: mv('Sky Swat', 'L', 'LMB in the air', { from: -115, to: 60, wind: 5, act: 6, rec: 11, kb: [2, -.8], stop: 4, big: 1 }),
+      air_wheel: mv('Mill Wheel', 'L', 'LMB, LMB in the air', { kind: 'flip', turns: 1, wind: 4, act: 10, rec: 11, dmg: 1.3, kb: [2, -1.6], stop: 4 }),
       comet_rise: mv('Comet Rise', 'L', 'LMB in the air, aim up', { from: 90, to: -130, center: -60, aimed: 25, wind: 5, act: 6, rec: 14, dmg: 1.1, kb: [.6, -4], rise: -3.3, launch: 1, big: 1 }),
       hammerfall: mv('Hammerfall', 'L', 'LMB in the air + S, or aim down', { kind: 'thrust', lo: 70, hi: 90, wind: 4, act: 18, rec: 10, dmg: 1.3, kb: [0, 2.5], pogo: 1, fall: 4, endOnLand: 1, blunt: 1, stop: 5 }),
       comet: mv('Comet', 'H', 'RMB in the air', { from: -120, to: 90, aimed: 0, wind: 8, act: 11, rec: 16, dmg: 1.8, kb: [3, 2.5], dash: { v: 3.4, t: 11, vy: 3.8 }, cost: 14, endOnLand: 1, stop: 6, shake: 4, big: 1, armor: 1 }),
@@ -154,9 +154,9 @@ const MOVESETS = {
       pinning: sh('Pinning Shot', 'H', 'RMB + forward key', { wind: 8, rec: 14, dmg: 1.3, kb: [.3, 0], stagger: 85, cost: 10, stop: 4, arrows: { n: 1, v: 8 } }),
       ground_burst: sh('Ground Burst', 'H', 'RMB + S, or cursor on yourself', { lo: 90, hi: 90, rec: 14, dmg: 1.5, kb: [3, -3], cost: 12, hop: -4.2, stop: 4, shake: 4, arrows: { n: 1, v: 7, boom: 30 } }),
       parting_fan: sh('Parting Fan', 'H', 'RMB + back key', { rec: 14, dmg: .7, kb: [1.6, -.5], back: 2.6, hop: -1.8, iframe: 7, cost: 10, arrows: { n: 5, spread: .15 } }),
-      air_loose: sh('Sky Loose', 'L', 'LMB in the air', { wind: 3, dmg: .95, kb: [1, -.4], float: 1, arrows: { n: 1 } }),
-      air_double: sh('Sky Twin', 'L', 'LMB, LMB in the air', { wind: 2, act: 8, rec: 9, dmg: .75, kb: [1, -.3], float: 1, arrows: { n: 2, burst: 4 } }),
-      air_volley: sh('Sparrowflight', 'L', 'LMB in the air, aim up', { lo: -88, hi: -22, wind: 4, rec: 11, dmg: .7, kb: [.5, -2], float: 1, arrows: { n: 3, spread: .16 } }),
+      air_loose: sh('Sky Loose', 'L', 'LMB in the air', { wind: 3, dmg: .95, kb: [1, -.4], arrows: { n: 1 } }),
+      air_double: sh('Sky Twin', 'L', 'LMB, LMB in the air', { wind: 2, act: 8, rec: 9, dmg: .75, kb: [1, -.3], arrows: { n: 2, burst: 4 } }),
+      air_volley: sh('Sparrowflight', 'L', 'LMB in the air, aim up', { lo: -88, hi: -22, wind: 4, rec: 11, dmg: .7, kb: [.5, -2], arrows: { n: 3, spread: .16 } }),
       pin_drop: sh('Pin Drop', 'L', 'LMB in the air + S, or aim down', { lo: 50, hi: 90, wind: 3, rec: 9, dmg: 1.1, kb: [0, 2], hop: -3.4, arrows: { n: 1, v: 7.5 } }),
       dive_shot: sh('Dive Shot', 'H', 'RMB in the air', { lo: 20, hi: 70, act: 10, rec: 13, kb: [2, 1.5], dash: { v: 3.6, t: 10, vy: 3.2, fixed: 1 }, cost: 10, endOnLand: 1, arrows: { n: 3, burst: 4 } }),
       sky_helix: sh('Helix', 'H', 'RMB in the air, aim up', { act: 14, rec: 12, dmg: .7, kb: [1.5, -1], rise: -3.6, cost: 14, spinB: 2, arrows: { n: 7, burst: 2, radial: 1 } }),
@@ -201,8 +201,8 @@ MOVESETS.brawl = {
     back_fist: mv('Back Fist', 'L', 'LMB + back key', { from: -40, to: 60, wind: 3, act: 4, rec: 9, dmg: 1, kb: [1.6, -.6], reach: 1.5, plant: 1 }),
     slip_jab: mv('Slip Jab', 'L', 'LMB right after a dodge', { kind: 'thrust', lo: -30, hi: 30, wind: 1, act: 4, rec: 8, dmg: 1.4, kb: [1.2, -.4], reach: 1.6, step: 1, plant: 1, stop: 2 }),
     counter: mv('Counter', 'L', 'LMB after dodging through a hit', { kind: 'thrust', lo: -30, hi: 30, wind: 1, act: 4, rec: 10, dmg: 2.4, kb: [2.4, -1.2], reach: 1.7, stagger: 60, plant: 1, stop: 5, shake: 3, big: 1 }),
-    air_jab: mv('Air Jab', 'L', 'LMB in the air', { kind: 'thrust', lo: -40, hi: 50, wind: 1, act: 3, rec: 6, dmg: .8, kb: [.8, -.6], reach: 1.5, float: 1 }),
-    air_jab2: mv('Air Cross', 'L', 'LMB, LMB in the air', { kind: 'thrust', lo: -40, hi: 50, wind: 2, act: 3, rec: 8, dmg: .9, kb: [1.2, -.4], reach: 1.6, float: 1 }),
+    air_jab: mv('Air Jab', 'L', 'LMB in the air', { kind: 'thrust', lo: -40, hi: 50, wind: 1, act: 3, rec: 6, dmg: .8, kb: [.8, -.6], reach: 1.5 }),
+    air_jab2: mv('Air Cross', 'L', 'LMB, LMB in the air', { kind: 'thrust', lo: -40, hi: 50, wind: 2, act: 3, rec: 8, dmg: .9, kb: [1.2, -.4], reach: 1.6 }),
     air_upper: mv('Sky Uppercut', 'L', 'LMB in the air, aim up', { from: 50, to: -110, center: -45, wind: 2, act: 4, rec: 10, dmg: 1, kb: [.4, -3], reach: 1.5, launch: 1 }),
     stomp: mv('Stomp', 'L', 'LMB in the air, aim down', { kind: 'plunge', wind: 4, act: 99, rec: 10, dmg: 1.2, kb: [1, 2], landShock: { r: 18, dmg: 1, kb: [1.6, -2] }, stop: 3, shake: 3 }),
     haymaker: mv('Haymaker', 'H', 'RMB (hold to wind up further)', { kind: 'thrust', lo: -30, hi: 30, wind: 6, act: 4, rec: 14, dmg: 2, kb: [3, -1.2], reach: 1.6, step: .8, plant: 1, cost: 8, stop: 5, shake: 3, big: 1, charge: { min: 18, max: 48, into: 'haymaker_full' } }),
@@ -266,7 +266,21 @@ function noteMove(f, setName, id, m, fresh) {
   G.feed.unshift({ name: m.name, fresh, isNew, t: 0 }); if (G.feed.length > 5) G.feed.pop();
   G.movesUsed.add(key);
 }
-function startAttack(f, btn, I, force) {
+function attackForm(set, id, m, c, f) {
+  if (c.riposte && id === set.map.ripD) return 'SWEEP';
+  if (m.counter) return 'RIPOSTE';
+  if (m.kind === 'plunge' && c.air) return 'CRASH';
+  if (!c.air && id === set.map.hDown) return 'SWEEP';
+  if (m.launch && (c.aim === 'up' || c.aim === 'upf' || m.rise)) return 'LIFT';
+  if (m.dash || m.leap || c.dashing || (c.fwd && abs(f.vx) > 1.35)) return 'DRIVE';
+  return '';
+}
+function attackBeatWindow(a) {
+  if (!a || a.phase !== 2) return null;
+  const rec = max(1, round(a.m.rec * (a.tm || a.W.wsp || 1)));
+  return { from: max(1, ceil(rec * .42)), to: max(1, floor(rec * .92)) };
+}
+function startAttack(f, btn, I, force, timed) {
   const W = heldOf(f); if (!W || W.type !== 'weapon') return false;
   if (!force && tryLink(f, btn)) return true;
   const set = MOVESETS[W.set], c = atkContext(f, I); let id = force || resolveMove(set, btn, c); if (!force && f === G.p) id = famGate(W.set, set, id, btn, c);
@@ -286,10 +300,11 @@ function startAttack(f, btn, I, force) {
   }
   const rep = f.hist.slice(-4).filter(h => h === id).length, fresh = !f.hist.slice(-3).includes(id);
   f.hist.push(id); if (f.hist.length > 8) f.hist.shift();
-  const cadence = f === G.p && f.cadence, cadenceLink = !!(cadence && cadence.until >= G.time && cadence.btn !== btn && cadence.set === W.set), cadenceBase = cadenceLink ? { btn: cadence.btn, count: cadence.count, until: cadence.until, set: cadence.set } : null;
+  const cadence = f === G.p && f.cadence, cadenceLink = !!(timed && cadence && cadence.until >= G.time && cadence.btn !== btn && cadence.set === W.set), cadenceBase = cadenceLink ? { btn: cadence.btn, count: cadence.count, until: cadence.until, set: cadence.set } : null;
   if (f === G.p) f.cadence = null;
   f.face = c.side; f.state = 'attack'; f.chainT = 0; f.mineP = 0;
-  const a = f.atk = { f, id, m, W, set, setName: W.set, btn, phase: 0, pt: 0, face: c.side, aimA: c.elev, hits: new Map(), charge: 0, charged: false, hit: false, air: c.air, fresh, stale: fresh ? 1.1 : ([1, .86, .72, .6, .5][rep] || .5), act: m.act, dashT: 0, dashN: 0, prevAng: 0, aimOff: 0, th: 0, crit: !!m.crit, dist: c.dist, tx: I.wx, ty: I.wy, shots: 0, shotI: 0, cadenceLink, cadenceBase };
+  const form = attackForm(set, id, m, c, f);
+  const a = f.atk = { f, id, m, W, set, setName: W.set, btn, phase: 0, pt: 0, face: c.side, aimA: c.elev, hits: new Map(), charge: 0, charged: false, hit: false, air: c.air, fresh, stale: fresh ? 1.1 : ([1, .86, .72, .6, .5][rep] || .5), act: m.act, dashT: 0, dashN: 0, prevAng: 0, aimOff: 0, th: 0, crit: !!m.crit, dist: c.dist, tx: I.wx, ty: I.wy, shots: 0, shotI: 0, cadenceLink, cadenceBase, timed: !!timed, form, momentum: abs(f.vx), crashReady: form === 'CRASH' && f.vy > 1.2 };
   if (f === G.p && WORLD.royale && ['bow', 'fangs', 'chuks'].includes(W.set)) a.gm = .78;
   // what you wear and how well you know the weapon change how each kind of blow comes out
   if (f === G.p && gearOn()) { const air = c.air, sh = m.kind === 'shot', spd = (sh ? gearMul('bow') : a.btn === 'L' ? gearMul('light') : 1) * (air ? (gearMul('air') + 1) / 2 : 1) * styleSpeed(W, id); a.tm = (W.wsp || 1) / spd; a.gm = (a.btn === 'H' ? gearMul('heavy') : 1) * (air ? (gearMul('air') + 1) / 2 : 1) * styleDmg(W, id); a.dk = gearMul('dash') * (air ? gearMul('air') : 1); a.critB = (gearHas('crit') ? .06 : 0) + (gearHas('keen') ? .08 : 0); }
@@ -297,7 +312,7 @@ function startAttack(f, btn, I, force) {
   setAim(a);
   if (c.riposte) { f.riposte = 0; if (f === G.p) G.slowT = min(G.slowT, 8); }
   if (m.iframe) f.iDodge = max(f.iDodge, m.iframe + m.wind);
-  if (m.leap && f.onGround) { f.vx = c.side * m.leap.vx; f.vy = m.leap.vy; f.onGround = false; f.noCut = true; dust(f.x + 3, f.y + f.h, 5); }
+  if (m.leap && f.onGround && !f.airRiseUsed) { f.vx = c.side * m.leap.vx; f.vy = m.leap.vy; f.onGround = false; f.noCut = true; f.airRiseUsed = true; dust(f.x + 3, f.y + f.h, 5); }
   noteMove(f, W.set, id, m, fresh);
   return true;
 }
@@ -320,7 +335,6 @@ function tickAttack(f, I) {
   const a = f.atk; let m = a.m; a.pt++;
   if (a.phase === 0) {
     if (m.kind === 'plunge' && !m.leap) { f.vy = min(f.vy, -.7); f.vx *= .8; }
-    if (m.float && f.vy > .5) f.vy = .5;
     if (a.pt >= round(m.wind * (a.tm || a.W.wsp || 1))) {
       const held = a.btn === 'H' ? I.r : I.l, ch = a.artCharge || m.charge;
       if (ch && held && a.charge < ch.max) {
@@ -340,7 +354,7 @@ function tickAttack(f, I) {
     else if (m.endOnLand && f.onGround && a.pt > 2) end = true;
     if (a.pogoed && a.pt > a.pogoT + 2) end = true;
     if (end) {
-      a.phase = 2; a.pt = 0; fadeTrail(a); if (m.dash) f.vx *= .5;
+      a.phase = 2; a.pt = 0; fadeTrail(a); if (m.dash) f.vx *= .78;
       if (m.quake && f.onGround) { for (const s of m.quake2 ? [1, -1] : [1]) spawnProj({ type: 'shock', owner: f, x: f.x + 3 + a.face * s * 14, y: f.y + f.h - 4, vx: a.face * s * 3.3, vy: 0, r: 6, dmg: round(a.W.dmg * m.quake), life: m.quake2 ? 40 : 28, pierce: true, kb: [1.5, -3.2] }); if (near(f)) { addShake(m.shake); sfx('boom'); } dust(f.x + 3 + a.face * 14, f.y + f.h, 8, '#b9bdd0', 2); if (m.quake2) landShock(a, { r: 44, dmg: 1.5, kb: [3.4, -4] }, f.x + 3 + a.face * 12); }
     }
   } else if (a.pt >= round(m.rec * (a.tm || a.W.wsp || 1))) endAttack(f);
@@ -350,9 +364,10 @@ function beginActive(a) {
   if (m.plant) f.vx = fc * max(m.step || 0, min(f.vx * fc, .9));
   else if (m.step) f.vx = fc * max(m.step, f.vx * fc);
   if (m.back) f.vx = -fc * m.back;
-  if (m.hop) { f.vy = m.hop; f.onGround = false; f.noCut = true; }
-  if (m.rise) { f.vy = m.rise; f.onGround = false; f.noCut = true; dust(f.x + 3, f.y + f.h, 5); }
-  if (m.vault) { f.vx = fc * m.vault.vx; f.vy = m.vault.vy; f.onGround = false; f.noCut = true; dust(f.x + 3 + fc * 8, f.y + f.h, 6); }
+  // An aerial launch or bounce is one impulse per airtime; landing resets both locks.
+  if (m.hop && !f.airRiseUsed) { f.vy = m.hop; f.onGround = false; f.noCut = true; f.airRiseUsed = true; }
+  if (m.rise && !f.airRiseUsed) { f.vy = m.rise; f.onGround = false; f.noCut = true; f.airRiseUsed = true; dust(f.x + 3, f.y + f.h, 5); }
+  if (m.vault && !f.airRiseUsed) { f.vx = fc * m.vault.vx; f.vy = m.vault.vy; f.onGround = false; f.noCut = true; f.airRiseUsed = true; dust(f.x + 3 + fc * 8, f.y + f.h, 6); }
   if (m.kind === 'plunge') { f.vy = 6.6; f.vx *= .3; }
   if (m.proj) fireProj(a);
   if (m.kind === 'shot') { a.shots = m.arrows.n; a.shotI = 0; if (!m.arrows.burst) { fireArrows(a, a.shots); a.shots = 0; } }
@@ -365,12 +380,10 @@ function activeTick(a) {
     a.dashT--;
     const dv = m.dash.v * (a.dk || 1);
     if (m.dash.along) { f.vx = fc * cos(a.th) * dv; f.vy = sin(a.th) * dv; }
-    else { f.vx = fc * dv; if (m.dash.vy !== undefined) f.vy = m.dash.vy; else if (!f.onGround) f.vy = min(f.vy, 0) * .5; }
+    else { f.vx = fc * dv; if (m.dash.vy !== undefined) f.vy = max(f.vy, m.dash.vy); }
     if (a.pt % 2 === 0) f.ghostReq = true;
   }
-  if (m.float && f.vy > .4) f.vy = .4;
-  if (m.hover) f.vy = lerp(f.vy, -.9, .25);
-  if (m.kind === 'plunge') { f.vy = 6.8; f.vx *= .8; if (a.pt % 2 === 0) f.ghostReq = true; }
+  if (m.kind === 'plunge' && !a.pogoed) { f.vy = 6.8; f.vx *= .8; if (a.pt % 2 === 0) f.ghostReq = true; }
   if (m.fall && !a.pogoed) f.vy = max(f.vy, m.fall);
   if (m.kind === 'spin' && a.pt % 3 === 0) f.ghostReq = true;
   if (a.shots > 0 && a.pt % m.arrows.burst === 1 % m.arrows.burst) { fireArrows(a, 1); a.shots--; }
@@ -450,12 +463,25 @@ function applyHit(a, e, hx, hy) {
   if (last !== undefined && (!m.multi || a.pt - last < m.multi)) return; a.hits.set(root, a.pt);
   const P0 = f === G.p, sharp = P0 && f.sharp > 0;
   const crit = a.crit || Math.random() < .07 + (a.W.crit || 0) + (a.critB || 0) + (P0 ? boonAdd('crit') : 0);
+  const crash = a.form === 'CRASH' && a.crashReady;
   const beat = P0 ? cadenceStep(a) : 0;
-  let dmg = a.W.dmg * m.dmg * a.stale * (P0 ? 1 + rankI() * .04 + qBonus(a.W.id) + (sharp ? .2 : 0) : 1) * (crit && !a.crit ? 1.6 : 1) * combatDmgMul(f) * (a.gm || 1) * (P0 ? (a.btn === 'H' ? boonMul('hdmg') : 1) * (m.counter ? boonMul('counter') : 1) : 1) * cadenceMul(beat);
+  const cleanBeat = P0 && a.timed ? 1.08 : 1;
+  let dmg = a.W.dmg * m.dmg * a.stale * (P0 ? 1 + rankI() * .04 + qBonus(a.W.id) + (sharp ? .2 : 0) : 1) * (crit && !a.crit ? 1.6 : 1) * (crash ? 1.25 : 1) * cleanBeat * combatDmgMul(f) * (a.gm || 1) * (P0 ? (a.btn === 'H' ? boonMul('hdmg') : 1) * (m.counter ? boonMul('counter') : 1) : 1) * cadenceMul(beat);
   const lk = P0 ? flowPay(a, e) : null; if (lk) dmg *= lk.mul * (lk.tag ? boonMul('flow') : 1);
   dmg = max(1, round(dmg * frand(.93, 1.07)));
   let kx = m.kb[0] * a.face; if (m.kind === 'spin') kx = m.kb[0] * (sign((e.x + e.w / 2) - (f.x + 3)) || a.face);
-  if (!strike(f, e, dmg, kx, m.kb[1], { stagger: beat >= 3 ? max(m.stagger || 0, 48) : m.flow === 'down' ? max(m.stagger || 0, 45) : m.stagger, launch: m.launch, crit, stop: (m.stop || 0) + (lk && lk.tag ? 2 : 0) + (beat >= 3 ? 3 : beat === 2 ? 1 : 0), shake: m.shake, blunt: m.blunt, cold: a.W.cold, hx, hy })) return;
+  let ky = m.kb[1], stagger = beat >= 3 ? max(m.stagger || 0, 48) : m.flow === 'down' ? max(m.stagger || 0, 45) : m.stagger;
+  if (a.form === 'SWEEP') { const away = sign((e.x + e.w / 2) - (f.x + 3)) || a.face; kx = away * max(abs(kx), e.onGround ? 2.2 : 1.5); if (e.onGround) { ky = min(ky, -1.2); stagger = max(stagger || 0, 22); } }
+  if (a.form === 'LIFT') ky = min(ky, -3.6);
+  if (a.form === 'DRIVE') { const away = sign((e.x + e.w / 2) - (f.x + 3)) || a.face; kx = away * (abs(kx) + min(1.7, a.momentum * .38)); }
+  const hitCrit = crit || crash;
+  if (!strike(f, e, dmg, kx, ky, { stagger, launch: m.launch, crit: hitCrit, stop: (m.stop || 0) + (lk && lk.tag ? 2 : 0) + (beat >= 3 ? 3 : beat === 2 ? 1 : 0) + (crash ? 2 : 0), shake: m.shake, blunt: m.blunt, cold: a.W.cold, hx, hy })) return;
+  if (P0 && a.form && !a.formShown) {
+    const col = a.form === 'CRASH' ? '#ffd35a' : a.form === 'RIPOSTE' ? '#8ff5e6' : a.form === 'SWEEP' ? '#ffb347' : a.form === 'LIFT' ? '#c9b8ff' : '#ffffff';
+    const tag = crash ? 'CRITICAL CRASH' : a.form;
+    numPop(hx, hy - 17, tag, col, crash || a.form === 'RIPOSTE' ? 1.2 : 1);
+    G.feed.unshift({ name: tag + ' · ' + m.name, fresh: true, isNew: false, t: 0, flow: 1 }); if (G.feed.length > 5) G.feed.pop(); a.formShown = true;
+  }
   if (P0) { flowSet(a, e, lk, hx, hy); cadenceHit(a, e, beat, hx, hy); famGain(a.setName, ((a.fresh ? 1 : .4) + (lk && lk.tag ? 1 : 0)) * (e.type === 'dummy' ? .5 : 1)); if (e.type !== 'dummy') artGain(a.W); }
   if (a.W.burn && !e.dead) applyStatus(e, 'burn', f, { d: 110 });
   if (!e.dead) { if (a.W.frost) applyStatus(e, 'frost', f, { d: 100 }); if (a.W.poison || (P0 && f.venom > 0)) applyStatus(e, 'poison', f, { d: 260 }); if (a.W.bleed && Math.random() < a.W.bleed) applyStatus(e, 'bleed', f, { d: 180 }); }
@@ -466,8 +492,7 @@ function applyHit(a, e, hx, hy) {
   if (P0) styleHit(a, e, dmg);
   if (P0) { if (sharp) f.sharp--; if (f.venom > 0) f.venom--; }
   if (f === G.p) comboHit(a.fresh && !a.hit); a.hit = true;
-  if (m.pogo && !a.pogoed) { a.pogoed = true; a.pogoT = a.pt; f.vy = -4.3; f.noCut = true; f.airDash = airDashMax(f); f.updraft = true; f.dblUsed = false; }
-  else if (!f.onGround && m.float) f.vy = min(f.vy, -.7);
+  if (m.pogo && !a.pogoed && !f.pogoUsed) { a.pogoed = true; a.pogoT = a.pt; f.pogoUsed = true; f.vy = min(f.vy, -3.1); f.noCut = true; }
 }
 function landShock(a, S, cx) {
   const f = a.f, m = a.m, fy = f.y + f.h; if (!S) return;

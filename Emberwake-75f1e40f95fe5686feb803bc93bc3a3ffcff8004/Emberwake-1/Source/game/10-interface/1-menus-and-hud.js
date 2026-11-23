@@ -402,16 +402,17 @@ function drawCodex(c) {
   if (sn === 'styles') { drawStylesPage(c, x, y, w, h, tabs); return; }
   const set = MOVESETS[sn]; let kn = 0, tot = 0; for (const k in set.moves) { if (isStyleId(k)) continue; tot++; if (G.known.has(sn + ':' + k)) kn++; }
   panel(c, x, y, w, h, `FORMS ${kn}/${tot}`); hit(x, y, w, h, () => { }); tabs();
-  { const st = famStep(sn), xp = (G.fam && G.fam[sn]) || 0; textS(c, (FAM_NAME[sn] || '') + ': ' + FAM_STEP[st] + (st < 3 && !famAll() ? '  ' + floor(xp) + '/' + FAM_AT[st + 1] + ' to ' + FAM_STEP[st + 1] : '') + '.  Best at ' + (FAM_LEAN_T[sn] || 'everything') + '.', x + 6, y + h - 30, '#ffd35a'); }
+  { const st = famStep(sn), xp = (G.fam && G.fam[sn]) || 0; textS(c, (FAM_NAME[sn] || '') + ': ' + FAM_STEP[st] + (st < 3 && !famAll() ? '  ' + floor(xp) + '/' + FAM_AT[st + 1] + ' to ' + FAM_STEP[st + 1] : '') + '.  Best at ' + (FAM_LEAN_T[sn] || 'everything') + '.', x + 6, y + h - 39, '#ffd35a'); }
   const rows = []; for (const [sec, ids] of set.sections) { rows.push({ h: sec }); for (const id of ids) rows.push({ id, m: set.moves[id] }); }
-  const vis = floor((h - 40) / 9); UI.scroll = clamp(UI.scroll, 0, max(0, rows.length - vis));
+  const vis = floor((h - 49) / 9); UI.scroll = clamp(UI.scroll, 0, max(0, rows.length - vis));
   for (let i = 0; i < vis; i++) {
     const r = rows[i + UI.scroll]; if (!r) break; const ry = y + 16 + i * 9;
     if (r.h) { textS(c, r.h, x + 6, ry, '#ffd35a'); c.fillStyle = '#4a4460'; c.fillRect(x + 10 + textW(r.h), ry + 3, w - 18 - textW(r.h), 1); }
     else { const k = G.known.has(sn + ':' + r.id), lock = !famOpen(sn, r.id) || (r.m.art && !famAll() && !(G.arts && [...G.arts].some(q => q.startsWith(sn) && +q.slice(sn.length) >= r.m.art))), off = fullOnly(set, r.id) || lock; c.fillStyle = off ? '#4a4460' : r.m.btn === 'L' ? '#6c93a8' : '#ff8a3d'; c.fillRect(x + 7, ry, 2, 7); drawText(c, r.m.name, x + 13, ry, off ? '#6a6485' : k ? '#fff' : '#8b8fa3'); if (k && !off) { c.fillStyle = '#7ddc6f'; c.fillRect(x + 108, ry + 2, 3, 3); } drawText(c, lock ? (r.m.art ? 'art of ' + ART_TIER_N[r.m.art] + ' weapons' : 'learned at ' + FAM_STEP[set.tier[r.id]]) : off ? 'FULL controls only (pause menu)' : r.m.hint, x + 116, ry, off ? '#5a5470' : k ? '#b9bdd0' : '#6f6a85'); }
   }
-  drawText(c, SETTINGS.combat === 'simple' ? 'SIMPLE controls: aim and S choose the form, not A / D.' : 'Forward key = A or D toward your cursor. Back key = away.', x + 6, y + h - 20, '#b9bdd0');
-  drawText(c, 'Fresh forms hit 10% harder. Repeats go dull. Wheel scrolls.', x + 6, y + h - 10, '#8ff5e6');
+  drawText(c, 'Fresh forms hit harder; repeats dull. Wheel scrolls.', x + 6, y + h - 30, '#8ff5e6');
+  drawText(c, SETTINGS.combat === 'simple' ? 'SIMPLE: aim and S choose forms. Time attacks on gold.' : 'A / D toward cursor = forward; away = back. Time on gold.', x + 6, y + h - 20, '#b9bdd0');
+  drawText(c, 'CRASH fall↓ · SWEEP ground↓ · LIFT ↑ · DRIVE dash · RIPOSTE dodge', x + 6, y + h - 10, '#b9bdd0');
 }
 function drawJournal(c) {
   const w = min(330, VS.uw - 12), h = min(VS.uh - 44, 300), x = round((VS.uw - w) / 2), y = round((VS.uh - h) / 2) - 8, tab = UI.jtab || 'leads';

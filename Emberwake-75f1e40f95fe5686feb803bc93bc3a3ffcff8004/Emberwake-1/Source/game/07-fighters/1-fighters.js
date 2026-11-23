@@ -18,7 +18,7 @@ const AI_RANGE = { sword: 20, spear: 30, fangs: 13, maul: 22, bow: 125, chuks: 1
 function newFighter(x, y, o) {
   const f = {
     fighter: true, x, y, px: x, py: y, w: 6, h: 20, vx: 0, vy: 0, face: 1, onGround: false, canStep: true, stepVis: 0, hp: 100, maxhp: 100, stam: 100, maxstam: 100, stamDelay: 0,
-    inv: 0, iDodge: 0, dodgeT: 0, dodgeCd: 0, dodgeDir: 1, dodgeGrace: 0, dodgeGround: true, dbuf: 0, airDash: 1, updraft: true, dblUsed: false, perfected: false,
+    inv: 0, iDodge: 0, dodgeT: 0, dodgeCd: 0, dodgeDir: 1, dodgeGrace: 0, dodgeGround: true, dbuf: 0, airDash: 1, updraft: true, dblUsed: false, airRiseUsed: false, pogoUsed: false, perfected: false,
     state: 'normal', atk: null, buf: null, coyote: 0, jbuf: 0, runPh: 0, landT: 0, hurtT: 0, riposte: 0, lastMove: null, chainT: 0, cadence: null, hist: [], toolT: 0, mineX: -1, mineY: -1, mineP: 0,
     placeCd: 0, dead: false, deadT: 0, healCd: 0, regenT: 0, sHold: 0, noCut: false, ghostReq: false, scarf: [], skin: 0, hat: 0, team: 'p', name: '', wid: 'sword', flash: 0, taken: 0, takenT: 0,
     kills: 0, deaths: 0, foes: [], atkN: 0
@@ -32,13 +32,13 @@ function newPlayer() {
   while (boxHits(p.x, p.y, p.w, p.h)) p.y -= T; p.py = p.y; return p;
 }
 function reviveFighter(f, x, y) {
-  Object.assign(f, { x, y, px: x, py: y, vx: 0, vy: 0, hp: f.maxhp, stam: f.maxstam, dead: false, deadT: 0, inv: 120, iDodge: 0, state: 'normal', atk: null, buf: null, hurtT: 0, riposte: 0, taken: 0, chainT: 0, cadence: null, mineP: 0 });
+  Object.assign(f, { x, y, px: x, py: y, vx: 0, vy: 0, hp: f.maxhp, stam: f.maxstam, dead: false, deadT: 0, inv: 120, iDodge: 0, state: 'normal', atk: null, buf: null, hurtT: 0, riposte: 0, taken: 0, chainT: 0, cadence: null, airRiseUsed: false, pogoUsed: false, mineP: 0 });
   while (boxHits(f.x, f.y, f.w, f.h)) { f.y -= T; f.py = f.y; }
   for (const s of f.scarf) { s.x = s.ox = f.x + 3; s.y = s.oy = f.y + 5; }
 }
 function startDodge(f, md, I) {
   const c = atkContext(f, I), dir = md || -c.side;
-  if (f.atk) endAttack(f); f.state = 'dodge'; f.dodgeT = 0; f.dodgeDir = dir; f.dodgeGround = f.onGround || f.coyote > 0; if (!f.dodgeGround) { f.airDash--; f.vy = 0; }
+  if (f.atk) endAttack(f); f.state = 'dodge'; f.dodgeT = 0; f.dodgeDir = dir; f.dodgeGround = f.onGround || f.coyote > 0; if (!f.dodgeGround) f.airDash--;
   f.iDodge = f === G.p && boonHas('veil') ? 15 : 10; f.dodgeCd = 24; f.stam = max(0, f.stam - 22); f.stamDelay = 38; f.dbuf = 0; f.perfected = false; if (md) f.face = dir;
   fsx(f, 'dodge', 0); dust(f.x + 3, f.y + f.h, 5); f.ghostReq = true;
   if (f === G.p && G.drill) drillNote('dodge');
@@ -103,27 +103,34 @@ function tickFighter(f, I) {
   if (tickGrapple(f)) { moveBody(f); tickScarf(f); return; }
   if (I.armP && f.hurtT <= 0) throwArm(f, I.wx, I.wy);
   if (I.jumpP) f.jbuf = 7; else if (f.jbuf > 0) f.jbuf--;
-  if (f.onGround) { f.coyote = 6; f.airDash = airDashMax(f); f.updraft = true; f.dblUsed = false; } else if (f.coyote > 0) f.coyote--;
+  if (f.onGround) { f.coyote = 6; f.airDash = airDashMax(f); f.updraft = true; f.dblUsed = false; f.airRiseUsed = false; f.pogoUsed = false; } else if (f.coyote > 0) f.coyote--;
   if (f.stamDelay > 0) f.stamDelay--; else f.stam = min(f.maxstam, f.stam + (f.isPlayer && (!WORLD.arena || WORLD.royale) ? (f.tonic > 0 ? 1.8 : 1) * (WORLD.mode !== 1 && G.food <= 0 ? .5 : 1) * gearMul('st') : 1));
   f.regenT++;
   if (WORLD.arena && !WORLD.royale) { if (f.regenT > 240 && f.hp < f.maxhp && G.time % 4 === 0) f.hp++; }
   else if (f.isPlayer && f.regenT > 420 / DIFF().regen && G.time % max(1, round((WORLD.mode === 1 || G.food > 70 ? 40 : G.food > 30 ? 80 : 1e9) / DIFF().regen / blessRegen())) === 0 && f.hp < f.maxhp) f.hp++;
   const W = heldOf(f), isW = W && W.type === 'weapon', free = f.hurtT <= 0;
-  if (isW && free) { if (I.lp) f.buf = { b: 'L', t: 10 }; if (I.rp) f.buf = { b: 'H', t: 10 }; }
+  if (isW && free && (I.lp || I.rp)) {
+    const b = I.rp ? 'H' : 'L';
+    if (f !== G.p || f.state === 'normal' || f.state === 'dodge') f.buf = { b, t: 7, beat: false };
+    else if (f.state === 'attack' && f.atk) {
+      const win = attackBeatWindow(f.atk);
+      f.buf = win && f.atk.pt >= win.from && f.atk.pt <= win.to ? { b, t: 2, beat: true } : null;
+    }
+  }
   if (f.buf && --f.buf.t < 0) f.buf = null;
   if (I.dodgeP) f.dbuf = 7; else if (f.dbuf > 0) f.dbuf--;
   let a = f.atk;
   if (f.dbuf > 0 && f.dodgeCd <= 0 && f.hurtT <= 0 && f.stam >= 12 && (f.state === 'normal' || (f.state === 'attack' && (a.phase === 2 || (a.phase === 0 && a.charge > 0)))) && (f.onGround || f.coyote > 0 || f.airDash > 0)) startDodge(f, I.md, I);
   if (f.buf && f.hurtT <= 0) {
     a = f.atk; const ok = f.state === 'normal' || (f.state === 'dodge' && f.dodgeT >= 2) || (f.state === 'attack' && a.phase === 2 && a.pt >= floor(a.m.rec * .38));
-    if (ok) { const b = f.buf.b; f.buf = null; if (f.state === 'attack') endAttack(f); if (startAttack(f, b, I)) f.atkN++; }
+    if (ok) { const b = f.buf.b, beat = !!f.buf.beat; f.buf = null; if (f.state === 'attack') endAttack(f); if (startAttack(f, b, I, false, beat)) f.atkN++; }
   }
   let grav = .26; const gp = f === G.p && gearOn(), maxV = 1.45 * (gp ? gearMul('walk') : 1) * (f === G.p && typeof brewMul === 'function' ? brewMul('swift') : 1);
   if (gp && f.vy > 0 && (gearHas('feather') || gearHas('prismatic')) && I.jumpH && !f.onGround) grav = .17;
   if (f.state === 'dodge') {
-    f.dodgeT++; f.vx = f.dodgeDir * 3.5 * (f.dodgeT > 8 ? .7 : 1) * (f === G.p ? gearMul('dodge') : 1); if (!f.dodgeGround) { f.vy = 0; grav = 0; }
+    f.dodgeT++; f.vx = f.dodgeDir * 3.5 * (f.dodgeT > 8 ? .7 : 1) * (f === G.p ? gearMul('dodge') : 1);
     if (f.dodgeT % 2 === 0) f.ghostReq = true;
-    if (f.dodgeT >= 11) { f.state = 'normal'; f.dodgeGrace = 9; f.vx *= .5; }
+    if (f.dodgeT >= 11) { f.state = 'normal'; f.dodgeGrace = 9; f.vx *= .78; }
   } else if (f.state === 'attack') tickAttack(f, I);
   a = f.atk;
   if (f.state !== 'dodge' && !(a && a.dashT > 0 && a.phase === 1)) {
@@ -140,7 +147,6 @@ function tickFighter(f, I) {
   }
   if (!I.jumpH && f.vy < -1.7 && !f.noCut) f.vy = -1.7;
   a = f.atk;
-  if (a && a.phase < 2) { if (a.m.float) grav = .1; if (a.dashT > 0 && a.m.dash.vy === undefined && !a.m.dash.along && !f.onGround) grav = .04; }
   const liq = liqAt(f.x + 3, f.y + f.h - 5), head = liqAt(f.x + 3, f.y + 2);
   if (liq) {
     grav *= .3; f.vx *= .9; if (f.vy > 1.3) f.vy = lerp(f.vy, 1.3, .3);

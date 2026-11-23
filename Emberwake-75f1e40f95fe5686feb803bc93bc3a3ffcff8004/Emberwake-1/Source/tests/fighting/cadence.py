@@ -1,4 +1,4 @@
-# Fighting: one press, one swing; alternating landed light and heavy hits build a Refrain.
+# Fighting: one press, one swing; timed, alternating hits build a Refrain.
 import asyncio
 import os, sys
 sys.path.insert(0, os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), 'helpers'))
@@ -21,6 +21,26 @@ async def tap(h, btn, wait=37):
     await h.ev(release)
     await h.step(wait, AIM + "FOE.stun=9999;")
     return await h.ev("({cadence:G.p.cadence && {...G.p.cadence}, open:FOE.fl && FOE.fl.open>G.time, move:G.lastMove})")
+
+
+async def beat_tap(h, btn):
+    """Press the opposite attack during the visible recovery beat."""
+    last = None
+    for _ in range(150):
+        state = await h.ev("(() => { const a=G.p.atk, w=attackBeatWindow(a); return w ? {pt:a.pt,from:w.from,to:w.to} : null; })()")
+        last = await h.ev("({state:G.p.state,atk:G.p.atk&&{id:G.p.atk.id,phase:G.p.atk.phase,pt:G.p.atk.pt,rec:G.p.atk.m.rec,hit:G.p.atk.hit},cadence:G.p.cadence})")
+        if state and state['from'] <= state['pt'] <= state['to']:
+            before = await h.ev("({cadence:G.p.cadence && {...G.p.cadence}, open:FOE.fl && FOE.fl.open>G.time})")
+            press = "mouse.l=mouse.lp=true;" if btn == 'L' else "mouse.r=mouse.rp=true;"
+            release = "mouse.l=mouse.lp=false;" if btn == 'L' else "mouse.r=mouse.rp=false;"
+            await h.step(1, AIM + press + "FOE.stun=9999;")
+            await h.ev(release)
+            for _ in range(120):
+                if await h.ev("!!(G.p.atk && G.p.atk.hit)"): break
+                await h.step(1, AIM + "FOE.stun=9999;")
+            return {'before': before, **await h.ev("({cadence:G.p.cadence && {...G.p.cadence}, open:FOE.fl && FOE.fl.open>G.time, move:G.p.atk && G.p.atk.id})")}
+        await h.step(1, AIM + "FOE.stun=9999;")
+    raise AssertionError('attack never opened its recovery beat: ' + str(last))
 
 
 async def main():
@@ -52,9 +72,14 @@ async def main():
         missed = await h.ev("G.p.cadence")
         assert not missed, 'a follow-up that misses should not keep the cadence'
 
-        first = await tap(h, 'L')
-        second = await tap(h, 'H')
-        third = await tap(h, 'L')
+        await prepare(h)
+        await h.step(1, AIM + "mouse.l=mouse.lp=true;")
+        await h.ev("mouse.l=mouse.lp=false")
+        second = await beat_tap(h, 'H')
+        third = await beat_tap(h, 'L')
+        first = second['before']
+        second = {k: v for k, v in second.items() if k != 'before'}
+        third = {k: v for k, v in third.items() if k != 'before'}
         print('held light starts:', held_starts, 'cadence after its hit:', held_progress)
         print('L -> H -> L:', first, second, third)
         assert held_starts == 1, 'holding light should not start repeat swings'
@@ -64,9 +89,15 @@ async def main():
         assert third['cadence'] and third['cadence']['count'] == 1, 'REFRAIN should reset into a fresh cadence'
 
         await h.ev("inv[0]={id:'wood_shortbow',n:1}; inv[1]={id:'arrow',n:99}; G.sel=0; G.p.cadence=null; G.p.atk=null; G.p.state='normal'; G.p.stam=100;")
-        bow_first = await tap(h, 'L')
-        bow_second = await tap(h, 'H')
-        bow_third = await tap(h, 'L')
+        await prepare(h)
+        await h.step(10, AIM + "FOE.stun=9999;")
+        await h.step(1, AIM + "mouse.l=mouse.lp=true;")
+        await h.ev("mouse.l=mouse.lp=false")
+        bow_second = await beat_tap(h, 'H')
+        bow_third = await beat_tap(h, 'L')
+        bow_first = bow_second['before']
+        bow_second = {k: v for k, v in bow_second.items() if k != 'before'}
+        bow_third = {k: v for k, v in bow_third.items() if k != 'before'}
         print('bow L -> H -> L:', bow_first, bow_second, bow_third)
         assert bow_first['cadence'] and bow_first['cadence']['count'] == 1, 'a landed arrow should plant one ember'
         assert bow_second['cadence'] and bow_second['cadence']['count'] == 2, 'bow heavy should create an ECHO on impact'

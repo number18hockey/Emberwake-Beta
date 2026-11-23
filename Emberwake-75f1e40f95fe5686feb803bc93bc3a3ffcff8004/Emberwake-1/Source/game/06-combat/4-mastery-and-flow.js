@@ -31,7 +31,7 @@
 //  button until it flares, and let go.
 // ============================================================
 const FAM_AT = [0, 30, 110, 260], FAM_STEP = ['BASICS', 'FOOTWORK', 'FLOW', 'MASTERY'];
-const CADENCE_WINDOW = 72;
+const CADENCE_WINDOW = 48;
 const FAM_NAME = { sword: 'BLADES', spear: 'PIKES', fangs: 'FANGS', maul: 'MAULS', bow: 'BOWS', chuks: 'CHAINS', brawl: 'BARE HANDS' };
 // how each family leans: a bigger share of one kind of flow
 const FAM_LEAN = { sword: { rhythm: 1.3 }, spear: { skewer: 1.3, open: 1.1 }, fangs: { open: 1.3, counter: 1.1 }, maul: { crush: 1.3 }, bow: { juggle: 1.3, spike: 1.2 }, chuks: { skewer: 1.25, juggle: 1.15 }, brawl: { counter: 1.3, rhythm: 1.15 } };
@@ -199,10 +199,10 @@ function flowPay(a, e) {
   if (heavy) f.rhythm = 0;
   return mul > 1.001 ? { mul: min(2.6, mul), tag } : null;
 }
-// A hit plants one ember; alternating the next button in time turns it into a
+// A hit plants one ember; a timed, alternating follow-up turns it into a
 // two-beat ECHO, then a three-beat REFRAIN that leaves its target OPEN.
 function cadenceStep(a) {
-  if (a.link || a.cadenceCommitted) return a.cadenceStep || 0;
+  if (a.link || a.cadenceCommitted || !a.timed) return a.cadenceStep || 0;
   const q = a.cadenceBase;
   return a.cadenceLink && q && q.until >= G.time && q.btn !== a.btn && q.set === a.setName ? min(3, q.count + 1) : 0;
 }
@@ -243,8 +243,18 @@ function drawFamHud(c) {
   if ((p.rhythm || 0) >= 2) textS(c, 'RHYTHM ' + 'I'.repeat(min(4, p.rhythm)), x + 150, y, '#ffd35a');
 }
 function drawCadenceHud(c) {
-  const q = G.p && G.p.cadence; if (!q || q.until < G.time || UI.open) return;
-  const uw = VS.uw, label = q.count >= 2 ? 'REFRAIN READY' : 'EMBER CADENCE', next = q.btn === 'L' ? 'NEXT RMB / Q' : 'NEXT LMB', y = round(VS.uh * .34) + 40;
+  const p = G.p; if (!p || UI.open) return; const uw = VS.uw, uh = VS.uh;
+  const a = p.atk, win = attackBeatWindow(a);
+  if (win) {
+    const rec = max(1, round(a.m.rec * (a.tm || a.W.wsp || 1))), next = a.btn === 'L' ? 'RMB / Q' : 'LMB';
+    const ready = a.pt >= win.from && a.pt <= win.to, y = hotbarLayout().y - 27;
+    textC(c, (ready ? 'ON THE BEAT' : 'RECOVER') + '  •  NEXT ' + next, uw / 2, y, ready ? '#ffd35a' : '#b9bdd0', 1, textO);
+    const bx = round(uw / 2 - 36), by = y + 8; c.fillStyle = '#302a42'; c.fillRect(bx, by, 72, 3);
+    const sx = bx + round(72 * win.from / rec), ex = bx + round(72 * (win.to + 1) / rec); c.fillStyle = '#8f6730'; c.fillRect(sx, by, max(1, ex - sx), 3);
+    c.fillStyle = ready ? '#ffd35a' : '#ffffff'; c.fillRect(bx, by, round(72 * clamp(a.pt / rec, 0, 1)), 3);
+  }
+  const q = p.cadence; if (!q || q.until < G.time) return;
+  const label = q.count >= 2 ? 'REFRAIN READY' : 'EMBER CADENCE', next = q.btn === 'L' ? 'NEXT RMB / Q' : 'NEXT LMB', y = round(uh * .34) + 40;
   const s = label + '  ' + next, x = uw - 8 - textW(s); textO(c, s, x, y, q.count >= 2 ? '#ffd35a' : '#8ff5e6');
   for (let i = 0; i < 3; i++) { c.fillStyle = i < q.count ? (q.count >= 2 ? '#ffd35a' : '#8ff5e6') : '#4a4460'; c.fillRect(x + i * 6, y + 7, 4, 2); }
   c.fillStyle = '#4a4460'; c.fillRect(x + 22, y + 7, 17, 2); c.fillStyle = '#ff8a3d'; c.fillRect(x + 22, y + 7, round(17 * clamp((q.until - G.time) / CADENCE_WINDOW, 0, 1)), 2);
