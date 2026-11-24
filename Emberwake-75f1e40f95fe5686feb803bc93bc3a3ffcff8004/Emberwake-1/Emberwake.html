@@ -5,12 +5,33 @@
 <title>Emberwake</title>
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <style>
-html,body{margin:0;height:100%;background:#0e0b14;overflow:hidden}
-canvas{display:block;width:100vw;height:100vh;image-rendering:pixelated;image-rendering:crisp-edges;cursor:none;outline:none;touch-action:none;user-select:none}
+html,body{margin:0;width:100%;height:100%;height:100dvh;background:#0e0b14;overflow:hidden;overscroll-behavior:none}
+canvas{display:block;width:100vw;height:100vh;height:100dvh;image-rendering:pixelated;image-rendering:crisp-edges;cursor:none;outline:none;touch-action:none;user-select:none;-webkit-user-select:none}
+#mobileControls{display:none;position:fixed;inset:0;z-index:2;pointer-events:none;touch-action:none;user-select:none;-webkit-user-select:none}
+#mobileControls.visible{display:block}
+#movePad{position:absolute;left:calc(env(safe-area-inset-left,0px) + 18px);bottom:calc(env(safe-area-inset-bottom,0px) + 18px);width:clamp(112px,22vmin,156px);height:clamp(112px,22vmin,156px);border:2px solid rgba(255,211,90,.52);border-radius:50%;background:radial-gradient(circle,rgba(49,39,63,.48),rgba(17,14,25,.58));box-shadow:0 4px 20px #0008;pointer-events:auto;touch-action:none}
+#movePad:before{content:"";position:absolute;inset:24%;border:1px solid rgba(255,255,255,.16);border-radius:50%}
+#moveKnob{position:absolute;left:50%;top:50%;width:43%;height:43%;transform:translate(-50%,-50%);border:2px solid rgba(255,241,168,.8);border-radius:50%;background:radial-gradient(circle at 35% 30%,rgba(255,211,90,.8),rgba(255,122,61,.64));box-shadow:0 2px 8px #0009;pointer-events:none}
+#moveLabel{position:absolute;left:0;right:0;bottom:8%;text-align:center;color:#fff9;font:700 9px/1 system-ui,sans-serif;letter-spacing:1px;pointer-events:none}
+.touchButton{position:absolute;display:grid;place-items:center;width:clamp(58px,15vmin,82px);height:clamp(58px,15vmin,82px);padding:0;border:2px solid rgba(255,211,90,.68);border-radius:50%;background:radial-gradient(circle at 35% 28%,rgba(255,174,88,.8),rgba(104,40,43,.86));box-shadow:0 4px 16px #0009;color:#fff5d5;font:800 clamp(9px,2.4vmin,12px)/1 system-ui,sans-serif;letter-spacing:.5px;text-shadow:0 1px 3px #000;pointer-events:auto;touch-action:none;-webkit-tap-highlight-color:transparent}
+.touchButton:active,.touchButton.pressed{transform:scale(.94);filter:brightness(1.25)}
+#attackLight{right:calc(env(safe-area-inset-right,0px) + 18px);bottom:calc(env(safe-area-inset-bottom,0px) + 18px)}
+#attackHeavy{right:calc(env(safe-area-inset-right,0px) + 18px);bottom:calc(env(safe-area-inset-bottom,0px) + 96px)}
+#mobileJump{left:calc(env(safe-area-inset-left,0px) + 18px + clamp(112px,22vmin,156px) + 8px);bottom:calc(env(safe-area-inset-bottom,0px) + 18px);width:clamp(54px,13vmin,68px);height:clamp(54px,13vmin,68px);border-color:rgba(143,245,230,.72);background:radial-gradient(circle at 35% 28%,rgba(143,245,230,.82),rgba(39,76,88,.9))}
+#mobileUse{right:calc(env(safe-area-inset-right,0px) + 18px + clamp(58px,15vmin,82px) + 12px);bottom:calc(env(safe-area-inset-bottom,0px) + 35px);width:clamp(48px,12vmin,60px);height:clamp(48px,12vmin,60px);border-color:rgba(143,245,230,.72);background:radial-gradient(circle at 35% 28%,rgba(143,245,230,.82),rgba(39,76,88,.9))}
+#mobileTextInput{position:fixed;z-index:3;left:0;bottom:0;width:2px;height:2px;padding:0;border:0;opacity:.01;font-size:16px;color:transparent;background:transparent}
 </style>
 </head>
 <body>
 <canvas id="c" tabindex="0"></canvas>
+<div id="mobileControls" aria-hidden="true">
+  <div id="movePad" aria-label="Move joystick"><div id="moveKnob"></div><span id="moveLabel">MOVE</span></div>
+  <button id="mobileJump" class="touchButton" type="button" aria-label="Jump">JUMP</button>
+  <button id="mobileUse" class="touchButton" type="button" aria-label="Interact or open">USE</button>
+  <button id="attackHeavy" class="touchButton" type="button" aria-label="Right-click attack">HEAVY</button>
+  <button id="attackLight" class="touchButton" type="button" aria-label="Left-click attack">LIGHT</button>
+</div>
+<input id="mobileTextInput" type="text" aria-label="Game text input" autocomplete="off" autocapitalize="off" spellcheck="false">
 <script>
 const GAME_VERSION = '2026.11.23';
 'use strict';
@@ -9147,7 +9168,7 @@ function field(c, x, y, w, key, ph) {
   c.fillStyle = f ? '#ffd35a' : inR(x, y, w, 14) ? '#8c86a8' : '#4a4460'; c.fillRect(x, y, w, 14); c.fillStyle = INK; c.fillRect(x + 1, y + 1, w - 2, 12);
   if (v) drawText(c, v, x + 4, y + 4, '#fff'); else drawText(c, ph, x + 4, y + 4, '#6a6485');
   if (f && (performance.now() / 400 | 0) & 1) { c.fillStyle = '#ffd35a'; c.fillRect(x + 5 + (v ? textW(v) : -1), y + 3, 1, 8); }
-  hit(x, y, w, 14, () => { UI.focus = key; sfx('ui'); });
+  hit(x, y, w, 14, () => { UI.focus = key; focusMobileText(key); sfx('ui'); });
 }
 function chooser(c, x, y, w, label, names, key, descs) {
   drawText(c, label, x, y + 4, '#b9bdd0'); const bx = x + 46, bw = w - 46;
@@ -9158,10 +9179,11 @@ function chooser(c, x, y, w, label, names, key, descs) {
 }
 function skinPicker(c, x, y) {
   drawText(c, 'LOOK', x, y + 8, '#b9bdd0');
+  const available = max(1, VS.uw - x - 54), step = min(24, available / SKINS.length), tile = min(20, step - 2), icon = min(14, tile - 4);
   for (let i = 0; i < SKINS.length; i++) {
-    const bx = x + 46 + i * 24, on = FORM.skin === i; c.fillStyle = on ? '#ffd35a' : inR(bx, y, 20, 22) ? '#8c86a8' : '#4a4460'; c.fillRect(bx, y, 20, 22); c.fillStyle = '#262234'; c.fillRect(bx + 1, y + 1, 18, 20);
-    c.drawImage(SK[i].head, bx + 3, y + 2, 14, 14); c.fillStyle = SKINS[i][4]; c.fillRect(bx + 3, y + 17, 7, 2); c.fillStyle = SKINS[i][0]; c.fillRect(bx + 10, y + 17, 7, 2);
-    hit(bx, y, 20, 22, () => { FORM.skin = i; sfx('ui'); });
+    const bx = x + 46 + i * step, on = FORM.skin === i; c.fillStyle = on ? '#ffd35a' : inR(bx, y, tile, 22) ? '#8c86a8' : '#4a4460'; c.fillRect(bx, y, tile, 22); c.fillStyle = '#262234'; c.fillRect(bx + 1, y + 1, tile - 2, 20);
+    c.drawImage(SK[i].head, bx + (tile - icon) / 2, y + 2, icon, icon); c.fillStyle = SKINS[i][4]; c.fillRect(bx + 2, y + 17, max(1, (tile - 4) / 2), 2); c.fillStyle = SKINS[i][0]; c.fillRect(bx + 2 + (tile - 4) / 2, y + 17, max(1, (tile - 4) / 2), 2);
+    hit(bx, y, tile, 22, () => { FORM.skin = i; sfx('ui'); });
   }
 }
 function hatPicker(c, x, y) {
@@ -9243,24 +9265,28 @@ function fmtTime(s) { s = s | 0; const h = (s / 3600) | 0, m = ((s % 3600) / 60)
 
 // ---------------- menus ----------------
 function drawLogo(c, cy, sub) {
-  const uw = VS.uw, sc = uw > 520 ? 5 : uw > 380 ? 4 : 3, s = 'EMBERWAKE', w = textW(s, sc), x = round((uw - w) / 2);
+  const uw = VS.uw, sc = uw > 520 ? 5 : uw > 380 ? 4 : uw > 260 ? 3 : 2, s = 'EMBERWAKE', w = textW(s, sc), x = round((uw - w) / 2);
   textO(c, s, x, cy, '#e2542b', sc, INK); c.save(); c.beginPath(); c.rect(0, cy, uw, sc * 4); c.clip(); drawText(c, s, x, cy, '#ffd35a', sc); c.restore();
   c.save(); c.beginPath(); c.rect(0, cy, uw, sc * 2); c.clip(); drawText(c, s, x, cy, '#fff1a8', sc); c.restore();
   if (sub) textC(c, sub, uw / 2, cy + sc * 8 + 6, '#fff', 1, textO);
 }
 function drawTitle(c) {
-  const uw = VS.uw, uh = VS.uh; c.fillStyle = 'rgba(18,13,31,.38)'; c.fillRect(0, 0, uw, uh);
-  drawLogo(c, round(uh * .16), 'THREE EMBERS : GO ANYWHERE');
-  const bw = 176, bx = round((uw - bw) / 2), by = round(uh * .47);
-  button(c, bx, by, bw, 18, 'WORLDS', () => { G.state = 'worlds'; UI.scroll = 0; UI.confirm = null; G.menuNote = ''; sfx('ui'); });
-  button(c, bx, by + 23, bw, 18, 'JOIN A FRIEND', () => { G.state = 'join'; UI.focus = null; COOP.err = ''; COOP.note = ''; COOP.long = false; if (!FORM.nick) FORM.nick = cleanName(G.nick) || 'WAKER' + ((Math.random() * 90 + 10) | 0); sfx('ui'); });
-  button(c, bx, by + 46, bw, 18, 'THE CINDER RING : ONLINE PVP', () => { G.state = 'ring'; UI.focus = null; if (!FORM.nick) FORM.nick = 'WAKER' + ((Math.random() * 90 + 10) | 0); sfx('ui'); });
-  button(c, bx, by + 69, bw, 18, 'THE ASHFALL : BATTLE ROYALE', () => { G.state = 'brform'; UI.focus = null; if (!FORM.nick) FORM.nick = cleanName(G.nick) || 'WAKER' + ((Math.random() * 90 + 10) | 0); if (FORM.brcode === undefined) FORM.brcode = ''; sfx('ui'); });
-  button(c, bx, by + 92, bw, 18, 'ACCOUNT: ' + (ACCOUNT.active ? ACCOUNT.active.name.toUpperCase().slice(0, 16) : 'GUEST'), () => { G.state = 'accounts'; ACCOUNT.note = ''; UI.focus = null; sfx('ui'); });
-  button(c, bx, by + 115, bw, 18, muted ? 'SOUND: OFF' : 'SOUND: ON', () => { muted = !muted; sfx('ui'); });
-  textC(c, 'build, explore, and fight with every form', uw / 2, uh - 26, '#d8d4e6', 1, textO);
-  textC(c, 'mouse + keyboard', uw / 2, uh - 15, '#8b8fa3', 1, textO);
-  const vs = 'version ' + GAME_VERSION; textS(c, vs, uw - textW(vs) - 4, uh - 10, '#6a6485');
+  const uw = VS.uw, uh = VS.uh, compact = uh < 250, bw = min(176, uw - 16), bx = round((uw - bw) / 2), bh = compact ? 15 : 18, gap = compact ? 3 : 5, step = bh + gap, groupH = bh * 6 + gap * 5;
+  c.fillStyle = 'rgba(18,13,31,.38)'; c.fillRect(0, 0, uw, uh);
+  if (uh >= 155) drawLogo(c, compact ? round(uh * .08) : round(uh * .16), uw < 200 ? '' : 'THREE EMBERS : GO ANYWHERE');
+  const by = compact ? max(4, uh - groupH - 12) : round(uh * .47);
+  const labels = uw < 200 ? ['WORLDS', 'JOIN FRIEND', 'CINDER RING PVP', 'ASHFALL : ROYALE'] : ['WORLDS', 'JOIN A FRIEND', 'THE CINDER RING : ONLINE PVP', 'THE ASHFALL : BATTLE ROYALE'];
+  button(c, bx, by, bw, bh, labels[0], () => { G.state = 'worlds'; UI.scroll = 0; UI.confirm = null; G.menuNote = ''; sfx('ui'); });
+  button(c, bx, by + step, bw, bh, labels[1], () => { G.state = 'join'; UI.focus = null; COOP.err = ''; COOP.note = ''; COOP.long = false; if (!FORM.nick) FORM.nick = cleanName(G.nick) || 'WAKER' + ((Math.random() * 90 + 10) | 0); sfx('ui'); });
+  button(c, bx, by + step * 2, bw, bh, labels[2], () => { G.state = 'ring'; UI.focus = null; if (!FORM.nick) FORM.nick = 'WAKER' + ((Math.random() * 90 + 10) | 0); sfx('ui'); });
+  button(c, bx, by + step * 3, bw, bh, labels[3], () => { G.state = 'brform'; UI.focus = null; if (!FORM.nick) FORM.nick = cleanName(G.nick) || 'WAKER' + ((Math.random() * 90 + 10) | 0); if (FORM.brcode === undefined) FORM.brcode = ''; sfx('ui'); });
+  button(c, bx, by + step * 4, bw, bh, uw < 200 ? 'ACCOUNT' : 'ACCOUNT: ' + (ACCOUNT.active ? ACCOUNT.active.name.toUpperCase().slice(0, 16) : 'GUEST'), () => { G.state = 'accounts'; ACCOUNT.note = ''; UI.focus = null; sfx('ui'); });
+  button(c, bx, by + step * 5, bw, bh, muted ? 'SOUND: OFF' : 'SOUND: ON', () => { muted = !muted; sfx('ui'); });
+  if (!compact) {
+    textC(c, 'build, explore, and fight with every form', uw / 2, uh - 26, '#d8d4e6', 1, textO);
+    textC(c, mobileDevice ? 'touch to move and fight' : 'mouse + keyboard', uw / 2, uh - 15, '#8b8fa3', 1, textO);
+    const vs = 'version ' + GAME_VERSION; textS(c, vs, uw - textW(vs) - 4, uh - 10, '#6a6485');
+  }
 }
 function drawWorlds(c) {
   const uw = VS.uw, uh = VS.uh, w = min(360, uw - 16), x = round((uw - w) / 2), y = 16, h = uh - 32;
@@ -11326,43 +11352,95 @@ function brRtcLost(P) {
 //  The Ashfall on screen: the menu, the lobby, the barge, chests,
 //  the storm, the match HUD, the map, and the end of a match.
 // ============================================================
+function drawBrBanner(c, x, y, w, h, compact = false) {
+  const sky = c.createLinearGradient(x, y, x, y + h);
+  sky.addColorStop(0, '#33223f'); sky.addColorStop(.62, '#a74638'); sky.addColorStop(1, '#e58a4b');
+  c.fillStyle = sky; c.fillRect(x, y, w, h);
+  c.fillStyle = 'rgba(255,211,90,.16)'; c.fillRect(x, y + h - 5, w, 5);
+  c.fillStyle = '#211b32'; c.beginPath(); c.moveTo(x, y + h - 4); c.lineTo(x + w * .12, y + h * .52); c.lineTo(x + w * .28, y + h - 5); c.lineTo(x + w * .46, y + h * .37); c.lineTo(x + w * .68, y + h - 4); c.lineTo(x + w * .84, y + h * .58); c.lineTo(x + w, y + h - 5); c.lineTo(x + w, y + h); c.lineTo(x, y + h); c.closePath(); c.fill();
+  c.fillStyle = '#d05b3d'; c.fillRect(x + w * .08, y + h - 5, w * .2, 2); c.fillRect(x + w * .54, y + h - 5, w * .18, 2);
+  const sx = x + w - (compact ? 17 : 30), sy = y + h * .42, r = compact ? 7 : min(15, h * .42);
+  c.strokeStyle = 'rgba(255,211,90,.78)'; c.lineWidth = compact ? 1 : 2; c.beginPath(); c.arc(sx, sy, r, -.65, 1.65); c.stroke();
+  c.fillStyle = '#ffd35a'; c.beginPath(); c.arc(sx, sy, compact ? 2 : 3, 0, TAU); c.fill();
+  c.fillStyle = '#fff1a8'; c.fillRect(x + 8, y + 5, compact ? 20 : 37, 1);
+  drawText(c, compact ? 'ASHFALL' : 'THE ASHFALL', x + 8, y + 7, '#fff1a8');
+  if (!compact) drawText(c, 'LAST WAKER STANDING', x + 8, y + h - 12, '#ffe2b8');
+}
 function drawBrForm(c) {
-  const uw = VS.uw, uh = VS.uh, w = min(350, uw - 16), h = 300, x = round((uw - w) / 2), y = max(8, round((uh - h) / 2));
+  const uw = VS.uw, uh = VS.uh, compact = uh < 340, w = min(350, uw - 16), h = compact ? uh - 12 : 340, x = round((uw - w) / 2), y = max(6, round((uh - h) / 2));
   c.fillStyle = 'rgba(18,13,31,.55)'; c.fillRect(0, 0, uw, uh); panel(c, x, y, w, h, 'THE ASHFALL : BATTLE ROYALE');
   const fx = x + 10, fw = w - 20;
-  drawText(c, 'NAME', fx, y + 22, '#b9bdd0'); field(c, fx + 46, y + 18, fw - 46, 'nick', 'WAKER');
-  skinPicker(c, fx, y + 38);
-  drawText(c, 'MATCH', fx, y + 70, '#b9bdd0'); field(c, fx + 46, y + 66, fw - 46, 'brcode', 'open  (or a private code)');
+  if (compact) {
+    const cp = brProfile(), ck = BR_KITS.filter(k => k.unlock <= brPassLevel()), cc = brKit(FORM.brkit), ci = max(0, ck.findIndex(k => k.id === cc.id)), ch = !!FORM.brRanked;
+    if (uh < 165) {
+      drawBrBanner(c, fx, y + 13, fw, 20, true);
+      button(c, fx, y + h - 42, fw, 17, 'PLAY WITH ECHOES', () => { const nick = cleanName(FORM.nick) || 'WAKER'; FORM.nick = nick; G.nick = nick; BR.matchType = ch ? 'ranked' : 'unranked'; BR.kit = cc.id; accountSaveProfile(); G.state = 'loading'; G.loadMsg = 'Raising the island...'; setTimeout(() => brSolo(), 30); });
+      button(c, x + w - 70, y + h - 22, 60, 15, 'BACK', () => { G.state = 'title'; UI.focus = null; sfx('ui'); });
+      return;
+    }
+    drawBrBanner(c, fx, y + 13, fw, 20, true);
+    drawText(c, 'NAME', fx, y + 39, '#b9bdd0'); field(c, fx + 46, y + 35, fw - 46, 'nick', 'WAKER'); skinPicker(c, fx, y + 51);
+    drawText(c, 'MATCH', fx, y + 76, '#b9bdd0'); field(c, fx + 46, y + 72, fw - 46, 'brcode', 'open / private');
+    const half = (fw - 46) / 2;
+    button(c, fx + 46, y + 90, half - 2, 15, 'UNRANKED', () => { FORM.brRanked = false; }, { on: !ch });
+    button(c, fx + 46 + half + 2, y + 90, half - 2, 15, 'RANKED', () => { FORM.brRanked = true; }, { on: ch });
+    drawText(c, 'KIT', fx, y + 112, '#b9bdd0');
+    button(c, fx + 36, y + 107, 18, 15, '<', () => { FORM.brkit = ck[(ci - 1 + ck.length) % ck.length].id; });
+    button(c, fx + 57, y + 107, 18, 15, '>', () => { FORM.brkit = ck[(ci + 1) % ck.length].id; });
+    const kitStatus = cc.name + ' PASS ' + brPassLevel() + ' ELO ' + cp.elo, kitStatusFits = textW(kitStatus) <= fw - 82;
+    if (kitStatusFits) drawText(c, kitStatus, fx + 82, y + 112, '#8ff5e6');
+    else wrapDraw(c, kitStatus, fx, y + 120, fw, '#8ff5e6');
+    const rowY = max(y + (kitStatusFits ? 126 : 142), y + h - 42), third = fw / 3;
+    const compactGo = fn => { UI.focus = null; const nick = cleanName(FORM.nick) || 'WAKER'; FORM.nick = nick; G.nick = nick; G.skin = FORM.skin | 0; BR.matchType = FORM.brRanked ? 'ranked' : 'unranked'; BR.kit = cc.id; accountSaveProfile(); G.state = 'loading'; G.loadMsg = 'Raising the island...'; setTimeout(fn, 30); sfx('quest', 0); };
+    if (NET.room) button(c, fx, rowY, third - 2, 17, 'ONLINE', () => compactGo(() => brLobbyEnter('room', cleanCode(FORM.brcode) || 'open')));
+    if (netOK()) button(c, fx + third, rowY, third - 2, 17, 'HOST', () => compactGo(() => { COOP.br = true; brLobbyEnter('rtc', 'friends'); }));
+    button(c, fx + third * 2, rowY, third - 2, 17, 'SOLO', () => compactGo(() => brSolo()));
+    button(c, x + w - 70, y + h - 22, 60, 15, 'BACK', () => { G.state = 'title'; UI.focus = null; sfx('ui'); });
+    return;
+  }
+  drawBrBanner(c, fx, y + 16, fw, 38);
+  drawText(c, 'NAME', fx, y + 63, '#b9bdd0'); field(c, fx + 46, y + 59, fw - 46, 'nick', 'WAKER');
+  skinPicker(c, fx, y + 77);
+  drawText(c, 'MATCH', fx, y + 106, '#b9bdd0'); field(c, fx + 46, y + 102, fw - 46, 'brcode', 'open  (or a private code)');
   const ranked = !!FORM.brRanked, p = brProfile(), kits = BR_KITS.filter(k => k.unlock <= brPassLevel());
   const current = brKit(FORM.brkit), ki = max(0, kits.findIndex(k => k.id === current.id));
-  button(c, fx + 46, y + 84, (fw - 46) / 2 - 2, 15, 'UNRANKED', () => { FORM.brRanked = false; }, { on: !ranked });
-  button(c, fx + 46 + (fw - 46) / 2 + 2, y + 84, (fw - 46) / 2 - 2, 15, 'RANKED', () => { FORM.brRanked = true; }, { on: ranked });
-  drawText(c, 'KIT', fx, y + 106, '#b9bdd0');
-  button(c, fx + 36, y + 101, 18, 15, '<', () => { FORM.brkit = kits[(ki - 1 + kits.length) % kits.length].id; });
-  button(c, fx + 57, y + 101, 18, 15, '>', () => { FORM.brkit = kits[(ki + 1) % kits.length].id; });
-  drawText(c, current.name, fx + 82, y + 106, '#ffd35a');
-  drawText(c, current.desc, fx, y + 120, '#d8d4e6');
-  drawText(c, `BATTLE PASS ${brPassLevel()}  ·  ${p.xp % 1000}/1000 XP  ·  ELO ${p.elo}  ·  ${p.wins} WINS`, fx, y + 133, '#8ff5e6');
+  button(c, fx + 46, y + 120, (fw - 46) / 2 - 2, 15, 'UNRANKED', () => { FORM.brRanked = false; }, { on: !ranked });
+  button(c, fx + 46 + (fw - 46) / 2 + 2, y + 120, (fw - 46) / 2 - 2, 15, 'RANKED', () => { FORM.brRanked = true; }, { on: ranked });
+  drawText(c, 'KIT', fx, y + 142, '#b9bdd0');
+  button(c, fx + 36, y + 137, 18, 15, '<', () => { FORM.brkit = kits[(ki - 1 + kits.length) % kits.length].id; });
+  button(c, fx + 57, y + 137, 18, 15, '>', () => { FORM.brkit = kits[(ki + 1) % kits.length].id; });
+  drawText(c, current.name, fx + 82, y + 142, '#ffd35a');
+  wrapDraw(c, current.desc, fx, y + 157, fw, '#d8d4e6');
+  drawText(c, `PASS ${brPassLevel()} · ${p.xp % 1000}/1000 XP · ELO ${p.elo} · ${p.wins} WINS`, fx, y + 177, '#8ff5e6');
   const L = ['32 Wakers · parties up to 8 · 20–25 minute Ashfall.', 'Loot, mine, craft and equip armour from the pack (right-click).', 'Armour and tools can be crafted at settlement stations.'];
-  L.forEach((l, i) => drawText(c, l, fx, y + 147 + i * 10, '#d8d4e6'));
+  if (fw >= 210) L.forEach((l, i) => drawText(c, l, fx, y + 191 + i * 10, '#d8d4e6'));
+  else drawText(c, fw >= 150 ? '32 WAKERS : PARTIES OF 8' : '32 WAKERS', fx, y + 191, '#d8d4e6');
   const go = (fn) => { UI.focus = null; const nick = cleanName(FORM.nick) || 'WAKER'; FORM.nick = nick; G.nick = nick; G.skin = FORM.skin | 0; BR.matchType = FORM.brRanked ? 'ranked' : 'unranked'; BR.kit = current.id; accountSaveProfile(); G.state = 'loading'; G.loadMsg = 'Raising the island...'; setTimeout(fn, 30); };
-  let by = y + 182;
-  if (NET.room) { button(c, fx, by, fw, 17, 'PLAY ONLINE', () => go(() => brLobbyEnter('room', cleanCode(FORM.brcode) || 'open'))); drawText(c, 'Queue is separate for ranked and unranked matches.', fx, by + 20, '#8b8fa3'); by += 34; }
-  else { drawText(c, 'Online lobby: only on claude.ai (open this page there to find others).', fx, by + 4, '#ffb347'); by += 16; }
-  if (netOK()) { button(c, fx, by, fw, 17, 'HOST A MATCH FOR FRIENDS', () => go(() => { COOP.br = true; brLobbyEnter('rtc', 'friends'); })); drawText(c, 'Invite up to 7 friends with codes; they pick JOIN A FRIEND.', fx, by + 20, '#8b8fa3'); by += 34; }
-  button(c, fx, by, fw, 17, 'PLAY WITH ECHOES', () => go(() => brSolo())); by += 22;
+  let by = y + 226;
+  if (NET.room) { button(c, fx, by, fw, 17, 'PLAY ONLINE', () => go(() => brLobbyEnter('room', cleanCode(FORM.brcode) || 'open'))); drawText(c, 'Queue is separate for ranked and unranked matches.', fx, by + 19, '#8b8fa3'); by += 32; }
+  else { drawText(c, 'Online lobby: only on claude.ai (open this page there).', fx, by + 4, '#ffb347'); by += 15; }
+  if (netOK()) { button(c, fx, by, fw, 17, 'HOST A MATCH FOR FRIENDS', () => go(() => { COOP.br = true; brLobbyEnter('rtc', 'friends'); })); drawText(c, 'Invite up to 7 friends with codes; they pick JOIN A FRIEND.', fx, by + 19, '#8b8fa3'); by += 32; }
+  button(c, fx, by, fw, 17, 'PLAY WITH ECHOES', () => go(() => brSolo()));
   button(c, x + w - 70, y + h - 22, 60, 15, 'BACK', () => { G.state = 'title'; UI.focus = null; sfx('ui'); });
 }
 function drawBrLobby(c) {
-  const uw = VS.uw, uh = VS.uh, host = BR.via === 'rtc' && netHost(), w = min(384, uw - 16), h = host ? 250 : 196, x = round((uw - w) / 2), y = max(8, round((uh - h) / 2)), fx = x + 10, fw = w - 20;
-  c.fillStyle = 'rgba(18,13,31,.5)'; c.fillRect(0, 0, uw, uh); panel(c, x, y, w, h, 'THE ASHFALL : LOBBY' + (BR.via === 'room' ? '  (' + BR.code.toUpperCase() + ')' : ''));
+  const uw = VS.uw, uh = VS.uh, host = BR.via === 'rtc' && netHost(), compact = uh < 270, w = min(384, uw - 16), h = compact ? uh - 16 : host ? 250 : 196, x = round((uw - w) / 2), y = max(8, round((uh - h) / 2)), fx = x + 10, fw = w - 20;
+  c.fillStyle = 'rgba(18,13,31,.5)'; c.fillRect(0, 0, uw, uh); panel(c, x, y, w, h, compact ? 'ASHFALL LOBBY' : 'THE ASHFALL : LOBBY' + (BR.via === 'room' ? '  (' + BR.code.toUpperCase() + ')' : ''));
   const me = brMe(), list = [{ id: me, n: G.nick, me: true }]; for (const [id, q] of BR.people) list.push({ id, n: q.n, ph: q.ph });
   list.sort((a, b) => (a.ph === 'M') - (b.ph === 'M') || (a.id < b.id ? -1 : 1));
   let ty = y + 18;
-  drawText(c, 'WAKERS HERE', fx, ty, '#b9bdd0'); ty += 11;
-  drawText(c, `${list.length} / ${BR_MAX}  ·  ${BR.matchType.toUpperCase()}`, fx + 100, ty, '#8ff5e6');
-  list.slice(0, 8).forEach((e, i) => { const lead = e.id === BR.leaderId && e.ph !== 'M'; drawText(c, (e.me ? '> ' : '  ') + e.n + (e.me ? ' (you)' : ''), fx + (i >= 4 ? fw / 2 : 0), ty + (i % 4) * 10, e.ph === 'M' ? '#8b8fa3' : e.me ? '#ffd35a' : '#8ff5e6'); if (lead) drawText(c, 'LEADS', fx + (i >= 4 ? fw / 2 : 0) + 110, ty + (i % 4) * 10, '#7ddc6f'); if (e.ph === 'M') drawText(c, 'IN A MATCH', fx + (i >= 4 ? fw / 2 : 0) + 110, ty + (i % 4) * 10, '#8b8fa3'); });
-  ty += 44;
+  if (compact) {
+    drawText(c, `${list.length}/${BR_MAX} WAKERS : ${BR.matchType.toUpperCase()}`, fx, ty, '#8ff5e6'); ty += 13;
+    if (BR.via === 'room') { drawText(c, 'ROOM ' + BR.code.toUpperCase(), fx, ty, '#ffd35a'); ty += 11; }
+    const shown = min(4, max(1, floor((h - 104 - (BR.via === 'room' ? 11 : 0)) / 10)));
+    list.slice(0, shown).forEach((e, i) => drawText(c, (e.me ? '> ' : '  ') + e.n.slice(0, 10) + (e.me ? ' (you)' : ''), fx, ty + i * 10, e.ph === 'M' ? '#8b8fa3' : e.me ? '#ffd35a' : '#8ff5e6'));
+    if (list.length > shown) drawText(c, '+' + (list.length - shown) + ' more', fx, ty + shown * 10, '#8b8fa3');
+  } else {
+    drawText(c, 'WAKERS HERE', fx, ty, '#b9bdd0'); ty += 11;
+    drawText(c, `${list.length} / ${BR_MAX}  ·  ${BR.matchType.toUpperCase()}`, fx + 100, ty, '#8ff5e6');
+    list.slice(0, 8).forEach((e, i) => { const lead = e.id === BR.leaderId && e.ph !== 'M'; drawText(c, (e.me ? '> ' : '  ') + e.n + (e.me ? ' (you)' : ''), fx + (i >= 4 ? fw / 2 : 0), ty + (i % 4) * 10, e.ph === 'M' ? '#8b8fa3' : e.me ? '#ffd35a' : '#8ff5e6'); if (lead) drawText(c, 'LEADS', fx + (i >= 4 ? fw / 2 : 0) + 110, ty + (i % 4) * 10, '#7ddc6f'); if (e.ph === 'M') drawText(c, 'IN A MATCH', fx + (i >= 4 ? fw / 2 : 0) + 110, ty + (i % 4) * 10, '#8b8fa3'); });
+    ty += 44;
+  }
   const now = performance.now(), cd = BR.lead ? (BR.cdEnd ? max(0, ceil((BR.cdEnd - now) / 1000)) : -1) : BR.lastCd > 0 ? BR.lastCd : -1;
   let st;
   if (BR.via === 'room' && NET.status === 'offline') st = ['The live room cannot be reached from here.', '#ffb347'];
@@ -11371,9 +11449,24 @@ function drawBrLobby(c) {
   else if (BR.busy && cd < 0) st = ['A match is running. The next one starts when it ends (or start now).', '#ffd35a'];
   else if (cd >= 0) st = ['The barge leaves in ' + cd + 's' + (BR.lobbyN < 2 ? '  (echoes fill the empty places)' : ''), '#7ddc6f'];
   else st = ['Waiting for the leader...', '#d8d4e6'];
+  if (compact) {
+    const shortStatus = BR.via === 'room' && NET.status === 'offline' ? 'OFFLINE: PLAY ECHOES' : cd >= 0 ? 'STARTS IN ' + cd + 'S' : BR.via === 'rtc' && BR.lead ? 'WAITING FOR FRIENDS' : BR.lead ? 'READY TO START' : 'WAITING FOR HOST';
+    drawText(c, shortStatus, fx, y + h - (host ? 72 : 48), st[1]);
+    if (host) {
+      if (!netOK()) drawText(c, 'INVITES UNAVAILABLE', fx, y + h - 58, '#ffb347');
+      else {
+        sigHost('br'); drawText(c, 'CODE ' + (COOP.gcode || '......'), fx, y + h - 52, '#ffd35a');
+        button(c, fx + fw - 52, y + h - 59, 50, 14, copyLabel(), () => copyText(COOP.gcode, 'gcopy'));
+      }
+    }
+    if (BR.via === 'room' && NET.status === 'offline') button(c, fx, y + h - 22, max(40, fw - 64), 16, 'PLAY ECHOES', () => { brLeave(); brSolo(); });
+    else if (BR.lead) button(c, fx, y + h - 22, max(40, fw - 64), 16, 'START NOW', () => { BR.startNow = true; sfx('ui'); });
+    button(c, x + w - 70, y + h - 22, 60, 16, 'LEAVE', () => { brLeave(); sfx('ui'); });
+    return;
+  }
   wrapDraw(c, st[0], fx, ty, fw, st[1]); ty += 22;
-  if (BR.via === 'room' && NET.status === 'offline') button(c, fx, ty, 150, 15, 'PLAY WITH ECHOES', () => { brLeave(); brSolo(); });
-  else if (BR.lead) button(c, fx, ty, 150, 15, 'START NOW', () => { BR.startNow = true; sfx('ui'); });
+  if (BR.via === 'room' && NET.status === 'offline') button(c, fx, ty, min(150, fw), 15, 'PLAY WITH ECHOES', () => { brLeave(); brSolo(); });
+  else if (BR.lead) button(c, fx, ty, min(150, fw), 15, 'START NOW', () => { BR.startNow = true; sfx('ui'); });
   else if (BR.via === 'rtc') drawText(c, 'Your host starts the match.', fx, ty + 4, '#8b8fa3');
   ty += 22;
   if (host) {
@@ -13487,6 +13580,73 @@ function tick() {
 }
 function endTick() { G.shake *= .86; G.flash *= .88; for (const k in pressed) pressed[k] = false; mouse.lp = mouse.rp = mouse.hp = false; }
 let lastT = 0, acc = 0;
+const mobileControls = document.getElementById('mobileControls'), mobileTextInput = document.getElementById('mobileTextInput'), mobileDevice = matchMedia('(pointer:coarse)').matches;
+const movePad = document.getElementById('movePad'), moveKnob = document.getElementById('moveKnob');
+let stickPointer = null, stickX = 0, stickY = 0, canvasTouchPointer = null;
+function focusMobileText(key) {
+  if (!mobileDevice) return;
+  mobileTextInput.dataset.formKey = key; mobileTextInput.type = key === 'accountPassword' || key === 'accountConfirm' ? 'password' : 'text';
+  mobileTextInput.value = FORM[key]; mobileTextInput.focus({ preventScroll: true });
+}
+mobileTextInput.addEventListener('input', () => {
+  const key = mobileTextInput.dataset.formKey; if (!key || UI.focus !== key) return;
+  const limit = key === 'accountPassword' || key === 'accountConfirm' ? 64 : key === 'name' ? 24 : key === 'seed' ? 18 : key === 'gcode' || key === 'code' ? 6 : key === 'accountName' ? 18 : 12;
+  const value = mobileTextInput.value.slice(0, limit), normalized = key === 'nick' ? value.toUpperCase() : key === 'code' ? value.toLowerCase() : value;
+  FORM[key] = normalized; if (mobileTextInput.value !== normalized) mobileTextInput.value = normalized;
+});
+mobileTextInput.addEventListener('keydown', e => {
+  if (e.key === 'Enter' || e.key === 'Escape') { e.preventDefault(); UI.focus = null; mobileTextInput.blur(); }
+});
+function virtualKey(code, down) { if (down && !keys[code]) pressed[code] = true; keys[code] = down; }
+function clearMobileInput() {
+  stickPointer = null; stickX = stickY = 0; moveKnob.style.transform = 'translate(-50%,-50%)';
+  for (const k of ['KeyA', 'KeyD', 'ArrowDown', 'Space', 'KeyF']) keys[k] = false;
+  mouse.l = mouse.r = false;
+  document.querySelectorAll('#mobileControls .pressed').forEach(el => el.classList.remove('pressed'));
+}
+function updateStick(e) {
+  const r = movePad.getBoundingClientRect(), cx = r.left + r.width / 2, cy = r.top + r.height / 2, radius = r.width * .34;
+  let dx = clamp((e.clientX - cx) / radius, -1, 1), dy = clamp((e.clientY - cy) / radius, -1, 1), d = hypot(dx, dy);
+  if (d < .2) dx = dy = 0;
+  else if (d > 1) { dx /= d; dy /= d; }
+  stickX = dx; stickY = dy;
+  moveKnob.style.transform = `translate(calc(-50% + ${round(dx * radius)}px), calc(-50% + ${round(dy * radius)}px))`;
+  virtualKey('KeyA', dx < -.22); virtualKey('KeyD', dx > .22); virtualKey('ArrowDown', dy > .48);
+}
+movePad.addEventListener('pointerdown', e => { e.preventDefault(); stickPointer = e.pointerId; movePad.setPointerCapture(e.pointerId); audioInit(); updateStick(e); });
+movePad.addEventListener('pointermove', e => { if (e.pointerId === stickPointer) { e.preventDefault(); updateStick(e); } });
+for (const type of ['pointerup', 'pointercancel', 'lostpointercapture']) movePad.addEventListener(type, e => {
+  if (e.pointerId !== stickPointer) return;
+  stickPointer = null; stickX = stickY = 0; moveKnob.style.transform = 'translate(-50%,-50%)';
+  virtualKey('KeyA', false); virtualKey('KeyD', false); virtualKey('ArrowDown', false);
+});
+function bindTouchButton(id, down, up) {
+  const el = document.getElementById(id); let pointer = null;
+  el.addEventListener('pointerdown', e => {
+    e.preventDefault(); pointer = e.pointerId; el.setPointerCapture(e.pointerId); el.classList.add('pressed'); audioInit();
+    if (AC && AC.state === 'suspended') AC.resume(); down();
+  });
+  for (const type of ['pointerup', 'pointercancel', 'lostpointercapture']) el.addEventListener(type, e => {
+    if (e.pointerId !== pointer) return;
+    pointer = null; el.classList.remove('pressed'); up();
+  });
+}
+function mobileAim() {
+  if (!G.p || (!mouse.l && !mouse.r)) return;
+  mouse.x = clamp((G.p.x + 3 + (G.p.face || 1) * 40 - G.rcx) * VS.s, 0, VS.W);
+  mouse.y = clamp((G.p.y + 8 - G.rcy) * VS.s, 0, VS.H);
+  mouse.ux = mouse.x / VS.ui; mouse.uy = mouse.y / VS.ui;
+}
+bindTouchButton('attackLight', () => { if (G.state === 'play' && !UI.open) { mouse.l = true; mouse.lp = true; mobileAim(); } }, () => { mouse.l = false; });
+bindTouchButton('attackHeavy', () => { if (G.state === 'play' && !UI.open) { mouse.r = true; mouse.rp = true; mobileAim(); } }, () => { mouse.r = false; });
+bindTouchButton('mobileJump', () => { if (G.state === 'play' && !UI.open) virtualKey('Space', true); }, () => virtualKey('Space', false));
+bindTouchButton('mobileUse', () => { if (G.state === 'play' && !UI.open) { pressed.KeyF = true; } }, () => {});
+function syncMobileControls() {
+  const visible = mobileDevice && G.state === 'play' && !UI.open && !G.dialog && !G.cine;
+  mobileControls.classList.toggle('visible', visible); mobileControls.setAttribute('aria-hidden', String(!visible));
+  if (!visible && (stickPointer !== null || mouse.l || mouse.r)) clearMobileInput();
+  if (visible) mobileAim();
+}
 function frame(now) {
   // alone, a slow moment just slows the game; with friends here it must keep time, so it catches up
   const shared = netLive() || (BR.on && BR.via !== 'solo'), dt = min(shared ? .5 : .1, (now - lastT) / 1000 || 0); lastT = now; rafT = performance.now(); G.away = false;
@@ -13505,7 +13665,7 @@ function frame(now) {
     G.shake *= .86; G.flash *= .88; acc = 1;
     if (WORLD.arena && G.state === 'play' && G.time % 3 === 0) netSend();
   }
-  render(G.hitstop > 0 || G.state !== 'play' ? 1 : clamp(acc, 0, 1));
+  syncMobileControls(); render(G.hitstop > 0 || G.state !== 'play' ? 1 : clamp(acc, 0, 1));
   requestAnimationFrame(frame);
 }
 // ---------------- while the window is hidden ----------------
@@ -13555,6 +13715,7 @@ function quitToTitle() {
 // ---------------- input ----------------
 function setMouse(e) { const r = cv.getBoundingClientRect(); mouse.x = (e.clientX - r.left) * (cv.width / r.width); mouse.y = (e.clientY - r.top) * (cv.height / r.height); mouse.ux = mouse.x / VS.ui; mouse.uy = mouse.y / VS.ui; }
 addEventListener('keydown', e => {
+  if (e.target === mobileTextInput) return;
   const k = e.code;
   if (UI.focus && G.state !== 'play') {
     if (!e.metaKey && !e.ctrlKey) e.preventDefault();
@@ -13591,6 +13752,20 @@ addEventListener('keydown', e => {
 });
 addEventListener('keyup', e => { keys[e.code] = false; });
 cv.addEventListener('mousemove', setMouse);
+cv.addEventListener('pointerdown', e => {
+  if (e.pointerType !== 'touch') return;
+  e.preventDefault(); canvasTouchPointer = e.pointerId; cv.setPointerCapture(e.pointerId); setMouse(e); audioInit();
+  if (AC && AC.state === 'suspended') AC.resume();
+  if (G.state === 'intro') { advance(); return; }
+  mouse.held = true; mouse.hp = true;
+  if (uiMouseDown(0) || G.state !== 'play') return;
+  mouse.l = true; mouse.lp = true;
+});
+cv.addEventListener('pointermove', e => { if (e.pointerType === 'touch' && e.pointerId === canvasTouchPointer) setMouse(e); });
+for (const type of ['pointerup', 'pointercancel', 'lostpointercapture']) cv.addEventListener(type, e => {
+  if (e.pointerType !== 'touch' || e.pointerId !== canvasTouchPointer) return;
+  canvasTouchPointer = null; setMouse(e); mouse.l = mouse.r = mouse.held = false; uiMouseUp();
+});
 cv.addEventListener('mousedown', e => {
   e.preventDefault(); setMouse(e); audioInit(); if (AC && AC.state === 'suspended') AC.resume(); try { cv.focus(); } catch (_) { }
   if (G.state === 'intro') { advance(); return; }
