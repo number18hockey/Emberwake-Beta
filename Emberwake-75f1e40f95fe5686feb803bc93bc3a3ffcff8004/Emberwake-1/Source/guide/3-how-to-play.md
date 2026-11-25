@@ -57,6 +57,28 @@ Each kind of weapon (blades, pikes, fangs, mauls, bows, chains, fists) has its o
 
 **Arts.** The better weapons (steel and up, and the old named weapons) each hide an **art**: a big, special move. Keep landing blows with one and it teaches you; then **hold the right mouse button** to call it.
 
+## Weather
+
+![A storm over the woods](pictures/weather.jpg)
+
+Most days are clear or overcast. Now and then the wind gets up, it rains, a thunderstorm comes over or fog rolls in. It comes to the Waking Lands and to the Ashfall, and everyone in a shared world stands under the same sky.
+
+| Weather | What it does |
+| --- | --- |
+| **High wind** | pushes you along or holds you back, shoves you in the air, bends arrows and thrown things; crowns bend and shed their leaves |
+| **Rain** | slows you a little and makes the ground slick; drops burst on the leaves, drip through, fill the hollows and run down the screen; puts you out if you burn |
+| **Thunderstorm** | all of that, with lightning: you see where it gathers before it strikes. It likes tall trees, sets them alight and can bring them down |
+| **Fog** | you can't see far, and nor can what hunts you |
+| **Snow** (the Reach) | rain, there: it slows you and lies on the ground |
+| **Sandstorm** (the dunes and the rust country) | slows you most of all, and tires you |
+| **Ashfall** (the ash) | slows you a little |
+
+Stand under a roof, in a cave or beneath a ledge and none of it touches you. The little picture beside your health shows the sky.
+
+Each kind of weather has something that only comes out in it. They are **rare**, and they go when the weather does: **puddlings** in rain, **stormcallers** in thunder, **galewisps** in the wind, **mistwraiths** in fog, **rimefangs** in snow and **dustmaws** in blowing sand.
+
+Fire flasks burn **where they break**: on a wall, under a roof, across a floor. Burst one in the air and it rains fire. Rain puts the flames out sooner.
+
 ## The road ahead
 
 The road looks roughly like this:

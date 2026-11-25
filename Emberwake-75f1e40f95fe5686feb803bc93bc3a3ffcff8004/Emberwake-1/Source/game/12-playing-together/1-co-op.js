@@ -9,6 +9,7 @@
 // ============================================================
 const COOP = { role: null, me: '', seq: 1, pid: 0, peers: new Map(), pend: null, out: [], tiles: new Set(), stns: new Set(), applying: false, ghostFx: false, nid: 1, ghosts: new Map(), hghosts: new Map(), chat: [], note: '', t: 0, saveT: 0, uid: 0, hostName: '', busy: false, code: '', reply: '', err: '', chatOpen: false };
 const NETV = 3, MAXG = 3;
+const coopPeerLimit = () => COOP.br ? 7 : MAXG;
 const netOn = () => !!COOP.role, netHost = () => COOP.role === 'host', netGuest = () => COOP.role === 'guest';
 // someone is actually here with you (the world should not stop for menus then)
 const netLive = () => netGuest() ? !!COOP.joined : netHost() && [...COOP.peers.values()].some(P => P.ok);
@@ -67,7 +68,7 @@ function onRaw(P, data) {
 // ---------------- host: inviting a friend ----------------
 async function coopInvite() {
   if (COOP.busy) return; if (!rtcOK()) { COOP.err = 'This window cannot connect to others. Open Emberwake.html in Chrome, Safari or Edge to play together.'; return; }
-  if (netGuest()) return; if ([...COOP.peers.values()].filter(P => P.ok).length >= MAXG) { COOP.err = 'Four Wakers is the most one world can hold.'; return; }
+  if (netGuest()) return; if ([...COOP.peers.values()].filter(P => P.ok).length >= coopPeerLimit()) { COOP.err = COOP.br ? 'An Ashfall party can have up to 8 Wakers.' : 'Four Wakers is the most one world can hold.'; return; }
   COOP.busy = true; COOP.err = ''; COOP.code = ''; COOP.reply = '';
   try {
     if (!COOP.role) coopHostStart();
@@ -189,7 +190,7 @@ function peerFor(id, m) {
 
 // ---------------- the host lets someone in ----------------
 function hostWelcome(P) {
-  if ([...COOP.peers.values()].filter(Q => Q.ok).length >= MAXG) { sendTo(P, { t: 'kick' }); return; }
+  if ([...COOP.peers.values()].filter(Q => Q.ok).length >= coopPeerLimit()) { sendTo(P, { t: 'kick' }); return; }
   const b = worldBlob(); b.drops = [];
   const p = G.p, pos = [r1(p.x + (Math.random() < .5 ? -14 : 14)), r1(p.y)];
   sendTo(P, { t: 'welcome', v: NETV, id: P.id, host: coopName(), world: { id: WORLD.id, name: WORLD.name, seed: WORLD.seed, size: WORLD.size, shape: WORLD.shape, mode: WORLD.mode, gen: WORLD.gen || 1, legacy: WORLD.legacy || {} }, dim: DIM, blob: b, pos, clock: G.clock, ev: G.ev, dev: G.dev, devT: G.devT,
@@ -490,14 +491,15 @@ function netGhostShot(m) {
   spawnProj({ type: m.k, owner: null, ghost: true, net: true, x: num(m.x), y: num(m.y), vx: clamp(num(m.vx), -16, 16), vy: clamp(num(m.vy), -16, 16), g: clamp(num(m.g), 0, .5), r: clamp(num(m.r, 3), 1, 14), life: clamp(num(m.l, 120), 1, 400), boom: m.b | 0, dmg: 0 });
 }
 // things you throw down for a friend: they are there for everyone, until someone picks them up
-function netDropOut(d) { if (!COOP.role || COOP.applying || !d) return; d.uid = COOP.me + ':' + (++COOP.uid); sendAll({ t: 'drop', u: d.uid, id: d.id, n: d.n, x: r1(d.x), y: r1(d.y), vx: r2(d.vx), vy: r2(d.vy) }); }
+function netDropOut(d) { if (WORLD.royale || !COOP.role || COOP.applying || !d) return; d.uid = COOP.me + ':' + (++COOP.uid); sendAll({ t: 'drop', u: d.uid, id: d.id, n: d.n, x: r1(d.x), y: r1(d.y), vx: r2(d.vx), vy: r2(d.vy) }); }
 function netDropIn(m) { if (!IT[m.id] || !(m.n > 0) || typeof m.u !== 'string' || G.drops.some(d => d.uid === m.u)) return; const x = num(m.x), y = num(m.y); G.drops.push({ id: m.id, n: clamp(m.n | 0, 1, IT[m.id].stack), x, y, px: x, py: y, w: 6, h: 6, vx: num(m.vx), vy: num(m.vy), t: 0, delay: 40, onGround: false, uid: m.u }); }
 function netTakeIn(m) { for (let i = G.drops.length - 1; i >= 0; i--) if (G.drops[i].uid === m.u) G.drops.splice(i, 1); }
-function netTook(d) { if (COOP.role && d.uid) sendAll({ t: 'take', u: d.uid }); }
+function netTook(d) { if (WORLD.royale) { brTook(d); return; } if (COOP.role && d.uid) sendAll({ t: 'take', u: d.uid }); }
 
 // ---------------- the sky and the clock follow the host ----------------
-function worldState() { return { t: 'world', c: r2(G.clock * 1e4) / 1e4, ev: G.ev || null, dev: G.dev || null, devT: G.devT | 0 }; }
+function worldState() { return { t: 'world', c: r2(G.clock * 1e4) / 1e4, ev: G.ev || null, dev: G.dev || null, devT: G.devT | 0, wx: G.wx ? [G.wx.id, G.wx.dir] : 0 }; }
 function onWorld(m) {
+  if (Array.isArray(m.wx) && Object.keys(WX).includes(m.wx[0]) && G.wx && (G.wx.id !== m.wx[0] || G.wx.dir !== (m.wx[1] < 0 ? -1 : 1))) wxSet(m.wx[0], m.wx[1] < 0 ? -1 : 1);
   const c = num(m.c, G.clock); if (abs(c - G.clock) > .002 && abs(c - G.clock) < .998) G.clock = c;
   G.ev = m.ev && typeof m.ev === 'object' ? m.ev : null; G.dev = m.dev && typeof m.dev === 'object' ? m.dev : null; G.devT = m.devT | 0;
 }

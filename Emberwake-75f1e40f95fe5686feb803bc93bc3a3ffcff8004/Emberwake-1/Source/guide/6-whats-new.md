@@ -2,6 +2,30 @@
 
 Newest first.
 
+## The Ashfall, made again, and the weather
+
+**The battle royale**
+
+- **Everyone falls out of the sky with nothing**, over different parts of the island. No tools, no weapons, no kits, for Wakers and echoes alike (the pass gives titles now, not gear).
+- **A much bigger island:** 3,500 paces, nine lands that run into one another, lakes, woods, bushes, boulders, named places and houses in the sky.
+- **Dig anywhere.** The caves under it are new: winding tunnels, halls, sinkholes, and places worth finding. About 145 paces down the rock burns you; at 170 is the molten sea.
+- **You make your weapons.** A third as many chests, two or three plain things in each, dropped where the chest stands. Weapons in chests are rare and never great ones.
+- **Weapons are closer to each other.** Better metal helps without deciding the fight, and the easy ones (spears, tridents, battleaxes, bows) give up some bite.
+- **The border waits for people to fall**, not for a clock.
+- **Pacts can be left** (**P** twice, or **LEAVE PACT** in the menu), and echoes can be your allies.
+- **Beasts** that can kill you, **sponsors' gifts**, **the Feast**, **the Marked One**, **wildfire and poison fog**, **the hounds**, and the faces of the fallen in the sky.
+- Echoes gather, dig, craft, hide, run and make pacts as you do.
+- Reeds twist into twine, dead bushes give a little fibre, and ropes, ladders and vines no longer snag your shoulder or catch you again when you leap off.
+- **Fixed:** weapons you made couldn't be used, some houses couldn't be entered, bare hands couldn't dig, a ward wore away by itself.
+
+**Everywhere**
+
+- **Weather** in the Waking Lands and the Ashfall, with rare creatures of its own (see *How to play*).
+- **More kinds of tree** (oak, willow, maple, pine, palm, mangrove), which sway in the wind.
+- **You keep your momentum.** A blow or a dodge no longer stops you dead until you press a direction again.
+- **Fire burns where it lands**, with real flames instead of a red streak.
+- **Much smoother with many Wakers on screen**, fewer things left lying about, and an error in one frame no longer stops the game.
+
 ## Benches, trinkets, guardians and a bigger world
 
 - **Ten benches, each with one job:** the Workbench, a new **Carpenter's Table**, the Anvil, a new **Armourer's Stand**, a new **Tinker's Table**, a new **Jeweller's Bench**, a new **Hearth Oven**, the Cauldron, a new **Offering Altar** and the Mason's Bench, plus the workshops for materials. Crafting by hand from your pack is still there.
@@ -40,7 +64,7 @@ Newest first.
 
 ## The Ashfall
 
-- A battle royale on its own island: leap from the Ember Barge, loot chests, outlast the closing ashfall. Play with echoes, with friends by game code, or online on claude.ai.
+- A battle royale on its own island (the first version: an airship, many chests, a border on a clock). Play with echoes, with friends by game code, or online on claude.ai.
 
 ## Before that
 

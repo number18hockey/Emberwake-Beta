@@ -118,7 +118,7 @@ function netApply(f, s) {
 }
 // someone else's blow landed on my Waker, on their screen
 function netTakeHit(from, h) {
-  const p = G.p; if (p.dead || NET.roundOver || p.onBarge) return;
+  const p = G.p; if (p.dead || NET.roundOver || p.noHit) return;
   if (typeof h[7] === 'string' && WORLD.royale) from = BR.bots.get(h[7]) || from;
   const x = Array.isArray(h[6]) ? h[6] : null;
   if (x) {

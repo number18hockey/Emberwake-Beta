@@ -29,7 +29,7 @@ async def main():
         pg.on('pageerror', lambda e: errs.append(n + ' PAGEERROR ' + str(e)))
         pg.on('console', lambda m: errs.append(n + ' ' + m.text) if m.type in ('error', 'warning') and 'favicon' not in m.text and '404' not in m.text and '127.0.0.1:1' not in m.text and 'CONNECTION_REFUSED' not in m.text else None)
     # ---------- A: the room ----------
-    srv = subprocess.Popen(['python3', '-m', 'http.server', '8771', '--bind', '127.0.0.1'], cwd=GAME_DIR, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL); time.sleep(1)
+    srv = subprocess.Popen([sys.executable, '-m', 'http.server', '8771', '--bind', '127.0.0.1'], cwd=GAME_DIR, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL); time.sleep(1)
     b = await pw.chromium.launch(headless=True, args=ARGS, **CHROME)
     ctx = await b.new_context(viewport={'width': 960, 'height': 540}); await ctx.add_init_script(path=os.path.join(HELPERS, 'mock_room.js'))
     A = await ctx.new_page(); watch(A, 'ROOMHOST'); await A.goto('http://127.0.0.1:8771/Emberwake.html'); await A.wait_for_timeout(1500)

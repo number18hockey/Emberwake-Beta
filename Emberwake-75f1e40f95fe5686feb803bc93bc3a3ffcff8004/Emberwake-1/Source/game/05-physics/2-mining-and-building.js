@@ -50,13 +50,15 @@ function emitYield(x, y) { for (const id in YACC) { const n = floor(YACC[id] + 1
 function toolHitsFoe(p, tool, k) {
   const cx = p.x + 3, cy = p.y + 8, dx = mouse.wx - cx, dy = mouse.wy - cy, d = hypot(dx, dy) || 1, ux = dx / d, uy = dy / d, R = min(d + 6, reachOf(tool) + 6);
   let best = null, bt = 1e9;
-  for (const e of G.enemies.concat(G.fighters.filter(f => f !== p && f.hollow))) {
+  for (const e of G.enemies.concat(G.fighters.filter(f => f !== p && (f.hollow || WORLD.royale && f.brIn && f.team !== p.team)))) {
     if (e.dead || e.noHit) continue;
     for (let r = 3; r <= R; r += 3) { const x = cx + ux * r, y = cy + uy * r; if (x > e.x - 3 && x < e.x + e.w + 3 && y > e.y - 3 && y < e.y + e.h + 3) { if (r < bt) { bt = r; best = e; } break; } }
   }
   if (!best) return false;
-  const dmg = max(2, round((tool.power || 4) * .55 * (1 + k * .9) * (tool.kind === 'axe' ? 1.25 : 1))), fc = sign(ux) || p.face || 1;
-  if (best.hollow) hurtFighter(best, dmg, cx, { kx: fc * 2.6, ky: -1.6, by: p });
+  const dmg = max(2, round((tool.power || 4) * (WORLD.royale && tool.id ? .8 : .55) * (1 + k * .9) * (tool.kind === 'axe' ? 1.25 : 1))), fc = sign(ux) || p.face || 1;
+  // in the Ashfall a knife, an axe, a pick or a hammer is a weapon too
+  if (best.fighter && WORLD.royale) { if (!strike(p, best, dmg, fc * (2 + k * 1.4), -1.4 - k * .6, { stop: 3, shake: 1, blunt: tool.kind === 'hammer' || tool.kind === 'hand', stagger: k > .6 ? 30 : 0, hx: best.x + 3, hy: best.y + 8 })) return true; comboHit(true); }
+  else if (best.hollow) hurtFighter(best, dmg, cx, { kx: fc * 2.6, ky: -1.6, by: p });
   else damageEnemy(best, dmg, fc * (1.8 + k * 1.6), -1.2 - k, { blunt: tool.kind === 'hammer' || tool.kind === 'hand' });
   sfx('hit', 0); sparks(best.x + best.w / 2, best.y + best.h / 2, 5, fc, 1.6); addShake(1 + k * 2); best.flash = 6;
   return true;
@@ -350,7 +352,7 @@ function tickConsume(p) {
 }
 function tickHunger() {
   const p = G.p; if (!p || p.dead || WORLD.arena && !WORLD.royale || WORLD.mode === 1) return;
-  if (p.eatCd > 0) p.eatCd--; if (p.tonic > 0) p.tonic--; if (p.ward > 0) p.ward--;
+  if (p.eatCd > 0) p.eatCd--; if (p.tonic > 0) p.tonic--; if (p.ward > 0 && !WORLD.royale) p.ward--;
   if (p.bandT > 0) { p.bandT--; if (p.bandT % 15 === 0 && p.hp < p.maxhp) p.hp++; }
   const spent = max(0, (p.lastStam === undefined ? p.stam : p.lastStam) - p.stam); p.lastStam = p.stam;
   G.food = max(0, G.food - (.0011 + spent * .012) * DIFF().hunger);
@@ -378,15 +380,17 @@ function splash(tx, ty) { for (let k = 0; k < 8; k++) P(tx * T + 4, ty * T + 4, 
 // ---------------- moving: ladders, ropes, gliders, claws ----------------
 function climbAt(f) { const cx = floor((f.x + 3) / T); for (let y = floor((f.y + 2) / T); y <= floor((f.y + f.h - 1) / T); y++) if (TP[tileAt(cx, y)].climb) return true; return false; }
 function travelTick(f, I, grav) {
-  if (!f.isPlayer || WORLD.arena && !WORLD.royale || f.dead) return grav;
+  if (!f.isPlayer && !f.brBot || WORLD.arena && !WORLD.royale || f.dead || f.remote) return grav;
   if (f.dragT > 0) { f.dragT--; f.vx = approach(f.vx, sign(f.dragX - (f.x + 3)) * 2.2, .35); }
-  const onC = climbAt(f);
-  if (onC && (I.jumpH && !f.onGround || I.down || (I.jumpH && f.onGround && !I.md))) f.climbing = true;
+  // (having leapt off a rope or a ladder, you don't catch the same one again straight away just because jump is still held)
+  const onC = climbAt(f), col = floor((f.x + 3) / T); if (f.letGo > 0) f.letGo--;
+  if (onC && !(f.letGo > 0 && f.letGoX === col) && (I.jumpH && !f.onGround || I.down || (I.jumpH && f.onGround && !I.md))) f.climbing = true;
   if (f.climbing) {
-    if (!onC || (I.jumpP && I.md)) { f.climbing = false; if (I.jumpP && I.md) { f.vy = -3.6; f.vx = I.md * 2; } }
-    else { f.vy = I.jumpH ? -1.35 : I.down ? 1.7 : 0; f.vx *= .6; f.coyote = 0; f.dblUsed = false; f.airDash = airDashMax(f); f.onGround = false; f.runPh += abs(f.vy) * .3; return 0; }
+    if (!onC || (I.jumpP && I.md)) { f.climbing = false; if (I.jumpP && I.md) { f.vy = -3.6; f.vx = I.md * 2; f.letGo = 14; f.letGoX = col; } }
+    // (hands off the side keys, you line up with what you are climbing, so a lip of rock doesn't catch your shoulder)
+    else { f.vy = I.jumpH ? -1.35 : I.down ? 1.7 : 0; f.vx *= .6; if (!I.md) { const off = col * T + 1 - f.x; if (abs(off) > .3) f.vx += clamp(off * .12, -.35, .35); } f.coyote = 0; f.dblUsed = false; f.airDash = airDashMax(f); f.onGround = false; f.runPh += abs(f.vy) * .3; return 0; }
   }
-  f.gliding = f.clinging = false;
+  f.gliding = f.clinging = false; if (!f.isPlayer) return grav;
   if (!f.onGround && !liqAt(f.x + 3, f.y + f.h - 5)) {
     if (hasUtil('claws') && I.md && f.state === 'normal') {
       const wx = I.md > 0 ? floor((f.x + f.w + 1) / T) : floor((f.x - 1) / T);

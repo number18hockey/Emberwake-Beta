@@ -168,7 +168,7 @@ function sigHostMsg(m) {
   if (m.t !== 'offer' || typeof m.g !== 'string' || !/^[0-9a-f]{12}$/.test(m.g) || typeof m.sdp !== 'string') return;
   const P0 = SIG.guests.get(m.g); if (P0) { if (m.b) P0.bm = m.b | 0; if (P0.answer) sigSend({ t: 'answer', g: m.g, sdp: P0.answer === 'R' ? '' : P0.answer, r: P0.answer === 'R' ? 1 : 0 }); return; }
   if ((m.v | 0) !== NETV) { sigSend({ t: 'old', g: m.g, v: NETV, gv: GAME_VERSION }); return; }
-  if ([...COOP.peers.values()].filter(P => P.ok || P.connT).length >= MAXG) { sigSend({ t: 'full', g: m.g }); return; }
+  if ([...COOP.peers.values()].filter(P => P.ok || P.connT).length >= coopPeerLimit()) { sigSend({ t: 'full', g: m.g }); return; }
   sigAccept(m);
 }
 async function sigAccept(m) {
@@ -234,7 +234,7 @@ function sigTick() {
   if (SIG.room && SIG.roomDirty && now - (SIG.roomT || 0) > RLY_ROOM.ms) sigRoomPush();
   if (SIG.role === 'ring') return;
   if (SIG.role === 'host') {
-    if (now - SIG.sayT > 2000) { SIG.sayT = now; const n = [...COOP.peers.values()].filter(P => P.ok).length; sigSend({ t: 'host', n: coopName(), mode: SIG.mode || 'world', w: SIG.mode === 'br' ? '' : WORLD.name, v: NETV, gv: GAME_VERSION, full: n >= MAXG ? 1 : 0 }); }
+    if (now - SIG.sayT > 2000) { SIG.sayT = now; const n = [...COOP.peers.values()].filter(P => P.ok).length; sigSend({ t: 'host', n: coopName(), mode: SIG.mode || 'world', w: SIG.mode === 'br' ? '' : WORLD.name, v: NETV, gv: GAME_VERSION, full: n >= (SIG.mode === 'br' ? 7 : MAXG) ? 1 : 0 }); }
     for (const [g, P] of SIG.guests) if (COOP.peers.get(P.id) !== P && !P.ok && now - P.connT > 30000) SIG.guests.delete(g);
     if (!SIG.viaRoom && NET.room && !window.EW_BROKERS && !COOP.peers.size) { const c = SIG.code, md = SIG.mode; sigStart(c, 'host', sigHostMsg); SIG.mode = md; }
     return;

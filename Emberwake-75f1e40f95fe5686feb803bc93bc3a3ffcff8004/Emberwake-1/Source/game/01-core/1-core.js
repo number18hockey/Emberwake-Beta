@@ -36,7 +36,7 @@ const keys = {}, pressed = {};
 const mouse = { x: 0, y: 0, l: false, r: false, lp: false, rp: false, wx: 0, wy: 0, ux: 0, uy: 0 };
 
 // ---------------- audio (all synthesized) ----------------
-let AC = null, master = null, noiseBuf = null, muted = false;
+let AC = null, master = null, noiseBuf = null, muted = false, sfxHush = false;
 const sfxLast = {};
 function audioInit() {
   if (AC) return;
@@ -111,10 +111,14 @@ const SFX = {
   stir() { noise(.1, .08, 700, 500, 1, 'lowpass'); },
   chisel() { tone('square', 1800, 1500, .03, .06); noise(.03, .12, 4000, 2500, 2, 'highpass'); },
   shake() { noise(.06, .1, 1200, 2400, 1.5); },
-  fire() { noise(.3, .08, 600, 300, .9, 'lowpass'); }
+  fire() { noise(.3, .08, 600, 300, .9, 'lowpass'); },
+  thunder() { noise(1.6, .5, 260, 40, .5, 'lowpass'); tone('sine', 62, 24, 1.3, .4, .04); noise(.5, .3, 1400, 120, .6, 'bandpass', .02); },
+  cannon() { tone('sine', 72, 26, 1.1, .55); noise(.9, .42, 420, 40, .5, 'lowpass'); noise(1.6, .12, 180, 40, .5, 'lowpass', .3); },
+  chime() { tone('sine', 1047, 1047, .5, .1); tone('sine', 1319, 1319, .6, .09, .14); tone('sine', 1568, 1568, .8, .08, .28); },
+  howl() { tone('sawtooth', 190, 420, .5, .12); tone('sawtooth', 420, 250, .9, .12, .45); }
 };
 function sfx(n, cd = 35) {
-  if (!AC || muted) return;
+  if (!AC || muted || sfxHush) return;
   const now = performance.now(); if (sfxLast[n] && now - sfxLast[n] < cd) return; sfxLast[n] = now;
   try { SFX[n] && SFX[n](); } catch (e) { }
 }
@@ -216,7 +220,7 @@ z ...../...../#####/...#./..#../.#.../#####
 const Font = { g: {}, base: null, tint: new Map() };
 (function buildFont() {
   const lines = FONT_SRC.split('\n').filter(l => l.length > 2);
-  const [c, x] = mk(lines.length * 6 + 24, 8); x.fillStyle = '#fff';
+  const [c, x] = mk(lines.length * 6 + 30, 8); x.fillStyle = '#fff';
   lines.forEach((l, i) => {
     const ch = l[0], rows = l.slice(2).split('/'); let x0 = 9, x1 = 0;
     rows.forEach((r, y) => { for (let k = 0; k < r.length; k++) if (r[k] === '#') { x.fillRect(i * 6 + k, y, 1, 1); x0 = min(x0, k); x1 = max(x1, k); } });
@@ -229,6 +233,7 @@ const Font = { g: {}, base: null, tint: new Map() };
   put('←', 6, ['.....', '..#..', '.#...', '#####', '.#...', '..#..', '.....']);
   put('↑', 12, ['..#..', '.###.', '#.#.#', '..#..', '..#..', '..#..', '..#..']);
   put('↓', 18, ['..#..', '..#..', '..#..', '..#..', '#.#.#', '.###.', '..#..']);
+  put('·', 25, ['..', '..', '..', '##', '##', '..']);
   Font.base = c;
 })();
 function fontAtlas(col) {

@@ -115,7 +115,7 @@ function house(x0, gy, w, h, roofH, o = {}) {
   const dl = o.door === -1 || o.door === 2, dr = o.door === 1 || o.door === 2;
   // doorways get real doors: they open as you walk into them
   for (let y = top + 1; y < gy; y++) { tiles[y * WW + x0] = !dl || y < gy - 3 ? GHOST : DOORC; tiles[y * WW + x1] = !dr || y < gy - 3 ? GHOST : DOORC; }
-  if (o.floors === 2) for (let x = x0 + 1; x < x1; x++) tiles[(gy - 4) * WW + x] = PLATFORM;
+  for (let fl = 1; fl < (o.floors || 1); fl++) for (let x = x0 + 1; x < x1; x++) tiles[(gy - 4 * fl) * WW + x] = PLATFORM;
   const S = { kind: 'house', name: o.name || '', x0, x1, y0: top + 1, y1: gy - 1, fac, px, py, a: 1, mode: 'fade', lx: round(x0 + w / 2), ly: top - roofH - 2, win: true };
   STRUCTS.push(S); reserve(x0 - 2, x1 + 2, 2); return S;
 }
@@ -600,7 +600,7 @@ function computeLight(x0, y0, w, h, sun) {
       if (ty < 0) { r = s0; g = s1; b = s2; }
       else if (tx >= 0 && tx < WW && ty < WH) {
         const k = ty * WW + tx, p = TP[tiles[k]];
-        if (p.full) d = .72; else { if (p.liquid === 1) d = .8; if ((!walls[k] || WSKY[walls[k]]) && ty < SKYL[tx]) { r = s0; g = s1; b = s2; } else if (ty >= DEEP_Y) { r = .17; g = .07; b = .06; } }
+        if (p.full) d = .72; else { if (p.liquid === 1) d = .8; if ((!walls[k] || WSKY[walls[k]]) && ty < SKYL[tx]) { r = s0; g = s1; b = s2; } else if (ty >= DEEP_Y) { r = .17; g = .07; b = .06; } else if (WORLD.royale) { if (ty > BR_HOT - 24) { r = .32; g = .11; b = .05; } else { r = .135; g = .14; b = .19; } } }
         if (p.light) { const L = p.light; if (L[0] > r) r = L[0]; if (L[1] > g) g = L[1]; if (L[2] > b) b = L[2]; }
       } else d = .5;
       lr[i] = r; lg[i] = g; lb[i] = b; ld[i] = d;

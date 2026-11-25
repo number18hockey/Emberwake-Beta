@@ -29,7 +29,7 @@ function brLobbyEnter(via, code) {
   BR.people.clear(); NET.peers.clear();
   if (!WORLD.royale) { genRoyale((Math.random() * 4294967296) >>> 0); freshSession(); G.p = newPlayer(); G.fighters = [G.p]; G.clock = .32; updateSun(); G.cam.x = G.cam.px = 40 * T; }
   G.state = 'brlobby'; UI.open = null; UI.focus = null;
-  if (via === 'room') brJoinRoom(BR.code);
+  if (via === 'room') brJoinRoom(BR.code + '-' + BR.matchType);
   else if (via === 'rtc') { NET.code = BR.code; NET.status = 'online'; if (!COOP.role) { COOP.role = 'host'; COOP.me = 'h'; COOP.hostName = coopName(); } COOP.br = true; NET.me = netGuest() ? COOP.me : '0h'; NET.R = brRtcRoom(); NET.unsubs.push(NET.R.onPeers(ch => netPeers(ch.peers))); }
 }
 function brLobbyTick() {
@@ -58,6 +58,7 @@ function brStartMatch(ids) {
 }
 function brJoinMatch(ld) {
   BR.lead = false; BR.leaderId = '';
+  BR.matchType = ld.mode === 'ranked' ? 'ranked' : 'unranked';
   brEnterMatch(ld.mi, ld.s >>> 0, ld.ro.filter(x => typeof x === 'string').slice(0, BR_MAX), clamp(num(ld.nb) | 0, 0, BR_MAX));
   BR.t = clamp(num(ld.t) | 0, 0, 60 * 60 * 20); brSend();
 }
@@ -76,7 +77,7 @@ function brLeave() {
 // ---------------- what this computer says about itself ----------------
 function brSend() {
   const R = NET.R; if (!R || !R.connected()) return; BR.sentAt = performance.now();
-  const o = { v: 1, br: 1, ring: BR.code, n: G.nick, sk: G.skin | 0, sq: ++BR.sq, ph: BR.phase === 'lobby' ? 'L' : 'M', mi: BR.phase === 'lobby' ? '' : BR.mi, ld: 0 };
+  const o = { v: 1, br: 1, ring: BR.code, mode: BR.matchType, n: G.nick, sk: G.skin | 0, sq: ++BR.sq, ph: BR.phase === 'lobby' ? 'L' : 'M', mi: BR.phase === 'lobby' ? '' : BR.mi, ld: 0 };
   if (BR.phase !== 'lobby' && G.p) {
     const p = G.p, a = p.atk, W = heldOf(p);
     Object.assign(o, {
@@ -84,22 +85,22 @@ function brSend() {
       st: p.dead ? 4 : p.state === 'dodge' ? 2 : p.hurtT > 0 ? 3 : a ? 1 : 0, dd: p.dodgeDir, hp: max(0, round(p.hp)), k: p.kills, d: p.deaths,
       m: a ? a.id : '', an: p.atkN, mp: a ? a.phase : 0, mt: a ? a.pt : 0, ma: a ? r2(a.aimA) : 0, md: a ? round(a.dist) : 0, mc: a ? a.charge : 0, mf: a ? a.face : p.face, rp: p.riposte > 0 ? 1 : 0, sp: p.inv > 30 ? 1 : 0,
       hs: NET.hits, ps: NET.shots, kb: NET.kb, sx: p.st ? [p.st.pin > 0 ? (p.st.pinS || 0) + 2 : 0, p.st.burn > 0 ? 1 : 0, p.st.blind > 0 ? 1 : 0, p.st.hook > 0 || p.st.reel > 0 ? 1 : 0] : 0, lk: p.state === 'link' ? 1 : 0,
-      wd: round(p.ward || 0), gl: p.glide ? 1 : 0, ob: p.onBarge ? 1 : 0, al: p.dead ? 0 : 1, pl: BR.place | 0, oc: [...BR.mine], dl: BR.dl || 0,
-      pt: typeof p.team === 'string' ? p.team.slice(0, 80) : 'me', po: BR.pactWith || '', td: brTilePacket(), dp: brDropPacket()
+      wd: round(p.ward || 0), gl: p.glide ? 1 : 0, ob: p.noHit ? 1 : 0, al: p.dead ? 0 : 1, pl: BR.place | 0, oc: [...BR.mine], dl: BR.dl || 0, gr: GEAR_SLOTS.map(s => G.gear[s] ? G.gear[s].id : ''),
+      pt: typeof p.team === 'string' ? p.team.slice(0, 80) : 'me', po: BR.pactWith || '', td: brTilePacket(), dp: brDropPacket(), tk: BR.tookOut, cz: p.dead ? (p.cause || '').slice(0, 40) : ''
     });
   }
   if (BR.lead) {
-    if (BR.phase === 'lobby') o.ld = { st: 'L', cd: BR.cdEnd ? max(0, ceil((BR.cdEnd - performance.now()) / 1000)) : -1 };
+    if (BR.phase === 'lobby') o.ld = { st: 'L', cd: BR.cdEnd ? max(0, ceil((BR.cdEnd - performance.now()) / 1000)) : -1, mode: BR.matchType };
     else {
       if (!BR.btCache || G.time % 6 === 0) BR.btCache = [...BR.bots.values()].map(brBotSer);
-      o.ld = { st: 'M', mi: BR.mi, s: BR.seed, ro: BR.ro, nb: BR.nb, t: BR.t, bt: BR.btCache, bk: BR.bk };
+      o.ld = { st: 'M', mi: BR.mi, s: BR.seed, ro: BR.ro, nb: BR.nb, t: BR.t, mode: BR.matchType, rg: [BR.ring.n, BR.ring.at], bt: BR.btCache, bk: BR.bk };
     }
   }
   R.presence(o).catch(() => { });
 }
 function brBotSer(f) {
-  const a = f.atk, fl = (f.face < 0 ? 1 : 0) | (f.onGround ? 2 : 0) | (f.glide ? 4 : 0) | (f.onBarge ? 8 : 0) | (f.dodgeDir < 0 ? 16 : 0) | (f.riposte > 0 ? 32 : 0) | (f.dead ? 64 : 0);
-  return [f.botI, r1(f.x), r1(f.y), r2(f.vx), r2(f.vy), fl, f.dead ? 4 : f.state === 'dodge' ? 2 : f.hurtT > 0 ? 3 : a ? 1 : 0, max(0, round(f.hp)), round(f.ward || 0), f.wid, a ? a.id : '', f.atkN, a ? a.phase : 0, a ? round(a.pt) : 0, a ? r2(a.aimA) : 0, a ? round(a.dist) : 0, a ? a.charge : 0, a ? (a.face < 0 ? -1 : 1) : 1, f.kills | 0];
+  const a = f.atk, fl = (f.face < 0 ? 1 : 0) | (f.onGround ? 2 : 0) | (f.glide ? 4 : 0) | (f.noHit ? 8 : 0) | (f.dodgeDir < 0 ? 16 : 0) | (f.riposte > 0 ? 32 : 0) | (f.dead ? 64 : 0);
+  return [f.botI, r1(f.x), r1(f.y), r2(f.vx), r2(f.vy), fl, f.dead ? 4 : f.state === 'dodge' ? 2 : f.hurtT > 0 ? 3 : a ? 1 : 0, max(0, round(f.hp)), round(f.ward || 0), f.wid, a ? a.id : '', f.atkN, a ? a.phase : 0, a ? round(a.pt) : 0, a ? r2(a.aimA) : 0, a ? round(a.dist) : 0, a ? a.charge : 0, a ? (a.face < 0 ? -1 : 1) : 1, f.kills | 0, ...GEAR_SLOTS.map(s => f.br && f.br.gear[s] || ''), typeof f.team === 'string' && f.team.startsWith('P:') ? f.team : 0];
 }
 
 // ---------------- what everyone else says ----------------
@@ -108,7 +109,7 @@ function brPeers(list) {
   for (const pe of list) {
     if (pe.isMe && pe.sameTab) { NET.me = pe.peer; continue; }
     if (pe.isMe || (pe.kind && pe.kind !== 'viewer')) continue;
-    const s = pe.presence; if (!s || s.v !== 1 || !s.br || s.ring !== BR.code) continue;
+    const s = pe.presence; if (!s || s.v !== 1 || !s.br || s.ring !== BR.code || (s.mode || 'unranked') !== BR.matchType) continue;
     here.add(pe.peer);
     let q = BR.people.get(pe.peer); if (!q) { q = { id: pe.peer, sq: -1 }; BR.people.set(pe.peer, q); }
     if (q.sq === s.sq && q.pres) continue; q.sq = s.sq; q.pres = s; q.at = performance.now();
@@ -126,14 +127,23 @@ function brSaw(id, q, s) {
   let f = NET.peers.get(id);
   if (!f && BR.ro.includes(id)) { f = newFighter(num(s.x, 600), num(s.y, 300), { remote: true, peer: id, team: 'r:' + id, snaps: [], spawnT: 0, name: q.n, skin: q.sk, brIn: true, ward: 0, guest: q.guest }); NET.peers.set(id, f); G.fighters.push(f); }
   if (f && typeof s.x === 'number') {
-    netApply(f, s); f.ward = clamp(num(s.wd) | 0, 0, 100); f.glide = !!s.gl; f.onBarge = !!s.ob; f.noHit = !!s.ob;
-    if (typeof s.pt === 'string' && s.pt.length <= 80 && /^P:[\w:-]+$/.test(s.pt)) f.team = s.pt;
-    const team = 'P:' + [brMe(), id].sort().map(v => String(v).replace(/[^\w-]/g, '').slice(0, 24)).join(':');
-    if (f.team === team && !BR.teammate) { G.p.team = team; BR.teammate = id; BR.pactWith = ''; BR.pactFrom = ''; BR.note = 'PACT FORGED WITH ' + f.name.toUpperCase(); BR.noteT = 180; sfx('quest', 0); }
+    netApply(f, s); f.ward = clamp(num(s.wd) | 0, 0, 100); f.glide = !!s.gl; f.noHit = !!s.ob; if (typeof s.cz === 'string' && s.cz) f.cause = s.cz.replace(/[^a-z .,'-]/gi, '').slice(0, 40);
+    if (Array.isArray(s.gr)) { f.gearObj = {}; GEAR_SLOTS.forEach((slot, k) => { const id = s.gr[k]; if (IT[id] && IT[id].type === 'armor' && IT[id].slot === slot) f.gearObj[slot] = { id, n: 1 }; }); f.grKey = GEAR_SLOTS.map(slot => f.gearObj[slot] ? f.gearObj[slot].id : '').join(','); f.gskin = null; }
+    // pacts: what they say their team is, and whether it is still ours
+    const team = brPactTeam(brMe(), id), theirs = typeof s.pt === 'string' && s.pt.length <= 80 && /^P:[\w:-]+$/.test(s.pt) ? s.pt : '';
+    f.team = theirs || 'r:' + id;
+    if (BR.teammate === id) { if (theirs === team) BR.pactSeen = true; else if (BR.pactSeen) brBreakPact(true); else f.team = team; }
+    else if (theirs === team && !BR.teammate && BR.t - (BR.pactBroke ?? -999) > 180) { G.p.team = team; BR.teammate = id; BR.pactSeen = true; BR.pactWith = ''; BR.pactFrom = ''; brPactMade(f); }
     if (s.al === 0 && !f.dead) { f.dead = true; f.deadT = 0; f.hp = 0; }
+    if (f.dead) brFallen(f);
   }
-  if (s.po === brMe() && !BR.teammate && !BR.pactFrom) { BR.pactFrom = id; BR.note = 'PACT OFFER FROM ' + (f ? f.name : q.n).toUpperCase() + '  ·  PRESS P TO ACCEPT'; BR.noteT = 180; }
+  if (s.po === brMe() && !BR.teammate && !BR.pactFrom && BR.t - (BR.pactBroke ?? -999) > 180) { BR.pactFrom = id; BR.pactFromT = 60 * 20; brSay('PACT OFFER FROM ' + (f ? f.name : q.n).toUpperCase() + '  ·  PRESS P TO ACCEPT', 180); }
+  else if (BR.pactFrom === id && s.po !== brMe()) BR.pactFrom = '';
   if (s.po === brMe() && BR.pactWith === id) brFormPact(id);
+  // I run the echoes: someone is asking one of mine for a pact, or has walked out of one
+  if (BR.lead && f && typeof s.po === 'string' && /^B\d{1,2}$/.test(s.po)) { const b = BR.bots.get(s.po); if (b && b.br && !b.dead && !b.remote && !b.br.ally && hypot(b.x - f.x, b.y - f.y) < 160 && b.br.askedBy !== id + ':' + s.k) { b.br.askedBy = id + ':' + s.k; if (brBotAgrees(b, f)) { b.team = brPactTeam(id, b.botTag); b.br.ally = f; b.br.allyT = BR.t; f.team = b.team; b.br.sealed = 0; } else b.br.asked = BR.t; } }
+  if (BR.lead && f) for (const b of BR.bots.values()) if (b.br && b.br.ally === f) { if (theirTeam(s) === b.team) b.br.sealed = 1; else if (b.br.sealed || BR.t - b.br.allyT > 600) { b.br.ally = null; b.br.spurned = BR.t; b.team = b.botTag; } else f.team = b.team; }
+  if (Array.isArray(s.tk)) for (const row of s.tk.slice(0, 24)) { if (!Array.isArray(row) || typeof row[1] !== 'string') continue; const sq = num(row[0]) | 0; if (sq <= (BR.tookSeen.get(id) || 0)) continue; BR.tookSeen.set(id, sq); const k = G.drops.findIndex(d => d.uid === row[1]); if (k >= 0) G.drops.splice(k, 1); }
   if (Array.isArray(s.td) && s.td.length) {
     BR.applying = true;
     try { for (const row of s.td.slice(0, 40)) {
@@ -145,12 +155,13 @@ function brSaw(id, q, s) {
   if (Array.isArray(s.dp)) for (const row of s.dp.slice(0, 18)) {
     if (!Array.isArray(row) || row.length < 7 || !IT[row[1]]) continue; const seq = num(row[0]) | 0, last = BR.dropSeen.get(id) || 0; if (seq <= last) continue; BR.dropSeen.set(id, seq);
     const n = clamp(num(row[2]) | 0, 1, 99), x = clamp(num(row[3]), 0, WW * T), y = clamp(num(row[4]), 0, WH * T), vx = clamp(num(row[5]), -4, 4), vy = clamp(num(row[6]), -5, 5);
-    spawnDrop(row[1], n, x, y, vx, vy, true);
+    spawnDrop(row[1], n, x, y, vx, vy, true, id + ':' + seq);
   }
   if (Array.isArray(s.oc)) for (const i of s.oc.slice(0, 200)) { const c = BR.chests[i | 0]; if (c && !c.open) { c.open = true; c.t = 0; } }
   if (Array.isArray(s.dl) && s.dl.length === 4) { const key = id + ':' + s.dl[0]; if (!BR.dlSeen.has(key)) { BR.dlSeen.add(key); brDropPile(num(s.dl[1]), num(s.dl[2]), brItemsOk(s.dl[3])); } }
 }
-const brItemsOk = a => Array.isArray(a) ? a.slice(0, 12).filter(e => Array.isArray(e) && IT[e[0]] && num(e[1]) > 0).map(e => [e[0], clamp(num(e[1]) | 0, 1, 300)]) : [];
+const theirTeam = s => typeof s.pt === 'string' ? s.pt : '';
+const brItemsOk = a => Array.isArray(a) ? a.slice(0, 14).filter(e => Array.isArray(e) && IT[e[0]] && num(e[1]) > 0).map(e => [e[0], clamp(num(e[1]) | 0, 1, 300)]) : [];
 function brGone(id) {
   const f = NET.peers.get(id); if (!f) return; NET.peers.delete(id); f.gone = true;
   if (BR.phase !== 'lobby') { G.kfeed.unshift({ a: '', b: f.name, txt: 'left the match', t: 0 }); burst(f.x + 3, f.y + 10, 20, SPARK, 2, 40, { glow: 1 }); }
@@ -159,22 +170,27 @@ function brGone(id) {
 function brFromLeader(id, ld) {
   if (BR.leaderId && id !== BR.leaderId) return;
   if (typeof ld.t === 'number' && abs(ld.t - BR.t) > 40) BR.t = ld.t | 0;
+  if (Array.isArray(ld.rg)) { const n = clamp(num(ld.rg[0]) | 0, 0, BR_RING.length), at = num(ld.rg[1]) | 0; if (n !== BR.ring.n || at !== BR.ring.at) { const up = n > BR.ring.n; BR.ring = { n, at }; if (up && BR.phase !== 'over') brRingCalled(false); } }
   if (Array.isArray(ld.bt)) for (const a of ld.bt.slice(0, BR_MAX)) if (Array.isArray(a)) brGhostBot(a);
   if (Array.isArray(ld.bk)) for (const e of ld.bk) {
     if (!Array.isArray(e) || typeof e[0] !== 'string') continue; const sq = num(e[2]), last = BR.bkSeen.get(id) || 0; if (sq <= last) continue; BR.bkSeen.set(id, sq);
     const v = BR.bots.get(e[0]), k = e[1] === brMe() ? G.p : NET.peers.get(e[1]) || BR.bots.get(e[1]) || null;
     if (v && !v.dead) { v.dead = true; v.deadT = 0; v.hp = 0; }
-    if (k === G.p) { G.p.kills++; G.banner = { text: 'TAKEN DOWN', sub: v ? v.name : '', t: 120 }; comboHit(true); sfx('newmove', 0); }
-    G.kfeed.unshift({ a: k ? k.name : '', b: v ? v.name : 'AN ECHO', t: 0, me: k === G.p ? 1 : 0, txt: k ? '' : 'fell to the ashfall' }); if (G.kfeed.length > 6) G.kfeed.length = 6;
+    if (k === G.p) brTookDown(v);
+    const why = typeof e[6] === 'string' ? e[6].replace(/[^a-z .,'-]/gi, '').slice(0, 40) : '', beast = !k && why && why === why.toUpperCase();
+    G.kfeed.unshift({ a: k ? k.name : beast ? why : '', b: v ? v.name : 'AN ECHO', t: 0, me: k === G.p ? 1 : 0, txt: k || beast ? '' : why || 'fell to the ashfall' }); if (G.kfeed.length > 6) G.kfeed.length = 6; if (v) brFallen(v);
     brDropPile(num(e[3]), num(e[4]), brItemsOk(e[5]));
   }
 }
 function brGhostBot(a) {
-  const i = clamp(num(a[0]) | 0, 0, BR_MAX), tag = 'B' + i; let f = BR.bots.get(tag);
+  const i = clamp(num(a[0]) | 0, 0, BR_MAX - 1), tag = 'B' + i; let f = BR.bots.get(tag);
   if (!f) { f = newFighter(num(a[1]), num(a[2]), { remote: true, ghostBot: true, peer: tag, botTag: tag, botI: i, team: tag, snaps: [], spawnT: 0, name: BR_BOTN[i % BR_BOTN.length], skin: i % 4, brIn: true, ward: 0, echoBot: true }); BR.bots.set(tag, f); G.fighters.push(f); }
   if (!f.remote) return;
   const fl = num(a[5]) | 0, now = performance.now(), wid = IT[a[9]] && IT[a[9]].type === 'weapon' ? a[9] : 'fists';
-  f.wid = wid; f.hp = clamp(num(a[7]), 0, 100); f.ward = clamp(num(a[8]) | 0, 0, 100); f.glide = !!(fl & 4); f.onBarge = !!(fl & 8); f.noHit = f.onBarge; f.kills = num(a[18]) | 0;
+  f.wid = wid; f.hp = clamp(num(a[7]), 0, 100); f.ward = clamp(num(a[8]) | 0, 0, 100); f.glide = !!(fl & 4); f.noHit = !!(fl & 8); f.kills = num(a[18]) | 0;
+  { const tm = a[19 + GEAR_SLOTS.length], mine = brPactTeam(brMe(), tag), was = f.team; f.team = typeof tm === 'string' && tm.length <= 80 && /^P:[\w:-]+$/.test(tm) ? tm : tag; if (f.team === mine && !BR.teammate && !f.dead && BR.pactWith === tag) { G.p.team = mine; BR.teammate = tag; BR.pactSeen = true; BR.pactWith = ''; brPactMade(f); } else if (BR.teammate === tag && f.team !== mine && was === mine) brBreakPact(true); }
+  if (fl & 64) brFallen(f);
+  f.gearObj = {}; GEAR_SLOTS.forEach((s, k) => { if (IT[a[19 + k]] && IT[a[19 + k]].type === 'armor' && IT[a[19 + k]].slot === s) f.gearObj[s] = { id: a[19 + k], n: 1 }; }); f.grKey = GEAR_SLOTS.map(s => f.gearObj[s] ? f.gearObj[s].id : '').join(','); f.gskin = null;
   if (fl & 64 && !f.dead) { f.dead = true; f.deadT = 0; }
   f.snaps.push({ t: now, x: clamp(num(a[1]), 0, WW * T), y: clamp(num(a[2]), 0, WH * T), vx: clamp(num(a[3]), -9, 9), vy: clamp(num(a[4]), -9, 9), face: fl & 1 ? -1 : 1, g: !!(fl & 2), st: num(a[6]) | 0, dd: fl & 16 ? -1 : 1,
     m: typeof a[10] === 'string' ? a[10] : '', an: num(a[11]) | 0, mp: clamp(num(a[12]) | 0, 0, 2), mt: clamp(num(a[13]), 0, 200), ma: clamp(num(a[14]), -3.2, 3.2), md: clamp(num(a[15], 40), 0, 900), mc: clamp(num(a[16]) | 0, 0, 60), mf: a[17] < 0 ? -1 : 1, rp: !!(fl & 32), sp: false });
@@ -182,7 +198,7 @@ function brGhostBot(a) {
 }
 // a blow someone landed on one of my echoes (I lead)
 function brBotHit(from, h) {
-  const b = BR.bots.get(h[0]); if (!b || b.dead || b.remote || b.onBarge) return;
+  const b = BR.bots.get(h[0]); if (!b || b.dead || b.remote || b.noHit) return;
   const x = Array.isArray(h[6]) ? h[6] : null;
   if (x) { const k = x[0], d = clamp(num(x[1]) | 0, 0, 400), side = clamp(num(x[2]) | 0, -1, 1); if (['pin', 'hook', 'burn', 'blind', 'launched'].includes(k)) applyStatus(b, k, from, { d: d || undefined, side, floor: !side }); }
   if (num(h[2]) <= 0) return;
@@ -192,9 +208,9 @@ function brBotHit(from, h) {
 function brDeathSeen(victim, tag) {
   const k = tag === brMe() ? G.p : NET.peers.get(tag) || BR.bots.get(tag) || null;
   if (!victim.dead) { victim.dead = true; victim.deadT = 0; victim.hp = 0; }
-  if (k === G.p) { G.p.kills++; G.banner = { text: 'TAKEN DOWN', sub: victim.name, t: 120 }; comboHit(true); sfx('newmove', 0); }
+  if (k === G.p) brTookDown(victim);
   else if (k && k.brBot && !k.remote) k.kills++;
-  G.kfeed.unshift({ a: k ? k.name : '', b: victim.name, t: 0, me: k === G.p ? 1 : 0, txt: k ? '' : 'fell to the ashfall' }); if (G.kfeed.length > 6) G.kfeed.length = 6;
+  G.kfeed.unshift({ a: k ? k.name : '', b: victim.name, t: 0, me: k === G.p ? 1 : 0, txt: k ? '' : victim.cause || 'fell to the ashfall' }); if (G.kfeed.length > 6) G.kfeed.length = 6; brFallen(victim);
   burst(victim.x + 3, victim.y + 10, 30, SPARK, 3, 50, { glow: 1, g: .02 });
 }
 // during a match: who leads, and keep telling everyone where I am
@@ -209,7 +225,7 @@ function brNetTick() {
   if (BR.lead) for (const [id, q] of BR.people) if (id !== me && q.ld && q.ld.st === 'M' && q.ld.mi === BR.mi && now - (q.at || 0) < 4000) { const d = num(q.ld.t) - BR.t; if (d > 90 || (abs(d) <= 90 && id < me)) { lid = id; break; } }
   if (lid !== BR.leaderId || (lid !== me && BR.lead)) { BR.leaderId = lid; if (lid === me && !BR.lead) brTakeOver(); else if (lid !== me && BR.lead) brYield(); }
   if (BR.via === 'rtc') brRtcTick();
-  if (G.time % 3 === 0) brSend();
+  if (G.time % 6 === 0) brSend();
   if (BR.lead && BR.phase === 'over' && BR.overT === 60 * 14) { }
 }
 // someone else runs the match now: my echoes become pictures of theirs
@@ -219,8 +235,7 @@ function brTakeOver() {
   BR.lead = true;
   for (const f of BR.bots.values()) {
     if (!f.remote) continue; f.remote = false; f.ghostBot = false; f.brBot = true; f.atk = null; f.state = 'normal'; f.snaps = []; f.foes = []; f.arms = [];
-    f.ai = newBrain(brSkill()); f.br = { heals: 1, wards: 1, drop: f.x, roam: null, roamT: 0, chest: null, skip: new Set(), lx: 0, stuck: 0, think: 0 };
-    if (f.onBarge && BR.phase !== 'drop') { f.onBarge = false; f.glide = true; }
+    f.ai = newBrain(brSkill()); f.br = Object.assign(brBrain(), { heals: 1, arrows: 6 }); f.slotX = f.slotX || f.x; if (f.team === brPactTeam(brMe(), f.botTag)) f.br.ally = G.p; else if (!f.team.startsWith('P:')) f.team = f.botTag;
   }
 }
 
@@ -253,12 +268,12 @@ function brRtcTick() {
 }
 // the host lets a friend into the lobby
 function brRtcWelcome(P, m) {
-  if ([...COOP.peers.values()].filter(Q => Q.ok).length >= MAXG) { sendTo(P, { t: 'kick' }); return; }
+  if ([...COOP.peers.values()].filter(Q => Q.ok).length >= coopPeerLimit()) { sendTo(P, { t: 'kick' }); return; }
   P.name = cleanName(m.n) || P.name || 'WAKER'; P.skin = clamp(m.sk | 0, 0, 3); P.ok = true; P.pres = null;
-  sendTo(P, { t: 'brw', v: NETV, id: P.id, host: coopName(), code: BR.code }); COOP.note = ''; sfx('quest', 0); BR.rtcDirty = true;
+  sendTo(P, { t: 'brw', v: NETV, id: P.id, host: coopName(), code: BR.code, mode: BR.matchType }); COOP.note = ''; sfx('quest', 0); BR.rtcDirty = true;
 }
 function brRtcJoin(m) {
-  COOP.me = String(m.id || 'g?'); COOP.joined = true; COOP.br = true; COOP.hostName = cleanName(m.host) || COOP.hostName;
+  COOP.me = String(m.id || 'g?'); COOP.joined = true; COOP.br = true; COOP.hostName = cleanName(m.host) || COOP.hostName; BR.matchType = m.mode === 'ranked' ? 'ranked' : 'unranked';
   const HP = COOP.peers.get('h'); if (HP) { HP.ok = true; HP.name = COOP.hostName || HP.name; }
   G.nick = coopName(); G.skin = FORM.skin | 0; COOP.reply = ''; COOP.code = ''; COOP.note = '';
   brLobbyEnter('rtc', typeof m.code === 'string' ? m.code.slice(0, 12) : 'friends'); NET.me = COOP.me; sfx('quest', 0);

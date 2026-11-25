@@ -235,7 +235,7 @@ function foeAtCursor(loose) {
     return de < 3 || (de < 18 && (ex * dx0 + ey * dy0) / (de * d0) > .5);
   };
   for (const e of G.enemies) if (!e.dead && !e.noHit && at(e)) return true;
-  for (const f of G.fighters) if (f !== p && f.hollow && !f.dead && at(f)) return true;
+  for (const f of G.fighters) if (f !== p && (f.hollow || WORLD.royale && f.brIn && f.team !== p.team && !f.noHit) && !f.dead && at(f)) return true;
   return false;
 }
 const heldOf = f => {
@@ -244,7 +244,7 @@ const heldOf = f => {
   if (it && !carried(it)) return foeAtCursor(false) ? IT.fists : it;
   return foeAtCursor(true) || fistOK() ? IT.fists : it;
 };
-const fistOK = () => WORLD.arena || !G.p || !impactRay(G.p, HAND);
+const fistOK = () => WORLD.arena && !WORLD.royale || !G.p || !impactRay(G.p, HAND);
 
 function atkContext(f, I) {
   const cx = f.x + f.w / 2, cy = f.y + 7, dx = I.wx - cx, dy = I.wy - cy;
@@ -307,7 +307,6 @@ function startAttack(f, btn, I, force, timed, perfect) {
   f.face = c.side; f.state = 'attack'; f.chainT = 0; f.mineP = 0;
   const form = attackForm(set, id, m, c, f);
   const a = f.atk = { f, id, m, W, set, setName: W.set, btn, phase: 0, pt: 0, face: c.side, aimA: c.elev, hits: new Map(), charge: 0, charged: false, hit: false, air: c.air, fresh, stale: fresh ? 1.1 : ([1, .86, .72, .6, .5][rep] || .5), act: m.act, dashT: 0, dashN: 0, prevAng: 0, aimOff: 0, th: 0, crit: !!m.crit, dist: c.dist, tx: I.wx, ty: I.wy, shots: 0, shotI: 0, cadenceLink, cadenceBase, timed: !!timed, perfect: !!perfect, staminaPaid, form, momentum: abs(f.vx), crashReady: form === 'CRASH' && f.vy > 1.2 };
-  if (f === G.p && WORLD.royale && ['bow', 'fangs', 'chuks'].includes(W.set)) a.gm = .78;
   // what you wear and how well you know the weapon change how each kind of blow comes out
   if (f === G.p && gearOn()) { const air = c.air, sh = m.kind === 'shot', spd = (sh ? gearMul('bow') : a.btn === 'L' ? gearMul('light') : 1) * (air ? (gearMul('air') + 1) / 2 : 1) * styleSpeed(W, id); a.tm = (W.wsp || 1) / spd; a.gm = (a.btn === 'H' ? gearMul('heavy') : 1) * (air ? (gearMul('air') + 1) / 2 : 1) * styleDmg(W, id); a.dk = gearMul('dash') * (air ? gearMul('air') : 1); a.critB = (gearHas('crit') ? .06 : 0) + (gearHas('keen') ? .08 : 0); }
   if (!force && f === G.p && btn === 'H' && id === set.map.h) { const art = artFor(W); if (art) a.artCharge = { min: 26, max: 96, into: art }; }
@@ -356,15 +355,16 @@ function tickAttack(f, I) {
     else if (m.endOnLand && f.onGround && a.pt > 2) end = true;
     if (a.pogoed && a.pt > a.pogoT + 2) end = true;
     if (end) {
-      a.phase = 2; a.pt = 0; fadeTrail(a); if (m.dash) f.vx *= .78;
-      if (m.quake && f.onGround) { for (const s of m.quake2 ? [1, -1] : [1]) spawnProj({ type: 'shock', owner: f, x: f.x + 3 + a.face * s * 14, y: f.y + f.h - 4, vx: a.face * s * 3.3, vy: 0, r: 6, dmg: round(a.W.dmg * m.quake), life: m.quake2 ? 40 : 28, pierce: true, kb: [1.5, -3.2] }); if (near(f)) { addShake(m.shake); sfx('boom'); } dust(f.x + 3 + a.face * 14, f.y + f.h, 8, '#b9bdd0', 2); if (m.quake2) landShock(a, { r: 44, dmg: 1.5, kb: [3.4, -4] }, f.x + 3 + a.face * 12); }
+      a.phase = 2; a.pt = 0; fadeTrail(a); if (m.dash) { f.vx *= .86; f.carryT = 14; }
+      if (m.quake && f.onGround) { for (const s of m.quake2 ? [1, -1] : [1]) spawnProj({ type: 'shock', owner: f, x: f.x + 3 + a.face * s * 14, y: f.y + f.h - 4, vx: a.face * s * 3.3, vy: 0, r: 6, dmg: round(a.W.dmg * m.quake * combatDmgMul(f)), life: m.quake2 ? 40 : 28, pierce: true, kb: [1.5, -3.2] }); if (near(f)) { addShake(m.shake); sfx('boom'); } dust(f.x + 3 + a.face * 14, f.y + f.h, 8, '#b9bdd0', 2); if (m.quake2) landShock(a, { r: 44, dmg: 1.5, kb: [3.4, -4] }, f.x + 3 + a.face * 12); }
     }
   } else if (a.pt >= round(m.rec * (a.tm || a.W.wsp || 1))) endAttack(f);
 }
 function beginActive(a) {
   const f = a.f, m = a.m, fc = a.face;
-  if (m.plant) f.vx = fc * max(m.step || 0, min(f.vx * fc, .9));
-  else if (m.step) f.vx = fc * max(m.step, f.vx * fc);
+  // a planted blow adds no speed past a run, but it keeps the run you had
+  if (m.plant) { if (f.vx * fc > 1.45) f.vx = fc * max(1.45, f.vx * fc * .9); else stepIn(f, fc, m.step || 0); }
+  else if (m.step) stepIn(f, fc, m.step);
   if (m.back) f.vx = -fc * m.back;
   // An aerial launch or bounce is one impulse per airtime; landing resets both locks.
   if (m.hop && !f.airRiseUsed) { f.vy = m.hop; f.onGround = false; f.noCut = true; f.airRiseUsed = true; }
@@ -393,7 +393,9 @@ function activeTick(a) {
 }
 function fireArrows(a, count) {
   const f = a.f, m = a.m, A = m.arrows, fc = a.face, sx = f.x + 3 + fc * 5, sy = f.y + (A.low ? 16 : 7);
-  if (a.W.ammo && f.isPlayer && !(WORLD.arena && !WORLD.royale) && WORLD.mode !== 1) { count = min(count, countItem('arrow')); if (count <= 0) { sfx('deny'); if (G.time - (G.hintT || -999) > 240) { G.hintT = G.time; say('No arrows. Bind flint to sticks with fiber.'); } return; } removeItem('arrow', count); }
+  // every bow in the Ashfall eats arrows, for echoes too
+  if (WORLD.royale && f.br) { count = min(count, f.br.arrows | 0); if (count <= 0) { f.br.dry = true; return; } f.br.arrows -= count; }
+  if ((a.W.ammo || WORLD.royale) && f.isPlayer && !(WORLD.arena && !WORLD.royale) && WORLD.mode !== 1) { count = min(count, countItem('arrow')); if (count <= 0) { sfx('deny'); if (G.time - (G.hintT || -999) > 240) { G.hintT = G.time; say('No arrows. Bind flint to sticks with fiber.'); if (WORLD.royale) { BR.note = 'NO ARROWS  ·  2 STICKS + FLINT + FIBER MAKES FOUR'; BR.noteT = 150; } } return; } removeItem('arrow', count); }
   if (count > 0 && f === G.p) a.projectileOut = true;
   for (let k = 0; k < count; k++, a.shotI++) {
     let vx, vy, g = A.g === undefined ? .05 : A.g;
@@ -450,7 +452,8 @@ function hitFx(hx, hy, top, dmg, o, kx, involved) {
   numPop(hx, top - 4, dmg, o.crit ? '#ffd35a' : '#ffffff', o.crit ? 2 : 1); sparks(hx, hy, o.crit ? 12 : 6, sign(kx), 2.4, o.cold ? FROST : SPARK); if (o.blunt) dust(hx, hy, 4);
   G.trails.push({ kind: 'hit', x: hx, y: hy, life: 5, max: 5, a: frand(TAU), big: o.crit || o.stop >= 5 });
   if (involved || near({ x: hx, y: hy })) sfx(o.crit ? 'crit' : (o.stop >= 5 ? 'hit2' : 'hit'), 20);
-  if (involved) { G.hitstop = max(G.hitstop, (o.stop || 2) + (o.crit ? 2 : 0)); if (o.shake) addShake(o.shake + (o.crit ? 1.5 : 0)); }
+  // the beat of stillness on a hit: enough to feel it land, never enough to feel stuck (shorter still in a crowd)
+  if (involved) { G.hitstop = max(G.hitstop, min(WORLD.royale ? 3 : 5, (o.stop || 2) + (o.crit ? 2 : 0))); if (o.shake) addShake(o.shake + (o.crit ? 1.5 : 0)); }
 }
 // every hit in the game goes through here: monsters, AI duelists, other people online
 function strike(by, e, dmg, kx, ky, o) {
@@ -499,7 +502,7 @@ function applyHit(a, e, hx, hy) {
 function landShock(a, S, cx) {
   const f = a.f, m = a.m, fy = f.y + f.h; if (!S) return;
   if (near(f)) { addShake(m.shake); sfx('boom'); } if (f === G.p) G.hitstop = max(G.hitstop, 4);
-  for (const e of foesOf(f)) { if (e.dead || e.noHit) continue; const dx = e.x + e.w / 2 - cx; if (abs(dx) < S.r + e.w / 2 && e.y < fy + 8 && e.y + e.h > fy - 26) strike(f, e, round(a.W.dmg * S.dmg * a.stale), (sign(dx) || 1) * S.kb[0], S.kb[1], { stop: 3, shake: 0, launch: 1, hx: e.x + e.w / 2, hy: e.y + e.h }); }
+  for (const e of foesOf(f)) { if (e.dead || e.noHit) continue; const dx = e.x + e.w / 2 - cx; if (abs(dx) < S.r + e.w / 2 && e.y < fy + 8 && e.y + e.h > fy - 26) strike(f, e, round(a.W.dmg * S.dmg * a.stale * (WORLD.royale ? brWeaponMul(f) : 1)), (sign(dx) || 1) * S.kb[0], S.kb[1], { stop: 3, shake: 0, launch: 1, hx: e.x + e.w / 2, hy: e.y + e.h }); }
   for (let i = 0; i < 22; i++) P(cx, fy - 1, (i - 10.5) * .42, frand(-1.6, -.2), frand(18, 34) | 0, i % 3 ? '#b9bdd0' : '#8b8fa3', { g: .03, fr: .94 });
   sparks(cx, fy - 2, 14, 0, 3); G.trails.push({ kind: 'ring', x: cx, y: fy, r: S.r, life: 12, max: 12 });
   if (f === G.p) { for (let dx = -S.r; dx <= S.r; dx += 4) { const tx = floor((cx + dx) / T), ty = floor((fy - 2) / T), t = tileAt(tx, ty); if (t && TP[t].decor) breakTile(tx, ty); } terrainSlam(a, cx, fy); }

@@ -17,6 +17,8 @@
 | **H** | quick heal |
 | **J** | journal: leads, lore, echoes, bestiary |
 | **M** | map (once you have drawn one; in the battle royale, the island) |
+| **P** (battle royale) | offer or accept a pact with whoever is beside you; twice to leave the one you have (**Esc** opens the menu there, with **LEAVE PACT**) |
+| **Tab** (battle royale) | who is left |
 | **K** | knapping (optional: stone heads can also be made by hand from flint) |
 | **C** | forms (your moves) |
 | **R / T** | throw / switch sidearm |
@@ -36,7 +38,7 @@ Under the pack, **WORN** holds your armour, your off-hand weapon and your **trin
 
 Anything you only carry (ore, bars, rope, keys, sidearms) leaves your fists free. Click and you punch: jab, cross, hook, uppercut. Aim up for an uppercut, aim down or hold **S** for a low kick, and use the right mouse button for a haymaker.
 
-Blocks, food and other usable things still do their job when you click empty space, but a click on a creature is always a punch. Tools swing where you point and hit creatures as well as rock. Pointing at ground within reach with empty hands digs by hand.
+Blocks, food and other usable things still do their job when you click empty space, but a click on a creature is always a punch. Tools swing where you point and hit creatures as well as rock. Pointing at ground within reach with empty hands digs by hand (in the battle royale too).
 
 ## The menu (Esc)
 

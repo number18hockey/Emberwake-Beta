@@ -39,7 +39,7 @@ const SKYC = { dayT: [84, 146, 196], dayB: [250, 222, 192], duskT: [70, 48, 122]
 function updateSun() {
   if (DIM) { dimSun(); return; }
   const t = G.clock, dn = t < .06 ? .5 + t / .12 : t < .54 ? 1 : t < .66 ? 1 - (t - .54) / .12 : t < .94 ? 0 : (t - .94) / .12; G.dn = dn;
-  const w = sin(dn * PI) * .2; G.sun[0] = min(1, lerp(.2, 1, dn) + w); G.sun[1] = lerp(.2, 1, dn); G.sun[2] = lerp(.42, 1, dn) - w * .5; eventSun();
+  const w = sin(dn * PI) * .2; G.sun[0] = min(1, lerp(.2, 1, dn) + w); G.sun[1] = lerp(.2, 1, dn); G.sun[2] = lerp(.42, 1, dn) - w * .5; eventSun(); wxSun();
 }
 const camX = x => WW * T <= VS.vw ? (WW * T - VS.vw) / 2 : clamp(x, 0, WW * T - VS.vw), camY = y => WH * T <= VS.vh ? (WH * T - VS.vh) / 2 : clamp(y, 0, WH * T - VS.vh);
 // ---------------- backdrop: sky, then layered silhouettes for wherever the camera is ----------------
@@ -73,7 +73,7 @@ function drawSky(c, cx, cy) {
   if (DIM) { drawDimSky(c, cx, cy); return; }
   const W = VS.W, H = VS.H, S = VS.s, dn = G.dn, t = WORLD.arena && !WORLD.royale ? .44 : G.clock;
   const ctx0 = clamp(floor((cx + VS.vw / 2) / T), 0, WW - 1), cty = (cy + VS.vh / 2) / T;
-  const under = WORLD.arena ? 0 : smooth((cty - SKYL[ctx0] - 6) / 22), deep = WORLD.arena ? 0 : smooth((cty - DEEP_Y + 10) / 16), high = WORLD.arena ? 0 : smooth((DRIFT_Y + 18 - cty) / 26);
+  const under = WORLD.arena && !WORLD.royale ? 0 : smooth((cty - SKYL[ctx0] - 6) / 22), deep = WORLD.royale ? smooth((cty - BR_HOT + 26) / 30) : WORLD.arena ? 0 : smooth((cty - DEEP_Y + 10) / 16), high = WORLD.arena ? 0 : smooth((DRIFT_Y + 18 - cty) / 26);
   const top = dn > .5 ? mixc(SKYC.duskT, SKYC.dayT, (dn - .5) * 2) : mixc(SKYC.nightT, SKYC.duskT, dn * 2), bot = dn > .5 ? mixc(SKYC.duskB, SKYC.dayB, (dn - .5) * 2) : mixc(SKYC.nightB, SKYC.duskB, dn * 2);
   if (under < 1) {
     const bands = 18; for (let i = 0; i < bands; i++) { c.fillStyle = rgb(mixc(top, bot, pow(i / (bands - 1), 1.1))); c.fillRect(0, floor(i * H / bands), W, ceil(H / bands) + 1); }
@@ -89,7 +89,7 @@ function drawSky(c, cx, cy) {
       c.fillStyle = g; c.fillRect(rx - sz, ry - sz, sz * 2, sz * 2); c.drawImage(SPR.ring, round(rx - sz / 2), round(ry - sz / 2), round(sz), round(sz)); if (G.ev && G.ev.id === 'eclipse' && G.ev.fade > 0) { c.globalAlpha = G.ev.fade; c.fillStyle = '#0c0818'; c.beginPath(); c.arc(rx + sz * .06, ry, sz * .3, 0, TAU); c.fill(); c.strokeStyle = 'rgba(200,170,255,.8)'; c.lineWidth = S; c.beginPath(); c.arc(rx + sz * .06, ry, sz * .31, 0, TAU); c.stroke(); c.globalAlpha = 1; }
     } else { const u = (t - .62) / .38, mx = W * (.1 + .8 * u), my = H * .66 - sin(u * PI) * H * .5, sc = S * 1.2; c.globalAlpha = .9; c.drawImage(SHARDMOON, round(mx - SHARDMOON.width * sc / 2), round(my), round(SHARDMOON.width * sc), round(SHARDMOON.height * sc)); c.globalAlpha = 1; }
     for (const v of veils) { const sp = VEILS[v.k], w = sp.width * S * v.s, span = W + w * 2, x = ((v.x * span + G.time * v.sp * .1 * S - cx * .04 * S) % span + span) % span - w; c.globalAlpha = .18 + .32 * dn; c.drawImage(sp, round(x), round(v.y * H - (cy - 400) * .02 * S), round(w), round(sp.height * S)); }
-    c.globalAlpha = 1;
+    c.globalAlpha = 1; wxSky(c, cx, cy, under);
     // region silhouettes: a far range, then a nearer one, each region fading into the next
     const mix = regionMix((cx + VS.vw / 2) / T), lt = .35 + .65 * dn, ref = BASE_Y * T, mid = cy + VS.vh * .55, hiA = .25 + .6 * dn;
     const far = mixc(mixc([60, 52, 96], bot, .55), [14, 10, 30], 1 - lt);
@@ -104,7 +104,7 @@ function drawSky(c, cx, cy) {
     c.globalAlpha = under; c.fillStyle = rgb(mixc([22, 18, 36], [36, 14, 22], deep)); c.fillRect(0, 0, W, H); c.globalAlpha = 1;
     const ref = SKYL[ctx0] * T + 400, mid = cy + VS.vh / 2;
     if (deep < .99) { drawLayer(c, 'cave_far', BGTONE.cave[0], 0, .08, (ref - mid) * .08 * S, under * (1 - deep), cx, false, true); drawLayer(c, 'cave_mid', BGTONE.cave[1], 0, .2, (ref - mid) * .2 * S, under * (1 - deep) * .9, cx, false, true); }
-    if (deep > .01) drawLayer(c, 'deep_far', BGTONE.deep[0], 0, .1, ((DEEP_Y + 30) * T - mid) * .1 * S, deep, cx, false, true);
+    if (deep > .01) drawLayer(c, 'deep_far', BGTONE.deep[0], 0, .1, (((WORLD.royale ? BR_HOT : DEEP_Y) + 30) * T - mid) * .1 * S, deep, cx, false, true);
   }
 }
 function arcTrail(f, cx, cy, face, a0, a1, r0, r1, alpha, hot, cold, sty) {
@@ -155,7 +155,7 @@ function renderView(al) {
   drawSky(ctx, cx, cy);
   const ax0 = floor(cx), ay0 = floor(cy), offx = (ax0 - cx) * S, offy = (ay0 - cy) * S;
   const vx0 = floor(cx / T) - 3, vx1 = floor((cx + VS.vw) / T) + 3, vy0 = floor(cy / T) - 3, vy1 = floor((cy + VS.vh) / T) + 3;
-  const play = G.state === 'play' || G.state === 'intro', showP = play && !(p.dead && p.deadT > 60) && !p.onBarge;
+  const play = G.state === 'play' || G.state === 'intro', showP = play && !(p.dead && p.deadT > 60);
   // ---------- lights ----------
   dynLights.length = 0;
   const lit = F.wardenDead || !!G.boss, b = G.boss, v = G.duel, mirrorOn = F.vesperDone || !!v;
@@ -166,20 +166,20 @@ function renderView(al) {
     else if (o.id === GATE) addLight(o.x * T + 4, o.y * T - 4, .6 + (F.vesperDone ? .25 : 0), .2, .08);
   }
   RFRAME++; const kx0 = floor(cx / 256) - 1, kx1 = floor((cx + VS.vw) / 256) + 1;
-  for (const fi of G.fires) if (fi.x1 > cx - 60 && fi.x0 < cx + VS.vw + 60) for (let X = fi.x0; X < fi.x1; X += 12) addLight(X, fi.y - 4, .8, .4, .12);
+  fireLights(cx, cy);
   for (const e of G.enemies) if (e.type === 'cinderling' && !e.dead && e.x > cx - 60 && e.x < cx + VS.vw + 60) addLight(e.x + 4, e.y + 4, .7, .32, .1);
   for (let k = kx0; k <= kx1; k++) { const bk = PROPB.get(k); if (bk) for (const q of bk) if (q.light && q.x > cx - 120 && q.x < cx + VS.vw + 120 && q.y > cy - 120 && q.y < cy + VS.vh + 120) { const fl = .93 + .07 * sin(G.time * .21 + q.x); addLight(q.x + (q.img.width >> 1), q.y + (q.lyo !== undefined ? q.lyo : q.img.height * .6), q.light[0] * fl, q.light[1] * fl, q.light[2] * fl); } }
   if (!WORLD.arena || WORLD.royale) stationLights();
   for (const o of tileObjs.values()) if (o.id === PEDESTAL && pedItem(o) && o.x > vx0 - 20 && o.x < vx1 + 20) addLight(o.x * T + 4, o.y * T - 6, .5, .45, .3);
   const pods = [];
   for (const [tx, tr] of treeTops) {
-    if (tx < vx0 - 6 || tx > vx1 + 6) continue; const top = SPR.top[tr.kind][tr.v], sw = round(sin(G.time * .02 + tr.ph) * 1.3), X0 = tx * T + 4 - 23 + sw, Y0 = tr.y * T + 1 - 31;
-    for (const pd of top.pods) { const X = X0 + pd[0], Y = Y0 + pd[1], k = pd[2]; pods.push(X, Y, k); addLight(X, Y, k === 0 ? .62 : k === 1 ? .14 : .55, k === 0 ? .38 : k === 1 ? .46 : .16, k === 0 ? .14 : k === 1 ? .5 : .06); }
+    if (tx < vx0 - 6 || tx > vx1 + 6) continue; const top = SPR.top[tr.kind][tr.v], X0 = tx * T + 4 - 23, Y0 = tr.y * T + 1 - 31;
+    for (const pd of top.pods) { const X = X0 + pd[0] + round(crownSway(tr, pd[1])), Y = Y0 + pd[1], k = pd[2]; pods.push(X, Y, k); addLight(X, Y, k === 0 ? .62 : k === 1 ? .14 : .55, k === 0 ? .38 : k === 1 ? .46 : .16, k === 0 ? .14 : k === 1 ? .5 : .06); }
   }
   for (const pr of G.projs) { if (pr.type === 'wave') addLight(pr.x, pr.y, 1, .65, .3); else if (pr.type === 'bolt') addLight(pr.x, pr.y, .8, .35, .1); else if (pr.type === 'shock' || pr.type === 'bomb') addLight(pr.x, pr.y, .8, .45, .15); else if (pr.type === 'arrow') addLight(pr.x, pr.y, .45, .35, .12); }
   for (const f of G.fighters) {
     if (f.dead || f.x < cx - 60 || f.x > cx + VS.vw + 60) continue; const it = f === G.p && heldItem() || heldOf(f);
-    if (f === G.p) { if (!showP) continue; addLight(f.x + 3, f.y + 8, .66, .5, .32); if (it && it.id === 'torch') addLight(f.x + 3, f.y + 6, 1, .8, .46); }
+    if (f === G.p) { if (!showP) continue; if (WORLD.royale) addLight(f.x + 3, f.y + 8, .92, .74, .5); else addLight(f.x + 3, f.y + 8, .66, .5, .32); if (it && it.id === 'torch') addLight(f.x + 3, f.y + 6, 1, .8, .46); }
     if (it && it.glow) addLight(f.x + 3, f.y + 8, .75, .45, .18); else if (it && it.cold || f.skin === 4) addLight(f.x + 3, f.y + 8, .2, .5, .55);
   }
   for (const n of G.npcs) addLight(n.x + 3 + n.face * 3, n.y + 3, 1, .72, .36);
@@ -200,11 +200,12 @@ function renderView(al) {
   }
   for (const o of tileObjs.values()) if (o.id === PEDESTAL && o.x >= vx0 - 2 && o.x <= vx1 + 2 && o.y >= vy0 - 2 && o.y <= vy1 + 2) { w.drawImage(SPR.pedestal, o.x * T - 1, o.y * T - 4); const it = pedItem(o); if (it) { const ic = IT[it].icon; w.drawImage(ic, o.x * T + 4 - (ic.width >> 1), o.y * T - 14 + round(sin(G.time * .06) * 1.5)); } }
   for (let k = kx0; k <= kx1; k++) { const bk = PROPB.get(k); if (bk) for (const q of bk) if (q.rf !== RFRAME && q.x < cx + VS.vw && q.x + q.img.width > cx && q.y < cy + VS.vh && q.y + q.img.height > cy) { q.rf = RFRAME; w.drawImage(q.img, q.x, q.y); } }
-  for (const [tx, tr] of treeTops) { if (tx < vx0 - 6 || tx > vx1 + 6) continue; const sw = round(sin(G.time * .02 + tr.ph) * 1.3); w.drawImage(SPR.top[tr.kind][tr.v].cv, tx * T + 4 - 23 + sw, tr.y * T + 1 - 31); }
+  for (const [tx, tr] of treeTops) { if (tx < vx0 - 6 || tx > vx1 + 6 || tr.y < vy0 - 2 || tr.y > vy1 + 8) continue; drawCrown(w, tx, tr); }
+  wxGround(w, vx0, vx1, vy0, vy1);
   if (!WORLD.arena || WORLD.royale) { drawPhys(w, al); drawStationsWorld(w); }
-  for (const d of G.drops) { const ic = IT[d.id].icon, x = lerp(d.px, d.x, al) + 3, y = lerp(d.py, d.y, al) + 3 + sin(d.t * .1), k = ic.width > 12 ? .7 : 1; w.drawImage(ic, round(x - ic.width * k / 2), round(y - ic.height * k / 2), round(ic.width * k), round(ic.height * k)); }
+  for (const d of G.drops) { if (d.x < cx - 20 || d.x > cx + VS.vw + 20 || d.y < cy - 20 || d.y > cy + VS.vh + 20) continue; const ic = IT[d.id].icon; if (!ic) continue; const x = lerp(d.px, d.x, al) + 3, y = lerp(d.py, d.y, al) + 3 + sin(d.t * .1), k = ic.width > 12 ? .7 : 1; w.drawImage(ic, round(x - ic.width * k / 2), round(y - ic.height * k / 2), round(ic.width * k), round(ic.height * k)); }
   if (WORLD.royale) brWorld(w, al, cx, cy);
-  for (const q of G.parts) { if (q.glow) continue; w.globalAlpha = min(1, q.life / q.max * 2); w.fillStyle = q.col; w.fillRect(floor(q.x), floor(q.y), q.sz, q.sz); } w.globalAlpha = 1;
+  for (const q of G.parts) { if (q.glow || q.x < cx - 4 || q.x > cx + VS.vw + 4 || q.y < cy - 4 || q.y > cy + VS.vh + 4) continue; w.globalAlpha = min(1, q.life / q.max * 2); w.fillStyle = q.col; w.fillRect(floor(q.x), floor(q.y), q.sz, q.sz); } w.globalAlpha = 1;
   for (const pr of G.projs) {
     const x = lerp(pr.px, pr.x, al), y = lerp(pr.py, pr.y, al);
     if (pr.type === 'rock') w.drawImage(SPR.rock, round(x - 4), round(y - 4));
@@ -229,15 +230,20 @@ function renderView(al) {
   // ---------- actors at full resolution, lit per sprite ----------
   ctx.setTransform(S, 0, 0, S, -ox, -oy);
   for (const g of G.ghosts) { ctx.globalAlpha = g.life / g.max * .5; ctx.drawImage(g.cv, 0, 0, g.n, g.n, g.x, g.y, g.n, g.n); } ctx.globalAlpha = 1;
-  for (const e of G.enemies) if (!e.dead && e.x > cx - 90 && e.x < cx + VS.vw + 90 && e.y > cy - 90 && e.y < cy + VS.vh + 90) drawEnemy(e, al);
+  ENT.last = ENT.n; ENT.n = 0;
+  for (const e of G.enemies) if (!e.dead && e.x > cx - 90 && e.x < cx + VS.vw + 90 && e.y > cy - 90 && e.y < cy + VS.vh + 90) { ENT.key = e.boss || e === G.boss ? null : e; ENT.i = 0; drawEnemy(e, al); }
+  ENT.key = null;
   for (const n of G.npcs) if (n.x > cx - 60 && n.x < cx + VS.vw + 60) drawNPC(n, al);
-  for (const f of G.fighters) { if (f === p || f.onBarge || f.dead && f.deadT > 60 || f.x < cx - 90 || f.x > cx + VS.vw + 90) continue; if (f.spawnT > 0 && (G.time >> 2) & 1) continue; drawFighter(f, al); }
+  for (const f of G.fighters) { if (f === p || f.dead && f.deadT > 60 || f.x < cx - 90 || f.x > cx + VS.vw + 90 || f.y < cy - 90 || f.y > cy + VS.vh + 90) continue; if (f.spawnT > 0 && (G.time >> 2) & 1) continue; ENT.key = f; ENT.i = 0; drawFighter(f, al); }
+  ENT.key = null;
   if (showP) drawFighter(p, al);
   if (WORLD.royale) brActors(ctx, al);
   drawStates(ctx, al);
+  drawFires(ctx, cx, cy, false);
   drawLiquids(ctx, vx0, vx1, vy0, vy1);
   ctx.setTransform(1, 0, 0, 1, 0, 0);
   drawFG(cx, cy, ax0, ay0, offx, offy, tx0, ty0, tw, th, kx0, kx1);
+  if (G.wxI) { ctx.setTransform(S, 0, 0, S, -ox, -oy); wxFall(ctx, cx, cy, vx0, vx1); ctx.setTransform(1, 0, 0, 1, 0, 0); }
   // ---------- emissive fx (low-res, additive) ----------
   const f = fctx, fx0 = floor(cx), fy0 = floor(cy); f.setTransform(1, 0, 0, 1, 0, 0); f.clearRect(0, 0, fcv.width, fcv.height); f.setTransform(1, 0, 0, 1, -fx0, -fy0);
   const night = 1 - G.dn;
@@ -250,7 +256,7 @@ function renderView(al) {
     else if (o.id === SHRINE2) { f.globalAlpha = mirrorOn ? .55 : .2; f.fillStyle = '#8ff5e6'; f.fillRect(px - 2, py - 6, 12, 9); f.globalAlpha = 1; if ((G.time >> 3) % 7 === 0) { f.fillStyle = '#ffffff'; f.fillRect(px + (G.time >> 3) % 8 - 1, py - 5 + ((G.time >> 5) % 4), 1, 1); } }
     else if (o.id === GATE) { const k = .45 + .25 * sin(G.time * .05); f.globalAlpha = k; f.fillStyle = '#e2542b'; f.fillRect(px - 1, py - 5, 8, 6); f.globalAlpha = 1; if (F.vesperDone) { f.fillStyle = '#ffd35a'; f.fillRect(px - 5, py - 9, 2, 2); f.fillStyle = '#8ff5e6'; f.fillRect(px + 9, py - 9, 2, 2); } }
   }
-  for (const fi of G.fires) { const a = min(1, fi.life / 40); for (let X = fi.x0; X < fi.x1; X += 2) { const hg = 2 + ((hh(X | 0, fi.y, G.time >> 2) * 7) | 0) * a - abs(X - (fi.x0 + fi.x1) / 2) / 8; if (hg <= 0) continue; f.globalAlpha = .75 * a; f.fillStyle = (X >> 1) & 1 ? '#ffd35a' : '#ff7a2a'; f.fillRect(round(X), round(fi.y - hg), 2, round(hg)); } f.globalAlpha = .18 * a; f.fillStyle = '#ff7a2a'; f.fillRect(round(fi.x0), round(fi.y - 8), round(fi.x1 - fi.x0), 8); } f.globalAlpha = 1;
+  drawFires(f, cx, cy, true); wxDrawBolts(f);
   for (const v of VENTS) { if (v.cx < cx - 30 || v.cx > cx + VS.vw + 30) continue; for (let k = 0; k < 7; k++) { const span = (v.gy - v.top) * T, yy = v.gy * T - ((G.time * (1.6 + k * .2) + k * 53) % span), xx = v.cx + sin(G.time * .04 + k * 2.1) * 7; if (yy < cy - 10 || yy > cy + VS.vh + 10) continue; f.globalAlpha = .22 * min(1, (v.gy * T - yy) / 40); f.fillStyle = '#dcf7f5'; f.fillRect(round(xx), round(yy), 1, 6); } } f.globalAlpha = 1;
   const nightK = clamp(1.3 - G.dn * 1.5, .15, 1);
   for (const st of STRUCTS) { if (!st.win || st.a < .1 || st.px > cx + VS.vw || st.px + st.fac.cv.width < cx || st.py > cy + VS.vh || st.py + st.fac.cv.height < cy) continue; for (const [wx, wy, ww, wh] of st.fac.win) { const k = nightK * st.a * (.88 + .12 * sin(G.time * .05 + wx * 3)); f.globalAlpha = k * .35; f.fillStyle = '#ff9a3d'; f.fillRect(st.px + wx - 2, st.py + wy - 2, ww + 4, wh + 4); f.globalAlpha = k * .75; f.fillStyle = '#ffb347'; f.fillRect(st.px + wx, st.py + wy, ww, wh); } }
@@ -279,7 +285,7 @@ function renderView(al) {
     else if (t.kind === 'warn') { f.globalAlpha = .2 + .25 * ((G.time >> 2) & 1); f.fillStyle = '#ff3b2a'; f.fillRect(t.x - 1, t.y - 150, 2, 150); f.fillRect(t.x - 5, t.y - 2, 10, 2); f.globalAlpha = 1; }
     else if (t.kind === 'beam' || t.kind === 'aim') drawBeamTrail(f, t, u);
   }
-  for (const q of G.parts) { if (!q.glow) continue; f.globalAlpha = min(1, q.life / q.max * 1.6); f.fillStyle = q.col; f.fillRect(floor(q.x), floor(q.y), q.sz, q.sz); } f.globalAlpha = 1;
+  for (const q of G.parts) { if (!q.glow || q.x < cx - 4 || q.x > cx + VS.vw + 4 || q.y < cy - 4 || q.y > cy + VS.vh + 4) continue; f.globalAlpha = min(1, q.life / q.max * 1.6); f.fillStyle = q.col; f.fillRect(floor(q.x), floor(q.y), q.sz, q.sz); } f.globalAlpha = 1;
   if (showP && !p.dead) { const prx = lerp(p.px, p.x, al) + 3, pry = lerp(p.py, p.y, al) + p.h; f.globalAlpha = .55 + .2 * sin(G.time * .1); f.fillStyle = '#ff9a3d'; f.fillRect(round(prx + p.face * .5) - 1, round(pry - 14), 2, 2); f.globalAlpha = 1; }
   for (const e of G.enemies) {
     if (e.dead) continue; const ex = lerp(e.px, e.x, al), ey = lerp(e.py, e.y, al);
@@ -298,7 +304,7 @@ function renderView(al) {
     drawAim(ctx, S);
   }
   // ---------- screen space ----------
-  ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.imageSmoothingEnabled = true; ctx.drawImage(vig, 0, 0, W, H); dimOverlay(ctx, W, H, cx, cy); if (WORLD.royale && G.state === 'play') brScreen(ctx, W, H);
+  ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.imageSmoothingEnabled = true; ctx.drawImage(vig, 0, 0, W, H); dimOverlay(ctx, W, H, cx, cy); wxScreen(ctx, W, H, cx, cy); ctx.imageSmoothingEnabled = true; if (WORLD.royale && G.state === 'play') brScreen(ctx, W, H);
   if (G.state === 'play' && p.hp < 30 && !p.dead) { ctx.globalAlpha = (.35 + .2 * sin(G.time * .12)) * (1 - p.hp / 30) + .1; ctx.drawImage(vigR, 0, 0, W, H); ctx.globalAlpha = 1; }
   ctx.imageSmoothingEnabled = false;
   if (b && b.state === 'intro') G.barT = max(G.barT || 0, min(1, b.t / 30, (150 - b.t) / 20));
@@ -319,7 +325,7 @@ function drawStates(c, al) {
     const by = s.hookBy; if ((s.hook > 0 || s.reel > 0) && by && !by.dead) chainLine(c, lerp(by.px === undefined ? by.x : by.px, by.x, al) + 3 + (by.face || by.dir || 1) * 4, lerp(by.py === undefined ? by.y : by.py, by.y, al) + 8, x + e.w / 2, y + e.h * .4);
   }
   for (const pr of G.projs) if (pr.type === 'hook' && pr.owner) { const o = pr.owner; chainLine(c, o.x + 3 + (o.face || o.dir || 1) * 4, o.y + (o.h > 22 ? 14 : 8), lerp(pr.px, pr.x, al), lerp(pr.py, pr.y, al)); }
-  for (const f of G.fighters) if (f.grap) chainLine(c, f.x + 3, f.y + 8, f.grap.x, f.grap.y);
+  for (const f of G.fighters) if (f.grap && !f.dead) chainLine(c, f.x + 3, f.y + 8, f.grap.x, f.grap.y);
   for (const sm of G.smokes) { const k = sm.life / sm.max, R = sm.r * (.6 + .4 * (1 - k)); c.globalAlpha = .55 * min(1, k * 3); for (let i = 0; i < 9; i++) { const a = i / 9 * TAU + G.time * .004 * (i & 1 ? 1 : -1), rr = R * (.35 + .4 * hh(i, 3, 7)), px = sm.x + cos(a) * rr, py = sm.y + sin(a) * rr * .6; c.fillStyle = i % 3 === 0 ? '#a19baa' : i % 3 === 1 ? '#8d8794' : '#726c7c'; c.beginPath(); c.arc(round(px), round(py), R * (.45 + .2 * hh(i, 5, 9)), 0, TAU); c.fill(); } c.globalAlpha = 1; }
 }
 function chainLine(c, x0, y0, x1, y1) { const d = hypot(x1 - x0, y1 - y0), n = max(1, floor(d / 3)); for (let i = 0; i <= n; i++) { const u = i / n, sag = sin(u * PI) * min(6, d * .05); c.fillStyle = i & 1 ? '#7f8898' : '#e8edf2'; c.fillRect(round(lerp(x0, x1, u)) - .5, round(lerp(y0, y1, u) + sag) - .5, 1.5, 1.5); } }
@@ -345,6 +351,11 @@ function drawLiquids(c, x0, x1, y0, y1) {
     }
   }
 }
+// foliage bows to the wind: its tip moves, its root does not
+function fgDraw(g, q) {
+  const aw = abs(G.wxWind || 0), w = q.img.width, h = q.img.height; if (aw < .2 || h > 26) { g.drawImage(q.img, q.x, q.y); return; }
+  const s = ceil(h / 3); for (let y = 0; y < h; y += s) { const sh = min(s, h - y), k = 1 - (y + sh) / h + .12; g.drawImage(q.img, 0, y, w, sh, q.x + round((G.wxWind * 3.4 + aw * 1.8 * sin(G.time * .16 + q.x)) * k), q.y + y, w, sh); }
+}
 // the foreground: facades, fences and foliage in front of actors. Opaque pixels only (fades are dithered), so the light multiply is exact
 function drawFG(cx, cy, ax0, ay0, offx, offy, tx0, ty0, tw, th, kx0, kx1) {
   const g = gctx, S = VS.s; g.setTransform(1, 0, 0, 1, 0, 0); g.clearRect(0, 0, gcv.width, gcv.height); g.setTransform(1, 0, 0, 1, -ax0, -ay0);
@@ -355,7 +366,7 @@ function drawFG(cx, cy, ax0, ay0, offx, offy, tx0, ty0, tw, th, kx0, kx1) {
     else { const tx = tctx; tx.globalCompositeOperation = 'copy'; tx.drawImage(st.fac.cv, 0, 0); tx.globalCompositeOperation = 'destination-in'; tx.fillStyle = BAYER[round(st.a * 16)]; tx.fillRect(0, 0, fw, fh); tx.globalCompositeOperation = 'source-over'; g.drawImage(tcv, 0, 0, fw, fh, st.px, st.py, fw, fh); }
     if (st.mode === 'fade') uni.push(st);
   }
-  for (let k = kx0; k <= kx1; k++) { const bk = FGPB.get(k); if (bk) for (const q of bk) if (q.rf !== RFRAME && q.x < cx + VS.vw && q.x + q.img.width > cx && q.y < cy + VS.vh && q.y + q.img.height > cy) { q.rf = RFRAME; g.drawImage(q.img, q.x, q.y); any = true; } }
+  for (let k = kx0; k <= kx1; k++) { const bk = FGPB.get(k); if (bk) for (const q of bk) if (q.rf !== RFRAME && q.x < cx + VS.vw && q.x + q.img.width > cx && q.y < cy + VS.vh && q.y + q.img.height > cy) { q.rf = RFRAME; fgDraw(g, q); any = true; } }
   if (!any) return;
   const l = glctx; l.setTransform(1, 0, 0, 1, 0, 0); l.globalCompositeOperation = 'copy'; l.imageSmoothingEnabled = true; l.drawImage(lmc, 0, 0, tw, th, tx0 * T - ax0, ty0 * T - ay0, tw * T, th * T); l.imageSmoothingEnabled = false; l.globalCompositeOperation = 'source-over';
   for (const st of uni) { lightSample(st.lx * T + 4, st.ly * T + 4, LIT2); l.fillStyle = `rgb(${min(255, LIT2[0] * 250) | 0},${min(255, LIT2[1] * 250) | 0},${min(255, LIT2[2] * 250) | 0})`; l.fillRect(st.px - ax0, st.py - ay0, st.fac.cv.width, st.fac.cv.height); }
@@ -378,7 +389,7 @@ function tickStructs() {
 function drawTags(c, cx, cy, al) {
   const k = VS.s / VS.ui, ux = x => round((x - cx) * k), uy = y => round((y - cy) * k);
   for (const f of G.fighters) {
-    if (f === G.p || f.dead || f.yielded || f.onBarge) continue; const x = lerp(f.px, f.x, al) + 3, y = lerp(f.py, f.y, al) - 8;
+    if (f === G.p || f.dead || f.yielded) continue; const x = lerp(f.px, f.x, al) + 3, y = lerp(f.py, f.y, al) - 8;
     if (x < cx - 20 || x > cx + VS.vw + 20) continue;
     const col = f.remote ? '#8ff5e6' : f.echoBot ? '#d8d4e6' : f.skin === 4 ? '#c9fff6' : '#fff', X = ux(x), Y = uy(y) - 10;
     if (!f.isBoss) { textC(c, f.name, X, Y, col, 1, textO); if (f.away) textC(c, 'away', X, Y - 8, '#8b8fa3', 1, textO); c.fillStyle = INK; c.fillRect(X - 9, Y + 9, 18, 3); c.fillStyle = f.remote ? '#4fd8c8' : '#e2483b'; c.fillRect(X - 8, Y + 10, round(16 * clamp(f.hp / f.maxhp, 0, 1)), 1); }
@@ -413,7 +424,7 @@ function refreshFoes() {
   for (const f of fs) {
     const arr = f.foes; arr.length = 0; if (f.remote) continue;
     for (const o of fs) if (o !== f && !o.dead && !o.noHit && o.team !== f.team) arr.push(o);
-    if (f.team === 'p') for (const e of G.enemies) if (!e.dead) arr.push(e);
+    if (f.team === 'p' || WORLD.royale && (f === G.p || f.brBot)) for (const e of G.enemies) if (!e.dead) arr.push(e);
   }
 }
 function tick() {
@@ -422,9 +433,9 @@ function tick() {
   if (G.dialog && !WORLD.arena && !netLive()) { tickParts(); tickStory(); tickCam(); endTick(); return; }
   coopTick();
   refreshFoes(); tickPlayer();
-  for (const f of G.fighters) { if (f === G.p) continue; if (f.remote) { if (f.coop || f.ghostH) coopReplay(f); else tickRemote(f); } else if (f.ai || f.isClone) { if (f.onBarge) brBotRide(f); else { tickFighter(f, f.brBot ? brBotThink(f) : f.isClone ? cloneThink(f) : aiThink(f)); if (f.brBot) brBotAfter(f); } } }
+  for (const f of G.fighters) { if (f === G.p) continue; if (f.remote) { if (f.coop || f.ghostH) coopReplay(f); else tickRemote(f); } else if (f.ai || f.isClone) { if (f.brBot && BR.t < BR_HOLD && BR.phase === 'drop') brHover(f); else { tickFighter(f, f.brBot ? brBotThink(f) : f.isClone ? cloneThink(f) : aiThink(f)); if (f.brBot) brBotAfter(f); } } }
   if (G.duel) tickDuel();
-  tickEnemies(); spawnTick(); tickDrops(); tickProjs(); tickParts(); tickStory(); tickStructs(); if (!netGuest()) tickLiquids(); tickCam(); ambient();
+  tickEnemies(); spawnTick(); tickDrops(); tickProjs(); tickParts(); tickStory(); tickStructs(); if (!netGuest() || WORLD.royale) tickLiquids(); tickCam(); ambient(); tickWeather();
   if (!WORLD.arena || WORLD.royale) { tickFalling(); tickFelled(); tickRubble(); tickDoors(); tickDrill(); tickStations(); if (!G.away) tickHunger(); tickBrews(); if (!WORLD.royale && !netGuest()) tickRegrow(); if (!WORLD.royale) { tickDims(); tickLairs(); tickBless(); tickFurniture(); tickMeal(); if (G.time % 20 === 0) { mapReveal(); G.magR = hasUtil('magnet') ? 76 : 36; } } }
   if (WORLD.arena) arenaTick();
   if (G.combo.t > 0 && --G.combo.t <= 0) { G.combo.n = 0; G.combo.pts = 0; }
@@ -437,15 +448,27 @@ function tick() {
 }
 function endTick() { G.shake *= .86; G.flash *= .88; for (const k in pressed) pressed[k] = false; mouse.lp = mouse.rp = mouse.hp = false; }
 let lastT = 0, acc = 0;
-function frame(now) {
+// One bad moment must not end the game: whatever goes wrong in a frame is noted, and the next frame still comes.
+// (The loop used to stop for good at the first error, which looked like the game freezing for no reason.)
+const OOPS = { n: 0, last: '', at: 0 };
+function oops(where, e) {
+  const s = where + ': ' + (e && e.message || e), now = performance.now(); OOPS.n++;
+  if (s !== OOPS.last || now - OOPS.at > 5000) { OOPS.last = s; OOPS.at = now; console.error(s, e && e.stack || ''); }
+  // the same thing failing over and over: let go of whatever is most likely to be the cause
+  if (OOPS.n % 120 === 0) { try { UI.held = null; UI.open = null; UI.job = null; UI.stn = null; G.link = null; G.projs = G.projs.filter(q => isFinite(q.x) && isFinite(q.y)); G.drops = G.drops.filter(d => IT[d.id] && IT[d.id].icon && isFinite(d.x) && isFinite(d.y)); G.enemies = G.enemies.filter(q => isFinite(q.x) && isFinite(q.y)); inv = inv.map(q => q && IT[q.id] ? q : null); G.hitstop = 0; } catch (_) { } }
+  try { ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.globalAlpha = 1; ctx.globalCompositeOperation = 'source-over'; actx.globalCompositeOperation = 'source-over'; actx.globalAlpha = 1; fctx.globalAlpha = 1; rigX.setTransform(1, 0, 0, 1, 0, 0); } catch (_) { }
+}
+function safeTick() { try { tick(); } catch (e) { oops('tick', e); for (const k in pressed) pressed[k] = false; mouse.lp = mouse.rp = mouse.hp = false; if (G.proxy) { G.p = G.proxy; G.proxy = null; G.proxyHits.length = 0; sfxHush = false; } } }
+function frame(now) { requestAnimationFrame(frame); try { frameStep(now); } catch (e) { oops('frame', e); } }
+function frameStep(now) {
   // alone, a slow moment just slows the game; with friends here it must keep time, so it catches up
   const shared = netLive() || (BR.on && BR.via !== 'solo'), dt = min(shared ? .5 : .1, (now - lastT) / 1000 || 0); lastT = now; rafT = performance.now(); G.away = false;
   try { sigTick(); if (COOP.role) pingTick(rafT); coopRetryTick(rafT); netKeepAwake(!!(SIG.code || COOP.role || (BR.on && BR.via !== 'solo'))); } catch (e) { console.warn('net', e); }
-  if (G.manual) { requestAnimationFrame(frame); return; }
+  if (G.manual) return;
   if (G.state === 'play' && (UI.open !== 'pause' || WORLD.arena || netLive())) {
     G.tscale += ((G.slowT > 0 ? .3 : 1) - G.tscale) * .25; acc += dt * 60 * G.tscale; let n = 0;
     const most = shared ? 30 : 6;
-    while (acc >= 1 && n < most) { if (G.hitstop > 0) { G.hitstop--; tickParts(); G.shake *= .86; if (WORLD.arena && G.time % 3 === 0) netSend(); } else tick(); acc -= 1; n++; }
+    while (acc >= 1 && n < most) { if (G.hitstop > 0) { G.hitstop--; tickParts(); G.shake *= .86; if (WORLD.arena && G.time % 3 === 0) netSend(); } else safeTick(); acc -= 1; n++; }
     if (n >= most) acc = 0;
   } else {
     G.time++; if (G.state !== 'play') { G.clock = (G.clock + 1 / 20000) % 1; } updateSun(); tickParts(); const c = G.cam; c.px = c.x; c.py = c.y;
@@ -456,7 +479,7 @@ function frame(now) {
     if (WORLD.arena && G.state === 'play' && G.time % 3 === 0) netSend();
   }
   render(G.hitstop > 0 || G.state !== 'play' ? 1 : clamp(acc, 0, 1));
-  requestAnimationFrame(frame);
+  if ((RFRAME & 7) === 0) wxAudio();
 }
 // ---------------- while the window is hidden ----------------
 // With friends here the world must not stop when you switch away: the game keeps
@@ -470,7 +493,7 @@ function bgStep() {
   if (!live || G.manual) { bgLast = now; return; }
   const dt = min(.5, (now - (bgLast || now)) / 1000); bgLast = now; G.away = !WORLD.arena;
   try {
-    if (G.state === 'play') { acc += dt * 60; let n = 0; while (acc >= 1 && n < 40) { if (G.hitstop > 0) G.hitstop--; else tick(); acc -= 1; n++; } if (n >= 40) acc = 0; }
+    if (G.state === 'play') { acc += dt * 60; let n = 0; while (acc >= 1 && n < 40) { if (G.hitstop > 0) G.hitstop--; else safeTick(); acc -= 1; n++; } if (n >= 40) acc = 0; }
     else if (BR.on && G.state === 'brlobby') brLobbyTick();
   } catch (e) { console.warn('bg', e); }
 }
@@ -486,7 +509,7 @@ function freshSession() {
     leads: new Set(), pin: null, found: new Set(), linksKnown: new Set(), fam: {}, arts: new Set(), artk: {}, respawn: null, fires: [], smokes: [], stuck: [], link: null, zoom: 1, zoomT: 1, armT: 0, linkBanner: null, leadDone: null, cine: null, bars: 0,
     falling: [], felled: [], rubble: [], autoDoors: [], regrow: [], lairs: new Set(), bless: null, blessUsed: {}, ev: null, dev: null, devT: 2400, evClock: undefined, dhaz: [], echoes: new Set(), beasts: {}, gear: { head: null, body: null, legs: null, feet: null, off: null }, trink: [], meal: null, brew: null, cloneTape: [], rest: 0, nearWarm: false, nearFount: false, mast: {}, pairsKnown: new Set(), drill: null, food: 100, worn: new Set(), spy: false, lampOff: false, quality: {}, reqs: null, seen: null, hintT: -999
   });
-  for (const k in YACC) delete YACC[k]; INV_N = packCap(); mapReset();
+  for (const k in YACC) delete YACC[k]; INV_N = packCap(); mapReset(); FIRE_DROPS.length = 0; G.proxy = null; G.proxyHits.length = 0; wxReset();
   UI.open = null; UI.held = null; UI.scroll = 0; acc = 0;
 }
 function beginPlay(fresh) {
@@ -525,12 +548,13 @@ addEventListener('keydown', e => {
   if (G.dialog) { if (k === 'KeyF' || k === 'Space' || k === 'Enter' || k === 'KeyE') { dialogAdvance(); pressed[k] = false; } return; }
   if (k === 'Escape' || k === 'KeyP' && !WORLD.royale) { if (UI.open) { closeUI(); sfx('ui'); } else toggleUI('pause'); return; }
   if ((k === 'Enter' || k === 'NumpadEnter') && chatKey()) return;
-  if (k === 'KeyM' && WORLD.royale) { if (G.p && G.p.onBarge) BR.mapHide = !BR.mapHide; else BR.mapOpen = !BR.mapOpen; sfx('ui'); return; }
+  if (k === 'KeyM' && WORLD.royale) { BR.mapOpen = !BR.mapOpen; sfx('ui'); return; }
   if (k === 'KeyO' || k === 'KeyM' && (WORLD.arena || !hasUtil('fieldmap'))) { muted = !muted; G.banner = { text: muted ? 'SOUND OFF' : 'SOUND ON', sub: '[O] toggles sound', t: 0 }; return; }
   if (k === 'KeyM') { toggleUI('map'); return; }
   if (k === 'KeyC') { toggleUI('codex'); return; }
+  // (handled here, not in the match tick, so the key that opens a panel also closes it)
   if (WORLD.royale && k === 'KeyB') { toggleUI('book'); return; }
-  if (WORLD.royale && k === 'KeyK' && (hasItem('rock') || hasItem('flint'))) { toggleUI('knap'); return; }
+  if (WORLD.royale && k === 'KeyK') { if (UI.open === 'knap' || hasItem('rock') || hasItem('flint')) toggleUI('knap'); else { BR.note = 'PICK UP A PEBBLE OR FLINT TO KNAP'; BR.noteT = 110; sfx('deny'); } return; }
   if (k === 'KeyG' && !UI.open) { dropSelected(e.shiftKey); return; }
   if (k.startsWith('Digit')) { const n = +k[5], i = n === 0 ? 9 : n - 1; if (i < hotN()) { G.sel = i; G.selT = 120; if (G.p.atk && G.p.atk.phase < 2) endAttack(G.p); } return; }
   if (WORLD.royale && k === 'KeyE') { toggleUI('inv'); return; }
@@ -569,7 +593,7 @@ addEventListener('pagehide', e => {
 });
 
 // ---------------- boot ----------------
-buildTiles(); buildTiles2(); buildSprites(); buildSprites2(); buildTiles3(); buildMobSprites(); buildDimArt(); buildPlaceArt(); buildBenchArt(); buildFurnArt(); buildDimMobs(); dimItemsPre(); buildItems(); brItems(); resize(); buildBayer();
+buildTiles(); buildTiles2(); buildSprites(); buildSprites2(); buildTiles3(); buildWilds(); buildMobSprites(); buildWeatherMobs(); buildDimArt(); buildPlaceArt(); buildBenchArt(); buildFurnArt(); buildDimMobs(); dimItemsPre(); buildItems(); brItems(); resize(); buildBayer();
 SIL = [genSil(31, 0), genSil(77, 1)]; for (let i = 0; i < 4; i++) VEILS.push(genVeil(i * 17));
 SHARDMOON = spr(['.....w.....', '....wWc....', '....WWc....', '...wWWcc...', '...WWWcc...', '..wWWWccc..', '..WWWWccd..', '.wWWWWcccd.', '..WWWccdd..', '..WWWcccd..', '...WWccd...', '...Wcccd...', '....ccd....', '....cd.....', '.....d.....'], { w: '#ffffff', W: '#dcf7f5', c: '#8fd0d8', d: '#62a9bc' });
 accountBoot(); netBoot();

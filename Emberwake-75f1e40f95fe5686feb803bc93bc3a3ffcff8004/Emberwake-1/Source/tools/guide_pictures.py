@@ -47,6 +47,7 @@ async def main():
         await pg.evaluate("G.says.length=0; G.sayCur=null; G.banner=null; G.cine=null; 0")
 
     bA, A = await window()
+    await A.evaluate("G.state = 'title'; 0"); await A.wait_for_timeout(400)
     save(await A.screenshot(), 'title.jpg')
     await world(A, 'ALPHA')
     await A.evaluate("keys.KeyD = true; 0"); await A.wait_for_timeout(700); await A.evaluate("keys.KeyD = false; 0"); await A.wait_for_timeout(900)
@@ -73,9 +74,8 @@ async def main():
     await B.wait_for_timeout(1500); await B.evaluate("G.cine = null; G.banner = null; G.says.length = 0; G.sayCur = null; 0"); await B.wait_for_timeout(1500)
     await B.evaluate("G.cine = null; G.banner = null; G.says.length = 0; G.sayCur = null; 0"); await B.wait_for_timeout(400)
     save(await B.screenshot(), 'friends.jpg')
-    # the battle royale: on the barge over the island
-    bC, C = await window()
     # a home: furniture that does something, at dusk
+    bC, C = await window()
     await world(C, 'ALPHA')
     await C.evaluate("""(() => { const p = G.p, tx = floor((p.x + 3) / T) + 90, g = heights[tx], ty = g - 1; streamTo(tx * T, true); G.clock = .5; updateSun(); G.enemies.length = 0; G.pin = null; G.found.add('village');
       for (let y = ty - 7; y <= ty; y++) for (let x = tx - 11; x <= tx + 11; x++) { setTile(x, y, AIR); walls[y * WW + x] = x < tx ? W_POLISHED : W_MOSSB; }
@@ -94,8 +94,16 @@ async def main():
         await C.wait_for_timeout(700); await C.evaluate("G.says.length = 0; G.sayCur = null; G.banner = null; G.note = null; G.cine = null; G.biomeT = 0; 0")
     await C.wait_for_timeout(200)
     save(await C.screenshot(), 'home.jpg')
-    await C.evaluate("G.nick = 'ALPHA'; FORM.nick = 'ALPHA'; brSolo(); 0"); await wait(C, "G.state === 'play' && BR.on")
-    await C.wait_for_timeout(3500); save(await C.screenshot(), 'royale.jpg')
+    # the weather: a storm over the woods
+    await C.evaluate("""(() => { const p = G.p; for (const d of [-900, -700, -500, -350, -200, 200, 350, 500, 700, 900]) streamTo((SPAWN_X + d) * T, true); let tx = SPAWN_X + 62, best = -1; for (const [x] of treeTops) { if (abs(x - SPAWN_X) < 150 || ['reach', 'dunes', 'scoria', 'ash'].includes(biomeAt(x))) continue; let n = 0; for (const [q] of treeTops) if (abs(q - x) < 24 && abs(heights[q] - heights[x]) < 5) n++; if (n > best) { best = n; tx = x + 3; } } G.clock = .34; updateSun(); G.enemies.length = 0; p.x = p.px = tx * T; p.y = p.py = (heights[tx] - 3) * T; let n = 0; while (boxHits(p.x, p.y, p.w, p.h) && n++ < 60) { p.y -= T; p.py = p.y; } snapCam(); wxSet('storm', 1); G.wx.boltT = 1e9; const f = wxLocal('storm', biomeAt(tx)); for (const k of WXK) G.wxI[k] = f[k] || 0; G.wx.wet = 1; })(); 0""")
+    for _ in range(4):
+        await C.wait_for_timeout(900); await C.evaluate("G.says.length = 0; G.sayCur = null; G.banner = null; G.note = null; G.cine = null; G.biomeT = 0; G.clock = .34; G.enemies.length = 0; 0")
+    save(await C.screenshot(), 'weather.jpg')
+    # the battle royale: coming down out of the sky over a village, and the island's map (always the same island)
+    await C.evaluate("G.nick = 'ALPHA'; FORM.nick = 'ALPHA'; BR.via = 'solo'; BR.lead = true; BR.on = true; brEnterMatch('guide', 4242, ['me'], 31); 0"); await wait(C, "G.state === 'play' && BR.on && BR.t > 260")
+    await C.evaluate("(() => { const p = G.p, q = BR.pois.find(q => q.name === 'LANTERN GREEN') || BR.pois[2], x = q.x + 20; p.x = p.px = x * T; p.y = p.py = (heights[x] - 27) * T; G.clock = .3; snapCam(); })(); 0")
+    await C.wait_for_timeout(500); save(await C.screenshot(), 'royale.jpg')
+    await wait(C, "!G.p.glide", 30000); await C.evaluate("BR.mapOpen = true; 0"); await C.wait_for_timeout(1500); save(await C.screenshot(), 'island.jpg')
     for b in (bA, bB, bC): await b.close()
     await pw.stop()
 

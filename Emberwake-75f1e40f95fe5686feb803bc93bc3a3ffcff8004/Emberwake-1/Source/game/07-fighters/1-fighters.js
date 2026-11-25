@@ -49,7 +49,9 @@ function perfectDodge(f) {
   if (f === G.p) { if (slowOK()) G.slowT = 26; G.flash = max(G.flash, .25); G.flashCol = '143,245,230'; sfx('perfect', 0); comboHit(true); G.flags.perfect = true; }
   else fsx(f, 'reflect', 0);
 }
+// a creature is being run against someone other than you: what it does to them is kept, and applied once you are yourself again
 function hurtFighter(f, dmg, fromX, o = {}) {
+  if (G.proxy && f === G.p) { G.proxyHits.push([f, dmg, fromX, o]); return !(f.dead || f.iDodge > 0 || f.inv > 0); }
   if (f.remote && f.coop) return netHurtPeer(f, dmg, fromX, o || {}); if (f.ghostH) return netHitHollow(f, dmg, fromX, o || {});
   if (f.dead || G.state !== 'play' || f.remote) return false;
   if (f.iDodge > 0 && !o.link) { if (!f.perfected && (f.state === 'dodge' || f.dodgeGrace > 0)) perfectDodge(f); return false; }
@@ -57,7 +59,8 @@ function hurtFighter(f, dmg, fromX, o = {}) {
   if (f.state === 'link' && !o.link) return false;
   const pvp = !!o.pvp, armored = f.atk && f.atk.m.armor && f.atk.phase < 2;
   const gp = f === G.p && gearOn(); if (gp) { dmg = gearDamage(dmg, o); if ((gearHas('kindled') || gearHas('molten')) && o.by && o.by !== f && !o.by.dead && o.by.hp !== undefined && !o.by.fighter) applyStatus(o.by, 'burn', f, { d: 90 }); }
-  dmg = max(1, round(dmg * (pvp && WORLD.arena ? .8 : 1) * (armored ? .65 : 1) * (f.dmgTaken || 1) * (f === G.p && !WORLD.arena && !o.net ? DIFF().taken * blessTaken() : 1)));
+  else if (f.brBot && f.br && f.br.gear) { const prot = GEAR_SLOTS.reduce((n, s) => n + (IT[f.br.gear[s]]?.prot || 0), 0); dmg *= 1 - prot / (prot + 60); }
+  dmg = max(1, round(dmg * (pvp && WORLD.arena ? .8 : 1) * (armored ? .65 : 1) * (f.dmgTaken || 1) * (f === G.p && !WORLD.arena && !o.net ? DIFF().taken * blessTaken() : 1) * (WORLD.royale ? (!pvp ? brWildHurt(f) : f.brBot && o.by && o.by.brBot ? .68 : 1) : 1)));
   let warded = 0; if (WORLD.royale && f.ward > 0) { warded = min(f.ward, dmg); f.ward -= warded; dmg -= warded; if (warded) sparks(f.x + 3, f.y + 8, 5, 0, 1.6, ['#8fd0ff', '#ffffff']); }
   f.hp -= dmg; f.regenT = 0; f.flash = 6; if (o.by) f.lastHitBy = o.by;
   if (gp && boonHas('thorn') && !o.net && !pvp) { const by = o.by && !o.by.fighter && !o.by.dead ? o.by : G.enemies.find(e => !e.dead && !e.noHit && e.type !== 'dummy' && abs(e.x + e.w / 2 - (f.x + 3)) < 22 && abs(e.y + e.h / 2 - (f.y + 10)) < 24); if (by && by.hp !== undefined) damageEnemy(by, max(1, round(dmg * .25)), 0, 0, { thorn: 1 }); }
@@ -73,7 +76,7 @@ function hurtFighter(f, dmg, fromX, o = {}) {
     f.takenT = 70; if (f.atk) { f.atk = null; } f.state = 'normal'; f.buf = null;
   } else fsx(f, 'hit2', 0);
   if (f === G.p) {
-    G.combo.n = 0; G.combo.pts = 0; G.combo.t = 0; addShake(4.5); G.hitstop = max(G.hitstop, 5); sfx('hurt', 0); G.flash = .24; G.flashCol = '226,72,59';
+    G.combo.n = 0; G.combo.pts = 0; G.combo.t = 0; addShake(4.5); G.hitstop = max(G.hitstop, WORLD.royale ? 2 : 3); sfx('hurt', 0); G.flash = .24; G.flashCol = '226,72,59';
     if (dmg > 0) numPop(f.x + 3, f.y - 4, dmg, '#ff6b6b'); if (warded) numPop(f.x + 3, f.y - 12, warded, '#8fd0ff'); burst(f.x + 3, f.y + 10, 8, ['#e2483b', '#ff9a8a'], 1.8, 22);
   } else hitFx(o.hx === undefined ? f.x + 3 : o.hx, o.hy === undefined ? f.y + 10 : o.hy, f.y, dmg, o, o.kx || 0, o.by === G.p);
   if (f.hp <= 0) { if (f.yieldAt) { f.hp = 1; f.yieldAt(f); } else killFighter(f, o.by); }
@@ -104,7 +107,7 @@ function tickFighter(f, I) {
   if (I.armP && f.hurtT <= 0) throwArm(f, I.wx, I.wy);
   if (I.jumpP) f.jbuf = 7; else if (f.jbuf > 0) f.jbuf--;
   if (f.onGround) { f.coyote = 6; f.airDash = airDashMax(f); f.updraft = true; f.dblUsed = false; f.airRiseUsed = false; f.pogoUsed = false; } else if (f.coyote > 0) f.coyote--;
-  if (f.stamDelay > 0) f.stamDelay--; else f.stam = min(f.maxstam, f.stam + (f.isPlayer && (!WORLD.arena || WORLD.royale) ? (f.tonic > 0 ? 1.8 : 1) * (WORLD.mode !== 1 && G.food <= 0 ? .5 : 1) * gearMul('st') : 1));
+  if (f.stamDelay > 0) f.stamDelay--; else f.stam = min(f.maxstam, f.stam + (f.isPlayer && (!WORLD.arena || WORLD.royale) ? (f.tonic > 0 ? 1.8 : 1) * (WORLD.mode !== 1 && G.food <= 0 ? .5 : 1) * gearMul('st') : 1) * wxBreath(f));
   f.regenT++;
   if (WORLD.arena && !WORLD.royale) { if (f.regenT > 240 && f.hp < f.maxhp && G.time % 4 === 0) f.hp++; }
   else if (f.isPlayer && f.regenT > 420 / DIFF().regen && G.time % max(1, round((WORLD.mode === 1 || G.food > 70 ? 40 : G.food > 30 ? 80 : 1e9) / DIFF().regen / blessRegen())) === 0 && f.hp < f.maxhp) f.hp++;
@@ -125,22 +128,29 @@ function tickFighter(f, I) {
     a = f.atk; const ok = f.state === 'normal' || (f.state === 'dodge' && f.dodgeT >= 2) || (f.state === 'attack' && a.phase === 2 && (f.buf.beat || a.pt >= floor(a.m.rec * .38)));
     if (ok) { const b = f.buf.b, beat = !!f.buf.beat, perfect = !!f.buf.perfect; f.buf = null; if (f.state === 'attack') endAttack(f); if (startAttack(f, b, I, false, beat, perfect)) f.atkN++; }
   }
-  let grav = .26; const gp = f === G.p && gearOn(), maxV = 1.45 * (gp ? gearMul('walk') : 1) * (f === G.p && typeof brewMul === 'function' ? brewMul('swift') : 1);
+  let grav = .26; const gp = f === G.p && gearOn(), maxV = 1.45 * (gp ? gearMul('walk') : 1) * (f === G.p && typeof brewMul === 'function' ? brewMul('swift') : 1) * wxSpeed(f, I.md);
   if (gp && f.vy > 0 && (gearHas('feather') || gearHas('prismatic')) && I.jumpH && !f.onGround) grav = .17;
   if (f.state === 'dodge') {
     f.dodgeT++; f.vx = f.dodgeDir * 3.5 * (f.dodgeT > 8 ? .7 : 1) * (f === G.p ? gearMul('dodge') : 1);
     if (f.dodgeT % 2 === 0) f.ghostReq = true;
-    if (f.dodgeT >= 11) { f.state = 'normal'; f.dodgeGrace = 9; f.vx *= .78; }
-  } else if (f.state === 'attack') tickAttack(f, I);
+    if (f.dodgeT >= 11) { f.state = 'normal'; f.dodgeGrace = 9; f.carryT = 16; f.vx *= .86; }
+  } else if (f.state === 'attack') { f.md = I.md; tickAttack(f, I); }
   a = f.atk;
   if (f.state !== 'dodge' && !(a && a.dashT > 0 && a.phase === 1)) {
-    const ctrl = a ? (a.phase === 2 ? .7 : a.m.ctrl) : (f.hurtT > 0 ? .12 : 1), md = I.md;
-    const tgt = md * maxV * (a && a.phase < 2 ? min(1, ctrl + .15) : 1), acc = (f.onGround ? .24 : .15) * ctrl;
-    if (md && ctrl > 0) f.vx = (abs(f.vx) > maxV && sign(f.vx) === md) ? approach(f.vx, tgt, .07) : approach(f.vx, tgt, acc);
-    // walking into a shut door pushes it open
-    if (md && f === G.p && !WORLD.arena && f.state === 'normal') { const tx = floor((f.x + (md > 0 ? f.w + 1.5 : -1.5)) / T); for (let y = floor(f.y / T); y <= floor((f.y + f.h - 1) / T); y++) if (tileAt(tx, y) === DOORC) { if (toggleDoor(tx, y)) G.autoDoors.push({ tx, ty: y, t: 150 }); break; } }
-    else f.vx = approach(f.vx, 0, (f.onGround ? .2 : .035) * (a ? .6 : 1));
+    const ctrl = a ? (a.phase === 2 ? .85 : a.m.ctrl) : (f.hurtT > 0 ? .12 : 1), md = I.md;
+    if (md && ctrl > 0) {
+      // a blow leans on your stride without stopping it: light ones cost a little speed, heavy ones more.
+      // Speed you already had above a run (a dash, a leap) bleeds off slowly instead of being cut
+      const keep = a && a.phase < 2 ? max(a.btn === 'H' ? .62 : .8, min(1, ctrl + .15)) : 1, tgt = md * maxV * keep, along = sign(f.vx) === md;
+      const acc = (f.onGround ? .24 : .15) * (a ? max(ctrl, .6) : ctrl);
+      f.vx = along && abs(f.vx) > abs(tgt) ? approach(f.vx, tgt, abs(f.vx) > maxV ? .05 : .03) : approach(f.vx, tgt, acc);
+      // walking into a shut door pushes it open
+      if ((f === G.p && !WORLD.arena || WORLD.royale && !f.remote) && f.state === 'normal') { const tx = floor((f.x + (md > 0 ? f.w + 1.5 : -1.5)) / T); for (let y = floor(f.y / T); y <= floor((f.y + f.h - 1) / T); y++) if (tileAt(tx, y) === DOORC) { if (toggleDoor(tx, y)) G.autoDoors.push({ tx, ty: y, t: 150 }); break; } }
+    }
+    // hands off the keys: you glide to a stop, longer out of a dash or through a swing
+    else f.vx = approach(f.vx, 0, f.onGround ? (a ? .05 : f.dodgeGrace > 0 || f.carryT > 0 ? .07 : .16) * wxSlick(f) : (a ? .012 : .03));
   }
+  if (f.carryT > 0) f.carryT--;
   if (f.jbuf > 0 && !(f.climbing && !I.md) && f.hurtT <= 0 && (f.state === 'normal' || (f.state === 'attack' && a.phase === 2))) {
     if (f.coyote > 0) doJump(f, -4.55 * (f === G.p ? gearMul('jump') : 1));
     else if (canDbl(f) && !f.dblUsed) { f.dblUsed = true; doJump(f, -4.15); for (let i = 0; i < 12; i++) P(f.x + 3, f.y + f.h, cos(i / 12 * TAU) * 1.6, sin(i / 12 * TAU) * .5, 16, fpick(f.skin === 4 ? FROST : SPARK), { glow: 1, g: 0, fr: .9 }); }
@@ -167,6 +177,8 @@ function tickFighter(f, I) {
   tickScarf(f);
 }
 function doJump(f, v) { f.vy = v; f.onGround = false; f.coyote = 0; f.jbuf = 0; f.noCut = false; if (f.atk) endAttack(f); fsx(f, 'jump'); dust(f.x + 3, f.y + f.h, 3); }
+// a blow adds its step to the way you are already going. It never takes speed away, and never turns you round mid-retreat
+function stepIn(f, fc, step) { const v = f.vx * fc; if (v < -.2 && f.md === -fc) return; f.vx = fc * max(step, v); }
 function tickScarf(f) {
   const sc = f.scarf, ax = f.x + 3 - f.face * 2, ay = f.y + 6;
   sc[0].x = ax; sc[0].y = ay;
@@ -392,6 +404,22 @@ const RB = 96;
 const [rigCv, rigX] = mk(RB, RB, { willReadFrequently: true });
 const [outCv, outX] = mk(RB, RB);
 const outImg = outX.createImageData(RB, RB), ghostPool = [];
+// The rig's canvas is read back every time it is drawn, so it lives in main memory. Draw one picture into it
+// that lives on the graphics card and the browser moves the whole canvas there, and from then on every read
+// stalls the frame (thirty Wakers on screen cost 68 ms that way). So sprites are copied over pixel by pixel,
+// once each, the first time they are used, and only the copies ever touch the rig. (They are read through a fresh
+// canvas, because the browser warns about reading any one picture twice, and icons have read some of them already.)
+const CPU_IMG = new WeakMap();
+function cpuImg(img) {
+  let c = CPU_IMG.get(img); if (c) return c;
+  if (!img || !img.getContext || !img.width || !img.height) c = img;
+  else { const w = img.width, h = img.height, [, rx] = mk(w, h), [cv2, x2] = mk(w, h, { willReadFrequently: true }); rx.drawImage(img, 0, 0); x2.putImageData(rx.getImageData(0, 0, w, h), 0, 0); c = cv2; }
+  if (img) CPU_IMG.set(img, c); return c;
+}
+{ const raw = rigX.drawImage.bind(rigX); rigX.drawImage = (img, ...a) => raw(cpuImg(img), ...a); }
+// In a crowd, everyone but you keeps the same drawn pose for a frame or two (they still move every frame). The poses
+// are kept here and not on the creature itself: in a shared world a creature's own fields are sent to everyone.
+const ENT = { key: null, i: 0, n: 0, last: 0, cv: null, kept: new WeakMap() };
 let wctx = null; const LIT = [1, 1, 1];
 function pixelize(n, o) {
   const src = rigX.getImageData(0, 0, n, n).data, dst = outImg.data, W4 = RB * 4, n4 = n * 4, fl = o && o.flash, tn = o && o.tint;
@@ -408,19 +436,29 @@ function pixelize(n, o) {
       else dst[di + 3] = 0;
     }
   }
-  outX.putImageData(outImg, 0, 0, 0, 0, n, n);
+  return outImg;
 }
 function drawEnt(n, ox, oy, fn, wx, wy, o) {
-  rigX.setTransform(1, 0, 0, 1, 0, 0); rigX.clearRect(0, 0, n, n); rigX.translate(ox, oy); fn(rigX); rigX.setTransform(1, 0, 0, 1, 0, 0);
-  lightSample(wx, wy + (o && o.ly !== undefined ? o.ly : 0), LIT); if (o && o.unlit) LIT[0] = LIT[1] = LIT[2] = 1; pixelize(n, o);
+  const key = ENT.key, every = key ? (ENT.last > 16 ? 3 : ENT.last > 7 ? 2 : 1) : 1; let c = null;
+  ENT.n++;
+  let kept = null; if (every > 1) { kept = ENT.kept.get(key); if (!kept) ENT.kept.set(key, kept = []); c = kept[ENT.i++] || null; }
+  if (every > 1 && c && c.n === n && c.fl === !!(o && o.flash) && RFRAME - c.at < every && RFRAME >= c.at && (RFRAME + (c.k | 0)) % every !== 0) ENT.cv = c.cv;
+  else {
+    rigX.setTransform(1, 0, 0, 1, 0, 0); rigX.clearRect(0, 0, n, n); rigX.translate(ox, oy); fn(rigX); rigX.setTransform(1, 0, 0, 1, 0, 0);
+    lightSample(wx, wy + (o && o.ly !== undefined ? o.ly : 0), LIT); if (o && o.unlit) LIT[0] = LIT[1] = LIT[2] = 1; pixelize(n, o);
+    if (every > 1) {
+      if (!c || c.n !== n) { const [cv2, x2] = mk(n, n); c = kept[ENT.i - 1] = { cv: cv2, x: x2, n, k: ENT.n }; }
+      c.x.putImageData(outImg, 0, 0, 0, 0, n, n); c.at = RFRAME; c.fl = !!(o && o.flash); ENT.cv = c.cv;
+    } else { outX.putImageData(outImg, 0, 0, 0, 0, n, n); ENT.cv = outCv; }
+  }
   const S = VS.s, dx = round((wx - ox) * S) / S, dy = round((wy - oy) * S) / S;
   if (o && o.alpha !== undefined) wctx.globalAlpha = o.alpha;
-  wctx.drawImage(outCv, 0, 0, n, n, dx, dy, n, n); wctx.globalAlpha = 1;
+  wctx.drawImage(ENT.cv, 0, 0, n, n, dx, dy, n, n); wctx.globalAlpha = 1;
   return [dx, dy];
 }
 function makeGhost(dx, dy, n, col) {
   if (G.ghosts.length > 40) return;
   const cv = ghostPool.pop() || mk(RB, RB)[0], gx = cv.getContext('2d');
-  gx.globalCompositeOperation = 'copy'; gx.drawImage(outCv, 0, 0); gx.globalCompositeOperation = 'source-in'; gx.fillStyle = col; gx.fillRect(0, 0, RB, RB);
+  gx.globalCompositeOperation = 'copy'; gx.drawImage(ENT.cv || outCv, 0, 0); gx.globalCompositeOperation = 'source-in'; gx.fillStyle = col; gx.fillRect(0, 0, RB, RB);
   G.ghosts.push({ cv, x: dx, y: dy, n, life: 13, max: 13 });
 }

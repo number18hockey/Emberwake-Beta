@@ -35,7 +35,8 @@ You can also open the included [`Emberwake Guide.html`](Emberwake-1/Emberwake%20
 - Four weapon families, learned fighting styles, combos, counters, arts, armour, and trinkets
 - Story leads, lore, echo stones, a journal, creatures, bosses, and world events
 - Shared multiplayer worlds for up to four players
-- The Ashfall, a battle royale mode with echoes or friends
+- The Ashfall, a battle royale for 32 with echoes or friends: fall from the sky with nothing, gather, dig, craft, make pacts, outlast the rest
+- Weather that slows you, sways the trees and brings out rare creatures
 - Synthesized pixel graphics and sound with no image or audio downloads
 
 ## Controls
@@ -56,7 +57,7 @@ You can also open the included [`Emberwake Guide.html`](Emberwake-1/Emberwake%20
 | `H` | Quick heal |
 | `J` | Journal |
 | `M` | Map |
-| `P` or `Esc` | Pause menu |
+| `P` or `Esc` | Pause menu (in the Ashfall, `P` offers, accepts and leaves a pact) |
 | `Enter` | Chat while playing together |
 | `1`–`0` / mouse wheel | Select hotbar item |
 

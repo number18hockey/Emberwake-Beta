@@ -36,7 +36,7 @@ async def main():
     res['both in the match, same seed'] = [okA, okB, (await A.evaluate("BR.seed")) == (await B.evaluate("BR.seed"))]
     await B.wait_for_timeout(1500)
     res['friend sees host and echoes'] = await B.evaluate("[[...NET.peers.values()].map(f => f.name).join(','), [...BR.bots.values()].filter(f => f.remote).length]")
-    await B.evaluate("pressed.Space = true"); await wait(B, "!G.p.onBarge && G.p.onGround", 20000); await B.wait_for_timeout(600)
+    await B.evaluate("keys.KeyS = true; 0"); await wait(B, "!G.p.glide && G.p.onGround", 45000); await B.wait_for_timeout(600)
     bx = await B.evaluate("G.p.x"); hx = await A.evaluate("(() => { const f = [...NET.peers.values()][0]; return f ? f.x : -1; })()")
     res['host sees the friend where they landed (px apart)'] = round(abs(bx - hx), 1)
     res['line'] = await B.evaluate("linkTag(COOP.peers.get('h'))")

@@ -6,7 +6,7 @@ from playwright.async_api import async_playwright
 sys.path.insert(0, os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), 'helpers'))
 from where import GAME_URL, GAME_DIR, HELPERS, CHROME, shot
 async def main():
-    srv = subprocess.Popen(['python3', '-m', 'http.server', '8768', '--bind', '127.0.0.1'], cwd=GAME_DIR, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL); time.sleep(1)
+    srv = subprocess.Popen([sys.executable, '-m', 'http.server', '8768', '--bind', '127.0.0.1'], cwd=GAME_DIR, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL); time.sleep(1)
     pw = await async_playwright().start(); b = await pw.chromium.launch(headless=True, args=['--no-sandbox', '--disable-background-timer-throttling', '--disable-renderer-backgrounding', '--disable-backgrounding-occluded-windows'], **CHROME)
     ctx = await b.new_context(viewport={'width': 960, 'height': 540}); await ctx.add_init_script(path=os.path.join(HELPERS, 'mock_room.js'))
     errs = []; res = {}

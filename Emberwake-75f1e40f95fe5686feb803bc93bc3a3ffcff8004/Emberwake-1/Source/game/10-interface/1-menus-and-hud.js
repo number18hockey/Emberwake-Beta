@@ -4,7 +4,7 @@
 //  a hit box while it draws; clicks test last frame's boxes.
 // ============================================================
 const inR = (x, y, w, h) => mouse.ux >= x && mouse.ux < x + w && mouse.uy >= y && mouse.uy < y + h;
-const FORM = { name: '', seed: '', size: 1, shape: 0, mode: 0, skin: 0, hat: 0, nick: '', code: '', accountName: '', accountPassword: '', accountConfirm: '' };
+const FORM = { name: '', seed: '', size: 1, shape: 0, mode: 0, skin: 0, hat: 0, nick: '', code: '', accountName: '', accountPassword: '', accountConfirm: '', brRanked: false };
 const SIZE_D = ['600 x 260 tiles', '900 x 320 tiles', '1400 x 380 tiles', '2200 x 440 tiles: days to cross'], SHAPE_D = ['every seed deals its lands in a new order', 'the Drift is crowded with islands', 'few islands, the Underdark yawns wider'], MODE_D = ['three embers, any order, nothing forced', 'every item, no monsters, build freely'];
 let HITS = [], HITS_NEXT = [];
 const hit = (x, y, w, h, fn, slot) => HITS_NEXT.push({ x, y, w, h, fn, slot: !!slot });
@@ -51,9 +51,9 @@ function hatPicker(c, x, y) {
   }
 }
 function slotBox(c, x, y, sel, hov) { c.fillStyle = sel ? '#ffd35a' : hov ? '#8c86a8' : '#4a4460'; c.fillRect(x, y, 18, 18); c.fillStyle = sel ? '#3a3350' : '#262234'; c.fillRect(x + 1, y + 1, 16, 16); }
-function drawStack(c, s, x, y) { if (!s) return; const ic = IT[s.id].icon; c.drawImage(ic, x + 9 - (ic.width >> 1), y + 9 - (ic.height >> 1)); if (s.n > 1) textO(c, s.n > 999 ? '999' : s.n, x + 17 - textW(min(s.n, 999)), y + 10, '#fff'); }
+function drawStack(c, s, x, y) { if (!s || !IT[s.id] || !IT[s.id].icon) return; const ic = IT[s.id].icon; c.drawImage(ic, x + 9 - (ic.width >> 1), y + 9 - (ic.height >> 1)); if (s.n > 1) textO(c, s.n > 999 ? '999' : s.n, x + 17 - textW(min(s.n, 999)), y + 10, '#fff'); }
 function bar(c, x, y, w, h, f, col, dark) { c.fillStyle = INK; c.fillRect(x - 1, y - 1, w + 2, h + 2); c.fillStyle = '#2b2740'; c.fillRect(x, y, w, h); const fw = round(w * clamp(f, 0, 1)); c.fillStyle = col; c.fillRect(x, y, fw, h); c.fillStyle = dark; c.fillRect(x, y + h - 1, fw, 1); c.fillStyle = 'rgba(255,255,255,.3)'; c.fillRect(x, y, fw, 1); }
-const hotN = () => WORLD.arena ? 6 : 10;
+const hotN = () => WORLD.arena && !WORLD.royale ? 6 : 10;
 const hotbarLayout = () => ({ x: round((VS.uw - hotN() * 19 + 1) / 2), y: VS.uh - 22 });
 function invLayout() {
   const wide = VS.uw >= 420, gw = 189, cw = 190, pr = ceil(INV_N / 10), ph = pr * 19 + 20, rows = wide ? clamp(floor((VS.uh - 90) / 19), 4, 9) : clamp(floor((VS.uh - 150 - ph) / 19), 2, 6);
@@ -271,9 +271,9 @@ function drawHUD(c) {
   bar(c, 15, 14, 72, 4, p.stam / p.maxstam, p.stam < 22 ? '#ffd35a' : '#7ddc6f', p.stam < 22 ? '#b85a1e' : '#2f8a43');
   if ((!A || WORLD.royale) && WORLD.mode !== 1) { const f = G.food / 100; bar(c, 15, 20, 72, 2, f, f < .25 && (G.time >> 4) & 1 ? '#ff9a8a' : '#e0a050', '#7a4a1a'); if (f < .3) textO(c, f <= 0 ? 'STARVING' : 'HUNGRY', 91, 16, '#e0a050'); }
   if (p.riposte > 0 && (G.time >> 2) & 1) textO(c, 'RIPOSTE READY', 15, 22, '#8ff5e6');
-  else if (!UI.open) textS(c, WORLD.royale ? '[LMB] mine  [F] chest / station  [B] recipes  [K] knap  [P] pact  [M] map' : A ? '[TAB] scores  [C] forms  [P] menu  1-6 weapons  [R] sidearm [T] swap' : '[E] pack  [K] knap  [F] use  [J] journal  [P] menu', 4, WORLD.royale ? 35 : 25, '#8b8fa3');
+  else if (!UI.open && !(WORLD.royale && (BR.t > 60 * 60 || G.note || p.dead))) textS(c, WORLD.royale ? '[LMB] hit / dig  [F] open  [E] pack  [B] recipes  [K] knap  [H] heal  [P] pact  [M] map' : A ? '[TAB] scores  [C] forms  [P] menu  1-6 weapons  [R] sidearm [T] swap' : '[E] pack  [K] knap  [F] use  [J] journal  [P] menu', 4, WORLD.royale ? 35 : 25, '#8b8fa3');
   if (!A && G.jNew && (G.time >> 4) & 1) textS(c, 'NEW JOURNAL ENTRY [J]', 4, 32, '#ffd35a');
-  drawBless(c); drawMealHud(c); drawGadgetHud(c); drawCoopHud(c);
+  drawBless(c); drawMealHud(c); drawGadgetHud(c); drawCoopHud(c); wxHud(c, 126, 3);
   if (G.savedNote) { const t = G.savedNote.t; c.globalAlpha = clamp((120 - t) / 30, 0, 1); textS(c, G.savedNote.ok ? (SAVE.db ? 'saved to your account' : 'saved') : 'could not save', 4, A ? 32 : 42, '#7ddc6f'); c.globalAlpha = 1; }
   // hotbar
   const hb = hotbarLayout();
@@ -301,7 +301,7 @@ function drawHUD(c) {
   // banners and notes
   if (G.biomeT > 0 && !G.banner && G.state === 'play') { const a = min(1, G.biomeT / 40, (200 - G.biomeT) / 30); c.globalAlpha = max(0, a); const s = BIOME[G.biome] || ''; textC(c, s, uw / 2, round(uh * .2), '#fff', 2, textO); c.fillStyle = '#ffd35a'; c.fillRect(round(uw / 2 - 30), round(uh * .2) + 20, 60, 1); c.globalAlpha = 1; }
   if (G.banner && G.banner.t >= 0) { const t = G.banner.t, a = clamp(min(t / 25, (230 - t) / 30), 0, 1); c.globalAlpha = a; textC(c, G.banner.text, uw / 2, round(uh * .24), '#ffd35a', 2, textO); if (G.banner.sub) textC(c, G.banner.sub, uw / 2, round(uh * .24) + 22, '#fff', 1, textO); c.globalAlpha = 1; }
-  if (G.note && G.note.t >= 0) { c.globalAlpha = clamp(min(G.note.t / 15, (240 - G.note.t) / 30), 0, 1); textC(c, G.note.text, uw / 2, 36, '#ffd35a', 1, textO); c.globalAlpha = 1; }
+  if (G.note && G.note.t >= 0) { c.globalAlpha = clamp(min(G.note.t / 15, (240 - G.note.t) / 30), 0, 1); textC(c, G.note.text, uw / 2, WORLD.royale ? 48 : 36, '#ffd35a', 1, textO); c.globalAlpha = 1; }
   if (G.linkBanner) { const t = G.linkBanner.t, a = clamp(min(t / 8, (150 - t) / 25), 0, 1), y = round(uh * .36); c.globalAlpha = a; textC(c, G.linkBanner.first ? 'NEW LINK' : 'LINK', uw / 2, y - 12, '#8ff5e6', 1, textO); textC(c, G.linkBanner.name.toUpperCase(), uw / 2 + (t < 8 ? (8 - t) * 3 : 0), y, '#fff1a8', 2, textO); c.globalAlpha = 1; }
   if (G.leadDone) { const t = G.leadDone.t; c.globalAlpha = clamp(min(t / 15, (200 - t) / 30), 0, 1); textC(c, 'LEAD FOLLOWED : ' + G.leadDone.title, uw / 2, 48, '#7ddc6f', 1, textO); c.globalAlpha = 1; }
   G.picks.forEach((q, i) => { c.globalAlpha = clamp((200 - q.t) / 40, 0, 1); const ic = IT[q.id].icon, y = uh - 16 - i * 12; c.drawImage(ic, 4, y - (ic.height >> 1) + 4); textS(c, `+${q.n} ${IT[q.id].name}`, 24, y, '#fff'); }); c.globalAlpha = 1;
@@ -447,6 +447,7 @@ function drawPause(c) {
   button(c, x + 8, y + 18, 70, 15, 'RESUME', () => { closeUI(); sfx('ui'); });
   button(c, x + 84, y + 18, 96, 15, A ? (WORLD.royale ? (BR.via !== 'solo' ? 'TO THE LOBBY' : 'LEAVE MATCH') : 'LEAVE RING') : 'SAVE & QUIT', () => { closeUI(); if (WORLD.royale && BR.on && BR.via !== 'solo') brBackToLobby(); else quitToTitle(); sfx('ui'); });
   button(c, x + 186, y + 18, 84, 15, muted ? 'SOUND: OFF' : 'SOUND: ON', () => { muted = !muted; sfx('ui'); });
+  if (WORLD.royale && BR.teammate) button(c, x + 276, y + 18, 58, 15, 'LEAVE PACT', () => { brBreakPact(false); closeUI(); });
   if (!A) button(c, x + 276, y + 18, 56, 15, 'SAVE', () => { saveWorld(); sfx('craft'); });
   if (!A && G.p && !G.boss && !G.duel) button(c, x + w - 112, y + h - 19, 104, 13, 'WAKE AT THE FIRE', () => { closeUI(); wakeAtFire(); });
   if (!A) button(c, x + w - 112, y + h - 36, 104, 13, netGuest() ? 'LEAVE THEIR WORLD' : COOP.role ? 'PLAY TOGETHER (' + (1 + [...COOP.peers.values()].filter(P => P.ok).length) + ')' : 'PLAY TOGETHER', () => { if (netGuest()) { closeUI(); quitToTitle(); } else { UI.open = 'coop'; COOP.err = ''; sfx('ui'); } });

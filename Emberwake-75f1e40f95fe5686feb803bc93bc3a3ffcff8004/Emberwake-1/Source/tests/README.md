@@ -49,6 +49,7 @@ The land, digging, places, events and saving.
 - `places.py` Every kind of place (hamlets, forts, castles, pyramids, halls...) is built and looks right.
 - `saving.py` Saving and loading a world keeps the land, the pack and the stations.
 - `using_places.py` Using places: blessing stones, guards that wake, places that stay cleared.
+- `weather.py` Weather: how often each kind comes, what it does to you, the trees and the ground, shelter, lightning, and the rare creatures that come and go with it.
 
 ### other-worlds
 
@@ -71,6 +72,7 @@ Links, armour, weapon styles, creatures and guardians.
 - `bosses.py` Each guardian: summoned, every attack, the second phase, and its reward.
 - `cadence.py` Held light does not repeat; timed, alternating landed light and heavy hits build an ECHO and REFRAIN.
 - `attack_forms_and_momentum.py` The five situational forms, critical fall timing, sweep knockback, dash momentum, air dodge gravity and one lift per airtime.
+- `carried_momentum.py` Blows, dodges and landings keep the speed you had; fire burns on the wall, roof or floor it hit.
 - `creatures.py` Every creature of every world moves, fights, dies and drops things.
 - `mastery_and_flow.py` Learned forms (BASICS to MASTERY), follow-ups (CRUSH, BREAK, JUGGLE, SPIKE, RHYTHM), the four counters after a perfect dodge, and arts learned by use.
 - `links.py` Links: a thrown star pins a post to the wall, and every link on the practice post.
@@ -96,8 +98,10 @@ Playing together: codes, the relay, sharing the world, finding friends, rejoinin
 
 The Ashfall: alone, with friends, online, over the relay.
 
+- `balance.py` Weapons of each level of making in duels between evenly matched echoes: none should win, or lose, nearly everything.
 - `leader_asleep.py` The Ashfall online while the leader's game sleeps: the other player takes over, and the leader steps aside on return.
 - `online_on_claude.py` The Ashfall online on claude.ai: two players meet in the room, share the island and the echoes, and hand the echoes over.
 - `over_the_relay.py` The Ashfall over the relay: the friend's window has no WebRTC at all.
-- `solo.py` The Ashfall alone with the echoes: the barge, the leap, the storm, the fights.
-- `with_friends.py` The Ashfall with friends by game code: the host opens a lobby, a friend joins, and the match starts for both.
+- `rules.py` The Ashfall's rules: the island (size, lands, caves, fire beneath), empty hands, doors that open, digging, making and using a weapon, what chests hold, the border by numbers, pacts made and left, beasts, gifts, the Feast, the hounds.
+- `solo.py` The Ashfall alone with the echoes: the drop, the first minutes, the border, the fights.
+- `with_friends.py` The Ashfall with friends by game code: the host opens a lobby, a friend joins, the match starts for both; pacts made and left, dug ground and dropped things shared.

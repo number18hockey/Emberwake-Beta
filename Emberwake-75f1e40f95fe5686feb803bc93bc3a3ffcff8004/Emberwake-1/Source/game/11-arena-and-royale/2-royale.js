@@ -1,40 +1,45 @@
 // ============================================================
 //  THE ASHFALL: battle royale.
-//  Everyone rides the Ember Barge over an island and leaps off where
-//  they like. Chests hold weapons, salves and wards. The ashfall storm
-//  closes in from both sides, and the last Waker standing wins. Empty
-//  places are filled by echoes (computer players).
+//  Everyone falls out of the sky over the island with nothing at all.
+//  You gather, dig, knap and forge what you fight with; chests are few
+//  and hold little. The ashfall closes in as people fall, not by the
+//  clock, and the last Waker (or the last pact) standing wins. Empty
+//  places are filled by echoes (computer players), who start with
+//  nothing too.
 //  Online, the match leader (the first person in the lobby) runs the
-//  storm clock and the echoes; every computer runs its own Waker and
-//  shares it as presence, exactly like the Cinder Ring.
+//  clock, the border and the echoes; every computer runs its own Waker
+//  and shares it as presence, exactly like the Cinder Ring.
+//  (the island: 5-royale-island; echoes: 6-royale-echoes; creatures,
+//  gifts and the other cruelties of the games: 7-royale-games)
 // ============================================================
-const BRW = 2880, BRH = 180, BRSKY = 17, BR_MAX = 32, BR_FILL = 32;
+const BR_MAX = 32, BR_FILL = 32, BR_HOLD = 4 * 60, BR_DROP = 16 * 60;
 const BR_TIERS = ['COMMON', 'UNCOMMON', 'RARE', 'EPIC', 'LEGENDARY'], BR_TCOL = ['#c8c4d4', '#7ddc6f', '#5aa8ff', '#c77dff', '#ffd35a'];
-const BR_MATT = { wood: 0, flint: 0, bone: 0, stone: 0, copper: 1, bronze: 1, rust: 2, chitin: 2, iron: 2, steel: 3, glass: 3, deep: 4, ember: 4 };
-const BR_OLD = { sword: 0, spear: 0, fangs: 1, maul: 2, bow: 1, nunchaku: 1, kblade: 4, kmaul: 4, vpike: 3, vfangs: 3 };
-const BR_BIOMES = ['moor', 'thorn', 'dunes', 'reach', 'ash'];
-const BR_SURF = { moor: [GRASS, DIRT], thorn: [GRASS, DIRT], dunes: [SAND, SANDSTONE], reach: [SNOW, STONE], ash: [ASH, STONE] };
-const BR_WALL = { moor: W_DIRT, thorn: W_DIRT, dunes: W_SAND, reach: W_STONE, ash: W_ASH };
-const BR_PNAMES = { moor: ['HEARTHWICK', 'MILLSTEAD', 'LANTERN GREEN'], thorn: ['THORNWOOD', 'BRAMBLE CAMP', 'THE TANGLE'], dunes: ['SUNKEN SPIRE', 'DUSTWATCH', 'RUSTFALL RUINS'], reach: ['COLDGLASS KEEP', 'FROSTGATE', 'STILLWATCH'], ash: ['CINDER WORKS', 'SLAG HOLLOW', 'THE KILNS'] };
-const BR_BOTN = ['WREN', 'KESTREL', 'MARROW', 'TINDER', 'SORREL', 'FLINT', 'ROOK', 'BRAMBLE', 'EMBERLY', 'SALTWICK', 'HOLLIS', 'VESK', 'ODA', 'TALLOW'];
-// storm phases: seconds of waiting, seconds of closing, share of the map still safe after, damage per second outside
-const STORM = [[340, 140, .6, 1], [220, 100, .36, 2], [160, 88, .18, 4], [136, 72, .08, 6], [112, 72, 0, 10]];
-const BR_DROP = 180 * 60, BR_EVENT_AT = BR_DROP + 15 * 60 * 60;
+const BR_MATT = { wood: 0, flint: 0, bone: 0, stone: 0, copper: 1, bronze: 2, rust: 2, chitin: 1, iron: 2, steel: 3, glass: 3, deep: 4, ember: 4, cinder: 4, gloom: 4, prism: 4 };
+const BR_OLD = { sword: 1, spear: 0, fangs: 1, maul: 2, bow: 1, nunchaku: 1, kblade: 4, kmaul: 4, vpike: 3, vfangs: 3 };
+const BR_BOTN = ['WREN', 'KESTREL', 'MARROW', 'TINDER', 'SORREL', 'FLINT', 'ROOK', 'BRAMBLE', 'EMBERLY', 'SALTWICK', 'HOLLIS', 'VESK', 'ODA', 'TALLOW', 'RUE', 'CINNA', 'THRESH', 'FINCH', 'ALDER', 'MAGS', 'PEWTER', 'QUILL', 'SEDGE', 'CLOVE', 'HAWTHORN', 'LARK', 'MOSS', 'NETTLE', 'OAKLEY', 'PIKE', 'REED', 'SABLE'];
+// The border moves when enough Wakers have fallen: [share of the field still standing, share of the island left safe, damage a second outside].
+// Nothing here runs on a clock, except that a field where nobody falls for a long while is made to move.
+const BR_RING = [[.75, .72, 1], [.5, .46, 2], [.32, .27, 3], [.2, .13, 5], [.11, .05, 7], [.07, 0, 10]];
+const BR_WARN = 40 * 60, BR_MOVE = 105 * 60, BR_RESTLESS = 5 * 60 * 60;
+// titles a Waker earns with experience
+const BR_TITLES = ['TRIBUTE', 'FORAGER', 'TRAPPER', 'SCAVENGER', 'RANGER', 'CAREER', 'VICTOR'];
 const BR = {
-  on: false, via: 'solo', code: 'open', matchType: 'unranked', kit: 'miner', rewarded: false, phase: '', mi: '', seed: 0, t: 0, ro: [], nb: 0, lead: true, leaderId: '', people: new Map(),
-  cd: 0, cdAt: 0, cdMax: 0, chests: [], open: new Set(), mine: new Set(), zones: [], storm: null, bots: new Map(), bk: [], bkSeq: 0, bkSeen: new Map(),
-  dlSeen: new Set(), dl: null, place: 0, spec: null, specT: 0, overT: 0, winner: '', winMe: false, pois: [], segs: BR_BIOMES.slice(), segW: BRW / 5, mapCv: null,
-  note: '', noteT: 0, chan: null, inStorm: false, poiNow: '', mapOpen: false, total: 0, lastAlive: 0, lastTeams: 0, lobbyT: 0, err: '',
-  cache: null, pactWith: '', pactFrom: '', teammate: '', dropsOut: [], dropSeq: 0, dropSeen: new Map(), tileOut: new Map(), applying: false, caves: []
+  on: false, via: 'solo', code: 'open', matchType: 'unranked', rewarded: false, phase: '', mi: '', seed: 0, t: 0, ro: [], nb: 0, lead: true, leaderId: '', people: new Map(),
+  cd: 0, cdAt: 0, cdMax: 0, chests: [], open: new Set(), mine: new Set(), zones: [], storm: null, ring: { n: 0, at: 0 }, lastFall: 0, bots: new Map(), bk: [], bkSeq: 0, bkSeen: new Map(),
+  dlSeen: new Set(), dl: null, place: 0, spec: null, specT: 0, overT: 0, winner: '', winMe: false, pois: [], caves: [], nests: [], lakes: [], segs: [], segX: [], bio: null, mapCv: null,
+  note: '', noteT: 0, chan: null, inStorm: false, poiNow: '', mapOpen: false, total: 0, lastAlive: 0, lastTeams: 0, lobbyT: 0, err: '', wxList: null, wxAt: 0,
+  pactWith: '', pactFrom: '', pactFromT: 0, teammate: '', pactSeen: false, leaveT: 0, dropsOut: [], dropSeq: 0, dropSeen: new Map(), tookOut: [], tookSeq: 0, tookSeen: new Map(), tileOut: new Map(), applying: false,
+  fallen: [], fallenT: 0, show: null, gifts: [], giftAt: 0, feast: 0, hazard: null, hounds: 0, bounty: null, mobT: 0, botMobT: 0
 };
 const brOn = () => WORLD.royale && BR.on;
 const brTag = f => !f ? '' : f === G.p ? (NET.me || 'me') : f.botTag || f.peer || '';
-const BR_KITS = [
-  { id: 'miner', name: 'MINER', unlock: 0, desc: 'Ore, a flint pick and torches. Explore underground and craft up.', items: [['flint_pick', 1], ['torch', 3], ['rock', 3], ['br_salve', 1], ['spear', 1]] },
-  { id: 'scavenger', name: 'SCAVENGER', unlock: 1, desc: 'A knife, rope and map. Reach structures before the crowd.', items: [['flint_knife', 1], ['rope', 2], ['fieldmap', 1], ['br_salve', 1], ['sword', 1]] },
-  { id: 'forager', name: 'FORAGER', unlock: 2, desc: 'Food, fiber and a bow. Sustain yourself and fight from range.', items: [['bow', 1], ['arrow', 12], ['berries', 5], ['fiber', 4], ['spear', 1]] },
-  { id: 'ranger', name: 'RANGER', unlock: 4, desc: 'A bow, arrows and a glider. Scout high ground and pick fights.', items: [['bow', 1], ['arrow', 18], ['glider', 1], ['br_salve', 1], ['spear', 1]] }
-];
+const brSay = (s, t = 150) => { BR.note = s; BR.noteT = t; };
+
+// reeds twist into twine as well as grass does, so a fen is as good a place to land as a moor
+// (added after every other recipe: saved worlds know recipes by their number)
+R('hand', 'twine', 1, { reed: 3 });
+
+// ---------------- what carries over between matches: a pass level, a rating, a title ----------------
 function brProfile() {
   const key = 'ew2.br.' + (typeof accountId === 'function' ? accountId() : 'none');
   try {
@@ -48,12 +53,7 @@ function brSaveProfile(p) {
   return true;
 }
 function brPassLevel() { return floor(brProfile().xp / 1000); }
-function brKit(id = BR.kit) { return BR_KITS.find(k => k.id === id && k.unlock <= brPassLevel()) || BR_KITS[0]; }
-function brGrantKit() {
-  const kit = brKit(FORM.brkit || BR.kit);
-  BR.kit = kit.id;
-  for (const [id, n] of kit.items) if (IT[id]) addItem(id, n);
-}
+const brTitle = lv => BR_TITLES[clamp(lv | 0, 0, BR_TITLES.length - 1)];
 function brRewardMatch() {
   if (BR.rewarded || !G.p || !BR.place) return;
   BR.rewarded = true;
@@ -69,328 +69,163 @@ function brRewardMatch() {
   BR.rewardText = `+${xp} PASS XP` + (ranked ? `  ·  ELO ${p.elo}` : '');
 }
 
+// ---------------- how hard things hit here ----------------
+// A match is won by how you fight, so better metal helps without deciding it: half of what a weapon has over flint
+// counts. Quick and far-reaching weapons give up some of their bite for their ease.
+// (the numbers come from many hundreds of duels between evenly matched echoes: see tests/battle-royale/balance.py)
+const BR_BAL = { sword: .92, spear: .82, fangs: 1.08, maul: .84, bow: .85, chuks: 1.02, brawl: 1.25 };
+const BR_KIND = { spear: .88, trident: .75, cleaver: .79, battleaxe: .75, greataxe: .76, halberd: .86, glaive: .86, greatsword: .88, mace: .9, warhammer: .92, club: 1.06, daggers: 1.06, claws: 1.06, sai: 1.04, kama: 1.04, fangs: 1.16, nunchaku: 1.12, shortsword: 1.04 };
+const brDmgOf = W => !W || !W.dmg ? 0 : (W.dmg <= 9 ? W.dmg : 9 + (W.dmg - 9) * .5) * (BR_BAL[W.set] || 1) * (BR_KIND[W.id.slice(W.id.lastIndexOf('_') + 1)] || 1);
+function brWeaponMul(f) { const W = f.atk && f.atk.W || heldOf(f); return W && W.type === 'weapon' && W.dmg ? brDmgOf(W) / W.dmg : 1; }
+// beasts bite a Waker a little softer than in the story, and an echo softer still (so they are not all eaten)
+const brWildHurt = f => (f.wildT = G.time, f === G.p) ? (SETTINGS.diff === 'hard' ? 1 : SETTINGS.diff === 'normal' ? .85 : .7) : .5;
+
 // ---------------- loot ----------------
 const brTier = id => { const it = IT[id]; if (!it || it.type !== 'weapon' || it.fist) return -1; return it.tier ? (BR_MATT[it.tier] ?? 0) : (BR_OLD[id] ?? 0); };
-let BR_POOL = null;
-function brPool() { if (BR_POOL) return BR_POOL; BR_POOL = [[], [], [], [], []]; for (const id in IT) { const k = brTier(id); if (k >= 0) BR_POOL[k].push(id); } return BR_POOL; }
 function brItems() {
   const v = (a, b, c, d, e) => ({ a, b, c, d, e });
   defI('br_salve', { name: 'Ember Salve', type: 'brheal', heal: 25, cap: 100, use: 70, stack: 6, icon: icon('vial', v('#ffd3a0', '#ff8a3d', '#c94a1e', '#5a2010', '#fff1a8')), desc: 'Heals 25. Takes a moment to rub in.' });
   defI('br_draught', { name: 'Heartroot Draught', type: 'brheal', heal: 60, cap: 100, use: 150, stack: 3, icon: icon('jug', v('#ffb0b0', '#e2483b', '#8f2233', '#4a1018', '#ffd0d0')), desc: 'Heals 60. Drink it somewhere safe.' });
   defI('br_shard', { name: 'Ward Shard', type: 'brheal', ward: 25, cap: 50, use: 80, stack: 6, icon: icon('stone', v('#e0f4ff', '#8fd0ff', '#4a8adf', '#22406a', '#ffffff')), desc: '+25 ward, up to 50. Ward takes blows before your health does.' });
   defI('br_ward', { name: 'Greatward Flask', type: 'brheal', ward: 50, cap: 100, use: 160, stack: 3, icon: icon('vial', v('#e0f4ff', '#5aa8ff', '#2a62c0', '#14305a', '#ffffff')), desc: '+50 ward, up to 100.' });
-  defI('br_emberlight', { name: 'Emberlight', type: 'brheal', ward: 35, cap: 100, use: 55, stack: 2, icon: icon('vial', v('#fff1a8', '#ffb347', '#e2542b', '#6a2418', '#ffffff')), desc: 'The Ember Cache prize: drink for 35 ward.' });
+  defI('br_emberlight', { name: 'Emberlight', type: 'brheal', ward: 35, cap: 100, use: 55, stack: 2, icon: icon('vial', v('#fff1a8', '#ffb347', '#e2542b', '#6a2418', '#ffffff')), desc: 'A sponsor\'s gift: drink for 35 ward.' });
+  // bare hands have no picture of their own, and anything without one can't be drawn in a slot: give them the fist's
+  if (IT.fists && !IT.fists.icon) IT.fists.icon = icon('stone', v('#f2d2b0', '#d8a878', '#a87048', '#5a3420', '#ffffff'));
 }
-function brRollTier(rare) { const r = Math.random(); return rare ? (r < .78 ? 1 : 2) : (r < .82 ? 0 : 1); }
-function brLoot(rare, event = false) {
-  const out = [];
-  // Chests are trail caches now: a weapon is possible, while food and craft
-  // materials are the reliable find. The center cache is the one exception.
-  if (event) return [['br_emberlight', 1], [fpick(['copper_ore', 'tin_ore', 'coal']), 3], ['berries', 3], ['br_shard', 1]];
-  if (Math.random() < (rare ? .72 : .28)) { const P = brPool(), k = brRollTier(rare), pool = P[k].length ? P[k] : P[0]; if (pool.length) out.push([fpick(pool), 1]); }
-  const bundles = [
-    [['stick', randi(2, 4)], ['fiber', randi(1, 3)]],
-    [['rock', randi(1, 3)], ...(Math.random() < .65 ? [['flint', 1]] : [])],
-    [[fpick(['berries', 'meat', 'egg']), randi(1, 3)], ...(Math.random() < .45 ? [['salt', 1]] : [])],
-    [[fpick(['copper_ore', 'tin_ore', 'coal']), randi(1, 2)], ['br_salve', 1]]
-  ];
-  const bundleN = rare ? 3 : 2; for (let i = 0; i < bundleN; i++) out.push(...bundles.splice(randi(0, bundles.length - 1), 1)[0]);
-  if (rare && Math.random() < .3) out.push(['br_shard', 1]);
-  return out;
-}
-
-// ---------------- the island ----------------
-const brBio = x => BR.segs[clamp(floor(x / BR.segW), 0, BR.segs.length - 1)] || 'moor';
-function brRegionMix(x) {
-  const BG = { moor: 'moor', thorn: 'moor', dunes: 'scoria', reach: 'reach', ash: 'ash' }, acc = { reach: 0, moor: 0, ash: 0, scoria: 0 }; let tot = 0;
-  BR.segs.forEach((b, i) => { const c = (i + .5) * BR.segW, w = smooth(1 - (abs(x - c) - BR.segW * .3) / (BR.segW * .45)); if (w > .001) { acc[BG[b]] += w; tot += w; } });
-  if (!tot) { acc.moor = 1; tot = 1; } for (const k in acc) acc[k] /= tot; return Object.entries(acc).filter(e => e[1] > .02);
-}
-function brFlat(x0, x1, gy, b) {
-  const [top, sub] = BR_SURF[b || brBio((x0 + x1) >> 1)];
-  for (let x = x0; x <= x1; x++) {
-    if (!inW(x, gy)) continue;
-    for (let y = 0; y < gy; y++) if (tiles[y * WW + x] !== BEDROCK) { tiles[y * WW + x] = AIR; walls[y * WW + x] = 0; }
-    for (let y = gy; y < min(BRH - 3, gy + 6); y++) { tiles[y * WW + x] = y === gy ? top : sub; if (y > gy) walls[y * WW + x] = BR_WALL[brBio(x)]; }
-    heights[x] = gy; SKYL[x] = gy + 3;
-  }
-}
-// a ramp of earth so the ground beside a flattened place stays walkable
-function brEase(x, dir, gy) { for (let k = 1; k < 30; k++) { const xx = x + dir * k; if (xx < 3 || xx > BRW - 4) return; const want = gy + sign(heights[xx] - gy) * min(abs(heights[xx] - gy), k * 2); if (want === heights[xx]) return; brFlat(xx, xx, want); } }
-function brChest(x, y, rare, o = {}) {
-  if (!inW(x, y) || tiles[y * WW + x] !== AIR || !TP[tileAt(x, y + 1)].solid && tileAt(x, y + 1) !== PLATFORM) return null;
-  for (const c of BR.chests) if (abs(c.x - x) < 3 && abs(c.y - y) < 3) return null;
-  const c = { i: BR.chests.length, x, y, rare: !!rare, cave: !!o.cave, high: !!o.high, event: !!o.event, open: false, t: 0 }; BR.chests.push(c); if (c.event) BR.cache = c; return c;
-}
-function brTree(x, gy, b) {
-  const kind = b === 'thorn' ? 3 : b === 'moor' ? 0 : b === 'reach' ? 1 : 2, th = kind === 0 ? 7 + randi(0, 7) : kind === 1 ? 5 + randi(0, 5) : 5 + randi(0, 4);
-  for (let y = 1; y <= th + 4; y++) if (tileAt(x, gy - y) !== AIR) return; if (tileAt(x - 1, gy) === AIR || tileAt(x + 1, gy) === AIR) return;
-  for (let y = 1; y <= th; y++) tiles[(gy - y) * WW + x] = [TRUNK, TRUNK2, TRUNK3, TRUNK4][kind];
-  treeTops.set(x, { y: gy - th, kind, v: randi(0, 2), ph: rand(TAU) });
-}
-function brSkyhouse(cx, cy) {
-  for (let x = cx - 8; x <= cx + 8; x++) {
-    tiles[(cy - 10) * WW + x] = CUTSTONE;
-    tiles[(cy - 1) * WW + x] = CUTSTONE;
-    for (let y = cy - 9; y < cy - 1; y++) {
-      walls[y * WW + x] = W_CUT;
-      if (x === cx - 8 || x === cx + 8) tiles[y * WW + x] = CUTSTONE;
-    }
-  }
-  for (let y = cy - 4; y <= cy - 2; y++) tiles[y * WW + cx + 8] = AIR;
-  for (const x of [cx - 8, cx + 8]) {
-    for (let y = cy - 13; y < cy - 10; y++) tiles[y * WW + x] = CUTSTONE;
-  }
-  dyn(cx - 3, cy - 2, OBELISK); dyn(cx + 2, cy - 2, TORCH);
-  brChest(cx + 5, cy - 2, true, { high: true });
-}
-function genRoyale(seed) {
-  SEED = seed >>> 0; rng = mulberry32(SEED); DIM = 0; resetWorld(BRW, BRH); WORLD.arena = true; WORLD.royale = true; WORLD.endless = 0;
-  SPAWN_X = BRW >> 1; SHRINE_X = SHRINE2_X = MINE_X = FORGE_X = GATE_X = SKY_X = BLADE_X = SPIRE_X = REACH_X = RUST_X = -100000; SHRINE_Y = SHRINE2_Y = GATE_Y = MINE_Y = FORGE_Y = SKY_Y = 0;
-  BASE_Y = 74; DEEP_Y = 9999; DRIFT_Y = -99; VIL_Y = -999;
-  const order = BR_BIOMES.slice(); for (let i = order.length - 1; i > 0; i--) { const j = randi(0, i); const q = order[i]; order[i] = order[j]; order[j] = q; }
-  BR.segs = order; BR.segW = BRW / order.length; BR.chests = []; BR.pois = []; BR.caves = [];
-  // the shape of the land: rolling hills, steeper in the Reach, flatter in the dunes, cliffs at the edges of the world
-  const a1 = rand(TAU), a2 = rand(TAU), a3 = rand(TAU);
-  for (let x = 0; x < BRW; x++) {
-    const b = brBio(x), amp = b === 'dunes' ? .55 : b === 'reach' ? 1.35 : b === 'thorn' ? 1.1 : 1;
-    let h = 76 + (8 * sin(x * .019 + a1) + 4 * sin(x * .051 + a2) + 2 * sin(x * .13 + a3)) * amp; const e = min(x, BRW - 1 - x); if (e < 16) h -= (16 - e) * 3.2;
-    heights[x] = round(h);
-  }
-  for (let pass = 0; pass < 4; pass++) for (let x = 17; x < BRW - 17; x++) { const d = heights[x] - heights[x - 1]; if (abs(d) > 2) heights[x] = heights[x - 1] + sign(d) * 2; }
-  for (let x = 0; x < BRW; x++) {
-    const b = brBio(x), [top, sub] = BR_SURF[b], gy = heights[x], deep = 4 + floor(hh(x, 7, SEED) * 3);
-    for (let y = gy; y < BRH; y++) { const d = y - gy, i = y * WW + x; tiles[i] = y >= BRH - 3 ? BEDROCK : d === 0 ? top : d < deep ? sub : hh(x, y, 11) > .94 ? GRAVEL : hh(x, y, 12) > .97 ? COAL : STONE; walls[i] = d > 0 ? (d < 7 ? BR_WALL[b] : W_STONE) : 0; }
-    if (x < 2 || x >= BRW - 2) for (let y = 0; y < gy; y++) tiles[y * WW + x] = BEDROCK;
-    SKYL[x] = gy + 3;
-  }
-  // Long mine roads lead to reinforced rooms with a cache at their heart.
-  for (let k = 0; k < 12; k++) {
-    let x = randi(40, BRW - 80), y = heights[x] + 1, dir = rand() < .5 ? -1 : 1, len = randi(70, 120), ent = x;
-    for (let s = 0; s < len; s++) {
-      const dy = s < 10 ? 1 : s > len - 10 ? -1 : (rand() < .2 ? (rand() < .5 ? -1 : 1) : 0); x += dir; y = clamp(y + dy, heights[clamp(x, 0, BRW - 1)] + 2, BRH - 12);
-      if (x < 20 || x > BRW - 21) break;
-      for (let oy = -2; oy <= 1; oy++) for (let ox = 0; ox <= 1; ox++) { const xx = x + ox, yy = y + oy; if (inW(xx, yy) && tiles[yy * WW + xx] !== BEDROCK) tiles[yy * WW + xx] = AIR; }
-      if (s % 14 === 7) { const ty = y - 2; if (tileAt(x, ty - 1) !== AIR) dyn(x, ty, TORCH); }
-      if (s === (len >> 1) && y + 7 < BRH - 3) {
-        const rx = x, ry = y + 1;
-        for (let ox = -8; ox <= 8; ox++) for (let oy = -5; oy <= 5; oy++) {
-          const xx = rx + ox, yy = ry + oy; if (!inW(xx, yy) || tiles[yy * WW + xx] === BEDROCK) continue;
-          const edge = abs(ox) === 8 || abs(oy) === 5;
-          tiles[yy * WW + xx] = edge ? STONE : AIR; walls[yy * WW + xx] = W_BRICK;
-        }
-        for (let ox = -7; ox <= 7; ox++) tiles[(ry + 5) * WW + rx + ox] = BRICK;
-        dyn(rx, ry - 2, TORCH); BR.caves.push({ x: rx, y: ry }); brChest(rx, ry + 4, rand() < .65, { cave: true });
-      }
-    }
-    for (let yy = heights[ent] - 1; yy <= heights[ent] + 3; yy++) for (let xx = ent - 1; xx <= ent + 1; xx++) if (inW(xx, yy) && tiles[yy * WW + xx] !== BEDROCK && yy >= heights[ent]) tiles[yy * WW + xx] = AIR;
-    for (let q = 0; q < 2; q++) { const qx = x - q * 4 * dir; let fy = y; while (fy < BRH - 4 && !solidAt(qx, fy + 1)) fy++; brChest(qx, fy, q === 0, { cave: true }); }
-  }
-  // the named places, one in each land
-  const used = new Set();
-  BR.segs.forEach((b, i) => {
-    const cx = round((i + .5) * BR.segW + rand(-BR.segW * .18, BR.segW * .18)), names = BR_PNAMES[b], name = names.find(n => !used.has(n) && rand() < .6) || names[0]; used.add(name);
-    withRng(hh(cx, 2201, SEED) * 4294967296, () => brPOI(b, cx, name));
-  });
-  // Broad, taller sky-isles carry shrines and caches above the battle.
-  for (let k = 0; k < 9; k++) {
-    const cx = round((k + .5) * BRW / 9 + rand(-90, 90)), cy = heights[cx] - 32 - randi(0, 10), a = 10 + randi(0, 4);
-    if (island(cx, cy, a, 7, false)) {
-      for (let y = cy - 11; y < cy; y++) for (let x = cx - 8; x <= cx + 8; x++) if (inW(x, y) && tiles[y * WW + x] !== BEDROCK) tiles[y * WW + x] = AIR;
-      brSkyhouse(cx, cy); const vx = cx + (rand() < .5 ? -1 : 1) * (a + 4); vent(vx, cy - 12);
-    }
-  }
-  // trees, grass and rocks between the places
-  for (let x = 8; x < BRW - 8; x++) {
-    const b = brBio(x), gy = heights[x]; if (RESV[x] || tileAt(x, gy - 1) !== AIR) continue;
-    const ch = b === 'thorn' ? .2 : b === 'moor' ? .09 : b === 'reach' ? .07 : b === 'ash' ? .03 : 0;
-    if (rand() < ch && abs(heights[x - 1] - gy) <= 1 && abs(heights[x + 1] - gy) <= 1) { brTree(x, gy, b); x += 3; continue; }
-    const r = rand(); if (b === 'dunes') { if (r < .05) tiles[(gy - 1) * WW + x] = DEADBUSH; } else if (b === 'ash') { if (r < .04) tiles[(gy - 1) * WW + x] = DEADBUSH; } else if (b !== 'reach' || r < .3) { if (r < .22) tiles[(gy - 1) * WW + x] = TALLGRASS; else if (r < .27) tiles[(gy - 1) * WW + x] = FLOWER; else if (r < .29) tiles[(gy - 1) * WW + x] = BUSH; }
-  }
-  // chests out in the open, about one every thirty paces
-  for (let x = 20; x < BRW - 20; x += 22 + randi(0, 16)) { if (RESV[x]) continue; const gy = heights[x]; if (abs(heights[x - 1] - gy) <= 1 && abs(heights[x + 1] - gy) <= 1) brChest(x, gy - 1, rand() < .1); }
-  // Taller, wider watch platforms make new landmarks visible across each land.
-  for (let k = 0; k < 18; k++) {
-    const x = randi(30, BRW - 50); if (RESV[x] || RESV[x + 12]) continue; const gy = min(heights[x], heights[x + 12]), py = gy - 10;
-    for (let y = py + 1; y <= max(heights[x], heights[x + 12]) - 1; y++) { if (tileAt(x, y) === AIR) tiles[y * WW + x] = BEAM; if (tileAt(x + 12, y) === AIR) tiles[y * WW + x + 12] = BEAM; }
-    for (let xx = x; xx <= x + 12; xx++) if (tileAt(xx, py) === AIR) tiles[py * WW + xx] = PLATFORM;
-    brChest(x + 5, py - 1, false, { high: true }); reserve(x - 1, x + 13, 1);
-  }
-  // A marked Ember Cache arrives late, after the first scramble for shelter.
-  // It brings a small ward and the ingredients for a real craft, not an endgame weapon.
-  let ex = BRW >> 1;
-  for (let d = 0; d < 70 && (RESV[ex] || abs(heights[ex - 1] - heights[ex]) > 1 || abs(heights[ex + 1] - heights[ex]) > 1); d++) {
-    const q = d & 1 ? (BRW >> 1) + ((d + 1) >> 1) : (BRW >> 1) - (d >> 1); if (q > 24 && q < BRW - 24 && !RESV[q] && abs(heights[q - 1] - heights[q]) <= 1 && abs(heights[q + 1] - heights[q]) <= 1) { ex = q; break; }
-  }
-  brChest(ex, heights[ex] - 1, true, { high: true, event: true });
-  if (!BR.cache) for (let d = 0; d < BRW; d++) { const q = (BRW >> 1) + (d & 1 ? (d + 1) >> 1 : -(d >> 1)); if (q < 20 || q >= BRW - 20 || RESV[q] || abs(heights[q - 1] - heights[q]) > 1 || abs(heights[q + 1] - heights[q]) > 1 || BR.chests.some(c => abs(c.x - q) < 4)) continue; if (brChest(q, heights[q] - 1, true, { event: true })) break; }
-  for (let x = 0; x < BRW; x++) { let y = 0; while (y < BRH && !TP[tiles[y * WW + x]].solid) y++; SKYL[x] = max(heights[x] + 3, min(y + 3, BRH)); }
-  for (const q of PROPS) bucketAdd(PROPB, q); for (const q of FGP) bucketAdd(FGPB, q);
-  MODS_ON = false; brMapArt();
-}
-// the five kinds of named place
-function brPOI(b, cx, name) {
-  const gy = heights[cx]; BR.pois.push({ name, x: cx, b });
-  if (b === 'moor') {
-    brFlat(cx - 34, cx + 34, gy); brEase(cx - 34, -1, gy); brEase(cx + 34, 1, gy);
-    house(cx - 29, gy, 14, 8, 5, { door: 3, name }); house(cx - 7, gy, 14, 12, 5, { door: 3, floors: 3 }); house(cx + 15, gy, 14, 8, 4, { door: 3 });
-    for (let x = cx - 32; x <= cx + 32; x++) for (let y = gy - 5; y < gy; y++) if (tiles[y * WW + x] === DOORC) tiles[y * WW + x] = DOORO;
-    brChest(cx - 24, gy - 1, false); brChest(cx, gy - 1, false); brChest(cx + 1, gy - 8, true); brChest(cx + 24, gy - 1, false);
-    dyn(cx - 32, gy - 1, TORCH); dyn(cx + 32, gy - 1, TORCH);
-  } else if (b === 'thorn') {
-    brFlat(cx - 26, cx + 26, gy); brEase(cx - 26, -1, gy); brEase(cx + 26, 1, gy);
-    for (const [ox, w] of [[-20, 10], [8, 11]]) { const x0 = cx + ox; for (let k = 0; k < w; k++) { const hgt = round((1 - abs(k - (w - 1) / 2) / (w / 2)) * 7); for (let y = gy - hgt; y < gy; y++) if (y === gy - hgt || k === 0 || k === w - 1) tiles[y * WW + x0 + k] = THATCH; else walls[y * WW + x0 + k] = W_WATTLE; } }
-    dyn(cx - 2, gy - 1, CAMP);
-    brChest(cx - 17, gy - 1, false); brChest(cx + 13, gy - 1, true); brChest(cx + 22, gy - 1, false);
-    for (const ox of [-23, 23]) brTree(cx + ox, gy, 'thorn');
-  } else if (b === 'dunes') {
-    brFlat(cx - 22, cx + 22, gy); brEase(cx - 22, -1, gy); brEase(cx + 22, 1, gy);
-    tower(cx - 6, gy, 13, 30, { ruin: true, name }); brChest(cx, gy - 1, false); brChest(cx - 2, gy - 7, false); brChest(cx + 2, gy - 18, false); brChest(cx, gy - 31, true, { high: true });
-    for (const ox of [-20, 18]) for (let y = gy - 5; y < gy; y++) tiles[y * WW + cx + ox] = SANDSTONE;
-  } else if (b === 'reach') {
-    brFlat(cx - 28, cx + 28, gy); brEase(cx - 28, -1, gy); brEase(cx + 28, 1, gy);
-    for (let x = cx - 22; x <= cx + 22; x++) { for (let y = gy - 13; y < gy; y++) walls[y * WW + x] = W_BRICK; tiles[(gy - 13) * WW + x] = abs(x - cx) < 21 ? PLATFORM : BRICK; if (abs(x - cx) % 4 === 0) tiles[(gy - 14) * WW + x] = BRICK; }
-    for (const s of [-1, 1]) { for (let y = gy - 13; y < gy - 4; y++) tiles[y * WW + cx + s * 22] = BRICK; for (let y = gy - 19; y < gy - 13; y++) { tiles[y * WW + cx + s * 22] = BRICK; tiles[y * WW + cx + s * 21] = BRICK; } }
-    for (let x = cx - 9; x <= cx + 9; x++) tiles[(gy - 7) * WW + x] = PLATFORM;
-    brChest(cx - 15, gy - 1, false); brChest(cx + 15, gy - 1, false); brChest(cx, gy - 8, true); brChest(cx + 18, gy - 14, false, { high: true });
-    dyn(cx - 19, gy - 7, TORCH); dyn(cx + 19, gy - 7, TORCH);
-  } else {
-    brFlat(cx - 26, cx + 26, gy); brEase(cx - 26, -1, gy); brEase(cx + 26, 1, gy);
-    for (const [ox, h] of [[-22, 9], [-13, 13], [11, 10], [20, 7]]) for (let y = gy - h; y < gy; y++) { tiles[y * WW + cx + ox] = y < gy - h + 3 && rand() < .5 ? AIR : CINDERBRICK; walls[y * WW + cx + ox + 1] = W_RUIN; }
-    for (let x = cx - 14; x <= cx + 12; x++) tiles[(gy - 13) * WW + x] = PLATFORM;
-    vent(cx - 4, gy - 28); brChest(cx - 18, gy - 1, false); brChest(cx + 3, gy - 1, false); brChest(cx - 1, gy - 14, true, { high: true }); brChest(cx + 17, gy - 1, false);
-  }
-  // A shared field kit keeps each settlement useful: forage, cook, then craft.
-  const kit = [BENCH, FIRE, CAULDRON, SIEVE, ARMOURY], starts = [23, -23, 19, -19, 15, -15, 11, -11, 7, -7, 3, -3];
-  for (const start of starts) {
-    const dir = start < 0 ? -1 : 1, spots = []; let clear = true;
-    for (let k = 0; k < kit.length; k++) {
-      const x = cx + start + dir * k; if (x < 3 || x > BRW - 4) { clear = false; break; }
-      const y = heights[x] - 1, i = y * WW + x;
-      if (tiles[i] !== AIR || !TP[tiles[i + WW]].solid || BR.chests.some(c => abs(c.x - x) < 3 && abs(c.y - y) < 3)) { clear = false; break; }
-      spots.push([x, y]);
-    }
-    if (clear) { spots.forEach(([x, y], i) => dyn(x, y, kit[i])); break; }
-  }
-  reserve(cx - 28, cx + 28, 2);
-}
-// a small picture of the whole island for the map and the storm strip
-function brMapArt() {
-  const s = 2, c = document.createElement('canvas'); c.width = ceil(BRW / s); c.height = ceil(BRH / s); const x = c.getContext('2d');
-  const col = { moor: '#4f7a3a', thorn: '#3d6a32', dunes: '#c9a46a', reach: '#d8e6ee', ash: '#6a6070' };
-  for (let tx = 0; tx < BRW; tx += s) for (let ty = 0; ty < BRH; ty += s) { const t = tiles[ty * WW + tx]; if (!TP[t].solid || t === BEDROCK && (tx < 3 || tx > BRW - 4)) continue; x.fillStyle = ty <= heights[tx] + 1 ? col[brBio(tx)] : ty < heights[tx] + 8 ? '#5a4a40' : '#3a3442'; x.fillRect(tx / s, ty / s, 1, 1); }
-  BR.mapCv = c;
+const BR_W = [['stone_club', 'wood_club', 'flint_spear', 'bone_club', 'flint_daggers', 'bone_spear'], ['copper_shortsword', 'copper_spear', 'bone_cleaver', 'bone_trident', 'flint_battleaxe', 'copper_mace'], ['bronze_sword', 'bronze_spear', 'iron_shortsword', 'bronze_battleaxe', 'iron_cleaver', 'bronze_mace']];
+const BR_FOOD = [['berries', 2, 3], ['meat', 1, 1], ['egg', 1, 2], ['glowcap', 1, 1], ['berries', 3, 4]];
+const BR_BUNDLE = [[['stick', 2, 4], ['fiber', 2, 4]], [['rock', 2, 3], ['flint', 1, 1]], [['log', 1, 2], ['resin', 1, 1]], [['bone', 2, 3]], [['rope', 1, 1], ['torch', 1, 2]], [['copper_ore', 2, 3], ['coal', 1, 1]], [['arrow', 3, 5]], [['hide', 1, 2], ['fiber', 2, 3]]];
+const randiF = (a, b) => floor(a + Math.random() * (b - a + 1));
+const brRoll = L => L.map(([id, a, b]) => [id, randiF(a, b)]).filter(e => IT[e[0]]);
+// a chest holds two or three things, and almost never a weapon: weapons are made
+function brLoot(c) {
+  const out = [], R = Math.random;
+  if (c.feast) { out.push([fpick(BR_W[R() < .75 ? 2 : 1]), 1], ['br_draught', 1], [R() < .5 ? 'br_ward' : 'br_shard', 1]); return out; }
+  if (c.crown) { if (R() < .5) out.push([fpick(BR_W[R() < .8 ? 1 : 0]), 1]); else out.push(...brRoll([['copper_ore', 3, 4], ['tin_ore', 1, 2]])); out.push([R() < .5 ? 'br_draught' : 'br_salve', 1], ['br_shard', 1]); return out.slice(0, 3); }
+  out.push(...brRoll(fpick(BR_BUNDLE)).slice(0, c.rare ? 2 : 1));
+  if (c.rare) { const r = R(); if (r < .12) out.push([fpick(BR_W[R() < .65 ? 0 : 1]), 1]); else if (r < .34) out.push([fpick(['hide_head', 'hide_body', 'hide_legs', 'hide_feet']), 1]); else if (r < .6) out.push(['br_shard', 1]); else out.push(['br_salve', 1]); }
+  else if (R() < .045) out.push([fpick(BR_W[0]), 1]); else if (R() < .4) out.push(['br_salve', 1]); else out.push(...brRoll([fpick(BR_FOOD)]));
+  return out.filter(e => IT[e[0]]).slice(0, 3);
 }
 
-// ---------------- the storm ----------------
+// ---------------- the border: it answers to the fallen, not the clock ----------------
 function brZones(seed) {
-  const r = mulberry32((seed ^ 0x5bd1e995) >>> 0), Wp = BRW * T, Z = [[3 * T, Wp - 3 * T]];
-  for (const [, , fr] of STORM) { const L = Z[Z.length - 1][0], R = Z[Z.length - 1][1], w = fr * Wp, room = max(0, R - L - w); const nL = L + r() * room; Z.push([nL, nL + min(w, R - L)]); }
+  const r = mulberry32((seed ^ 0x5bd1e995) >>> 0), Wp = BRW * T, mid = Wp / 2, Z = [[3 * T, Wp - 3 * T]];
+  BR_RING.forEach(([, fr], k) => {
+    const L = Z[Z.length - 1][0], R = Z[Z.length - 1][1], w = fr * Wp, room = max(0, R - L - w); let nL = L + r() * room;
+    // the Crown stays inside for the first three closings
+    if (k < 3 && w > 0) nL = clamp(nL, max(L, mid + 240 - w), min(L + room, mid - 240)); Z.push([nL, nL + min(w, R - L)]);
+  });
   return Z;
 }
-function brStormAt(t) {
-  let at = 0; const Z = BR.zones;
-  for (let i = 0; i < STORM.length; i++) {
-    const w = STORM[i][0] * 60, d = STORM[i][1] * 60;
-    if (t < at + w) return { L: Z[i][0], R: Z[i][1], nL: Z[i + 1][0], nR: Z[i + 1][1], i, moving: false, left: at + w - t, dps: i ? STORM[i - 1][3] : 0 };
-    if (t < at + w + d) { const u = (t - at - w) / d; return { L: lerp(Z[i][0], Z[i + 1][0], u), R: lerp(Z[i][1], Z[i + 1][1], u), nL: Z[i + 1][0], nR: Z[i + 1][1], i, moving: true, left: at + w + d - t, dps: STORM[i][3] }; }
-    at += w + d;
-  }
-  const L = Z[Z.length - 1]; return { L: L[0], R: L[1], nL: L[0], nR: L[1], i: STORM.length, moving: false, left: 0, dps: STORM[STORM.length - 1][3] };
+// how many may still be standing for the next closing
+const brNextAt = () => BR.ring.n < BR_RING.length ? max(2, floor(BR.total * BR_RING[BR.ring.n][0])) : 0;
+function brStormAt() {
+  const Z = BR.zones, n = BR.ring.n; if (!n) return { L: Z[0][0], R: Z[0][1], nL: Z[1][0], nR: Z[1][1], i: 0, moving: false, warn: false, left: 0, dps: 0, next: brNextAt() };
+  const k = n - 1, t = max(0, BR.t - BR.ring.at), dps0 = k ? BR_RING[k - 1][2] : 0, dps1 = BR_RING[k][2];
+  if (t < BR_WARN) return { L: Z[k][0], R: Z[k][1], nL: Z[k + 1][0], nR: Z[k + 1][1], i: n, moving: false, warn: true, left: BR_WARN - t, dps: dps0, next: 0 };
+  if (t < BR_WARN + BR_MOVE) { const u = (t - BR_WARN) / BR_MOVE; return { L: lerp(Z[k][0], Z[k + 1][0], u), R: lerp(Z[k][1], Z[k + 1][1], u), nL: Z[k + 1][0], nR: Z[k + 1][1], i: n, moving: true, warn: false, left: BR_WARN + BR_MOVE - t, dps: dps1, next: 0 }; }
+  const q = min(n + 1, Z.length - 1); return { L: Z[n][0], R: Z[n][1], nL: Z[q][0], nR: Z[q][1], i: n, moving: false, warn: false, left: 0, dps: dps1, next: brNextAt(), done: n >= BR_RING.length };
 }
+// whoever leads the match calls the closings
+function brRingTick(alive) {
+  if (!BR.lead || BR.phase !== 'fight' || BR.ring.n >= BR_RING.length) return; const z = BR.storm; if (z.warn || z.moving) return;
+  const quiet = BR.t - max(BR.lastFall, BR.ring.n ? BR.ring.at + BR_WARN + BR_MOVE : BR_DROP) > (alive <= 6 ? .6 : 1) * BR_RESTLESS;
+  if (alive <= brNextAt() || quiet) { BR.ring = { n: BR.ring.n + 1, at: BR.t }; brRingCalled(quiet); }
+}
+function brRingCalled(quiet) { const n = BR.ring.n; G.banner = { text: n >= BR_RING.length ? 'THE LAST CLOSING' : 'THE ASHFALL STIRS', sub: quiet ? 'nobody has fallen in a long while. it grows restless' : BR.lastAlive + ' still stand. it will move in ' + round(BR_WARN / 60) + ' seconds', t: 0 }; sfx('roar', 0); BR.hazard = null; brHazardFor(n); }
 const brOut = f => { const z = BR.storm, x = f.x + 3; return !!z && z.dps > 0 && (x < z.L || x > z.R); };
 function brStormHurt(f) {
   const d = BR.storm.dps / 2; f.hp -= d; f.flash = 4; f.regenT = 0;
   if (f === G.p) { numPop(f.x + 3, f.y - 4, round(d * 10) / 10, '#c77dff'); sfx('hurt', 30); G.flash = max(G.flash, .12); G.flashCol = '170,70,200'; }
-  if (f.hp <= 0) { f.hp = 0; killFighter(f, null); }
+  if (f.hp <= 0) { f.hp = 0; f.cause = 'fell to the ashfall'; killFighter(f, null); }
+}
+// ---------------- how deep is too deep ----------------
+// past BR_HOT the rock itself burns you; at the molten sea there is no getting out again
+function brDeep(f) {
+  const row = (f.y + f.h) / T; if (row < BR_HOT) return;
+  if (row > BR_LAVA + 1.2) { f.hp = 0; f.ward = 0; f.cause = 'was swallowed by the lava'; for (let k = 0; k < 24; k++) P(f.x + 3 + frand(-6, 6), BR_LAVA * T, frand(-1, 1), frand(-4, -1), 40, fpick(['#ff7a2a', '#ffd35a', '#e2542b']), { glow: 1, g: .12 }); killFighter(f, null); return; }
+  if ((BR.t + (f.botI | 0)) % 45 === 0) {
+    const d = 1 + floor((row - BR_HOT) / 7); f.hp -= d; f.flash = 4; f.regenT = 0; if (f === G.p) { numPop(f.x + 3, f.y - 4, d, '#ff7a2a'); sfx('fire', 60); G.flash = max(G.flash, .14); G.flashCol = '255,110,40'; if (BR.noteT < 20) brSay('THE ROCK IS BURNING  ·  ' + max(0, ceil(BR_LAVA - row)) + ' PACES ABOVE THE LAVA', 80); }
+    if (f.hp <= 0) { f.hp = 0; f.cause = 'burned in the deep'; killFighter(f, null); }
+  }
 }
 
-// ---------------- the barge ----------------
-function brBarge(t) { const u = clamp((t === undefined ? BR.t : t) / BR_DROP, 0, 1), dir = BR.seed & 1 ? 1 : -1, x0 = 26 * T, x1 = (BRW - 26) * T; return { x: dir > 0 ? lerp(x0, x1, u) : lerp(x1, x0, u), y: BRSKY * T, dir }; }
-function brRide(f) { const b = brBarge(); f.x = f.px = b.x + (f === G.p ? 0 : ((hh(f.botI | 0, 3, 7) * 40) | 0) - 20); f.y = f.py = b.y; f.vx = f.vy = 0; f.onGround = false; }
-function brLeap(f) {
-  if (!f.onBarge) return; f.onBarge = false; f.glide = true; f.vy = 1; f.vx = brBarge().dir * 1.4; f.noHit = false; f.inv = 30;
-  if (f === G.p) { sfx('jump', 0); G.banner = null; BR.note = 'A / D to steer, S to dive'; BR.noteT = 240; }
-  burst(f.x + 3, f.y + 6, 10, SPARK, 1.4, 30, { glow: 1 });
-}
+// ---------------- the fall: everyone comes down somewhere else ----------------
+// the island is cut into as many strips as there are Wakers, shuffled, and each comes down somewhere in their own
+function brSlots(seed, n) { const r = mulberry32((seed ^ 0x3C6EF372) >>> 0), a = []; for (let i = 0; i < n; i++) a.push(round(50 + (i + .12 + .76 * r()) * (BRW - 100) / n)); for (let i = n - 1; i > 0; i--) { const j = floor(r() * (i + 1)), q = a[i]; a[i] = a[j]; a[j] = q; } return a; }
+function brPlaceInSky(f, k) { f.slotX = (BR.slots[k] || BRW / 2) * T; f.x = f.px = f.slotX; f.y = f.py = 8 * T + (k % 3) * 10; f.vx = f.vy = 0; f.onGround = false; f.glide = true; f.noHit = true; f.ward = 0; for (const s of f.scarf) { s.x = s.ox = f.x + 3; s.y = s.oy = f.y + 5; } }
+// hanging in the air until the horn
+function brHover(f) { f.px = f.x; f.py = f.y; f.vx = f.vy = 0; f.y = 8 * T + ((f.botI | 0) % 3) * 10 + sin(G.time * .05 + f.slotX) * 2; tickScarf(f); }
 function brGlide(f, I) {
   if (!f.glide) return;
-  if (f.onGround || f.dead) { f.glide = false; if (!f.dead) dust(f.x + 3, f.y + f.h, 8); return; }
-  const dive = I && I.down; f.vy = min(f.vy, dive ? 3.6 : 1.2);
-  const want = (I ? I.md : 0) * 2.7; f.vx += (want - f.vx) * .06;
+  if (f.onGround || f.dead || liqAt(f.x + 3, f.y + f.h - 4)) { f.glide = false; f.noHit = false; f.inv = max(f.inv, 50); if (!f.dead) { dust(f.x + 3, f.y + f.h, 8); if (f === G.p) { sfx('land', 0); G.banner = null; brSay('GATHER  ·  DIG  ·  MAKE SOMETHING SHARP', 240); } } return; }
+  const dive = I && I.down; f.vy = min(f.vy, dive ? 4.2 : 1.35); const want = (I ? I.md : 0) * 2.9; f.vx += (want - f.vx) * .07;
 }
 
 // ---------------- using salves and wards (it takes a moment) ----------------
 function brStartUse(f, id) {
   const it = IT[id]; if (!it || it.type !== 'brheal') return false;
-  const full = it.heal ? f.hp >= it.cap : (f.ward || 0) >= it.cap; if (full) { if (f === G.p) { sfx('deny'); BR.note = it.heal ? 'Your health is full' : 'Your ward is as strong as that will make it'; BR.noteT = 90; } return false; }
+  const full = it.heal ? f.hp >= it.cap : (f.ward || 0) >= it.cap; if (full) { if (f === G.p) { sfx('deny'); brSay(it.heal ? 'Your health is full' : 'Your ward is as strong as that will make it', 90); } return false; }
   f.brUse = { id, t: 0, dur: it.use }; if (f === G.p) sfx('stir', 0); return true;
 }
 function brTickUse(f) {
   const u = f.brUse; if (!u) return;
-  if (f.dead || f.hurtT > 0 || f.state !== 'normal' || f.glide) { f.brUse = null; if (f === G.p) { BR.note = 'Interrupted'; BR.noteT = 60; } return; }
+  if (f.dead || f.hurtT > 0 || f.state !== 'normal' || f.glide) { f.brUse = null; if (f === G.p) brSay('Interrupted', 60); return; }
   if (++u.t < u.dur) { if (G.time % 6 === 0) P(f.x + frand(-1, 7), f.y + frand(4, 18), 0, -.5, 20, IT[u.id].ward ? '#8fd0ff' : '#ffb347', { glow: 1, g: -.01 }); return; }
   const it = IT[u.id]; f.brUse = null;
   if (f === G.p) { if (countItem(u.id) < 1) return; removeItem(u.id, 1); } else if (f.br) { if (it.heal) f.br.heals--; else f.br.wards--; }
   if (it.heal) { f.hp = min(it.cap, f.hp + it.heal); numPop(f.x + 3, f.y - 4, '+' + it.heal, '#7ddc6f'); }
   else { f.ward = min(it.cap, (f.ward || 0) + it.ward); numPop(f.x + 3, f.y - 4, '+' + it.ward, '#8fd0ff'); }
-  sfx('heal', 0); burst(f.x + 3, f.y + 10, 12, it.ward ? ['#8fd0ff', '#ffffff'] : ['#7ddc6f', '#c9fff6'], 1.4, 30, { glow: 1, g: -.01 });
+  fsx(f, 'heal', 0); burst(f.x + 3, f.y + 10, 12, it.ward ? ['#8fd0ff', '#ffffff'] : ['#7ddc6f', '#c9fff6'], 1.4, 30, { glow: 1, g: -.01 });
 }
 function brQuickUse(p) {
-  const order = p.hp < 75 ? ['br_salve', 'br_draught', 'br_shard', 'br_ward'] : ['br_shard', 'br_ward', 'br_salve', 'br_draught'];
-  for (const id of order) if (countItem(id) > 0 && brStartUse(p, id)) return; if (!p.brUse) sfx('deny');
+  const order = p.hp < 75 ? ['br_salve', 'br_draught', 'br_shard', 'br_ward', 'br_emberlight'] : ['br_shard', 'br_ward', 'br_emberlight', 'br_salve', 'br_draught'];
+  for (const id of order) if (countItem(id) > 0 && brStartUse(p, id)) return;
+  if (!p.brUse && !p.consume) { const food = ['salve', 'poultice', 'berries', 'glowcap', 'egg', 'meat'].find(id => countItem(id) > 0 && IT[id] && IT[id].type === 'food'); if (food) { eat(IT[food]); return; } sfx('deny'); }
 }
 
 // ---------------- chests ----------------
-function brNearChest(f, r = 16) { let best = null, bd = r; for (const c of BR.chests) { if (c.open) continue; const d = abs(c.x * T + 4 - (f.x + 3)) + abs((c.y + 1) * T - (f.y + f.h)) * .7; if (d < bd) { bd = d; best = c; } } return best; }
+function brNearChest(f, r = 16) { let best = null, bd = r; for (const c of BR.chests) { if (c.open || c.hid) continue; const d = abs(c.x * T + 4 - (f.x + 3)) + abs((c.y + 1) * T - (f.y + f.h)) * .7; if (d < bd) { bd = d; best = c; } } return best; }
 function brNearStation(f, r = 6) {
   const px = floor((f.x + 3) / T), py = floor((f.y + f.h / 2) / T); let best = null, bd = r + 1;
   for (const o of tileObjs.values()) { if (!STATIONS[o.id] || o.id === POST) continue; const d = abs(o.x - px) + abs(o.y - py) * .5; if (d < bd) { bd = d; best = o; } }
   return best;
 }
 function brOpenChest(c, f) {
-  if (!c || c.open) return; if (c.event && BR.t < BR_EVENT_AT) { if (f === G.p) { BR.note = 'THE EMBER CACHE IS STILL SLEEPING'; BR.noteT = 100; sfx('deny'); } return; } c.open = true; c.t = 0; BR.mine.add(c.i);
-  const px = c.x * T + 4, py = c.y * T + 2; sfx('craft', 0); burst(px, py, 14, c.rare ? ['#ffd35a', '#fff1a8'] : ['#ffb347', '#c98a5a'], 1.6, 30, { glow: 1 });
-  const loot = brLoot(c.rare, c.event);
-  if (f === G.p) { loot.forEach(([id, n], k) => spawnDrop(id, n, px - 3, py - 4, (k - (loot.length - 1) / 2) * 1.1, -2.4 - k * .2)); return; }
+  if (!c || c.open || c.hid) return; c.open = true; c.t = 0; BR.mine.add(c.i);
+  const px = c.x * T + 4, py = c.y * T + 2; if (near(f)) sfx('craft', 0); burst(px, py, 10, c.rare ? ['#ffd35a', '#fff1a8'] : ['#ffb347', '#c98a5a'], 1.2, 24, { glow: 1 });
+  const loot = brLoot(c);
+  // what is inside is set down where it stands
+  if (f === G.p) { loot.forEach(([id, n], k) => spawnDrop(id, n, px + (k - (loot.length - 1) / 2) * 7, py, 0, 0)); return; }
   if (f && f.br) for (const [id, n] of loot) brBotTake(f, id, n);
-}
-function brBotTake(f, id, n) {
-  const it = IT[id]; if (!it) return;
-  if (it.type === 'weapon') { if (brTier(id) > brTier(f.wid) || f.wid === 'fists') { f.wid = id; f.arms = f.arms || []; } }
-  else if (id === 'br_salve' || id === 'br_draught') f.br.heals += n; else if (id === 'br_shard' || id === 'br_ward') f.br.wards += n;
-  else if (ARMS.includes(id) && f.arms && !f.arms.includes(id)) f.arms.push(id);
 }
 // what you drop when you fall: everything you carried
 function brSpill(f) {
   const out = [];
-  if (f === G.p) { for (let i = 0; i < INV_N; i++) { const s = inv[i]; if (s && IT[s.id]) { out.push([s.id, s.n]); inv[i] = null; } } }
-  else if (f.br) { if (f.wid && f.wid !== 'fists') out.push([f.wid, 1]); if (f.br.heals > 0) out.push(['br_salve', min(4, f.br.heals)]); if (f.br.wards > 0) out.push(['br_shard', min(4, f.br.wards)]); }
+  if (f === G.p) { for (let i = 0; i < INV_N; i++) { const s = inv[i]; if (s && IT[s.id]) { out.push([s.id, s.n]); inv[i] = null; } } for (const s of GEAR_SLOTS) if (G.gear[s]) { out.push([G.gear[s].id, 1]); G.gear[s] = null; } }
+  else if (f.br) { if (f.wid && f.wid !== 'fists') out.push([f.wid, 1]); if (f.br.heals > 0) out.push(['br_salve', min(3, f.br.heals)]); if (f.br.wards > 0) out.push(['br_shard', min(2, f.br.wards)]); if (f.br.arrows > 0) out.push(['arrow', min(10, f.br.arrows)]); const bag = Object.entries(f.br.bag).filter(e => IT[e[0]] && e[1] > 0).sort((a, b) => b[1] - a[1]).slice(0, 4); for (const [id, n] of bag) out.push([id, min(6, n)]); }
   return out;
 }
-function brDropPile(x, y, items) { items.forEach(([id, n], k) => { if (IT[id] && n > 0) spawnDrop(id, n, x + frand(-3, 3), y - 4, (k - (items.length - 1) / 2) * .9, -2 - frand(1), true); }); }
+function brDropPile(x, y, items) { items = items.slice(0, 14); items.forEach(([id, n], k) => { if (IT[id] && n > 0) spawnDrop(id, n, x + frand(-5, 5), y - 4, (k - (items.length - 1) / 2) * .22, -.8 - frand(.5), true, 'd' + round(x) + ':' + round(y) + ':' + k); }); }
 
 // ---------------- starting a match ----------------
-function brNewBot(i, skill) {
-  const name = BR_BOTN[i % BR_BOTN.length], f = newFighter(0, 0, { name, skin: i % 4, team: 'B' + i, botTag: 'B' + i, botI: i, wid: 'fists', ai: newBrain(skill), brBot: true, echoBot: true, brIn: true, arms: [], ward: 0, onBarge: true, noHit: true,
-    br: { heals: 0, wards: 0, drop: 0, roam: null, roamT: 0, chest: null, skip: new Set(), lx: 0, stuck: 0, think: 0 } });
-  const P0 = BR.pois.length ? BR.pois : [{ x: BRW / 2 }]; f.br.drop = (rand() < .65 ? fpick(P0).x + frand(-20, 20) : frand(30, BRW - 30)) * T; return f;
-}
-function brSkill() { const d = SETTINGS.diff; return d === 'hard' ? frand(.58, .82) : d === 'normal' ? frand(.42, .66) : frand(.3, .52); }
 // everyone runs this with the same seed, so everyone stands on the same island
 function brEnterMatch(mi, seed, roster, nb) {
   const nick = G.nick, skin = G.skin;
-  genRoyale(seed); freshSession(); WORLD.mode = 0; G.nick = nick; G.skin = skin; G.clock = [.3, .36, .2, .58][seed % 4]; updateSun();
-  Object.assign(BR, { mapHide: false, mi, seed, t: 0, ro: roster.slice(), nb, phase: 'drop', open: new Set(), mine: new Set(), bots: new Map(), bk: [], bkSeq: 0, bkSeen: new Map(), dlSeen: new Set(), dl: null, place: 0, spec: null, specT: 0, overT: 0, winner: '', winMe: false, chan: null, note: '', noteT: 0, inStorm: false, poiNow: '', mapOpen: false, lastAlive: 0, lastTeams: 0, cache: null, cacheAnnounced: false, pactWith: '', pactFrom: '', teammate: '', dropsOut: [], dropSeq: 0, dropSeen: new Map(), tileOut: new Map(), applying: false });
-  BR.zones = brZones(seed); BR.storm = brStormAt(0); NET.deathN = 0; NET.kb = ['', 0]; NET.hits = []; NET.shots = []; NET.seen.clear();
-  inv = new Array(INV_N).fill(null); G.sel = 0;
-  G.p = newPlayer(); Object.assign(G.p, { name: G.nick, brIn: true, ward: 0, onBarge: true, noHit: true, team: 'me' }); G.fighters = [G.p]; G.npcs = []; G.enemies = [];
+  genRoyale(seed); freshSession(); WORLD.mode = 0; G.nick = nick; G.skin = skin; G.clock = .08; updateSun();
+  const ro = roster.slice(0, BR_MAX);
+  Object.assign(BR, { mapHide: false, mi, seed, t: 0, ro, nb: clamp(nb | 0, 0, BR_MAX - ro.length), rewarded: false, rewardText: '', phase: 'drop', open: new Set(), mine: new Set(), bots: new Map(), bk: [], bkSeq: 0, bkSeen: new Map(), dlSeen: new Set(), dl: null, place: 0, spec: null, specT: 0, overT: 0, winner: '', winMe: false, chan: null, note: '', noteT: 0, inStorm: false, poiNow: '', mapOpen: false, lastAlive: 0, lastTeams: 0, ring: { n: 0, at: 0 }, lastFall: 0, pactWith: '', pactFrom: '', pactFromT: 0, teammate: '', pactSeen: false, leaveT: 0, dropsOut: [], dropSeq: 0, dropSeen: new Map(), tookOut: [], tookSeq: 0, tookSeen: new Map(), tileOut: new Map(), applying: false, fallen: [], fallenT: 0, show: null, gifts: [], giftAt: 60 * 60, feast: 0, hazard: null, hounds: 0, bounty: null, mobT: 600, botMobT: 1200, wxAt: 0 });
+  BR.total = BR.ro.length + BR.nb; BR.zones = brZones(seed); BR.storm = brStormAt(); BR.slots = brSlots(seed, BR.total); BR.wxList = wxSchedule(seed); NET.deathN = 0; NET.kb = ['', 0]; NET.hits = []; NET.shots = []; NET.seen.clear();
+  inv = new Array(PACK_MAX).fill(null); INV_N = packCap(); G.sel = 0; G.food = 80;
+  G.p = newPlayer(); Object.assign(G.p, { name: G.nick, brIn: true, ward: 0, team: 'me' }); G.fighters = [G.p]; G.npcs = []; G.enemies = [];
   for (const f of NET.peers.values()) { f.gone = true; } NET.peers.clear();
+  brPlaceInSky(G.p, max(0, BR.ro.indexOf(brMe())));
   // echoes fill the empty places; the leader runs them, everyone else sees them through the leader
   rng = mulberry32((seed ^ 0x2545F491) >>> 0);
-  if (BR.lead) for (let i = 0; i < nb; i++) { const f = brNewBot(i, brSkill()); BR.bots.set(f.botTag, f); G.fighters.push(f); brRide(f); }
-  brRide(G.p); snapCam(); G.state = 'play'; UI.open = null; G.cine = null; G.dialog = null;
-  BR.total = roster.length + nb; G.banner = { text: 'THE ASHFALL', sub: BR.total + ' Wakers. Leap from the barge with SPACE.', t: 0 }; sfx('quest', 0);
+  if (BR.lead) for (let i = 0; i < BR.nb; i++) { const f = brNewBot(i, brSkill()); BR.bots.set(f.botTag, f); G.fighters.push(f); brPlaceInSky(f, BR.ro.length + i); }
+  snapCam(); G.state = 'play'; UI.open = null; G.cine = null; G.dialog = null; BR.lastAlive = BR.total;
+  G.banner = { text: 'THE ASHFALL', sub: BR.total + ' Wakers, and nothing in your hands', t: 0 }; sfx('quest', 0);
 }
 function brSolo() {
   BR.via = 'solo'; BR.lead = true; BR.on = true; NET.me = ''; NET.status = 'off';
@@ -401,146 +236,127 @@ function brSolo() {
 function brTick() {
   if (!BR.on) return;
   if (BR.phase === 'drop' || BR.phase === 'fight') BR.t++;
-  BR.storm = brStormAt(max(0, BR.t - BR_DROP));
-  if (BR.phase === 'drop' && BR.t >= BR_DROP) { BR.phase = 'fight'; for (const f of G.fighters) if (f.onBarge && !f.remote) brLeap(f); }
-  if (BR.noteT > 0) BR.noteT--;
+  // a day on the island lasts a quarter of an hour
+  if (BR.phase !== 'over') G.clock = (.08 + BR.t / 54000) % 1;
+  if (BR.t === BR_HOLD && BR.phase === 'drop') { G.banner = { text: 'LET THE GAMES BEGIN', sub: 'A / D to steer, S to dive', t: 0 }; sfx('cannon', 0); addShake(5); }
+  BR.storm = brStormAt();
+  if (BR.phase === 'drop' && BR.t >= BR_DROP) { BR.phase = 'fight'; BR.lastFall = BR.t; }
+  if (BR.noteT > 0) BR.noteT--; if (BR.leaveT > 0) BR.leaveT--; if (BR.pactFromT > 0 && --BR.pactFromT === 0) BR.pactFrom = '';
   for (const c of BR.chests) if (c.open && c.t < 40) c.t++;
-  // my Waker and my echoes take storm damage; everyone else's computer handles theirs
-  if (BR.t % 30 === 0 && BR.phase !== 'over') for (const f of G.fighters) if (f.brIn && !f.remote && !f.dead && !f.onBarge && brOut(f)) brStormHurt(f);
-  const p = G.p; BR.inStorm = !p.dead && !p.onBarge && brOut(p);
-  // the named place you stand in
-  if (!p.dead && !p.onBarge && G.time % 20 === 0) { const q = BR.pois.find(q => abs(q.x * T - p.x) < 26 * T); const n = q ? q.name : ''; if (n && n !== BR.poiNow) { G.note = { text: n, t: 0 }; } BR.poiNow = n; }
+  // my Waker and my echoes answer to the border and the deep here; everyone else's computer handles theirs
+  if (BR.t % 30 === 0 && BR.phase !== 'over') for (const f of G.fighters) if (f.brIn && !f.remote && !f.dead && !f.noHit && brOut(f)) brStormHurt(f);
+  if (BR.phase !== 'over') for (const f of G.fighters) if (f.brIn && !f.remote && !f.dead && f.y > (BR_HOT - 4) * T) brDeep(f);
+  const p = G.p; BR.inStorm = !p.dead && !p.noHit && brOut(p);
+  // the named place you stand in, above ground or below
+  if (!p.dead && !p.glide && G.time % 20 === 0) { const q = BR.pois.find(q => abs(q.x * T - p.x) < 26 * T && abs(heights[clamp(q.x, 0, BRW - 1)] * T - p.y) < 34 * T) || BR.caves.find(q => abs(q.x * T - p.x) < (q.r + 4) * T && abs(q.y * T - p.y) < 14 * T); const n = q ? q.name : ''; if (n && n !== BR.poiNow) G.note = { text: n, t: 0 }; BR.poiNow = n; }
   // spectating after you fall
   if (p.dead && BR.phase !== 'over') { const s = BR.spec; if (!s || s.dead || s.gone || !G.fighters.includes(s)) { BR.specT++; if (BR.specT > 50) { BR.spec = brAlive().find(f => f !== p) || null; BR.specT = 0; } } if (pressed.KeyD || pressed.ArrowRight || pressed.KeyA || pressed.ArrowLeft) brSpecNext(pressed.KeyA || pressed.ArrowLeft ? -1 : 1); }
   // who is left
   const alive = brAlive(), teams = new Set(alive.map(f => f.team)); BR.lastAlive = alive.length; BR.lastTeams = teams.size;
-  if (BR.phase === 'fight' && teams.size <= 1 && BR.t > BR_DROP + 60) brOver(alive[0] || null);
-  if (!BR.cacheAnnounced && BR.t >= BR_EVENT_AT) { BR.cacheAnnounced = true; BR.note = 'THE EMBER CACHE IS OPEN  ·  FIND THE GOLD MARK'; BR.noteT = 240; sfx('quest', 0); }
+  brRingTick(alive.length); brGames();
+  if (BR.phase === 'fight' && teams.size <= 1 && BR.t > BR_DROP + 60 && brRosterHere()) brOver(alive[0] || null);
   if (BR.phase === 'over') { BR.overT++; if (BR.via !== 'solo' && BR.overT > 60 * 14) brBackToLobby(); }
   if (BR.via !== 'solo') brNetTick();
 }
+// (online, nobody has won until the leader's echoes have shown up here)
+const brRosterHere = () => BR.lead || BR.bots.size >= BR.nb || BR.t > BR_DROP + 1200;
 const brAlive = () => G.fighters.filter(f => f.brIn && !f.dead && !f.gone);
 function brSpecNext(d) { const a = brAlive().filter(f => f !== G.p); if (!a.length) return; const i = a.indexOf(BR.spec); BR.spec = a[((i < 0 ? 0 : i + d) % a.length + a.length) % a.length]; sfx('ui'); }
 function brOver(w) {
   BR.phase = 'over'; BR.overT = 0; BR.winner = w ? w.name : ''; BR.winMe = !!(w && G.p && w.team === G.p.team);
-  if (BR.winMe) { BR.place = 1; G.banner = { text: w === G.p ? 'YOU ARE THE LAST EMBER' : 'YOUR PACT OUTLASTED THE ASHFALL', sub: G.p.kills + ' taken down. The ashfall settles.', t: 0 }; sfx('quest', 0); G.flash = .5; G.flashCol = '255,211,90'; for (let i = 0; i < 40; i++) P(G.p.x + 3 + frand(-60, 60), G.p.y - frand(10, 80), frand(-.5, .5), frand(.3, 1), 90, fpick(['#ffd35a', '#ff8a3d', '#fff1a8']), { glow: 1, g: .01 }); }
+  if (BR.winMe) BR.place = 1;
+  brRewardMatch();
+  if (BR.winMe) { G.banner = { text: w === G.p ? 'YOU ARE THE LAST EMBER' : 'YOUR PACT OUTLASTED THE ASHFALL', sub: G.p.kills + ' taken down. The ashfall settles.', t: 0 }; sfx('quest', 0); G.flash = .5; G.flashCol = '255,211,90'; for (let i = 0; i < 40; i++) P(G.p.x + 3 + frand(-60, 60), G.p.y - frand(10, 80), frand(-.5, .5), frand(.3, 1), 90, fpick(['#ffd35a', '#ff8a3d', '#fff1a8']), { glow: 1, g: .01 }); }
   else G.banner = { text: w ? w.name + ' IS THE LAST EMBER' : 'THE ASHFALL TOOK EVERYONE', sub: BR.place ? 'you placed #' + BR.place : '', t: 0 };
   if (w && w !== G.p) BR.spec = w;
 }
 // someone fell (called for every death this computer is in charge of)
 function brDeath(f, by) {
-  const ka = by ? by.name : '';
+  // whoever opened the wound is the one who did it
+  const st = f.st || {}; if (!by && !f.cause) { const q = st.poison > 0 ? st.poisonBy : st.bleed > 0 ? st.bleedBy : null; if (q && q !== f && q.name && !q.gone) by = q; }
+  const wild = by && !by.fighter, ka = by ? (by.name || '').toUpperCase() : '', txt = by ? '' : f.cause || (st.poison > 0 ? 'died of poison' : st.burn > 0 ? 'burned to death' : st.bleed > 0 ? 'bled out' : G.time - (f.wildT || -999) < 300 ? 'was taken by the wilds' : G.food <= 0 && f === G.p ? 'starved' : brOut(f) ? 'fell to the ashfall' : 'did not get up again');
+  if (!by) f.cause = txt;
   if (f === G.p) {
-    NET.deathN++; NET.kb = [brTag(by), NET.deathN]; if (by && by.brBot && !by.remote) by.kills++;
-    BR.place = brAlive().length + 1; const items = brSpill(f); BR.dl = [NET.deathN, round(f.x + 3), round(f.y + 10), items]; brDropPile(f.x + 3, f.y + 10, items);
-    G.kfeed.unshift({ a: ka, b: f.name, t: 0, me: 2, txt: by ? '' : 'fell to the ashfall' }); BR.spec = by && !by.dead && by !== f ? by : null; BR.specT = 0; f.brUse = null;
+    NET.deathN++; NET.kb = [wild ? '' : brTag(by), NET.deathN]; if (by && by.brBot && !by.remote) by.kills++;
+    BR.place = brAlive().length + 1; const items = brSpill(f); BR.dl = [NET.deathN, round(f.x + 3), round(f.y + 10), items.slice(0, 14)]; brDropPile(f.x + 3, f.y + 10, items);
+    G.kfeed.unshift({ a: ka, b: f.name, t: 0, me: 2, txt }); BR.spec = by && by.fighter && !by.dead && by !== f ? by : null; BR.specT = 0; f.brUse = null; f.consume = null;
   } else if (f.brBot && !f.remote) {
-    if (by === G.p) { G.p.kills++; G.banner = { text: 'TAKEN DOWN', sub: f.name, t: 120 }; comboHit(true); sfx('newmove', 0); } else if (by && by.brBot && !by.remote) by.kills++;
+    if (by === G.p) brTookDown(f); else if (by && by.brBot && !by.remote) by.kills++;
     const items = brSpill(f); brDropPile(f.x + 3, f.y + 10, items); f.brUse = null;
-    BR.bk.push([f.botTag, brTag(by), ++BR.bkSeq, round(f.x + 3), round(f.y + 10), items]); if (BR.bk.length > 8) BR.bk.shift();
-    G.kfeed.unshift({ a: ka, b: f.name, t: 0, me: by === G.p ? 1 : 0, txt: by ? '' : 'fell to the ashfall' });
+    BR.bk.push([f.botTag, wild ? '' : brTag(by), ++BR.bkSeq, round(f.x + 3), round(f.y + 10), items.slice(0, 14), wild ? ka : txt]); if (BR.bk.length > 8) BR.bk.shift();
+    G.kfeed.unshift({ a: ka, b: f.name, t: 0, me: by === G.p ? 1 : 0, txt });
   }
+  brFallen(f);
   if (G.kfeed.length > 6) G.kfeed.length = 6;
+}
+function brTookDown(f) { G.p.kills++; G.banner = { text: 'TAKEN DOWN', sub: f ? f.name : '', t: 120 }; comboHit(true); sfx('newmove', 0); brDeed('kill'); }
+// a cannon for every one of the fallen, and their face in the sky when the light goes
+function brFallen(f) {
+  if (f.counted) return; f.counted = true; BR.lastFall = BR.t; BR.fallen.push({ name: f.name, skin: f.skin | 0 }); if (f !== G.p && BR.teammate && BR.teammate === brTag(f)) brBreakPact(true);
+  sfx('cannon', 250); const n = max(0, brAlive().filter(q => q !== f).length); if (f !== G.p && BR.noteT < 60) brSay('A CANNON SOUNDS  ·  ' + n + ' REMAIN', 110);
 }
 
 // ---------------- your Waker in a match ----------------
-// runs before the usual fighter tick; returns false while you ride the barge
+// runs before the usual fighter tick; returns false while you hang in the air waiting for the horn
 function brInput(p, I) {
-  if (p.onBarge) { if (BR.phase === 'drop' && I.jumpP && BR.t > 40) brLeap(p); else { brRide(p); return false; } }
+  if (BR.t < BR_HOLD && BR.phase === 'drop') { brHover(p); return false; }
   if (p.dead) return true;
   if (p.glide) { I.lp = I.rp = I.l = I.r = I.dodgeP = I.armP = I.jumpP = false; }
-  if (p.brUse) { I.lp = I.rp = I.l = I.r = I.dodgeP = I.armP = false; I.md = 0; }
+  if (p.brUse) { I.lp = I.rp = I.l = I.r = I.dodgeP = I.armP = false; I.md *= .5; }
   if (p.consume) { I.lp = I.rp = I.l = I.r = I.dodgeP = I.armP = I.jumpP = I.jumpH = false; I.md = 0; }
   const it = heldItem();
   if (it && it.type === 'brheal' && !UI.open) { if (I.lp && !p.brUse) brStartUse(p, it.id); I.lp = I.l = false; }
-  if (!UI.open && !G.dialog) {
-    if (pressed.KeyF) { const c = brNearChest(p); if (c) brOpenChest(c, p); else { const s = brNearStation(p); if (s) openStation(s.x, s.y); } }
+  if (!UI.open && !G.dialog && !p.glide) {
+    if (pressed.KeyF) { const g = brNearGift(p), c = brNearChest(p); if (g) brOpenGift(g); else if (c) brOpenChest(c, p); else { const s = brNearStation(p), d = s && abs(s.x * T - p.x) < 20 ? null : brNearDoor(p); if (d) toggleDoor(d[0], d[1]); else if (s) openStation(s.x, s.y); } }
     if (pressed.KeyH) brQuickUse(p);
-    if (pressed.KeyT) cycleArm(p);
-    if (pressed.KeyB) toggleUI('book');
-    if (pressed.KeyK && (hasItem('rock') || hasItem('flint'))) toggleUI('knap');
-    if (pressed.KeyP) brOfferPact(p);
+    if (pressed.KeyP) brPactKey(p);
   }
   return true;
 }
-function brOfferPact(p) {
-  if (BR.pactFrom) { brFormPact(BR.pactFrom); return; }
-  if (BR.teammate) { BR.note = 'PACT WITH ' + (NET.peers.get(BR.teammate)?.name || 'YOUR ALLY').toUpperCase(); BR.noteT = 120; return; }
-  let best = null, bd = 76;
-  for (const f of NET.peers.values()) { if (f.dead || f.gone || !f.brIn || f.team === p.team) continue; const d = hypot(f.x - p.x, f.y - p.y); if (d < bd) { bd = d; best = f; } }
-  if (!best) { BR.note = 'MOVE CLOSE TO A WAKER AND PRESS P TO OFFER A PACT'; BR.noteT = 150; sfx('deny'); return; }
-  BR.pactWith = best.peer; BR.note = 'PACT OFFER SENT TO ' + best.name.toUpperCase(); BR.noteT = 120; sfx('ui');
+function brNearDoor(p) { const px = floor((p.x + 3) / T), py = floor((p.y + 10) / T); for (let x = px - 2; x <= px + 2; x++) for (let y = py - 1; y <= py + 1; y++) { const t = tileAt(x, y); if (t === DOORC || t === DOORO) return [x, y]; } return null; }
+function brAfter(p, I) { brGlide(p, I); brTickUse(p); }
+
+// ---------------- pacts: two Wakers (or a Waker and an echo) who win or lose together ----------------
+const brPactTeam = (a, b) => 'P:' + [a, b].sort().map(v => String(v).replace(/[^\w-]/g, '').slice(0, 24)).join(':');
+const brAlly = () => BR.teammate ? NET.peers.get(BR.teammate) || BR.bots.get(BR.teammate) || null : null;
+function brPactKey(p) {
+  if (BR.pactFrom && !BR.teammate) { brFormPact(BR.pactFrom); return; }
+  if (BR.teammate) {
+    // twice to leave: once could be a slip of the finger
+    if (BR.leaveT > 0) { brBreakPact(false); return; }
+    const a = brAlly(); BR.leaveT = 200; brSay('PACT WITH ' + (a ? a.name : 'YOUR ALLY').toUpperCase() + '  ·  PRESS P AGAIN TO LEAVE IT', 200); sfx('ui'); return;
+  }
+  let best = null, bd = 84;
+  for (const f of G.fighters) { if (f === p || f.dead || f.gone || !f.brIn || f.team === p.team || f.noHit) continue; const d = hypot(f.x - p.x, f.y - p.y); if (d < bd) { bd = d; best = f; } }
+  if (!best) { brSay('MOVE CLOSE TO A WAKER AND PRESS P TO OFFER A PACT'); sfx('deny'); return; }
+  if (best.botTag) {
+    // an echo weighs you up on the spot (one run by another computer answers in its own time)
+    if (best.remote) { BR.pactWith = best.botTag; BR.pactWithT = BR.t; brSay('PACT OFFERED TO ' + best.name); sfx('ui'); return; }
+    if (brBotAgrees(best, p)) brJoinBot(best, p); else { brSay(best.name + ' WANTS NO PART OF IT'); sfx('deny'); if (best.br) best.br.asked = BR.t; } return;
+  }
+  BR.pactWith = best.peer; BR.pactWithT = BR.t; brSay('PACT OFFER SENT TO ' + best.name.toUpperCase(), 120); sfx('ui');
 }
+// an echo takes a pact with you
+function brJoinBot(bot, p) { const team = brPactTeam(brMe(), bot.botTag); p.team = team; bot.team = team; if (bot.br) { bot.br.ally = p; bot.br.allyT = BR.t; } BR.teammate = bot.botTag; BR.pactSeen = true; BR.pactWith = ''; BR.pactFrom = ''; brPactMade(bot); }
+function brPactMade(f) { brSay('PACT FORGED WITH ' + f.name.toUpperCase(), 180); sfx('quest', 0); burst(G.p.x + 3, G.p.y + 8, 18, ['#8ff5e6', '#ffffff', '#ffd35a'], 2, 32, { glow: 1 }); G.kfeed.unshift({ a: '', b: G.p.name, t: 0, me: 0, txt: 'and ' + f.name + ' have a pact' }); if (G.kfeed.length > 6) G.kfeed.length = 6; }
 function brFormPact(id) {
   const p = G.p, f = NET.peers.get(id); if (!p || !f || BR.teammate || BR.pactWith !== id && BR.pactFrom !== id) return;
-  const team = 'P:' + [brMe(), id].sort().map(v => String(v).replace(/[^\w-]/g, '').slice(0, 24)).join(':'); p.team = team; f.team = team; BR.teammate = id; BR.pactWith = ''; BR.pactFrom = '';
-  BR.note = 'PACT FORGED WITH ' + f.name.toUpperCase(); BR.noteT = 180; sfx('quest', 0); burst(p.x + 3, p.y + 8, 18, ['#8ff5e6', '#ffffff', '#ffd35a'], 2, 32, { glow: 1 });
+  const team = brPactTeam(brMe(), id); p.team = team; f.team = team; BR.teammate = id; BR.pactSeen = false; BR.pactWith = ''; BR.pactFrom = ''; brPactMade(f);
 }
-function brTileChanged(i) { if (!BR.on || !WORLD.royale || BR.applying || !Number.isInteger(i) || i < 0 || i >= tiles.length) return; BR.tileOut.set(i, [i, tiles[i], walls[i]]); if (BR.tileOut.size > 1600) BR.tileOut.delete(BR.tileOut.keys().next().value); }
-function brTilePacket() { const a = []; for (const [i, v] of BR.tileOut) { a.push(v); BR.tileOut.delete(i); if (a.length >= 40) break; } return a; }
-function brQueueDrop(id, n, x, y, vx, vy) { if (!BR.on || !WORLD.royale || !IT[id] || BR.dropsOut.length >= 120) return; BR.dropsOut.push([++BR.dropSeq, id, n, round(x), round(y), round(vx || 0), round(vy || 0)]); }
-function brDropPacket() { return BR.dropsOut.splice(0, 18); }
-function brAfter(p, I) { brGlide(p, I); brTickUse(p); }
-// the camera follows whoever you are watching
-function brCamTarget() {
-  const p = G.p; if (!brOn()) return null;
-  // on the barge: keep it near the top of the screen and show as much of the island below as fits
-  if (p.onBarge) { const b = brBarge(), gy = heights[clamp(floor(b.x / T), 0, BRW - 1)] * T, top = min(b.y - 46, (b.y + gy) / 2 - VS.vh / 2); return { x: b.x - 3, y: top + VS.vh / 2 + 4, w: 6, h: 20 }; }
-  if (!p.dead) return null; const s = BR.spec; return s && !s.gone ? s : null;
+// theirs: they left (or fell); ours: we walked out
+function brBreakPact(theirs, quiet) {
+  const p = G.p, f = brAlly(); BR.teammate = ''; BR.pactSeen = false; BR.pactWith = ''; BR.pactFrom = ''; BR.leaveT = 0; BR.pactBroke = BR.t; if (p) p.team = 'me';
+  if (f) { f.team = f.botTag ? f.botTag : 'r:' + f.peer; if (f.br) { f.br.ally = null; f.br.spurned = BR.t; } }
+  if (quiet) return; const n = f ? f.name.toUpperCase() : 'YOUR ALLY'; brSay(f && f.dead ? n + ' HAS FALLEN  ·  THE PACT IS OVER' : theirs ? n + ' HAS LEFT THE PACT' : 'YOU LEAVE THE PACT WITH ' + n, 200); sfx(theirs ? 'deny' : 'ui', 0);
+  if (f && !f.dead) { G.kfeed.unshift({ a: '', b: theirs ? f.name : p.name, t: 0, me: 0, txt: 'broke the pact with ' + (theirs ? p.name : f.name) }); if (G.kfeed.length > 6) G.kfeed.length = 6; }
 }
 
-// ---------------- echoes: they loot, mind the storm, and fight ----------------
-function brSee(f, o) {
-  const x0 = f.x + 3, y0 = f.y + 6, x1 = o.x + 3, y1 = o.y + 6, n = ceil(hypot(x1 - x0, y1 - y0) / 6);
-  for (let k = 1; k < n; k++) { const u = k / n, tx = floor(lerp(x0, x1, u) / T), ty = floor(lerp(y0, y1, u) / T), t = tileAt(tx, ty); if (TP[t].solid && t !== PLATFORM && !TP[t].ghost) return false; }
-  return true;
-}
-function brBotChest(f) {
-  const cx = f.x + 3, fy = f.y + f.h, z = BR.storm; let best = null, bd = 1e9;
-  for (const c of BR.chests) {
-    if (c.open || c.cave || f.br.skip.has(c.i)) continue; const x = c.x * T + 4, dx = abs(x - cx); if (dx > 420) continue;
-    if (z && (x < z.L + 16 || x > z.R - 16)) continue; const dy = (c.y + 1) * T - fy; if (dy < -7 * T) continue;
-    const d = dx + abs(dy) * 2; if (d < bd) { bd = d; best = c; }
-  }
-  return best;
-}
-function brWalk(f, I, gx) {
-  const B = f.ai, br = f.br, cx = f.x + 3, d = gx - cx;
-  I.md = abs(d) < 5 ? 0 : sign(d); I.jumpH = false; I.down = false; I.wx = cx + I.md * 40; I.wy = f.y + 8;
-  if (I.md) {
-    const ax = floor((cx + I.md * 8) / T), fy = floor((f.y + f.h - 1) / T); let rise = 0;
-    for (let k = 0; k < 9; k++) { if (TP[tileAt(ax, fy - k)].solid && tileAt(ax, fy - k) !== PLATFORM) rise = k + 1; else break; }
-    if (f.onGround && B.jumpCd <= 0 && (rise >= 2 || f.hitWall)) { I.jumpP = I.jumpH = true; B.jumpCd = 16; }
-    else if (!f.onGround && f.vy > -.4 && !f.dblUsed && (f.hitWall || rise >= 2) && canDbl(f)) I.jumpP = I.jumpH = true;
-    else if (!f.onGround && f.vy < 0) I.jumpH = true;
-  }
-  const below = tileAt(floor(cx / T), floor((f.y + f.h + 1) / T)); if (below === PLATFORM && br.chest && (br.chest.y + 1) * T > f.y + f.h + 12) I.down = true;
-  if (G.time % 30 === (f.botI | 0) % 30) { if (I.md && abs(cx - br.lx) < 3) { if (++br.stuck >= 3) { if (br.chest) br.skip.add(br.chest.i); br.chest = null; br.roam = null; br.stuck = 0; } } else br.stuck = 0; br.lx = cx; }
-}
-function brBotThink(f) {
-  const B = f.ai, I = B.I, br = f.br;
-  I.lp = I.rp = I.jumpP = I.dodgeP = I.armP = false; I.l = I.r = false;
-  if (f.dead) { I.md = 0; return I; }
-  if (f.glide) { const dx = br.drop - (f.x + 3); I.md = abs(dx) > 10 ? sign(dx) : 0; I.down = abs(dx) < 40 && f.y < heights[clamp(floor(f.x / T), 0, BRW - 1)] * T - 120; I.jumpH = false; return I; }
-  if (f.brUse) { I.md = 0; return I; }
-  const z = BR.storm, cx = f.x + 3, out = brOut(f) || (z && (cx < z.L + 6 || cx > z.R - 6));
-  let foe = null, fd = 1e9;
-  for (const o of foesOf(f)) { if (o.dead || o.onBarge || o.noHit) continue; const dx = abs(o.x - f.x), dy = abs(o.y - f.y); if (dx > 220 || dy > 80) continue; const dd = dx + dy * 1.5; if (dd < fd && (dd < 60 || brSee(f, o))) { fd = dd; foe = o; } }
-  if (!foe && f.lastHitBy && !f.lastHitBy.dead && f.takenT > 0 && abs(f.lastHitBy.x - f.x) < 300) foe = f.lastHitBy;
-  if (foe && !(out && z && z.dps >= 4)) { if (B.tgt !== foe) { B.tgt = foe; B.retarget = 40; } return aiThink(f); }
-  if (B.atkCd > 0) B.atkCd--; if (B.jumpCd > 0) B.jumpCd--;
-  if (f.onGround && !out && f.hurtT <= 0 && ((f.hp < 70 && br.heals > 0) || ((f.ward || 0) < 50 && br.wards > 0))) { brStartUse(f, f.hp < 70 && br.heals > 0 ? (f.hp < 45 ? 'br_draught' : 'br_salve') : (f.ward < 25 ? 'br_ward' : 'br_shard')); I.md = 0; return I; }
-  let gx = null;
-  if (out || !z) gx = z ? (z.L + z.R) / 2 : cx;
-  else {
-    if (z.left < 60 * 20 && (cx < z.nL || cx > z.nR)) gx = (z.nL + z.nR) / 2;
-    if (gx === null) { if (!br.chest || br.chest.open || --br.think <= 0) { br.chest = brBotChest(f); br.think = 90; } if (br.chest) gx = br.chest.x * T + 4; }
-    if (gx === null) { if (br.roam === null || abs(br.roam - cx) < 12 || --br.roamT <= 0) { br.roam = lerp(z.nL, z.nR, frand(.2, .8)); br.roamT = 900; } gx = br.roam; }
-  }
-  brWalk(f, I, gx);
-  const c = br.chest; if (c && !c.open && abs(c.x * T + 4 - cx) < 10 && abs((c.y + 1) * T - (f.y + f.h)) < 14 && f.onGround) { brOpenChest(c, f); br.chest = null; br.think = 0; }
-  return I;
-}
-// echoes riding the barge leap when it passes the spot they chose
-function brBotRide(f) { const b = brBarge(); if (BR.phase === 'drop' && BR.t > 60 && (abs(b.x - f.br.drop) < 60 || BR.t > BR_DROP - 30)) brLeap(f); else brRide(f); }
-function brBotAfter(f) { brGlide(f, f.ai.I); brTickUse(f); }
+// ---------------- things everyone must agree on: dug ground, dropped goods ----------------
+function brTileChanged(i) { if (!BR.on || !WORLD.royale || BR.applying || BR.via === 'solo' || BR.phase === 'lobby' || !Number.isInteger(i) || i < 0 || i >= tiles.length) return; BR.tileOut.set(i, [i, tiles[i], walls[i]]); if (BR.tileOut.size > 1600) BR.tileOut.delete(BR.tileOut.keys().next().value); }
+function brTilePacket() { const a = []; for (const [i, v] of BR.tileOut) { a.push(v); BR.tileOut.delete(i); if (a.length >= 40) break; } return a; }
+function brQueueDrop(id, n, x, y, vx, vy) { if (!BR.on || !WORLD.royale || !IT[id]) return undefined; const seq = ++BR.dropSeq; if (BR.via !== 'solo' && BR.dropsOut.length < 120) BR.dropsOut.push([seq, id, n, round(x), round(y), r1(vx || 0), r1(vy || 0)]); return brMe() + ':' + seq; }
+function brDropPacket() { return BR.dropsOut.splice(0, 18); }
+// I picked this up: everyone else's copy of it goes
+function brTook(d) { if (!d.uid || BR.via === 'solo') return; BR.tookOut.push([++BR.tookSeq, d.uid]); if (BR.tookOut.length > 24) BR.tookOut.shift(); }
+// the camera follows whoever you are watching
+function brCamTarget() { const p = G.p; if (!brOn() || !p.dead) return null; const s = BR.spec; return s && !s.gone ? s : null; }

@@ -169,11 +169,11 @@ function armWall(pr) {
 function armBurst(pr) {
   const ow = pr.owner, x = pr.x, y = pr.y;
   if (pr.type === 'flask') {
-    burst(x, y, 24, ['#ff7a2a', '#ffd35a', '#e2542b', '#fff1a8'], 2.6, 30, { glow: 1, g: .04 }); sfx('boom', 40); if (near(ow)) addShake(2.5);
+    burst(x, y, 24, ['#ff7a2a', '#ffd35a', '#e2542b', '#fff1a8'], 2.6, 30, { glow: 1, g: .04 }); if (near(pr)) { sfx('boom', 40); addShake(2.5); }
     G.trails.push({ kind: 'ring', x, y: y + 2, r: 22, life: 10, max: 10 });
     if (!pr.ghost) for (const e of foesOf(ow)) if (!e.dead && !e.noHit && circBox(x, y, 22, e)) { strike(ow, e, pr.dmg, (sign(e.x + e.w / 2 - x) || 1) * 1.4, -1.6, { stop: 3, shake: 1, hx: e.x + e.w / 2, hy: e.y + e.h / 2 }); applyStatus(e, 'burn', ow); }
-    let gy = floor(y / T); for (let k = 0; k < 7 && !solidAt(floor(x / T), gy + 1); k++) gy++;
-    if (solidAt(floor(x / T), gy + 1) && !liqAt(x, gy * T + 4)) G.fires.push({ x0: x - 18, x1: x + 18, y: (gy + 1) * T, life: 260, max: 260, by: ow, ghost: !!pr.ghost });
+    // it burns where it broke: on the wall, the roof or the floor it hit. In mid-air it scatters burning drops instead
+    if (!lightFire(x, y, 19, 270, ow, pr.ghost)) rainFire(x, y, 6, ow, pr.ghost);
   } else if (pr.type === 'pellet') {
     for (let i = 0; i < 26; i++) { const a = frand(TAU), v = frand(.4, 1.8); P(x, y, cos(a) * v, sin(a) * v * .7, frand(30, 60) | 0, fpick(['#8d8794', '#a19baa', '#726c7c', '#d6d0dc']), { g: -.01, fr: .9 }); }
     sfx('dodge', 40); G.smokes.push({ x, y: y - 6, r: 38, life: 320, max: 320, by: ow, ghost: !!pr.ghost });
@@ -182,11 +182,7 @@ function armBurst(pr) {
   return true;
 }
 function tickArmsWorld() {
-  for (let i = G.fires.length - 1; i >= 0; i--) {
-    const f = G.fires[i]; if (--f.life <= 0) { G.fires.splice(i, 1); continue; }
-    if (G.time % 3 === 0) P(frand(f.x0, f.x1), f.y - 1, frand(-.2, .2), frand(-1.4, -.6), 16, fpick(['#ff7a2a', '#ffd35a', '#e2542b']), { glow: 1, g: -.02 });
-    if (!f.ghost && G.time % 10 === 0) { const by = f.by; for (const e of (by && by.fighter ? foesOf(by) : G.fighters.filter(q => q.team === 'p' && !q.remote))) if (!e.dead && !e.noHit && e.x + e.w > f.x0 && e.x < f.x1 && abs(e.y + e.h - f.y) < 7) applyStatus(e, 'burn', by, { d: 120 }); }
-  }
+  tickFires();
   for (let i = G.smokes.length - 1; i >= 0; i--) {
     const s = G.smokes[i]; if (--s.life <= 0) { G.smokes.splice(i, 1); continue; }
     if (!s.ghost && G.time % 12 === 0) { const by = s.by, k = s.life / s.max; for (const e of foesOf(by)) if (!e.dead && !e.noHit && circBox(s.x, s.y, s.r * (.5 + .5 * k), e)) applyStatus(e, 'blind', by, { d: 70 }); if (by && !by.dead && circBox(s.x, s.y, s.r * .8, by)) by.veil = 14; }
@@ -326,7 +322,7 @@ function linkHit(k, st) {
   if (fin && !e.dead) { if (ky < -2.5) applyStatus(e, 'launched', f, { d: 70 }); if (e.st) e.st.lk = 10; }
   const fx = st.fx;
   if (fx === 'flare' || fx === 'blaze' || fx === 'forge') { burst(hx, hy, fx === 'flare' ? 10 : 30, ['#ff7a2a', '#ffd35a', '#e2542b', '#fff1a8'], fx === 'flare' ? 1.8 : 3.4, 30, { glow: 1, g: .02 }); if (e.st && e.st.burn) e.st.burn = max(e.st.burn, 120); }
-  if (fin && (fx === 'blaze' || fx === 'forge')) { explode(hx, hy, fx === 'forge' ? 44 : 30, round(W.dmg * (fx === 'forge' ? 1.6 : 1)), f); for (const o of foesOf(f)) if (o !== e && !o.dead && circBox(hx, hy, 40, o)) applyStatus(o, 'burn', f); if (fx === 'forge') G.fires.push({ x0: hx - 30, x1: hx + 30, y: k.ground, life: 200, max: 200, by: f }); }
+  if (fin && (fx === 'blaze' || fx === 'forge')) { explode(hx, hy, fx === 'forge' ? 44 : 30, round(W.dmg * (fx === 'forge' ? 1.6 : 1)), f); for (const o of foesOf(f)) if (o !== e && !o.dead && circBox(hx, hy, 40, o)) applyStatus(o, 'burn', f); if (fx === 'forge') stripFire(hx - 30, hx + 30, k.ground, 200, f); }
   if (fin && fx === 'crack' && !WORLD.arena) { const s = k.face; for (let i = 0; i < 3; i++) { const tx = floor((hx + s * (e.w / 2 + 3 + i * 6)) / T); for (const yy of [hy - 4, hy + 4]) { const ty = floor(yy / T), t = tileAt(tx, ty); if (t && TP[t].solid && TP[t].hard < 60 && !TP[t].ghost && t !== DOORC && t !== DOORO) breakTile(tx, ty, true); } } addShake(8); sfx('brk', 0); }
   if (fx === 'impale') { sparks(hx, hy, 10, k.face, 2.4); }
   if (fin && fx === 'tear') { sparks(hx - k.face * 4, hy, 12, -k.face, 2.6, ['#e8edf2', '#aab3c2', '#fff1a8']); G.stuck.push({ x: hx + k.face * 4, y: hy, a: 0, life: 200 }); }

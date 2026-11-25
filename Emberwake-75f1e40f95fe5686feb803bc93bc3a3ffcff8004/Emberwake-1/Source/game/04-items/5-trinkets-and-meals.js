@@ -68,7 +68,7 @@ function boons() {
 const boonMul = k => boons().mul[k] || 1, boonAdd = k => boons().add[k] || 0, boonHas = t => boons().tags.has(t), boonRes = k => boons().res[k] || 0;
 const brewActive = k => !!(G.brew && G.brew.k === k && G.brew.t > 0);
 const brewMul = k => k === 'swift' && brewActive(k) ? 1.28 : 1;
-const combatDmgMul = f => (f.dmgMul || 1) * (f === G.p && brewActive('might') ? 1.22 : 1);
+const combatDmgMul = f => (f.dmgMul || 1) * (f === G.p && brewActive('might') ? 1.22 : 1) * (WORLD.royale ? brWeaponMul(f) : 1);
 function drinkBrew(k) {
   if (k === 'mirror') { spawnMirrorClone(); return; }
   G.brew = { k, t: k === 'swift' ? 2400 : 1800 };

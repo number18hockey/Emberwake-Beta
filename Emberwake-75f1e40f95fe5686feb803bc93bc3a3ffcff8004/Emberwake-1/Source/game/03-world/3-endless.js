@@ -234,8 +234,10 @@ function treeColumn(x, hs, b) {
   const kind = b === 'thorn' ? 3 : b === 'moor' || b === 'fen' || b === 'willowmere' || b === 'mosswood' ? 0 : b === 'reach' ? 1 : 2, r = hh(k, 79, SEED), th = kind === 0 ? 6 + floor(r * 9) : kind === 1 ? 5 + floor(r * 6) : kind === 3 ? 5 + floor(r * 5) : 4 + floor(r * 5);
   for (let y = 1; y <= th + 4; y++) { const t = tiles[(hs - y) * WW + x]; if (t !== AIR && !(TP[t].decor && !TP[t].dyn)) return; }
   for (let y = 1; y <= th; y++) tiles[(hs - y) * WW + x] = [TRUNK, TRUNK2, TRUNK3, TRUNK4][kind];
-  treeTops.set(x, { y: hs - th, kind, v: floor(hh(k, 80, SEED) * 3), ph: hh(k, 81, SEED) * TAU });
+  treeTops.set(x, { y: hs - th, kind: crownFor(b, kind, hh(k, 82, SEED)), v: floor(hh(k, 80, SEED) * 3), ph: hh(k, 81, SEED) * TAU });
 }
+// the crown that grows in each land (the trunk under it stays the same)
+const crownFor = (b, kind, r) => b === 'mosswood' ? (r < .72 ? CROWN.oak : kind) : b === 'willowmere' ? (r < .75 ? CROWN.willow : kind) : b === 'fen' ? (r < .7 ? CROWN.mangrove : kind) : b === 'reach' ? (r < .42 ? CROWN.pine : kind) : b === 'scoria' ? (r < .55 ? CROWN.maple : kind) : b === 'dunes' ? CROWN.palm : kind;
 
 // ---------------- step two: what is anchored in a chunk ----------------
 function finishChunk(cx) {

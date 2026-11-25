@@ -33,16 +33,16 @@ The game is plain JavaScript in one page, with no libraries and no image files: 
 | Folder | What it does |
 | --- | --- |
 | `01-core` | constants, math, noise, input, sound, the pixel font |
-| `02-art` | sprites and textures (all drawn by code), and the kinds of tiles |
-| `03-world` | world generation, structures, the endless land, the other worlds, places to find |
+| `02-art` | sprites and textures (all drawn by code), the kinds of tiles, trees and other wild things |
+| `03-world` | world generation, structures, the endless land, the other worlds, places to find, the weather |
 | `04-items` | items and recipes, weapons, the later tiers, the benches (and which bench makes what), trinkets and meals |
 | `05-physics` | game state, physics bodies, particles, drops, projectiles; mining and building; craters; armour; furniture and what it does |
-| `06-combat` | movesets and hits, links (chains and sidearms), weapon styles, learned forms, follow-ups, counters and arts |
+| `06-combat` | movesets and hits, links (chains and sidearms), weapon styles, learned forms, follow-ups, counters and arts, fire |
 | `07-fighters` | the player and the other fighters (echoes, duelists) |
-| `08-creatures` | creatures and spawning, the guardians, world events, the offerings that wake the guardians |
+| `08-creatures` | creatures and spawning, the guardians, world events, the offerings that wake the guardians, the creatures of the weather |
 | `09-story` | people, leads, the journal, lore and echo stones |
 | `10-interface` | menus, the HUD, the pack, crafting stations, the map, the recipe book and trinket slots |
-| `11-arena-and-royale` | the Cinder Ring arena, and the Ashfall battle royale (island, storm, loot, echoes, online play, screens) |
+| `11-arena-and-royale` | the Cinder Ring arena, and the Ashfall battle royale: its rules (the drop, the border, loot, pacts), online play, screens, the island, the echoes, and the games (beasts, gifts, the Feast...) |
 | `12-playing-together` | co-op (sharing a world), game codes, the relay |
 | `13-saving` | worlds: create, list, load, save |
 | `14-main` | the sky, drawing, the game loop, input, start-up |
