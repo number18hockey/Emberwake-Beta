@@ -155,14 +155,14 @@ function tickStyles(f, I) {
 // ---------------- drills ----------------
 // press F at a practice post with a weapon in hand. Follow the calls before the sand runs out.
 const DRILL_STEP = {
-  L3: { t: 'Land 3 light blows (LMB)', n: 3 }, H1: { t: 'Land a heavy blow (RMB)', n: 1 }, air: { t: 'Land a blow in the air', n: 1 }, dodge: { t: 'Dodge (SHIFT)', n: 1 }, combo5: { t: 'Land 5 blows in quick succession', n: 5 },
+  L3: { t: 'Land 3 light blows (LMB)', n: 3 }, H1: { t: 'Land a heavy blow (RMB)', n: 1 }, air: { t: 'Land a blow in the air', n: 1 }, dodge: { t: 'Dodge (SHIFT)', n: 1 }, combo5: { t: 'Chain 4 blows in time (strike on the glint)', n: 3 }, crisp: { t: 'Land a CRISP blow (right on the glint)', n: 1 }, clean: { t: 'Land a CLEAN blow (the sweet spot of your weapon)', n: 1 },
   S0: { t: 'Style I: V standing still', n: 1 }, S1: { t: 'Style II: V on the move', n: 1 }, S2: { t: 'Style III: V holding S', n: 1 }, S3: { t: 'Style IV: V in the air', n: 1 }, S4: { t: 'Style V: V right after a dodge', n: 1 }
 };
 function startDrill(x, y, dummy) {
   const p = G.p, W = heldOf(p);
   if (!W || W.type !== 'weapon') { say('Take a weapon in hand first. The post teaches the weapon you hold.'); sfx('deny'); return; }
   if (G.drill) { endDrill(false, true); return; }
-  const ty = weaponType(W), L = styleLevel(ty), pool = ['L3', 'H1', 'air', 'dodge', 'combo5'], steps = [];
+  const ty = weaponType(W), L = styleLevel(ty), pool = ['L3', 'H1', 'air', 'dodge', 'combo5', 'combo5', 'crisp', 'clean'], steps = [];
   for (let k = 0; k < L; k++) steps.push('S' + k);
   while (steps.length < min(7, 3 + L)) { const s = fpick(pool); if (!steps.includes(s) || s === 'L3') steps.push(s); }
   for (let k = steps.length - 1; k > 0; k--) { const j = (Math.random() * (k + 1)) | 0; [steps[k], steps[j]] = [steps[j], steps[k]]; }
@@ -172,7 +172,7 @@ function startDrill(x, y, dummy) {
 }
 function drillNote(kind, k) {
   const D = G.drill; if (!D) return; const s = D.steps[D.k];
-  if (kind === 'dodge' && s === 'dodge') drillAdv();
+  if (kind === 'dodge' && s === 'dodge') drillAdv(); else if (kind === 'rush' && s === 'combo5') D.n = 0;
 }
 function drillHit(a, e) {
   const D = G.drill; if (!D || e !== D.dummy || weaponType(a.W) !== D.ty) return; const s = D.steps[D.k], m = a.m;
@@ -180,7 +180,9 @@ function drillHit(a, e) {
   if (s === 'L3' && a.btn === 'L' && !m.style && !m.pair) { if (++D.n >= 3) drillAdv(); }
   else if (s === 'H1' && a.btn === 'H' && !m.style) drillAdv();
   else if (s === 'air' && a.air) drillAdv();
-  else if (s === 'combo5' && D.hits.length >= 5) drillAdv();
+  else if (s === 'combo5') { if (a.beat > 0 && !a.rushed) { if (++D.n >= 3) drillAdv(); } else D.n = 0; }
+  else if (s === 'crisp' && a.beat === 2) drillAdv();
+  else if (s === 'clean' && a.lastEdge > 0) drillAdv();
   else if (s[0] === 'S' && m.style === +s[1] + 1 && m.styleOf === D.ty) drillAdv();
 }
 function drillAdv() { const D = G.drill; D.k++; D.n = 0; sfx('craft'); if (D.dummy) sparks(D.dummy.x + 4, D.dummy.y + 4, 8, 0, 1.8, ['#7ddc6f', '#ffffff']); if (D.k >= D.steps.length) endDrill(true); }
@@ -200,7 +202,7 @@ function drawDrill(c) {
   const D = G.drill; if (!D) return; const w = 170, x = round((VS.uw - w) / 2), y = 30;
   panel(c, x, y, w, 20 + D.steps.length * 9, `DRILL  ${WTYPE[D.ty].n.toUpperCase()}`);
   bar(c, x + 4, y + 13, w - 8, 3, 1 - D.t / D.max, D.max - D.t < 180 && (G.time >> 3) & 1 ? '#ff9a8a' : '#ffd35a', '#5a4a2a');
-  D.steps.forEach((s, k) => { const done = k < D.k, cur = k === D.k, st = DRILL_STEP[s]; drawText(c, (done ? '+ ' : cur ? '> ' : '  ') + st.t + (cur && st.n > 1 ? `  ${s === 'combo5' ? D.hits.length : D.n}/${st.n}` : ''), x + 5, y + 19 + k * 9, done ? '#7ddc6f' : cur ? '#ffffff' : '#6a6485'); });
+  D.steps.forEach((s, k) => { const done = k < D.k, cur = k === D.k, st = DRILL_STEP[s]; drawText(c, (done ? '+ ' : cur ? '> ' : '  ') + st.t + (cur && st.n > 1 ? `  ${D.n}/${st.n}` : ''), x + 5, y + 19 + k * 9, done ? '#7ddc6f' : cur ? '#ffffff' : '#6a6485'); });
 }
 
 // ---------------- the style bar over the hotbar ----------------

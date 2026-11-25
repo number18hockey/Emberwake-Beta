@@ -53,4 +53,4 @@ function payOffering(id) {
 }
 // a guardian down for the first time: a trinket slot opens (for the first four)
 function guardianFirst() { setTimeout(() => { if (G.state !== 'play') return; const n = trinkSlots(); G.note = { text: `A trinket slot opens (${n} now)`, t: 0 }; say(`A new trinket slot opens: you can wear ${n} trinkets now.`); sfx('newmove', 0); }, 2600); }
-function sigilDrops(id, first, x, y) { spawnDrop(id, first ? 2 : 1, x, y, 0, -2.6); }
+function sigilDrops(id, first, x, y) { spawnDrop(id, first ? 2 : 1, x, y, 0, -2.6); fragDrop(SIGIL_FRAG[id], first, x, y); }

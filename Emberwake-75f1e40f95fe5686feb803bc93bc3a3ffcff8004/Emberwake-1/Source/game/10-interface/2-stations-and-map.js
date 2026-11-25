@@ -96,8 +96,9 @@ function openStation(tx, ty) {
   stnState(ty * WW + tx, t); netLock(ty * WW + tx, true); G.flags['used_' + kind] = true; learn('stations');
 }
 function stnList(kind, t) {
-  const lvl = kind === 'armr' ? anvilNear() : kind === 'pot' ? (t === MOON_CAULDRON ? 3 : t === BREW_STAND ? 2 : 1) : t === ANVIL2 ? 2 : t === SLAGFORGE ? 3 : 1;
-  return RECIPES.map((r, i) => ({ r, i })).filter(e => e.r.st === kind && (e.r.lvl !== 3 || lvl === 3 || G.flags.seen1 || WORLD.mode === 1)).map(e => ({ r: e.r, i: e.i, can: canCraft(e.r) && (!e.r.lvl || e.r.lvl <= lvl), lvlOk: !e.r.lvl || e.r.lvl <= lvl })).sort((a, b) => (b.can - a.can) || (b.lvlOk - a.lvlOk));
+  const lvl = kind === 'armr' ? anvilNear() : ANVIL_LVL[t] || 1;
+  // a forge only lists the work of forges you have reached (or can already use)
+  return RECIPES.map((r, i) => ({ r, i })).filter(e => e.r.st === kind && (!(e.r.lvl >= 3) || lvl >= e.r.lvl || G.flags[LVL_SEEN[e.r.lvl]] || WORLD.mode === 1)).map(e => ({ r: e.r, i: e.i, can: canCraft(e.r) && (!e.r.lvl || e.r.lvl <= lvl), lvlOk: !e.r.lvl || e.r.lvl <= lvl })).sort((a, b) => (b.can - a.can) || (b.lvlOk - a.lvlOk));
 }
 function stnBox() { const w = min(VS.uw - 10, 372), h = min(VS.uh - 48, 214), x = round((VS.uw - w) / 2), y = round((VS.uh - h) / 2) - 10; return { x, y, w, h }; }
 function drawStation(c) {
@@ -117,7 +118,7 @@ function drawStation(c) {
     drawText(c, r.out ? IT[r.out].name : 'Sift ' + IT[outId].name.toLowerCase(), x + 21, y + 1, e.can ? '#fff' : '#8b8fa3');
     let nx = x + 21; const parts = Object.keys(r.need).map(q => [`${r.need[q]} ${IT[q].name}`, countItem(q) >= r.need[q] || WORLD.mode === 1]);
     if (r.fuel) parts.push([`${r.fuel} fuel`, fuelHave() >= r.fuel || WORLD.mode === 1]); for (const q of r.keep || []) parts.push([`(${IT[q].name})`, hasItem(q) || WORLD.mode === 1]);
-    if (!e.lvlOk) parts.unshift(['needs ' + LVL_NEED[S.kind === 'armr' ? 'armr' : S.kind === 'pot' ? 'pot' : 'anvil'][e.r.lvl], false]);
+    if (!e.lvlOk) parts.unshift(['needs ' + LVL_NEED[S.kind === 'armr' ? 'armr' : 'anvil'][e.r.lvl], false]);
     for (const [s, ok] of parts) { if (nx > x + L.w - 8) break; nx += drawText(c, s, nx, y + 10, ok ? '#7ddc6f' : '#e2483b') + 4; }
     if (hov) { tip = r.out ? itemTip(IT[r.out]) : [['Shake out of it:', '#ffd35a'], [r.loot.map(l => IT[l[0]].name).join(', '), '#b9bdd0']]; if (r.temp && !craftEasy()) tip.push([`needs heat ${r.temp}${r.shut ? ', damper shut' : ''}`, '#ff8a3d']); if (r.t) tip.push([`takes ${round(r.t / 60)}s`, '#8ff5e6']); if (r.band) tip.push([`heat band ${r.band}`, '#ff8a3d']); }
     hit(x, y, L.w, 18, () => pickRecipe(e, S, st));
@@ -132,7 +133,7 @@ function drawStation(c) {
 }
 const smsg = (s, col) => { UI.msg = { s, col, t: 150 }; };
 function pickRecipe(e, S, st) {
-  const r = e.r; if (!e.lvlOk) { sfx('deny'); smsg('This needs ' + LVL_NEED[S.kind === 'armr' ? 'armr' : S.kind === 'pot' ? 'pot' : 'anvil'][r.lvl] + '.', '#e2483b'); return; }
+  const r = e.r; if (!e.lvlOk) { sfx('deny'); smsg('This needs ' + LVL_NEED[S.kind === 'armr' ? 'armr' : 'anvil'][r.lvl] + '.', '#e2483b'); return; }
   if (!canCraft(r)) { sfx('deny'); smsg('You are missing something.', '#e2483b'); return; }
   if (PASSIVE[S.kind]) {
     const k = st.slots.indexOf(null); if (k < 0) { sfx('deny'); smsg('Every slot is full.', '#e2483b'); return; }
@@ -418,6 +419,7 @@ function drawMap(c) {
   const label = (s, lx, ly, col) => { const r = [round(lx) + 4, round(ly) - 4, textW(s), 8]; if (taken.some(q => r[0] < q[0] + q[2] + 2 && q[0] < r[0] + r[2] + 2 && r[1] < q[1] + q[3] && q[1] < r[1] + r[3])) return; taken.push(r); textS(c, s, r[0], r[1], col); };
   { const [mx, my] = at((G.p.x + 3) / T, (G.p.y + 10) / T); taken.push([round(mx) + 4, round(my) - 4, 16, 8]); }
   for (const L of LANDMARKS) if (G.found.has(L.id)) { const [lx, ly] = at(L.x / T, L.y / T); if (lx < vx - 20 || lx > vx + vw + 20) continue; c.fillStyle = '#120d1f'; c.fillRect(round(lx) - 2, round(ly) - 2, 5, 5); c.fillStyle = '#ffd35a'; c.fillRect(round(lx) - 1, round(ly) - 1, 3, 3); near(lx, ly, L.name); if (MAPV.z >= 2) label(L.name, lx, ly, '#ffd35a'); }
+  mapWonders(c, at, near, label, vx, vw);
   for (const [i, s] of STN) if (s.t === WAYSTONE) { const [lx, ly] = at(i % WW, (i / WW) | 0); c.fillStyle = '#b49cff'; c.fillRect(round(lx) - 1, round(ly) - 2, 3, 4); near(lx, ly, 'waystone'); }
   for (const o of tileObjs.values()) if (o.id === SIGNPOST) { const [lx, ly] = at(o.x, o.y); c.fillStyle = '#120d1f'; c.fillRect(round(lx) - 1, round(ly) - 4, 4, 6); c.fillStyle = '#ffd35a'; c.fillRect(round(lx), round(ly) - 3, 2, 2); c.fillStyle = '#c9a46a'; c.fillRect(round(lx), round(ly) - 1, 1, 2); near(lx, ly, 'signpost'); }
   if (SPOTS.camp) { const [lx, ly] = at(SPOTS.camp.x, SPOTS.camp.y); c.fillStyle = '#ff8a3d'; c.fillRect(round(lx) - 1, round(ly) - 1, 3, 3); near(lx, ly, 'Hearthhold, the fire'); }

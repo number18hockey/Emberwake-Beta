@@ -250,7 +250,7 @@ function interactables() {
     L.push({ x: SHRINE_X * T + 4, y: SHRINE_Y * T, r: 34, label: F.wardenDead ? 'rekindle the shrine' : 'offer your flame', act: shrineAct, hide: () => G.boss || G.duel, host: 1 });
     L.push({ x: SHRINE2_X * T + 4, y: SHRINE2_Y * T, r: 34, label: 'touch the mirror', act: mirrorAct, hide: () => G.duel || G.boss, host: 1 });
     L.push({ x: GATE_X * T + 4, y: GATE_Y * T, r: 28, label: F.gateOpen ? 'step into the Kiln Heart' : 'inspect the gate', act: gateAct, host: 1 });
-    dimInteract(L); placeInteract(L); furnInteract(L, floor((G.p.x + 3) / T), floor((G.p.y + 10) / T));
+    dimInteract(L); placeInteract(L); furnInteract(L, floor((G.p.x + 3) / T), floor((G.p.y + 10) / T)); wonderInteract(L); curioInteract(L);
     if (SPOTS.board) L.push({ x: SPOTS.board.x * T + 4, y: SPOTS.board.y * T, r: 14, label: 'read the notice board', act: boardAct });
     const p = G.p, ptx = floor((p.x + 3) / T), pty = floor((p.y + 10) / T);
     for (const o of tileObjs.values()) { if (abs(o.x - ptx) > 6 || abs(o.y - pty) > 5) continue; const k = STATIONS[o.id]; if (k) L.push({ x: o.x * T + 4, y: (o.y + 1) * T, r: 14, label: k === 'way' ? 'touch the waystone' : k === 'rift' ? 'step into the ' + TP[o.id].name.toLowerCase() : 'use the ' + TP[o.id].name.toLowerCase(), act: () => openStation(o.x, o.y) }); else if (o.id === BEDROLL) L.push({ x: o.x * T + 4, y: (o.y + 1) * T, r: 12, label: 'sleep', act: () => sleepAt(o.x, o.y) }); }
@@ -289,7 +289,8 @@ function boardAct() {
   if (fresh.length) { const id = fresh[0]; learn(id); say('A notice, nailed over older notices: ' + LEADS[id].text); }
   else say('Old notices. A lost goat. A warning about rustbacks. A drawing of the ring in the sky, mended, by a child.');
 }
-function sleepAt(x, y) { const p = G.p; G.respawn = { x, y }; const night = G.dn < .4; if (night) { G.clock = .27; G.flash = .9; say('You sleep until the light comes back.'); } else say('You rest a while. You will wake here if you fall.'); p.hp = min(p.maxhp, p.hp + 30); G.food = max(0, G.food - (night ? 12 : 3)); sfx('heal'); G.dirty = true; }
+// (a night slept through still counts toward the season)
+function sleepAt(x, y) { const p = G.p; G.respawn = { x, y }; const night = G.dn < .4; if (night) { G.days = worldDays() + ((.27 - G.clock + 1) % 1); G.clock = .27; G.flash = .9; say('You sleep until the light comes back.'); } else say('You rest a while. You will wake here if you fall.'); p.hp = min(p.maxhp, p.hp + 30); G.food = max(0, G.food - (night ? 12 : 3)); sfx('heal'); G.dirty = true; }
 function campAct() { const p = G.p; G.respawn = { x: SPOTS.camp.x, y: SPOTS.camp.y }; if (p.hp < p.maxhp) { p.hp = p.maxhp; numPop(p.x + 3, p.y - 4, 'RESTED', '#ffd35a'); } sfx('heal'); saveWorld(true); say('You sit with the fire a while. The village will wake you here if you fall.'); }
 function spireAct() { if (!G.flags.spireRead) { G.flags.spireRead = true; unlock('spire'); G.dirty = true; sfx('quest', 0); } say('Carved into the lookout: THE RING WAS NOT BROKEN. IT WAS OPENED. Someone has scratched a second line under it: by whom.'); }
 function pedTake(o) {
@@ -356,9 +357,9 @@ function tickStory() {
     for (const L of LANDMARKS) if (!G.found.has(L.id) && hypot(p.x + 3 - L.x, (p.y + 10 - L.y) * 1.4) < L.r && !G.cine) { discover(L); break; }
     if (abs(ptx - SHRINE_X) < 24) G.flags.shrineSeen = true;
     if (abs(ptx - SHRINE2_X) < 26) G.flags.mirrorSeen = true;
-    const b = placeAt(ptx, pty);
-    if (b !== G.biome) {
-      G.biome = b; G.biomeT = 200; if (b === 'ash') unlock('hollow'); if (b === 'reach') unlock('reach'); if (b === 'drift') unlock('drift'); if (b === 'under') unlock('under'); if (b === 'deep') unlock('deep');
+    const b = placeAt(ptx, pty), md = MOODS[b] ? moodAt(ptx) : 0;
+    if (b !== G.biome || md !== (G.mood | 0)) {
+      const same = b === G.biome; G.biome = b; G.mood = md; G.biomeN = landName(b, ptx); G.biomeS = landSub(b, ptx); if (!same || G.biomeN) G.biomeT = 200; if (b === 'ash') unlock('hollow'); if (b === 'reach') unlock('reach'); if (b === 'drift') unlock('drift'); if (b === 'under') unlock('under'); if (b === 'deep') unlock('deep');
       if (!G.found.has('realm_' + b) && (b === 'drift' || b === 'under' || b === 'deep')) { G.found.add('realm_' + b); G.banner = { text: BIOME[b], sub: { drift: 'islands on the wind', under: 'the caves under everything', deep: 'where the third ember fell' }[b], t: 0 }; sfx('quest', 0); }
     }
     if (G.movesUsed.size >= 3) unlock('forms');

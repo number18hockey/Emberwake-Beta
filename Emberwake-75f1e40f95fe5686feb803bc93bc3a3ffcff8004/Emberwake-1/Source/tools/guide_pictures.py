@@ -16,9 +16,29 @@ ARGS = ['--no-sandbox', '--disable-background-timer-throttling', '--disable-rend
 PORT = 18901
 
 
-def save(png, name):
+def four(pngs, name):
+    """four pictures in one, two by two"""
+    os.makedirs(OUT, exist_ok=True); ims = [Image.open(io.BytesIO(p)).convert('RGB') if isinstance(p, bytes) else p for p in pngs]; w, h = ims[0].size
+    out = Image.new('RGB', (w, h), (18, 13, 31))
+    for i, im in enumerate(ims[:4]): out.paste(im.resize((w // 2 - 2, h // 2 - 2), Image.LANCZOS), ((i % 2) * (w // 2 + 2), (i // 2) * (h // 2 + 2)))
+    out.save(os.path.join(OUT, name), 'JPEG', quality=86, optimize=True, progressive=True); print('saved', name)
+
+
+def zoomed(png, fx, k=3):
+    """the part of a picture round a point (fractions of it), k times the size"""
+    im = Image.open(io.BytesIO(png)).convert('RGB'); w, h = im.size; cw, ch = w // k, h // k
+    x = min(max(int(fx[0] * w - cw / 2), 0), w - cw); y = min(max(int(fx[1] * h - ch / 2), 0), h - ch)
+    return im.crop((x, y, x + cw, y + ch)).resize((w, h), Image.NEAREST)
+
+
+def save(png, name, zoom=None):
+    """zoom = (cx, cy) as fractions of the picture: keep the half of it round that point, at twice the size"""
     os.makedirs(OUT, exist_ok=True)
-    Image.open(io.BytesIO(png)).convert('RGB').save(os.path.join(OUT, name), 'JPEG', quality=84, optimize=True, progressive=True)
+    im = Image.open(io.BytesIO(png)).convert('RGB')
+    if zoom:
+        w, h = im.size; x = min(max(int(zoom[0] * w - w / 4), 0), w // 2); y = min(max(int(zoom[1] * h - h / 4), 0), h // 2)
+        im = im.crop((x, y, x + w // 2, y + h // 2)).resize((w, h), Image.NEAREST)
+    im.save(os.path.join(OUT, name), 'JPEG', quality=84, optimize=True, progressive=True)
     print('saved', name)
 
 
@@ -47,12 +67,50 @@ async def main():
         await pg.evaluate("G.says.length=0; G.sayCur=null; G.banner=null; G.cine=null; 0")
 
     bA, A = await window()
-    await A.evaluate("G.state = 'title'; 0"); await A.wait_for_timeout(400)
     save(await A.screenshot(), 'title.jpg')
     await world(A, 'ALPHA')
     await A.evaluate("keys.KeyD = true; 0"); await A.wait_for_timeout(700); await A.evaluate("keys.KeyD = false; 0"); await A.wait_for_timeout(900)
     await A.evaluate("G.says.length=0; G.sayCur=null; G.banner=null; 0"); await A.wait_for_timeout(300)
     save(await A.screenshot(), 'world.jpg')
+    # a fight: three embers of tempo, the glint on the blade, and a husk winding up
+    await A.evaluate("""(() => { const p = G.p; inv[0] = { id: 'steel_sword', n: 1 }; G.sel = 0; G.enemies.length = 0; G.spawnT = 1e9;
+      let tx = SPAWN_X - 150; streamTo(tx * T, true); for (let k = 0; k < 60; k++) { let flat = true; for (let x = tx - 3; x <= tx + 6; x++) if (heights[x] !== heights[tx]) flat = false; if (flat) break; tx--; }
+      const gy = heights[tx]; for (let x = tx - 6; x <= tx + 9; x++) for (let y = gy - 6; y < gy; y++) if (TP[tileAt(x, y)].decor) setTile(x, y, AIR);
+      p.x = p.px = tx * T; p.y = p.py = gy * T - p.h; p.vx = p.vy = 0; p.face = 1; p.inv = 0; p.hp = p.maxhp; snapCam();
+      const e = spawnMob('husk', tx + 3, gy); e.hp = 30; e.maxhp = 48; e.dir = -1; e.state = 'windup'; e.t = 0; e.pz = 9; e.mpz = 26; e.pzT = 9999; window.FOE = e; window.FX = e.x;
+      p.tempo = 3; p.tempoT = 9999; mouse.wx = e.x + 3; mouse.wy = e.y + 8; for (const k of ['rush','crisp','clean','broken','clash','caught','ablaze']) G.flags['th_' + k] = 1; G.clock = .3; })(); 0""")
+    await A.wait_for_timeout(500)
+    KEEP = "FOE.state = 'windup'; FOE.t = 2; FOE.stun = 0; FOE.x = FOE.px = FX; FOE.vx = 0; FOE.hp = 30; G.p.tempo = 3; G.p.tempoT = 999; G.p.hp = G.p.maxhp; G.says.length = 0; G.sayCur = null; G.banner = null; G.note = null; mouse.wx = FOE.x + 3; mouse.wy = FOE.y + 8; 0"
+    await A.evaluate(KEEP); await A.evaluate("mouse.lp = true; 0"); await A.wait_for_timeout(50); await A.evaluate("mouse.lp = false; 0")
+    for _ in range(60):
+        await A.evaluate(KEEP)
+        if await A.evaluate("G.p.glintT > 0 && G.p.glintMax - G.p.glintT < 4"): break
+        await A.wait_for_timeout(12)
+    fx = await A.evaluate("[(G.p.x + 14 - G.rcx) * VS.s / innerWidth, (G.p.y + 2 - G.rcy) * VS.s / innerHeight]")
+    save(await A.screenshot(), 'fight.jpg', zoom=fx)
+    await A.evaluate("G.enemies.length = 0; G.p.tempo = 0; G.p.atk = null; G.p.state = 'normal'; inv[0] = null; 0")
+    # no two worlds alike: four moods of this world's lands, then four curios on its roads
+    QUIET = "G.says.length = 0; G.sayCur = null; G.banner = null; G.note = null; G.cine = null; G.wx = null; G.enemies.length = 0; 0"
+    async def stand(x, clock=.32, wait_ms=1400, name=True):
+        await A.evaluate("(() => { const p = G.p, x = %d; streamTo(x * T, true); p.x = p.px = x * T + 1; p.y = p.py = (heights[x] - 3) * T; let n = 0; while (boxHits(p.x, p.y, p.w, p.h) && n++ < 80) p.y = p.py = p.y - T; p.vx = p.vy = 0; p.inv = 999999; G.clock = %s; G.spawnT = 1e9; snapCam(); })(); 0" % (x, clock))
+        await A.wait_for_timeout(wait_ms); await A.evaluate(QUIET); await A.evaluate("G.biomeT = %s; 0" % ('100' if name else '0')); await A.wait_for_timeout(250)
+    spots = await A.evaluate("""(() => { const at = {}; for (let d = 300; d < 16000; d += 10) for (const s of [1, -1]) { const x = X0 + s * d, b = biomeE(x), m = moodAt(x), k = b + m; if (m && !at[k] && !inWindow(x, 90) && biomeE(x - 50) === b && biomeE(x + 50) === b && moodAt(x - 50) === m && moodAt(x + 50) === m && !lakeAt(x) && !lakeAt(x - 20) && !lakeAt(x + 20)) at[k] = x; } return at; })()""")
+    want = [k for k in ('moor1', 'moor2', 'reach1', 'dunes2', 'thorn1', 'fen1', 'ash1', 'scoria1', 'reach2', 'fen2', 'thorn2', 'dunes1', 'ash2') if k in spots][:4]; shots = []
+    for k in want: await stand(spots[k], .34 if k != 'moor2' else .6); shots.append(await A.screenshot())
+    if len(shots) == 4: four(shots, 'moods.jpg')
+    cur = await A.evaluate("(() => { const at = {}; for (let k = floor((X0 - 14000) / CURIO_W); k <= floor((X0 + 14000) / CURIO_W); k++) { const c = curioOf(k); if (c && (!at[c.kind] || abs(c.x - X0) < abs(at[c.kind] - X0))) at[c.kind] = c.x; } return at; })()")
+    shots = []
+    for k in [k for k in ('rest', 'stones', 'ribs', 'spring', 'mile', 'hermit', 'cart') if k in cur][:4]:
+        await stand(cur[k] - (5 if k != 'stones' else 7), .34, 1200, False); fx = await A.evaluate("[(%d * T + 4 - G.rcx) * VS.s / innerWidth, (G.p.y - 2 - G.rcy) * VS.s / innerHeight]" % cur[k]); shots.append(zoomed(await A.screenshot(), fx))
+    if len(shots) == 4: four(shots, 'curios.jpg')
+    # the look of the air: a village night, rain, an ember dusk, snow in Ashrest
+    shots = []
+    for clock, days, wx in ((.8, 4.2, None), (.3, 1.2, 'rain'), (.57, 7.2, None), (.3, 10.2, 'snow')):
+        await stand(spots.get('moor2', spots[want[0]]) if clock != .8 else await A.evaluate('SPAWN_X + 8'), clock, 500, False)
+        await A.evaluate("G.days = %s; G.wx = %s; G.clock = %s; 0" % (days, "{ k: '%s', t: 99999, a: 1 }" % wx if wx else 'null', clock)); await A.wait_for_timeout(2600 if wx else 1500)
+        await A.evaluate("G.says.length = 0; G.sayCur = null; G.banner = null; G.note = null; G.cine = null; G.biomeT = 0; G.clock = %s; 0" % clock); await A.wait_for_timeout(200); shots.append(await A.screenshot())
+    four(shots, 'look.jpg'); await A.evaluate("G.days = 0; G.wx = null; G.clock = .32; 0")
+    await A.evaluate("(() => { const p = G.p, sx = SPOTS.camp ? SPOTS.camp.x - 6 : SPAWN_X; streamTo(sx * T, true); p.x = p.px = sx * T + 1; p.y = p.py = (heights[sx] - 3) * T; let n = 0; while (boxHits(p.x, p.y, p.w, p.h) && n++ < 80) p.y = p.py = p.y - T; p.inv = 999999; snapCam(); })(); 0"); await A.wait_for_timeout(400)
     # the pack, with a few things picked up
     await A.evaluate("for (const [id, n] of [['log', 6], ['stick', 9], ['fiber', 14], ['flint', 3], ['berries', 5], ['glow_amulet', 1]]) addItem(id, n); trinkFit(); G.trink[0] = 'quick_ring'; G.trink[1] = 'miner_charm'; UI.open = 'inv'; 0")
     await A.wait_for_timeout(600); save(await A.screenshot(), 'pack.jpg')
@@ -74,8 +132,9 @@ async def main():
     await B.wait_for_timeout(1500); await B.evaluate("G.cine = null; G.banner = null; G.says.length = 0; G.sayCur = null; 0"); await B.wait_for_timeout(1500)
     await B.evaluate("G.cine = null; G.banner = null; G.says.length = 0; G.sayCur = null; 0"); await B.wait_for_timeout(400)
     save(await B.screenshot(), 'friends.jpg')
-    # a home: furniture that does something, at dusk
+    # the battle royale: on the barge over the island
     bC, C = await window()
+    # a home: furniture that does something, at dusk
     await world(C, 'ALPHA')
     await C.evaluate("""(() => { const p = G.p, tx = floor((p.x + 3) / T) + 90, g = heights[tx], ty = g - 1; streamTo(tx * T, true); G.clock = .5; updateSun(); G.enemies.length = 0; G.pin = null; G.found.add('village');
       for (let y = ty - 7; y <= ty; y++) for (let x = tx - 11; x <= tx + 11; x++) { setTile(x, y, AIR); walls[y * WW + x] = x < tx ? W_POLISHED : W_MOSSB; }
@@ -94,16 +153,23 @@ async def main():
         await C.wait_for_timeout(700); await C.evaluate("G.says.length = 0; G.sayCur = null; G.banner = null; G.note = null; G.cine = null; G.biomeT = 0; 0")
     await C.wait_for_timeout(200)
     save(await C.screenshot(), 'home.jpg')
-    # the weather: a storm over the woods
-    await C.evaluate("""(() => { const p = G.p; for (const d of [-900, -700, -500, -350, -200, 200, 350, 500, 700, 900]) streamTo((SPAWN_X + d) * T, true); let tx = SPAWN_X + 62, best = -1; for (const [x] of treeTops) { if (abs(x - SPAWN_X) < 150 || ['reach', 'dunes', 'scoria', 'ash'].includes(biomeAt(x))) continue; let n = 0; for (const [q] of treeTops) if (abs(q - x) < 24 && abs(heights[q] - heights[x]) < 5) n++; if (n > best) { best = n; tx = x + 3; } } G.clock = .34; updateSun(); G.enemies.length = 0; p.x = p.px = tx * T; p.y = p.py = (heights[tx] - 3) * T; let n = 0; while (boxHits(p.x, p.y, p.w, p.h) && n++ < 60) { p.y -= T; p.py = p.y; } snapCam(); wxSet('storm', 1); G.wx.boltT = 1e9; const f = wxLocal('storm', biomeAt(tx)); for (const k of WXK) G.wxI[k] = f[k] || 0; G.wx.wet = 1; })(); 0""")
-    for _ in range(4):
-        await C.wait_for_timeout(900); await C.evaluate("G.says.length = 0; G.sayCur = null; G.banner = null; G.note = null; G.cine = null; G.biomeT = 0; G.clock = .34; G.enemies.length = 0; 0")
-    save(await C.screenshot(), 'weather.jpg')
-    # the battle royale: coming down out of the sky over a village, and the island's map (always the same island)
-    await C.evaluate("G.nick = 'ALPHA'; FORM.nick = 'ALPHA'; BR.via = 'solo'; BR.lead = true; BR.on = true; brEnterMatch('guide', 4242, ['me'], 31); 0"); await wait(C, "G.state === 'play' && BR.on && BR.t > 260")
-    await C.evaluate("(() => { const p = G.p, q = BR.pois.find(q => q.name === 'LANTERN GREEN') || BR.pois[2], x = q.x + 20; p.x = p.px = x * T; p.y = p.py = (heights[x] - 27) * T; G.clock = .3; snapCam(); })(); 0")
-    await C.wait_for_timeout(500); save(await C.screenshot(), 'royale.jpg')
-    await wait(C, "!G.p.glide", 30000); await C.evaluate("BR.mapOpen = true; 0"); await C.wait_for_timeout(1500); save(await C.screenshot(), 'island.jpg')
+    # the Ashfall Trials in duos: the count on the plinths, then rekindling a fallen teammate
+    await C.evaluate("G.nick = 'ALPHA'; FORM.nick = 'ALPHA'; BR.arenaWant = 0; brSolo(2); 0"); await wait(C, "G.state === 'play' && BR.on")
+    await C.wait_for_timeout(2000); save(await C.screenshot(), 'royale_kit.jpg')    # three perks to choose from, on the plinth
+    await C.evaluate("if (BR.offer) trPick(0); 0"); await C.wait_for_timeout(2200); save(await C.screenshot(), 'royale.jpg')
+    await wait(C, "BR.phase === 'fight' && !G.p.onBarge", 15000); await C.wait_for_timeout(2500)
+    await C.evaluate("""(() => { const p = G.p, m = G.fighters.find(f => trMate(f)); p.inv = 999999; G.banner = null; m.x = m.px = p.x + 26; m.y = m.py = p.y; m.hp = 0; killFighter(m, null); G.banner = null; window.MATE = m; })(); 0""")
+    await C.wait_for_timeout(1300)
+    await C.evaluate("(() => { const p = G.p, m = MATE; if (m.rk) { p.x = p.px = m.rk.x - 3; p.vx = 0; } keys.KeyF = true; G.banner = null; })(); 0"); await C.wait_for_timeout(1400)
+    fx = await C.evaluate("[(G.p.x + 3 - G.rcx) * VS.s / innerWidth, (G.p.y - 6 - G.rcy) * VS.s / innerHeight]")
+    save(await C.screenshot(), 'royale_team.jpg', zoom=fx); await C.evaluate("keys.KeyF = false; 0")
+    # a party: the host's lobby with a friend in it, open to others
+    await C.evaluate("quitToTitle(); 0"); await C.wait_for_timeout(400); await B.evaluate("quitToTitle(); 0"); await B.wait_for_timeout(400)
+    await C.evaluate("G.nick = 'ALPHA'; FORM.nick = 'ALPHA'; COOP.br = true; BR.sizeWant = 2; BR.arenaWant = 2; brLobbyEnter('rtc', 'friends'); 0"); await wait(C, "!!COOP.gcode && sigReady()", 10000); code = await C.evaluate("COOP.gcode")
+    await B.evaluate("FORM.nick = 'BRAVO'; FORM.skin = 2; G.state = 'join'; 0"); await B.evaluate("sigJoin(%r)" % code)
+    if await wait(B, "BR.on && G.state === 'brlobby'", 30000):
+        await wait(C, "BR.people.size === 1", 6000); await C.evaluate("BR.open = true; 0"); await C.wait_for_timeout(1500); save(await C.screenshot(), 'royale_party.jpg')
+    else: print('!! the friend did not reach the lobby: royale_party.jpg not taken')
     for b in (bA, bB, bC): await b.close()
     await pw.stop()
 

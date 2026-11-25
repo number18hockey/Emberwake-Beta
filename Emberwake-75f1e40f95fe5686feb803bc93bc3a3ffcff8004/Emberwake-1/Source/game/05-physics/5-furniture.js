@@ -65,7 +65,7 @@ const BOOKS = ['Every guardian wants an offering. The Offering Altar makes them,
   'Trinkets go in the trinket slots in your pack. Each guardian you beat opens another.', 'A sweep knocks a foe down. A heavy blow on a foe that is down CRUSHES it.',
   'A perfect dodge opens a counter: attack straight after, aiming up, down or with a heavy blow.', 'Hot meals from the Hearth Oven give a boon. Only one at a time: the last one eaten counts.',
   'Metal armour is made at the Armourer\'s Stand, with an anvil of its rank close by.', 'Weapons teach you more of their forms the more you use them: BASICS, FOOTWORK, FLOW, MASTERY.',
-  'A long run of light blows sets up a heavy one: RHYTHM.', 'Strong weapons hide arts: keep hitting with one and it will teach you. Hold RMB to call them.'];
+  'Strike again as your weapon glints, not before. Blows in time light embers; a heavy blow spends them.', 'Strong weapons hide arts: keep hitting with one and it will teach you. Hold RMB to call them.'];
 
 function buildFurnArt() {
   for (const [t] of FURN) TEX[t] = TEX[DIRT];
@@ -238,7 +238,7 @@ function furnLights() { const p = G.p; if (p && !p.dead && !WORLD.arena && boonH
 function drawGadgetHud(c) {
   if (WORLD.arena || !G.p) return; const p = G.p; let y = VS.uh - 34; const lines = [];
   if (hasUtil('depth_gauge')) { const ty = floor((p.y + p.h) / T), g = heights[clamp(floor((p.x + 3) / T), 0, WW - 1)] || 0, d = ty - g; lines.push([DIM ? 'DEPTH: another world' : d <= 0 ? 'DEPTH: surface' : `DEPTH: ${d} down`, '#cfd6e0']); }
-  if (hasUtil('pocket_watch') && !DIM) { const h = (G.clock * 24 + 6) % 24, hh0 = floor(h), mm = floor((h - hh0) * 60), dark = G.dn < .4; lines.push([`TIME ${String(hh0).padStart(2, '0')}:${String(mm).padStart(2, '0')}  ${dark ? 'night' : 'day'}`, dark ? '#b49cff' : '#ffd35a']); }
+  if (hasUtil('pocket_watch') && !DIM) { const h = (G.clock * 24 + 6) % 24, hh0 = floor(h), mm = floor((h - hh0) * 60), dark = G.dn < .4; lines.push([`TIME ${String(hh0).padStart(2, '0')}:${String(mm).padStart(2, '0')}  ${dark ? 'night' : 'day'}`, dark ? '#b49cff' : '#ffd35a']); lines.push([yearLine(), SEASON().col]); }
   for (const [s, col] of lines) { textS(c, s, VS.uw - textW(s) - 6, y, col); y -= 9; }
 }
 // ore near you glints, through rock

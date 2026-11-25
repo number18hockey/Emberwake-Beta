@@ -13,7 +13,7 @@ const hittable = t => !!t && t !== BEDROCK && !TP[t].ghost && !TP[t].liquid && !
 const solidHit = t => hittable(t) && TP[t].solid && !TP[t].dyn;
 const areaHit = t => solidHit(t) || (hittable(t) && TP[t].stalk);
 const isWeb = t => !!TP[t].part && !TP[t].dyn;
-function dirtyAt(tx, ty) { const c = chunks.get(floor(ty / CH) * 8192 + floor(tx / CH)); if (c) c.dirty = true; if (MODS_ON) netTile(ty * WW + tx); if (WORLD.royale && typeof brTileChanged === 'function') brTileChanged(ty * WW + tx); }
+function dirtyAt(tx, ty) { const c = chunks.get(floor(ty / CH) * 8192 + floor(tx / CH)); if (c) c.dirty = true; if (MODS_ON) netTile(ty * WW + tx); }
 
 // ---------------- which tool is in your hand ----------------
 const reachOf = tool => WORLD.mode === 1 ? 72 : tool.kind === 'hand' ? 30 : tool.kind === 'knife' ? 32 : 38;
@@ -42,24 +42,26 @@ function impactRay(p, tool) {
   return null;
 }
 function yieldCell(t, tool) {
-  const M = MAT[t], ys = tool.kind === 'hammer' && M.ham ? M.ham : M.y, bonus = tool.kind === 'shovel' && (M.k === 'soil' || M.k === 'sand' || M.k === 'clay') ? 1.15 : 1;
+  const M = MAT[t], dark = M.when && !M.when(); if (dark && M.whenSay && G.time - (G.wsT || 0) > 240) { G.wsT = G.time; say(M.whenSay); }
+  const ys = dark ? M.alt || [] : tool.kind === 'hammer' && M.ham ? M.ham : M.y, bonus = tool.kind === 'shovel' && (M.k === 'soil' || M.k === 'sand' || M.k === 'clay') ? 1.15 : 1;
   for (const [id, k] of ys) YACC[id] = (YACC[id] || 0) + k / 64 * bonus;
 }
 function emitYield(x, y) { for (const id in YACC) { const n = floor(YACC[id] + 1e-6); if (n > 0 && IT[id]) { spawnDrop(id, n, x, y, frand(-.8, .8), frand(-1.6, -.4)); YACC[id] -= n; if (GLINT[id]) glint(x, y, GLINT[id]); } } }
-// a tool swung at a creature hits it: weaker than a weapon, but never useless
+// a tool swung at a creature hits it: weaker than a weapon, but never useless.
+// A tap does half what a sword of the same metal does, at every tier; a wound-up swing (hold RMB) nearly as much as one.
+// (It used to follow the tool's digging power, which climbs much faster than weapons do: late picks out-hit swords.)
+const TOOL_VS = [3, 7, 9, 11, 13, 16, 20, 24, 28, 33, 38, 42, 46, 52];
 function toolHitsFoe(p, tool, k) {
   const cx = p.x + 3, cy = p.y + 8, dx = mouse.wx - cx, dy = mouse.wy - cy, d = hypot(dx, dy) || 1, ux = dx / d, uy = dy / d, R = min(d + 6, reachOf(tool) + 6);
   let best = null, bt = 1e9;
-  for (const e of G.enemies.concat(G.fighters.filter(f => f !== p && (f.hollow || WORLD.royale && f.brIn && f.team !== p.team)))) {
+  for (const e of G.enemies.concat(G.fighters.filter(f => f !== p && f.hollow))) {
     if (e.dead || e.noHit) continue;
     for (let r = 3; r <= R; r += 3) { const x = cx + ux * r, y = cy + uy * r; if (x > e.x - 3 && x < e.x + e.w + 3 && y > e.y - 3 && y < e.y + e.h + 3) { if (r < bt) { bt = r; best = e; } break; } }
   }
   if (!best) return false;
-  const dmg = max(2, round((tool.power || 4) * (WORLD.royale && tool.id ? .8 : .55) * (1 + k * .9) * (tool.kind === 'axe' ? 1.25 : 1))), fc = sign(ux) || p.face || 1;
-  // in the Ashfall a knife, an axe, a pick or a hammer is a weapon too
-  if (best.fighter && WORLD.royale) { if (!strike(p, best, dmg, fc * (2 + k * 1.4), -1.4 - k * .6, { stop: 3, shake: 1, blunt: tool.kind === 'hammer' || tool.kind === 'hand', stagger: k > .6 ? 30 : 0, hx: best.x + 3, hy: best.y + 8 })) return true; comboHit(true); }
-  else if (best.hollow) hurtFighter(best, dmg, cx, { kx: fc * 2.6, ky: -1.6, by: p });
-  else damageEnemy(best, dmg, fc * (1.8 + k * 1.6), -1.2 - k, { blunt: tool.kind === 'hammer' || tool.kind === 'hand' });
+  const dmg = max(2, round(TOOL_VS[clamp(tool.tier | 0, 0, 13)] * (.5 + k * .45) * (tool.kind === 'axe' ? 1.2 : 1))), fc = sign(ux) || p.face || 1;
+  if (best.hollow) hurtFighter(best, dmg, cx, { kx: fc * 2.6, ky: -1.6, by: p });
+  else damageEnemy(best, dmg, fc * (1.8 + k * 1.6), -1.2 - k, { blunt: tool.kind === 'hammer' || tool.kind === 'hand', bite: k >= .5, pz: .6 + k, gb: k >= .8 });
   sfx('hit', 0); sparks(best.x + best.w / 2, best.y + best.h / 2, 5, fc, 1.6); addShake(1 + k * 2); best.flash = 6;
   return true;
 }
@@ -106,9 +108,10 @@ function hammerWall(p, tool) {
 function pluck(tx, ty, tool) {
   const t = tileAt(tx, ty), cx = tx * T + 4, cy = ty * T + 4;
   if (t === POT) { setTile(tx, ty, AIR); burst(cx, cy, 6, ['#d6c8ae', '#bba888'], 1.5, 30, { hit: 1 }); sfx('brk'); const r = Math.random(); if (r < .3) spawnDrop('cinder', randi(1, 3), cx, cy); else if (r < .5) spawnDrop('glowcap', 1, cx, cy); else if (r < .64) spawnDrop('torch', randi(2, 4), cx, cy); else if (r < .74) spawnDrop('shard', 1, cx, cy); else if (r < .84) spawnDrop('bone', randi(1, 2), cx, cy); else if (r < .92) spawnDrop('copper_ore', randi(2, 4), cx, cy); else spawnDrop('salve', 1, cx, cy); afterRemove(tx, ty, t); return; }
-  if (t === BERRY) { setTile(tx, ty, BUSH); G.regrow.push({ i: ty * WW + tx, at: G.time + 60 * 240 }); }
+  if (t === BERRY) { setTile(tx, ty, BUSH); G.regrow.push({ i: ty * WW + tx, at: G.time + round(60 * 240 * (wt('bounty') ? .5 : 1) * seasonRegrow()) }); }
   else setTile(tx, ty, AIR);
-  const L = PLUCK[t]; if (L) for (const [id, a, b] of L) { const n = randi(a, b) * (tool.kind === 'knife' && id === 'fiber' ? 2 : 1); if (n > 0) spawnDrop(id, n, cx, cy, frand(-.6, .6), frand(-1.5, -.6)); }
+  const W = PLUCK_WHEN[t], shut = W && !W.ok(); if (shut && W.say && !G.flags['said' + t]) { G.flags['said' + t] = 1; say(W.say); }
+  const L = shut ? W.alt : PLUCK[t]; if (L) for (const [id, a, b] of L) { const n = randi(a, b) * (tool.kind === 'knife' && id === 'fiber' ? 2 : 1); if (n > 0) spawnDrop(id, n, cx, cy, frand(-.6, .6), frand(-1.5, -.6)); }
   else if (TP[t].drop) spawnDrop(TP[t].drop, 1, cx, cy);
   burst(cx, cy, 5, [TP[t].dust, '#ffffff'], 1.2, 24, { hit: 1 }); sfx('mine', 0);
   if (t !== BERRY) afterRemove(tx, ty, t);
@@ -328,31 +331,16 @@ function toolTick(p, I) {
 }
 // ---------------- eating and the hunger it answers ----------------
 function eat(it) {
-  const p = G.p; if (p.eatCd > 0 || p.consume || countItem(it.id) < 1) return; if (!WORLD.mode && G.food >= 99 && !(it.heal > 0 && p.hp < p.maxhp) && !it.buff) { say('You are full.'); return; }
-  if (it.brew === 'mirror' && ((p.cloneCd || 0) > 0 || G.fighters.some(f => f.isClone && !f.gone && !f.dead))) { say('Your mirror is still finding its way home.'); sfx('deny'); return; }
-  const drink = !!it.drink || it.brew || it.id === 'tonic' || it.id === 'antidote';
-  p.consume = { id: it.id, drink: !!drink, t: 0, dur: it.consumeT || (drink ? 48 : it.meal ? 38 : 28) }; p.eatCd = p.consume.dur + 12; p.vx *= .45;
-  sfx(drink ? 'stir' : 'ui', 0);
-}
-function finishEat(it) {
-  const p = G.p; if (!p || !it || countItem(it.id) < 1) return;
-  removeItem(it.id, 1); G.food = min(100, (G.food || 0) + (it.food || 0)); if (it.heal) { p.hp = min(p.maxhp, p.hp + it.heal); numPop(p.x + 3, p.y - 4, '+' + it.heal, '#7ddc6f'); }
+  const p = G.p; if (p.eatCd > 0) return; if (!WORLD.mode && G.food >= 99 && !(it.heal > 0 && p.hp < p.maxhp) && !it.buff) { say('You are full.'); return; }
+  removeItem(it.id, 1); p.eatCd = 30; G.food = min(100, (G.food || 0) + (it.food || 0)); if (it.heal) { p.hp = min(p.maxhp, p.hp + it.heal); numPop(p.x + 3, p.y - 4, '+' + it.heal, '#7ddc6f'); }
   if (it.meal) startMeal(it);
   if (it.buff === 'tonic') p.tonic = 1800; if (it.buff === 'ward') { p.ward = 1800; if (p.st) p.st.poison = p.st.bleed = 0; } if (it.buff === 'bandage') { p.bandT = 600; if (p.st) p.st.bleed = 0; }
-  if (it.brew) drinkBrew(it.brew);
-  sfx('pickup', 0); for (let k = 0; k < 6; k++) P(p.x + 3, p.y + 6, frand(-.8, .8), frand(-1.2, -.3), 18, fpick(it.brew ? ['#8ff5e6', '#c9fff6', '#b49cff'] : ['#ffd35a', '#f4efe6', '#e2483b']), { g: .08 });
+  sfx('pickup', 0); for (let k = 0; k < 6; k++) P(p.x + 3, p.y + 6, frand(-.8, .8), frand(-1.2, -.3), 18, fpick(['#ffd35a', '#f4efe6', '#e2483b']), { g: .08 });
   G.flags['ate_' + it.id] = true;
 }
-function tickConsume(p) {
-  if (!p || !p.consume) return false; const u = p.consume, it = IT[u.id];
-  if (p.dead || p.hurtT > 0) { p.consume = null; p.eatCd = 0; if (p === G.p) say('Interrupted. You keep the food.'); return false; }
-  u.t++; p.vx *= .7;
-  if (u.t >= u.dur) { p.consume = null; finishEat(it); }
-  return true;
-}
 function tickHunger() {
-  const p = G.p; if (!p || p.dead || WORLD.arena && !WORLD.royale || WORLD.mode === 1) return;
-  if (p.eatCd > 0) p.eatCd--; if (p.tonic > 0) p.tonic--; if (p.ward > 0 && !WORLD.royale) p.ward--;
+  const p = G.p; if (!p || p.dead || WORLD.arena || WORLD.mode === 1) return;
+  if (p.eatCd > 0) p.eatCd--; if (p.tonic > 0) p.tonic--; if (p.ward > 0) p.ward--;
   if (p.bandT > 0) { p.bandT--; if (p.bandT % 15 === 0 && p.hp < p.maxhp) p.hp++; }
   const spent = max(0, (p.lastStam === undefined ? p.stam : p.lastStam) - p.stam); p.lastStam = p.stam;
   G.food = max(0, G.food - (.0011 + spent * .012) * DIFF().hunger);
@@ -380,17 +368,15 @@ function splash(tx, ty) { for (let k = 0; k < 8; k++) P(tx * T + 4, ty * T + 4, 
 // ---------------- moving: ladders, ropes, gliders, claws ----------------
 function climbAt(f) { const cx = floor((f.x + 3) / T); for (let y = floor((f.y + 2) / T); y <= floor((f.y + f.h - 1) / T); y++) if (TP[tileAt(cx, y)].climb) return true; return false; }
 function travelTick(f, I, grav) {
-  if (!f.isPlayer && !f.brBot || WORLD.arena && !WORLD.royale || f.dead || f.remote) return grav;
+  if (!f.isPlayer || WORLD.arena || f.dead) return grav;
   if (f.dragT > 0) { f.dragT--; f.vx = approach(f.vx, sign(f.dragX - (f.x + 3)) * 2.2, .35); }
-  // (having leapt off a rope or a ladder, you don't catch the same one again straight away just because jump is still held)
-  const onC = climbAt(f), col = floor((f.x + 3) / T); if (f.letGo > 0) f.letGo--;
-  if (onC && !(f.letGo > 0 && f.letGoX === col) && (I.jumpH && !f.onGround || I.down || (I.jumpH && f.onGround && !I.md))) f.climbing = true;
+  const onC = climbAt(f);
+  if (onC && (I.jumpH && !f.onGround || I.down || (I.jumpH && f.onGround && !I.md))) f.climbing = true;
   if (f.climbing) {
-    if (!onC || (I.jumpP && I.md)) { f.climbing = false; if (I.jumpP && I.md) { f.vy = -3.6; f.vx = I.md * 2; f.letGo = 14; f.letGoX = col; } }
-    // (hands off the side keys, you line up with what you are climbing, so a lip of rock doesn't catch your shoulder)
-    else { f.vy = I.jumpH ? -1.35 : I.down ? 1.7 : 0; f.vx *= .6; if (!I.md) { const off = col * T + 1 - f.x; if (abs(off) > .3) f.vx += clamp(off * .12, -.35, .35); } f.coyote = 0; f.dblUsed = false; f.airDash = airDashMax(f); f.onGround = false; f.runPh += abs(f.vy) * .3; return 0; }
+    if (!onC || (I.jumpP && I.md)) { f.climbing = false; if (I.jumpP && I.md) { f.vy = -3.6; f.vx = I.md * 2; } }
+    else { f.vy = I.jumpH ? -1.35 : I.down ? 1.7 : 0; f.vx *= .6; f.coyote = 0; f.dblUsed = false; f.airDash = airDashMax(f); f.onGround = false; f.runPh += abs(f.vy) * .3; return 0; }
   }
-  f.gliding = f.clinging = false; if (!f.isPlayer) return grav;
+  f.gliding = f.clinging = false;
   if (!f.onGround && !liqAt(f.x + 3, f.y + f.h - 5)) {
     if (hasUtil('claws') && I.md && f.state === 'normal') {
       const wx = I.md > 0 ? floor((f.x + f.w + 1) / T) : floor((f.x - 1) / T);
@@ -447,7 +433,7 @@ function drawPhys(w, al) {
   }
 }
 function drawAim(c, S) {
-  const p = G.p, it = heldItem(); if (!p || p.dead || UI.open || G.dialog || WORLD.arena && !WORLD.royale || G.cine) return;
+  const p = G.p, it = heldItem(); if (!p || p.dead || UI.open || G.dialog || WORLD.arena || G.cine) return;
   // the support web, shown while you hold building parts or a hammer
   if (it && ((it.type === 'block' && isWeb(it.tile)) || (it.type === 'tool' && it.kind === 'hammer'))) {
     const vx0 = floor(G.cam.x / T) - 1, vx1 = vx0 + ceil(VS.vw / T) + 2, vy0 = floor(G.cam.y / T) - 1, vy1 = vy0 + ceil(VS.vh / T) + 2;

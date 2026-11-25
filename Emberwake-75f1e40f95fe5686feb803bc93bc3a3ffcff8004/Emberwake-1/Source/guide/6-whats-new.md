@@ -2,31 +2,29 @@
 
 Newest first.
 
-## The Ashfall, made again, and the weather
+## Worlds with a character of their own, the Trials' own kit, parties, a new look
 
-**The battle royale**
+- **No two worlds alike.** Every world you forge now has **three traits** from its seed (one for its land, one for its life, one for its sky: *cragged, feral, twin moons*; *drowned, quiet days, long nights*...). The forge screen shows them, with a **ROLL** button for another seed. See *How to play: No two worlds alike*.
+- **Lands have moods.** A moor may be burnt black or open meadow lit by glowcaps; the Reach has its Glass Spires and its White Quiet. Each mood has its own ground, plants, creatures and name.
+- **A year of four seasons** (three days each: Kindling, Highsun, Emberfall, Ashrest), with **rain and snow**, stalks that turn with the season, and different rules in each.
+- **Curios on the road:** milestones that point the way, a Waker's Rest that teaches a weapon, ember springs, the Singing Stones (a little puzzle in rhythm), buried caches, a hermit's notes, the Ribs.
+- **Fighting goes further.** A heavy blow on a broken guard is a **SUNDER**. The blow after a clash is your **ANSWER**. Let a charged blow go on the flash for a **PERFECT RELEASE**. **Warded** foes carry shields that turn plain blows from the front. **Elder** creatures in some worlds. Mashing now costs stamina too. Each kind of weapon keeps the beat its own way.
+- **Damage was rebalanced.** Kinds of weapon now sit in one band (the slowest hit hardest, the longest least, and none is twice another). **Tools no longer out-hit swords** in the late worlds: a tapped tool does half what a sword of its metal does, at every tier.
+- **The Ashfall Trials have their own kit:** fourteen **perks** (choose one on the plinth and one each dawn), ten **amps** to fit to your weapons, six **relic** weapons, a second arena (**Ember Peak**, where slag rises instead of ash closing), match titles and a career record.
+- **Parties.** Make a party with friends, then take the whole party into someone else's open match, or open yours to others. Friends land on one team. See *The Ashfall Trials: Parties*.
+- **A new look.** Fires, pods, embers and blades **glow**. Each land, mood, season and kind of weather tints the air. **Mist** in the morning. Every world has **its own stars and constellations**, stars fall, the low sun throws rays, some worlds have a second moon. Your Waker trails **embers at a run**, brighter in tempo; a blow in time leaves a gold trail, a crisp one a white one, a rushed one a dull one; the view jolts with a hit. **FX: PLAIN** in the menu turns the costly parts off.
+- Worlds made before this keep their land exactly as it was (no traits, moods or curios), and get the seasons, the weather and the new look. **This version can't play with older ones, so send your friends the new files.**
 
-- **Everyone falls out of the sky with nothing**, over different parts of the island. No tools, no weapons, no kits, for Wakers and echoes alike (the pass gives titles now, not gear).
-- **A much bigger island:** 3,500 paces, nine lands that run into one another, lakes, woods, bushes, boulders, named places and houses in the sky.
-- **Dig anywhere.** The caves under it are new: winding tunnels, halls, sinkholes, and places worth finding. About 145 paces down the rock burns you; at 170 is the molten sea.
-- **You make your weapons.** A third as many chests, two or three plain things in each, dropped where the chest stands. Weapons in chests are rare and never great ones.
-- **Weapons are closer to each other.** Better metal helps without deciding the fight, and the easy ones (spears, tridents, battleaxes, bows) give up some bite.
-- **The border waits for people to fall**, not for a clock.
-- **Pacts can be left** (**P** twice, or **LEAVE PACT** in the menu), and echoes can be your allies.
-- **Beasts** that can kill you, **sponsors' gifts**, **the Feast**, **the Marked One**, **wildfire and poison fog**, **the hounds**, and the faces of the fallen in the sky.
-- Echoes gather, dig, craft, hide, run and make pacts as you do.
-- Reeds twist into twine, dead bushes give a little fibre, and ropes, ladders and vines no longer snag your shoulder or catch you again when you leap off.
-- **Souls, coins and looks:** kills earn souls that turn the soul wheel, wins earn coins for the shop, and both give skins and hats. Nothing you own is carried into a match.
-- **Fixed:** weapons you made couldn't be used, some houses couldn't be entered, bare hands couldn't dig, a ward wore away by itself.
+## Fighting by the beat, the Ashfall Trials, four new worlds, a new home screen
 
-**Everywhere**
-
-- **Weather** in the Waking Lands and the Ashfall, with rare creatures of its own (see *How to play*).
-- **Phones and tablets:** touch controls, and menus that fit a small screen.
-- **More kinds of tree** (oak, willow, maple, pine, palm, mangrove), which sway in the wind.
-- **You keep your momentum.** A blow or a dodge no longer stops you dead until you press a direction again.
-- **Fire burns where it lands**, with real flames instead of a red streak.
-- **Much smoother with many Wakers on screen**, fewer things left lying about, and an error in one frame no longer stops the game.
+- **Fighting was rebuilt around timing.** Your weapon glints after each blow: strike on the glint and the chain goes on; strike before it and the blow is RUSHED (weak, slow, open). Blows in time build **tempo** (five embers), which a heavy blow spends, up to a CRESCENDO. Clean hits (the sweet spot of each weapon), CLASHES (your swing meeting theirs), guards that BREAK, and being CAUGHT in your wind-up all matter now. Mashing the button loses to a steady hand, and holding it down no longer attacks. Echoes and rivals fight by the same rules. See *How to play: Fighting*.
+- **The battle royale is now the Ashfall Trials:** a survival match of up to fourteen minutes. Plinths round the Hearth and a horn; hunger and berries; scrap and camp anvils; the crowd's favor and sponsor gifts; three nights with Hollow Ones and the roll of the fallen; two supply drops; a feast; and the ashfall closing on the Hearth. Play **solo, duos or trios**, and rekindle a fallen teammate.
+- **Four new worlds past the three floors:** the Long Winter, the Stopped Hour, the Stormhead and the Outside, each with three lands, its own danger, a better forge, its own steel and weapons, new arts, and a guardian. Every guardian's fragments forge the **Dawnring**, which calls the last guardian of all. The story now has an ending.
+- **The surface matters:** sunstone by day, skyiron from craters, sunbloom and moonpetal, skyfeathers, sun shrines, observatories, thunderstorms, lightning rods and storm glass. The four gates are all above ground.
+- **Guardians are harder to wake and harder to beat:** each offering needs things from several worlds and from the surface; guardians have more health, a guard, and a rage. Lands are wider, and forts and castles are rarer.
+- **A new home screen:** three boards (ALONE, WITH FRIENDS, THE ARENAS), a CONTINUE button for your last world, sound, difficulty and controls on the front page, and HOW TO PLAY.
+- **The Cinder Ring works with game codes**, so friends can duel from the HTML file or the Mac app.
+- **Playing together is steadier:** when two players change the same spot at the same moment the host now settles it for everyone (this was the cause of worlds drifting apart); friends see a guardian's lightning and fire pillars. This version can't play with older ones, so send your friends the new files.
 
 ## Benches, trinkets, guardians and a bigger world
 
@@ -55,7 +53,6 @@ Newest first.
 - **PLAY TOGETHER** shows how each friend is connected and how quick the line is.
 - The world keeps running when someone switches to another window, and their Waker rests safely meanwhile (the Mac app keeps running when hidden too).
 - Fixes: doors no longer shut on a friend standing in them; explosions hurt everyone nearby and hit creatures once; a newly placed campfire or kiln is the same for everyone; chests and fires are used one person at a time, so nothing is doubled or lost; a friend joining while others moved no longer sees a frozen, nameless Waker; closing the window tells friends at once.
-- **FPS mode:** turn off ambient and particle effects in the pause menu for a simpler, smoother picture on slower computers. It does not change gameplay or multiplayer simulation.
 
 ## Game codes, easier packs and crafting
 
@@ -66,7 +63,7 @@ Newest first.
 
 ## The Ashfall
 
-- A battle royale on its own island (the first version: an airship, many chests, a border on a clock). Play with echoes, with friends by game code, or online on claude.ai.
+- A battle royale on its own island: leap from the Ember Barge, loot chests, outlast the closing ashfall. Play with echoes, with friends by game code, or online on claude.ai.
 
 ## Before that
 

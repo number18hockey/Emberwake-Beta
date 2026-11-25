@@ -63,13 +63,13 @@ const DIMP = [
   { key: 'over', name: 'THE WAKING LANDS', short: 'the Waking Lands', col: '#ffd35a' },
   { key: 'cinder', name: 'CINDERDEEP', short: 'Cinderdeep', sub: 'the furnace under the world', col: '#ff8a3d', base: 150, deep: EH - 72, bio: ['cinder', 'basalt', 'kiln'], aid: RUSTCHAIN, wall: W_SLAG,
     sun: [.66, .42, .34], dn: .34, sky: [[24, 6, 10], [84, 22, 20], [170, 64, 32]], tone: [[96, 32, 30], [58, 18, 20]], arena: 620, arenaR: 32, boss: 'slagtyrant',
-    place: "THE TYRANT'S CALDERA", placeSub: 'something huge sleeps in its own heat', loot: 'kilnruin', ev: 'eruption', floor: BASALT },
+    place: "THE TYRANT'S CALDERA", placeSub: 'something huge sleeps in its own heat', loot: 'kilnruin', ev: 'eruption', floor: BASALT, dplace: 'bastion' },
   { key: 'root', name: 'THE ROOTDARK', short: 'the Rootdark', sub: 'where the roots of the world drink', col: '#6ff0c0', base: 136, deep: EH - 64, bio: ['rootwood', 'mycel', 'mire'], aid: ROOTHANG, wall: W_ROOT,
     sun: [.32, .42, .44], dn: .16, sky: [[3, 8, 12], [10, 26, 30], [26, 56, 54]], tone: [[26, 52, 54], [14, 32, 34]], arena: 700, arenaR: 32, boss: 'rootmother',
-    place: 'THE HEARTROOT HOLLOW', placeSub: 'the ground here breathes', loot: 'rootruin', ev: 'sporebloom', floor: SHADESTONE },
+    place: 'THE HEARTROOT HOLLOW', placeSub: 'the ground here breathes', loot: 'rootruin', ev: 'sporebloom', floor: SHADESTONE, dplace: 'hollow' },
   { key: 'glass', name: 'THE GLASS EXPANSE', short: 'the Glass Expanse', sub: 'islands of a broken sky', col: '#e0c8ff', base: 176, deep: EH + 200, bio: ['shard', 'prism', 'hush'], aid: GLASSROOT, wall: W_PALE,
     sun: [.66, .64, .9], dn: .5, sky: [[6, 4, 22], [30, 18, 64], [86, 58, 144]], tone: [[70, 54, 126], [44, 34, 90]], arena: 740, arenaR: 28, boss: 'matriarch',
-    place: "THE MATRIARCH'S SPIRE", placeSub: 'every shard here faces one point', loot: 'glassruin', ev: 'shatterstorm', floor: PALESTONE }
+    place: "THE MATRIARCH'S SPIRE", placeSub: 'every shard here faces one point', loot: 'glassruin', ev: 'shatterstorm', floor: PALESTONE, dplace: 'spire' }
 ];
 const canEnterDim = d => d === 0 || WORLD.mode === 1 || (d === 1 ? !!(G.flags.dim1 || G.flags.gateOpen) : !!G.flags['dim' + d]);
 function initDim(d) {
@@ -86,7 +86,7 @@ function initDim(d) {
   SPOTS.altar = { x: DARENA_X, y: DARENA_Y - 1 }; MODS_ON = true;
 }
 // ---------------- ground ----------------
-const dimN = x => fbm(x * .0024 + DIM * 37.1, 3.3 + DIM, 3);
+const dimN = x => fbm(x * .0024 * GEN().dim + DIM * 37.1, 3.3 + DIM, 3);
 function dimW(x) { const n = dimN(x), a = smooth((.45 - n) / .04), c = smooth((n - .54) / .04); return [a, max(0, 1 - a - c), c]; }
 function dimBio(x) {
   const k = clamp(x | 0, 0, EW - 1); let v = BIO[k];
@@ -111,8 +111,8 @@ function dimSurf(x) {
 }
 // a pool to a cell: lava in Cinderdeep (mostly in the wastes), black water in the Rootdark (mostly in the mire)
 function dimLakeOf(k) {
-  if (LAKES.has(k)) return LAKES.get(k); let L = null; const sd = SEED + DIM * 77, c = k * 200 + 50 + floor(hh(k, 71, sd) * 100), b = dimBio(c), home = DIM === 1 ? 'cinder' : 'mire';
-  if (DIM !== 3 && !inWindow(c, 34) && hh(k, 73, sd) < (b === home ? .85 : .3)) {
+  if (LAKES.has(k)) return LAKES.get(k); let L = null; const D = DIMP[DIM], sd = SEED + DIM * 77, c = k * 200 + 50 + floor(hh(k, 71, sd) * 100), b = dimBio(c), home = D.lakeHome || (DIM === 1 ? 'cinder' : 'mire');
+  if (DIM !== 3 && D.lakes !== 0 && !inWindow(c, 34) && hh(k, 73, sd) < (b === home ? .85 : .3)) {
     const r = 7 + floor(hh(k, 74, sd) * 9), rim = q => { let s = 0; for (let j = -2; j <= 2; j++) s += dimFlat(q + j); return round(s / 5); };
     const a = rim(c - r - 1), b = rim(c + r + 1); if (abs(a - b) <= 2) L = { c, r, lv: max(a, b), d: 3 + floor(hh(k, 75, sd) * 4), liq: DIM === 1 ? CINDER : WATER };
   }
@@ -124,7 +124,7 @@ function dimPlace(tx, ty) {
   if (abs(tx - SPAWN_X) < 16) return 'rift'; return dimBio(tx);
 }
 function dimColumn(x) {
-  if (DIM === 3) { glassColumn(x); return; }
+  if (DIM === 3) { glassColumn(x); return; } if (DIM >= 4) { realmColumn(x); return; }
   const D = DIMP[DIM], C = DIM === 1, hs = dimSurf(x), b = dimBio(x), dd = 3 + floor(fbm(x * .07, 50 + DIM, 2) * 4), prot = protectDepth(x), win = inWindow(x, 2);
   heights[x] = hs; SKYL[x] = hs + 3;
   const LK = win ? null : dimLakeAt(x), lvl = LK ? LK.lv : -1, liq = LK ? LK.liq : WATER;
@@ -228,9 +228,9 @@ function dimFinish(cx, x0, x1, here) {
     let rx = k * 210 + 30 + floor(hh(k, 1401 + DIM, SEED) * 150); if (!here(rx) || hh(k, 1402 + DIM, SEED) > .55 || inWindow(rx, 30)) continue;
     if (DIM === 3) { const I = gIsleC(floor(rx / GCELL)); if (!I || I.flat || I.a < 13) continue; rx = I.cx; if (!here(rx)) continue; }
     if (DIM !== 3 && ![-12, -8, -5, 5, 8, 12].every(k => abs(heights[rx + k] - heights[rx]) <= 1)) continue;
-    ruinAt(rx, DIM === 3 ? glassTop(rx) : heights[rx], DIM === 1 ? CINDERBRICK : DIM === 2 ? ROOTWOOD : SHARDGLASS, DIM === 1 ? W_DBRICK : DIM === 2 ? W_ROOT : W_PALE, D.loot);
+    ruinAt(rx, DIM === 3 ? glassTop(rx) : heights[rx], D.ruin ? D.ruin[0] : DIM === 1 ? CINDERBRICK : DIM === 2 ? ROOTWOOD : SHARDGLASS, D.ruin ? D.ruin[1] : DIM === 1 ? W_DBRICK : DIM === 2 ? W_ROOT : W_PALE, D.loot);
   }
-  if (DIM === 1) cinderFinish(x0, x1, here); else if (DIM === 2) rootFinish(x0, x1, here); else glassFinish(cx, x0, x1, here);
+  if (DIM === 1) cinderFinish(x0, x1, here); else if (DIM === 2) rootFinish(x0, x1, here); else if (DIM === 3) glassFinish(cx, x0, x1, here); else realmFinish(cx, x0, x1, here);
   dimPlaces(cx, x0, x1, here);
   if (DIM !== 3) {
     if (!PROPV) { PROPV = { st: [], cy: [] }; for (let k = 0; k < 12; k++) PROPV.st.push(PROP.stalactite(8 + round(k * 1.2), 100 + k)); for (let k = 0; k < 6; k++) PROPV.cy.push(PROP.crystal(k * 7 + 3)); }
@@ -261,7 +261,7 @@ function buildArena() {
     tiles[gy * WW + X] = abs(dx) % 6 === 0 ? D.floor : DBRICK; for (let y = gy + 1; y < gy + 4; y++) if (!TP[tiles[y * WW + X]].solid || TP[tiles[y * WW + X]].liquid) tiles[y * WW + X] = D.floor;
   }
   for (const px of [-R + 1, R - 3]) { for (let y = 1; y <= 3; y++) for (let dx = 0; dx < 3; dx++) tiles[(gy - y) * WW + x + px + dx] = DBRICK; dyn(x + px + 1, gy - 4, TORCH); }
-  dyn(x, gy - 1, DALTAR); reserve(x - R - 1, x + R + 1, 2);
+  dyn(x, gy - 1, DIM === 7 ? COLDHEARTH : DALTAR); reserve(x - R - 1, x + R + 1, 2);
   mark('arena' + DIM, D.place, D.placeSub, x, gy - 4, 34); SPOTS.altar = { x, y: gy - 1 };
 }
 function ruinAt(x, gy, mat, wall, key) {
@@ -361,28 +361,29 @@ function enterDim(d, now) {
   G.state = 'loading'; G.loadMsg = d ? 'Stepping into ' + DIMP[d].short + '...' : 'Back to the Waking Lands...'; setTimeout(go, 30);
 }
 function arriveFx(d, first) {
-  const p = G.p; G.flash = .9; G.flashCol = d === 1 ? '255,140,70' : d === 2 ? '110,240,190' : d === 3 ? '220,200,255' : '255,230,160'; sfx('tele', 0); sfx('shrine', 0);
+  const p = G.p; G.flash = .9; G.flashCol = DIMP[d].flash || (d === 1 ? '255,140,70' : d === 2 ? '110,240,190' : d === 3 ? '220,200,255' : '255,230,160'); sfx('tele', 0); sfx('shrine', 0);
   burst(p.x + 3, p.y + 10, 30, ['#b49cff', '#e0d2ff', '#ffffff', DIMP[d].col], 2.4, 46, { glow: 1, g: -.02 });
   if (first) { startCine({ x: p.x + 3, y: p.y, title: DIMP[d].name, sub: DIMP[d].sub, dur: 240 }); unlock('dim' + d); for (const id of DIM_LEADS[d] || []) learn(id, true); G.note = { text: 'New leads in your journal  [J]', t: 0 }; }
   else G.banner = { text: DIMP[d].name, sub: d ? 'the rift closes behind you' : 'home, such as it is', t: 0 };
 }
-const DIM_LEADS = { 1: ['slagforge', 'tyrant', 'emoon'], 2: ['rootmother', 'starfall'], 3: ['matriarch'] };
+const DIM_LEADS = { 1: ['slagforge', 'tyrant', 'emoon'], 2: ['rootmother', 'starfall'], 3: ['matriarch', 'g_frost'], 4: ['rimeforge', 'winterstag', 'g_clock'], 5: ['escapement', 'horologist', 'g_storm'], 6: ['thunderanvil', 'stormwright', 'dawnring'], 7: ['dawnforge', 'hollowking'] };
 // ---------------- the rift: a door to every world you have opened ----------------
 function openRift(tx, ty) { if (netGuest()) { say('The rift answers ' + (COOP.hostName || 'your host') + '. When they step through, you follow.'); sfx('deny'); return; } closeUI(); UI.open = 'rift'; UI.rift = { tx, ty }; UI.msg = null; sfx('ui'); G.flags.usedRift = true; }
 function drawRiftUI(c) {
   const R0 = UI.rift; if (!R0 || !G.p || abs(R0.tx * T - G.p.x) > 100 || abs(R0.ty * T - G.p.y) > 80) { closeUI(); return; }
-  const w = min(VS.uw - 10, 300), h = 188, x = round((VS.uw - w) / 2), y = round((VS.uh - h) / 2) - 10, F = G.flags; panel(c, x, y, w, h, 'THE RIFT'); hit(x, y, w, h, () => { });
+  const F = G.flags, keys = [['rootkey', 2], ['prismkey', 3]].filter(([key, d]) => !F['dim' + d] && hasItem(key)).length, w = min(VS.uw - 10, 300), h = min(VS.uh - 12, 64 + DIMP.length * 15 + keys * 15), x = round((VS.uw - w) / 2), y = round((VS.uh - h) / 2) - 4; panel(c, x, y, w, h, 'THE RIFT'); hit(x, y, w, h, () => { });
   button(c, x + w - 13, y + 1, 12, 10, 'x', () => { closeUI(); sfx('ui'); });
   let yy = y + 16; textS(c, 'Step through to any world you have opened.', x + 8, yy, '#b49cff'); yy += 12;
   for (let d = 0; d < DIMP.length; d++) {
     const D = DIMP[d], open = canEnterDim(d), here = d === DIM;
-    button(c, x + 8, yy, w - 16, 14, `${D.name}${here ? '   (here)' : open ? '' : '   sealed'}`, () => { if (here || !open) { sfx('deny'); return; } enterDim(d); }, { off: here || !open });
-    yy += 16;
+    button(c, x + 8, yy, w - 16, 13, `${D.name}${here ? '   (here)' : open ? '' : '   sealed'}`, () => { if (here || !open) { sfx('deny'); return; } enterDim(d); }, { off: here || !open });
+    yy += 15;
   }
   for (const [key, d] of [['rootkey', 2], ['prismkey', 3]]) if (!F['dim' + d] && hasItem(key)) {
     button(c, x + 8, yy, w - 16, 14, `Attune the ${IT[key].name}`, () => { removeItem(key, 1); F['dim' + d] = true; G.dirty = true; sfx('quest', 0); G.flash = .7; G.flashCol = '200,160,255'; UI.msg = { s: DIMP[d].name + ' is open.', col: '#e0d2ff', t: 150 }; unlock('dim' + d); }, { on: true }); yy += 16;
   }
-  yy += 2; const need = !canEnterDim(1) ? 'Cinderdeep opens when the Furnace Gate does.' : !F.dim2 ? 'The Rootdark needs a Rootward Key, forged at a Slagforge.' : !F.dim3 ? 'The Glass Expanse needs a Prism Key.' : 'Every world is open to you.';
+  yy += 2; const need = !canEnterDim(1) ? 'Cinderdeep opens when the Furnace Gate does.' : !F.dim2 ? 'The Rootdark needs a Rootward Key, forged at a Slagforge.' : !F.dim3 ? 'The Glass Expanse needs a Prism Key.'
+    : !F.dim4 ? 'The worlds past the floors open at gates on the surface. The Long Winter: the Frost Gate, on a peak in the cold country.' : !F.dim5 ? 'The Hourworks opens at the Stopped Clocktower, with an Hour Key.' : !F.dim6 ? 'The Thunderhead opens at the Stormspire, in a thunderstorm, with a Storm Key.' : !F.dim7 ? 'The Outside waits at the top of the Ringstair. It wants the Dawnring.' : 'Every world is open to you.';
   for (const l of wrapText(need, w - 16)) { drawText(c, l, x + 8, yy, '#8b8fa3'); yy += 9; }
   if (UI.msg) { const m = UI.msg; c.globalAlpha = clamp(m.t / 30, 0, 1); textC(c, m.s, x + w / 2, y + h - 12, m.col || '#ffd35a', 1, textO); c.globalAlpha = 1; if (--m.t <= 0) UI.msg = null; }
 }
@@ -393,8 +394,10 @@ function dimSun() {
   else if (e && e.id === 'sporebloom') { g += .1 * e.fade; b += .05 * e.fade; r *= 1 - .3 * e.fade; }
   else if (e && e.id === 'shatterstorm') { k = 1 + .25 * e.fade * (hh(G.time >> 2, 1, 3) > .9 ? 1 : 0); }
   G.sun[0] = min(1, r * k); G.sun[1] = min(1, g * k); G.sun[2] = min(1, b * k);
+  if (DIM >= 4) realmSun(e && e.fade > 0 ? e : null);
 }
 function drawDimSky(c, cx, cy) {
+  if (DIM >= 4) { drawRealmSky(c, cx, cy); return; }
   const W = VS.W, H = VS.H, S = VS.s, D = DIMP[DIM], t = G.time;
   const ctx0 = clamp(floor((cx + VS.vw / 2) / T), 0, WW - 1), cty = (cy + VS.vh / 2) / T;
   const under = DIM === 3 ? 0 : smooth((cty - SKYL[ctx0] - 6) / 22), deep = DIM === 3 ? 0 : smooth((cty - DEEP_Y + 10) / 16);
@@ -432,6 +435,7 @@ function drawDimSky(c, cx, cy) {
 function dimOverlay(c, W, H, cx, cy) {
   if (G.state !== 'play' && G.state !== 'intro') return;
   if (DIM === 3) { const vy = (WH - 60) * T, a = clamp((cy + VS.vh - vy) / 300, 0, .85); if (a > 0) { const g = c.createLinearGradient(0, H * .3, 0, H); g.addColorStop(0, 'rgba(20,10,40,0)'); g.addColorStop(1, `rgba(20,8,44,${a})`); c.fillStyle = g; c.fillRect(0, 0, W, H); } }
+  if (DIM >= 4) realmOverlay(c, W, H);
   const e = DIM ? G.dev : G.ev; if (!e || e.fade <= .01) return; const f = e.fade;
   if (e.id === 'fog') { c.globalAlpha = .42 * f; c.fillStyle = '#c8c2d4'; c.fillRect(0, 0, W, H); c.globalAlpha = .18 * f; for (let k = 0; k < 4; k++) { const y = H * (.2 + k * .2) + sin(G.time * .004 + k) * H * .05; c.fillStyle = '#ece8f2'; c.fillRect(0, y, W, H * .08); } c.globalAlpha = 1; }
   else if (e.id === 'ashfall') { c.globalAlpha = .16 * f; c.fillStyle = '#6a6474'; c.fillRect(0, 0, W, H); c.globalAlpha = 1; }
@@ -448,7 +452,7 @@ function dimLights(cx, cy) {
 }
 // per-tick upkeep: the void, the air, the worlds' weather and the hidden rules of each place
 function tickDims() {
-  const p = G.p, F = G.flags; if (!p) return;
+  const p = G.p, F = G.flags; if (!p) return; tickWeaponFx();
   if (F.gateOpen && !F.dim1) F.dim1 = true;
   const mh = 100 + bonusHP(); if (p.maxhp !== mh) { p.maxhp = mh; if (p.hp > mh) p.hp = mh; }
   if (gearHas('regrowth') && !p.dead && p.hp < p.maxhp && p.regenT > 150 && G.time % 24 === 0) p.hp++;
@@ -461,11 +465,12 @@ function tickDims() {
     }
     for (const e of G.enemies) if (!e.dead && e.y > (WH - 30) * T) e.dead = true;
   }
+  if (DIM >= 4) tickRealm();
   dimAmbient(); tickEvents(); tickHazards();
 }
-function bonusHP() { const F = G.flags; return (F.tyrantDead ? 15 : 0) + (F.rootmotherDead ? 15 : 0) + (F.matriarchDead ? 20 : 0) + (F.shepherdDead ? 10 : 0) + (F.heartUp ? 20 : 0); }
+function bonusHP() { const F = G.flags; return (F.sunHP | 0) + (F.stagDead ? 15 : 0) + (F.horologistDead ? 15 : 0) + (F.stormwrightDead ? 20 : 0) + (F.hollowDead ? 25 : 0) + (F.tyrantDead ? 15 : 0) + (F.rootmotherDead ? 15 : 0) + (F.matriarchDead ? 20 : 0) + (F.shepherdDead ? 10 : 0) + (F.heartUp ? 20 : 0); }
 function dimAmbient() {
-  if (!DIM || G.time % 3) return; const cx = G.cam.x, cy = G.cam.y, under = realmAt(floor((G.p.x + 3) / T), floor((G.p.y + 10) / T)) !== 'surface';
+  if (!DIM || G.time % 3) return; if (DIM >= 4) { realmAmbient(); return; } const cx = G.cam.x, cy = G.cam.y, under = realmAt(floor((G.p.x + 3) / T), floor((G.p.y + 10) / T)) !== 'surface';
   if (DIM === 1) { if (Math.random() < .6) P(cx + frand(VS.vw), cy + VS.vh * frand(.5, 1.1), frand(-.2, .2), frand(-.6, -.25), 220, fpick(SPARK), { g: -.002, fr: 1, glow: 1 }); if (!under && Math.random() < .4) P(cx + frand(VS.vw + 40), cy - 4, frand(-.3, -.05), frand(.3, .6), 340, '#8d8794', { g: 0, fr: 1 }); }
   else if (DIM === 2) { if (Math.random() < .5) P(cx + frand(VS.vw), cy + frand(VS.vh), frand(-.15, .15), frand(-.2, .05), 300, fpick(['#6ff0c0', '#2fb8a8', '#c8fff0']), { g: -.0005, fr: .995, glow: 1 }); }
   else if (Math.random() < .5) P(cx + frand(VS.vw), cy + frand(VS.vh), frand(-.1, .1), frand(-.12, .12), 240, fpick(['#ffffff', '#e0d2ff', '#c9fff6']), { g: 0, fr: 1, glow: 1 });

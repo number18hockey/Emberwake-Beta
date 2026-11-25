@@ -228,7 +228,7 @@ const BOSSES = {
   matriarch: { flag: 'matriarchDead', down: 'THE MATRIARCH SHATTERS', sub: 'the broken sky goes quiet', loot: [['prism_heart', 1, 1], ['prism_ore', 14, 20], ['prism_bar', 2, 4], ['starshard', 3, 5], ['void_silk', 2, 3]], cols: ['#ffffff', '#e0c8ff', '#9ad0ff', '#a58ae0'], flash: '240,230,255', journal: 'matriarch', leads: [] },
   shepherd: { flag: 'shepherdDead', down: 'THE SHEPHERD LIES DOWN', sub: 'the Ember Moon has no one to walk it now', loot: [['moon_wax', 3, 5], ['hollow_ash', 2, 4]], first: [['shepherd_bell', 1, 1]], cols: ['#ff3b2a', '#e8d8d0', '#8a6a6a'], flash: '255,120,110', journal: 'shepherd', leads: [] }
 };
-function bossSpawn(type, x, y) { const b = mkEnemy(type, x, y); Object.assign(b, { state: 'intro', t: 0, phase: 1, atkN: 0, leash: 0, dir: 1 }); b.px = b.x; b.py = b.y; G.boss = b; G.enemies.push(b); sfx('roar', 0); addShake(6); G.biomeT = 0; return b; }
+function bossSpawn(type, x, y) { const b = mkEnemy(type, x, y); Object.assign(b, { state: 'intro', t: 0, phase: 1, atkN: 0, leash: 0, dir: 1 }); b.hp = b.maxhp = round(b.maxhp * BOSS_HP); b.px = b.x; b.py = b.y; G.boss = b; G.enemies.push(b); sfx('roar', 0); addShake(6); G.biomeT = 0; return b; }
 function bossGone(b) { b.dead = true; for (const e of G.enemies) if (e.root === b || e.minion === b) e.dead = true; if (G.boss === b) G.boss = null; G.projs = G.projs.filter(q => q.owner); }
 function bossLeash(b, cx, r, msg) { const p = G.p; if (p.dead || abs(p.x + 3 - cx) > r) { if (++b.leash > 240 && b.state !== 'dying') { bossGone(b); say(msg); return true; } } else b.leash = 0; return false; }
 function bossPhase(b, msg) { if (b.phase === 1 && b.hp < b.maxhp * .5 && b.state !== 'dying') { b.phase = 2; G.flash = .5; G.flashCol = '255,255,255'; addShake(8); sfx('roar', 0); if (msg) say(msg); return true; } return false; }
@@ -238,13 +238,14 @@ function bossDown(b) {
   const cx = b.x + b.w / 2, cy = b.y + b.h / 2, F = G.flags, I = BOSSES[b.type], first = !F[I.flag];
   bossGone(b); burst(cx, cy, 70, I.cols, 3.6, 64, { glow: 1 }); addShake(10); G.flash = .9; G.flashCol = I.flash; sfx('boom', 0); sfx('quest', 0);
   for (const [id, a, c] of I.loot.concat(first && I.first ? I.first : [])) spawnDrop(id, randi(a, c), cx + frand(-10, 10), cy - 4);
+  fragDrop(FRAG_OF[b.type], first, cx, cy);
   F[I.flag] = true; G.dirty = true; G.kills = (G.kills || 0) + 1; beastKill(b.type);
   G.banner = { text: I.down, sub: first ? I.sub : 'it will wake again, given time', t: 0 };
   if (first) { unlock(I.journal); for (const id of I.leads) learn(id, true); if (b.type === 'slagtyrant') guardianFirst(); setTimeout(() => say('Some of its strength stays with you. You can take more punishment now.'), 10); }
 }
 function altarAct() {
   if (G.boss || !DIM) return; if (!payOffering(DIM_OFFER[DIMP[DIM].boss])) return; const D = DIMP[DIM], cx = DARENA_X * T + 4, gy = DARENA_Y * T, p = G.p, side = p.x + 3 < cx ? 1 : -1;
-  const b = D.boss === 'slagtyrant' ? bossSpawn('slagtyrant', cx + side * 90 - 13, gy - 36) : D.boss === 'rootmother' ? bossSpawn('rootmother', cx - 17, gy - 40) : bossSpawn('matriarch', cx - 10, gy - 140);
+  const b = REALM_SPAWN[D.boss] ? REALM_SPAWN[D.boss](cx, gy, side) : D.boss === 'slagtyrant' ? bossSpawn('slagtyrant', cx + side * 90 - 13, gy - 36) : D.boss === 'rootmother' ? bossSpawn('rootmother', cx - 17, gy - 40) : bossSpawn('matriarch', cx - 10, gy - 140);
   G.barT = 1; burst(cx, gy - 8, 30, BOSSES[b.type].cols, 2.6, 40, { glow: 1 }); G.flags['woke_' + b.type] = true;
 }
 // ---- the Slag Tyrant: walks, slams, spits, charges; cracks open at half health and calls rock down ----
@@ -401,6 +402,7 @@ function placeMob(type, ptx, pty, under, avoid) {
     if (fly && (DIM === 3 || !under)) { const y = pty - floor(frand(4, 18)); if (!solidAt(tx, y) && !solidAt(tx, y + 1) && !solidAt(tx + 1, y)) { const e = mkEnemy(type, tx * T, y * T); e.px = e.x; e.py = e.y; G.enemies.push(e); return e; } continue; }
     const ty = groundSpot(tx, pty, under); if (ty < 0) continue;
     if (type === 'gloamhound') { const k = randi(2, 3); for (let q = 0; q < k; q++) spawnMob(type, tx + q, ty); return true; }
+    if (PACKS[type]) { const k = randi(PACKS[type][0], PACKS[type][1]); for (let q = 0; q < k; q++) spawnMob(type, tx + q, ty); return true; }
     if (type === 'starling') { for (let q = 0; q < 3; q++) spawnMob(type, tx + q, ty); return true; }
     if (type === 'hollow') { spawnHollow(tx * T + 1, (ty - 3) * T); return true; }
     if (type === 'crawler') { if (!trySpecialSpawn('under', 'moor', ptx, pty, true)) spawnMob('sporeling', tx, ty); return true; }
@@ -445,10 +447,11 @@ function tickEvents() {
   if (WORLD.mode === 1 || !G.p || G.time < 600 || WORLD.arena) return;
   const dusk = crossed(.58), dawn = crossed(.035); if (!dusk && !dawn) return;
   const pool = Object.keys(EVENTS).filter(k => { const E = EVENTS[k]; return E.need(F) && (E.when === 'any' || (E.when === 'dusk' && dusk) || (E.when === 'dawn' && dawn)); }).sort(() => Math.random() - .5);
-  for (const k of pool) if (Math.random() < EVENTS[k].chance * .6) { startEvent(k); break; }
+  for (const k of pool) if (Math.random() < EVENTS[k].chance * .6 * traitEvent(k)) { startEvent(k); break; }
 }
 function eventTick(e) {
   const p = G.p;
+  if (e.id === 'thunder') thunderTick(e);
   if (e.id === 'starfall' && G.time % 150 === 0 && !p.dead) { const x = p.x + 3 + frand(-240, 240); G.dhaz.push({ kind: 'star', x, y: G.cam.y - 30, vx: frand(-1.2, 1.2), vy: 2.4, g: .03, light: [.6, .7, .7] }); }
   if (e.id === 'ashfall' && G.time % 2 === 0) P(G.cam.x + frand(VS.vw + 60), G.cam.y - 4, frand(-.5, -.1), frand(.4, .8), 340, fpick(['#a19baa', '#8d8794', '#d6d0dc']), { g: 0, fr: 1 });
   if (e.id === 'emoon' && e.called && !e.shep && !G.boss && G.dn < .25 && e.t > 1500 && (Math.random() < .0015 || e.t > 4200) && realmAt(floor((p.x + 3) / T), floor((p.y + 10) / T)) === 'surface' && placeAt(floor((p.x + 3) / T), floor((p.y + 10) / T)) !== 'village') {
@@ -460,6 +463,7 @@ function tickDimEvent() {
   if (!e) { if (--G.devT > 0 || G.boss) return; G.devT = 6000 + frand(6000); if (Math.random() < .35) { const id = DIMP[DIM].ev; G.dev = { id, t: 0, fade: 0, end: false }; G.banner = { text: DEVENTS[id].name, sub: DEVENTS[id].sub, t: 0 }; sfx('roar', 0); } return; }
   e.t++; if (e.t > 3600 && !e.end) e.end = true; e.fade = e.end ? max(0, e.fade - .01) : min(1, e.fade + .01); if (e.end && e.fade <= 0) { G.dev = null; return; }
   if (e.fade < .5 || p.dead || realmAt(floor((p.x + 3) / T), floor((p.y + 10) / T)) !== 'surface') return;
+  if (DIM >= 4) return;
   if (e.id === 'eruption' && G.time % 45 === 0) G.dhaz.push({ kind: 'bomb', x: p.x + 3 + frand(-220, 220), y: G.cam.y - 20, vx: frand(-1, 1), vy: 1.5, g: .07, light: [.9, .4, .1] });
   if (e.id === 'sporebloom' && G.time % 70 === 0) sporeCloud(p.x + 3 + frand(-140, 140), p.y + frand(-60, 20), 1);
   if (e.id === 'shatterstorm' && G.time % 24 === 0) spawnProj({ type: 'shard', x: p.x + 3 + frand(-220, 220), y: G.cam.y - 10, vx: frand(-.5, .5), vy: 3.6, g: .05, r: 2, dmg: 10, life: 160 });
@@ -468,7 +472,11 @@ function tickHazards() {
   const a = G.dhaz || (G.dhaz = []), p = G.p;
   for (let i = a.length - 1; i >= 0; i--) {
     const z = a[i]; z.t = (z.t || 0) + 1;
-    if (z.delay > 0) { if (--z.delay === 0) { if (z.kind === 'rock') { spawnProj({ type: 'rock', x: z.x, y: z.y, vx: 0, vy: 1, g: .3, r: 5, dmg: 22, life: 150 }); a.splice(i, 1); } else if (z.kind === 'pillar') { addShake(4); sfx('boom', 40); burst(z.x, z.y - 4, 16, ['#ff3b2a', '#ffe0d8'], 2.4, 30, { glow: 1 }); if (abs(p.x + 3 - z.x) < 10 && p.y + p.h > z.y - 150 && !p.dead) hitP({ x: z.x - 4, w: 8 }, 24, { kx: sign(p.x + 3 - z.x) * 3, ky: -3 }); } } continue; }
+    // (a spike, bolt, rock or pillar that was given no delay goes off at once; it used to be taken for a falling thing and break the fight)
+    if ((z.kind === 'spike' || z.kind === 'bolt' || z.kind === 'rock' || z.kind === 'pillar') && z.t === 1 && !(z.delay > 0)) z.delay = 1;
+    if (!isFinite(z.x) || !isFinite(z.y)) { a.splice(i, 1); continue; }
+    if (z.t === 1 && !z.net && G.boss && netHost() && (z.kind === 'bolt' || z.kind === 'pillar')) sendAll({ t: 'hz', k: z.kind, x: round(z.x), y: round(z.y), d: z.delay | 0, l: z.life | 0, dmg: z.dmg | 0, h: z.hurt ? 1 : 0 });
+    if (z.delay > 0) { if (--z.delay === 0) { if (z.kind === 'bolt') { boltHit(z); a.splice(i, 1); } else if (z.kind === 'spike') { spawnProj({ type: 'icespike', x: z.x, y: z.y - 6, vx: 0, vy: 0, g: 0, r: 6, dmg: z.dmg || 22, life: 34, frost: true, pierce: true, phase: 1 }); sfx('crack', 40); a.splice(i, 1); } else if (z.kind === 'rock') { spawnProj({ type: 'rock', x: z.x, y: z.y, vx: 0, vy: 1, g: .3, r: 5, dmg: 22, life: 150 }); a.splice(i, 1); } else if (z.kind === 'pillar') { addShake(4); sfx('boom', 40); burst(z.x, z.y - 4, 16, ['#ff3b2a', '#ffe0d8'], 2.4, 30, { glow: 1 }); if (abs(p.x + 3 - z.x) < 10 && p.y + p.h > z.y - 150 && !p.dead) hitP({ x: z.x - 4, w: 8 }, 24, { kx: sign(p.x + 3 - z.x) * 3, ky: -3 }); } } continue; }
     if (z.kind === 'pillar') { for (let k = 0; k < 3; k++) P(z.x + frand(-3, 3), z.y - frand(150), 0, -1, 10, fpick(['#ff3b2a', '#ffe0d8']), { glow: 1, g: 0 }); if (--z.life <= 0) a.splice(i, 1); continue; }
     z.vy += z.g || .06; z.x += z.vx; z.y += z.vy;
     P(z.x, z.y, frand(-.3, .3), -.3, 22, z.kind === 'star' ? fpick(['#ffffff', '#c9fff6', '#fff1a8']) : fpick(SPARK), { glow: 1, g: 0 }); P(z.x, z.y, 0, 0, 2, '#ffffff', { glow: 1, g: 0, sz: 2 });

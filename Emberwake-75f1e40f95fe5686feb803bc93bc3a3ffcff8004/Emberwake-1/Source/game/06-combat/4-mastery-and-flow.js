@@ -15,7 +15,7 @@
 //    a counter, lunge or close strike
 //      leaves it OPEN                   -> a heavy BREAKS it
 //    a hooked or pinned foe             -> a thrust SKEWERS it
-//    light blows in a row build RHYTHM  -> the next heavy lands harder
+//    blows struck in time build TEMPO   -> the next heavy spends it (see 6-tempo.js)
 //  Each family leans on its own: blades on rhythm, pikes and chains on
 //  skewers, fangs on open foes, mauls on crushing, bows on foes in the air,
 //  bare hands on counters.
@@ -31,11 +31,10 @@
 //  button until it flares, and let go.
 // ============================================================
 const FAM_AT = [0, 30, 110, 260], FAM_STEP = ['BASICS', 'FOOTWORK', 'FLOW', 'MASTERY'];
-const CADENCE_WINDOW = 48;
 const FAM_NAME = { sword: 'BLADES', spear: 'PIKES', fangs: 'FANGS', maul: 'MAULS', bow: 'BOWS', chuks: 'CHAINS', brawl: 'BARE HANDS' };
 // how each family leans: a bigger share of one kind of flow
 const FAM_LEAN = { sword: { rhythm: 1.3 }, spear: { skewer: 1.3, open: 1.1 }, fangs: { open: 1.3, counter: 1.1 }, maul: { crush: 1.3 }, bow: { juggle: 1.3, spike: 1.2 }, chuks: { skewer: 1.25, juggle: 1.15 }, brawl: { counter: 1.3, rhythm: 1.15 } };
-const FAM_LEAN_T = { sword: 'rhythm into heavies', spear: 'skewering hooked foes', fangs: 'striking open foes', maul: 'crushing downed foes', bow: 'shooting foes in the air', chuks: 'skewering and juggling', brawl: 'counters' };
+const FAM_LEAN_T = { sword: 'spending tempo on heavies', spear: 'skewering hooked foes', fangs: 'striking open foes', maul: 'crushing downed foes', bow: 'shooting foes in the air', chuks: 'skewering and juggling', brawl: 'counters' };
 // the four new counters of each family: rising, sweeping, heavy reversal, from the air
 const COUNTER_N = {
   sword: ['Answering Rise', 'Answering Sweep', 'Reversal', 'Falling Answer'],
@@ -50,25 +49,49 @@ const COUNTER_N = {
 const ARTS = {
   sword: [['Ember Crescent', 'ember_wave', { dmg: 3.4, reach: 1.3, shake: 7, stop: 8 }],
           ['Cinder Tempest', 'cyclone', { turns: 3, act: 30, multi: 5, dmg: 1.15, iframe: 16, quake: 1.4, quake2: 1 }],
-          ['Starfall Rend', 'meteor_drop', { leap: { vx: 2.6, vy: -5.4 }, dmg: 2.4, landShock: { r: 44, dmg: 3.2, kb: [3, -4] }, quake: 1.6, quake2: 1, shake: 8 }]],
+          ['Starfall Rend', 'meteor_drop', { leap: { vx: 2.6, vy: -5.4 }, dmg: 2.4, landShock: { r: 44, dmg: 3.2, kb: [3, -4] }, quake: 1.6, quake2: 1, shake: 8 }],
+          ['Glacier Rend', 'ember_wave', { dmg: 3.6, reach: 1.35, rime: 2, shake: 7, stop: 8 }],
+          ['Second Hand', 'cyclone', { turns: 3, act: 30, multi: 5, dmg: 1.2, echo: 2, iframe: 16 }],
+          ['Thunderclap', 'meteor_drop', { leap: { vx: 2.8, vy: -5.6 }, dmg: 2.6, landShock: { r: 50, dmg: 3.4, kb: [3, -4] }, arc: 3, bolts: 3, shake: 9 }],
+          ['Dawnbreak', 'ember_wave', { dmg: 4.6, reach: 1.6, radiance: 2, shake: 10, stop: 10 }]],
   spear: [['Piercing Gale', 'impale', { dmg: 2.8, reach: 1.7, dash: { v: 5.8, t: 12 }, iframe: 10, stop: 6 }],
           ['Molten Lance', 'skewer', { btn: 'H', dmg: 2.7, reach: 1.6, quake: 1.6, launch: 1, shake: 5, stop: 6 }],
-          ["Heaven's Pillar", 'sky_lance', { btn: 'H', dmg: 2.2, rise: -5.2, launch: 1, multi: 5, act: 14, shake: 5 }]],
+          ["Heaven's Pillar", 'sky_lance', { btn: 'H', dmg: 2.2, rise: -5.2, launch: 1, multi: 5, act: 14, shake: 5 }],
+          ['Icicle Lance', 'impale', { dmg: 3, reach: 1.8, dash: { v: 6, t: 12 }, rime: 2, iframe: 10, stop: 6 }],
+          ['Rewound Thrust', 'skewer', { btn: 'H', dmg: 2.9, reach: 1.7, echo: 2, launch: 1, stop: 6, shake: 5 }],
+          ['Lightning Rod', 'sky_lance', { btn: 'H', dmg: 2.4, rise: -5.4, launch: 1, multi: 5, act: 14, arc: 3, bolts: 2 }],
+          ['Sunspear', 'impale', { dmg: 4, reach: 2.1, dash: { v: 7, t: 12 }, radiance: 2, iframe: 14, stop: 8 }]],
   fangs: [['Hundred Cuts', 'thousand', { dmg: .85, multi: 3, act: 26, dash: { v: 2.4, t: 16 } }],
           ['Ashen Step', 'shadowstep', { btn: 'H', dmg: 2.6, dash: { v: 7, t: 9 }, iframe: 16, stagger: 60, crit: 1 }],
-          ['Nightfall', 'whirl', { turns: 3, act: 26, multi: 4, dmg: 1.25, iframe: 12, quake: 1, quake2: 1 }]],
+          ['Nightfall', 'whirl', { turns: 3, act: 26, multi: 4, dmg: 1.25, iframe: 12, quake: 1, quake2: 1 }],
+          ['Frostbite Flurry', 'thousand', { dmg: .9, multi: 3, act: 28, dash: { v: 2.4, t: 16 }, rime: 1 }],
+          ['Stopped Moment', 'shadowstep', { btn: 'H', dmg: 2.8, dash: { v: 7, t: 9 }, iframe: 18, stagger: 60, echo: 1, timestop: 1, crit: 1 }],
+          ['Static Dance', 'whirl', { turns: 3, act: 26, multi: 4, dmg: 1.3, iframe: 12, arc: 2 }],
+          ['First Light', 'thousand', { dmg: 1.1, multi: 3, act: 30, dash: { v: 3, t: 16 }, radiance: 1 }]],
   maul: [['Earthshaker', 'earthsplitter', { dmg: 3.2, quake: 1.6, quake2: 1, shake: 8, stop: 8 }],
          ['Cinder Comet', 'meteor', { leap: { vx: 2.4, vy: -5.6 }, dmg: 2.6, landShock: { r: 46, dmg: 3.6, kb: [3.4, -4.4] }, shake: 9 }],
-         ['Worldsplitter', 'cataclysm', { dmg: 4.4, quake: 2, quake2: 1, stop: 10, shake: 10, reach: 1.3 }]],
+         ['Worldsplitter', 'cataclysm', { dmg: 4.4, quake: 2, quake2: 1, stop: 10, shake: 10, reach: 1.3 }],
+         ['Permafrost', 'earthsplitter', { dmg: 3.4, quake: 1.6, quake2: 1, rime: 2, spikes: 6, shake: 8, stop: 8 }],
+         ['Hour Hammer', 'meteor', { leap: { vx: 2.4, vy: -5.8 }, dmg: 2.8, landShock: { r: 48, dmg: 3.8, kb: [3.4, -4.4] }, echo: 2, shake: 9 }],
+         ['Thunder Anvil', 'cataclysm', { dmg: 4.6, quake: 2, quake2: 1, stop: 10, shake: 10, reach: 1.3, arc: 3, bolts: 4 }],
+         ['Sunfall', 'cataclysm', { dmg: 5.2, quake: 2.2, quake2: 1, stop: 12, shake: 12, reach: 1.4, radiance: 3 }]],
   bow: [['Ember Volley', 'parting_fan', { dmg: 1, arrows: { n: 7, burst: 2 } }],
         ['Cinder Rain', 'skyfall', { btn: 'H', dmg: 1.05, arrows: { n: 12, rain: 1 } }],
-        ['Prism Ray', 'sunlance', { dmg: 4.2, arrows: { n: 1, v: 12, g: 0, pierce: 1 }, stop: 6, shake: 4 }]],
+        ['Prism Ray', 'sunlance', { dmg: 4.2, arrows: { n: 1, v: 12, g: 0, pierce: 1 }, stop: 6, shake: 4 }],
+        ['Hailstorm', 'skyfall', { btn: 'H', dmg: 1.1, arrows: { n: 14, rain: 1 }, rime: 1 }],
+        ['Tick of Arrows', 'parting_fan', { dmg: 1.05, arrows: { n: 7, burst: 3 }, echo: 1 }],
+        ['Chain Lightning', 'sunlance', { dmg: 4.4, arrows: { n: 1, v: 12, g: 0, pierce: 1 }, arc: 3, stop: 6, shake: 4 }],
+        ['Dawn Volley', 'parting_fan', { dmg: 1.2, arrows: { n: 9, burst: 2 }, radiance: 1 }]],
   chuks: [['Iron Cyclone', 'whirlwind', { turns: 3, act: 30, multi: 5, dmg: 1.1, iframe: 10 }],
           ['Chain Comet', 'chain_spear', { dmg: 2.5, reach: 1.9, pull: 1, kb: [-3, -1], stagger: 50 }],
-          ['Gloom Halo', 'helicopter', { turns: 4, act: 34, multi: 5, dmg: 1.2, quake: 1.4, quake2: 1, iframe: 12 }]]
+          ['Gloom Halo', 'helicopter', { turns: 4, act: 34, multi: 5, dmg: 1.2, quake: 1.4, quake2: 1, iframe: 12 }],
+          ['Blizzard Wheel', 'whirlwind', { turns: 3, act: 30, multi: 5, dmg: 1.15, iframe: 10, rime: 1 }],
+          ['Pendulum', 'chain_spear', { dmg: 2.7, reach: 2, pull: 1, kb: [-3, -1], stagger: 50, echo: 2 }],
+          ['Storm Halo', 'helicopter', { turns: 4, act: 34, multi: 5, dmg: 1.25, quake: 1.4, quake2: 1, iframe: 12, arc: 2 }],
+          ['Halo of Dawn', 'helicopter', { turns: 4, act: 36, multi: 6, dmg: 1.4, iframe: 14, radiance: 2 }]]
 };
-const ART_BAND = { steel: 1, glass: 1, ember: 1, deep: 1, cinder: 2, gloom: 3, prism: 3 }, ART_ITEM = { kblade: 2, kmaul: 2, vpike: 2, vfangs: 2, starsplitter: 3 };
-const ART_NEED = [0, 60, 90, 120], ART_TIER_N = ['', 'steel, glass, ember or deep', 'cinder (or an old guardian\'s weapon)', 'gloom or prism'];
+const ART_BAND = { steel: 1, glass: 1, ember: 1, deep: 1, cinder: 2, gloom: 3, prism: 3, rime: 4, hour: 5, storm: 6, dawn: 7 }, ART_ITEM = { kblade: 2, kmaul: 2, vpike: 2, vfangs: 2, starsplitter: 3, antlerbrand: 4, second_hand: 5, stormcaller: 6, dawnbreaker: 7 };
+const ART_NEED = [0, 60, 90, 120, 140, 160, 180, 200], ART_TIER_N = ['', 'steel, glass, ember or deep', 'cinder (or an old guardian\'s weapon)', 'gloom or prism', 'rimesteel', 'hourbrass', 'stormsilver', 'dawnsteel'];
 const artBand = W => !W || W.type !== 'weapon' ? 0 : ART_ITEM[W.id] || ART_BAND[W.tier] || 0;
 
 // ---------------- setting the families up ----------------
@@ -186,46 +209,18 @@ function artLine(W) {
 function flowPay(a, e) {
   const f = a.f, m = a.m, M = a.set.map, root = e.root || e, fl = root.fl || (root.fl = {}), now = G.time, lean = FAM_LEAN[a.setName] || {};
   const heavy = m.btn === 'H', above = m.kind === 'plunge' || !!m.pogo || a.id === M.aD || a.id === M.haD || a.id === M.ripA, thrust = m.kind === 'thrust';
-  let bonus = 0, tag = '';
-  // Setup rewards add together instead of multiplying into sudden damage spikes.
-  if ((fl.down || 0) > now) { if (heavy || above) { bonus += .42 * (lean.crush || 1); tag = 'CRUSH'; fl.down = 0; } else bonus += .12; }
+  let mul = 1, tag = '';
+  if ((fl.down || 0) > now) { if (heavy || above) { mul *= 1.6 * (lean.crush || 1); tag = 'CRUSH'; fl.down = 0; } else mul *= 1.15; }
   if (stActive(root, 'launched')) {
-    if (above) { bonus += .42 * (lean.spike || 1); tag = tag || 'SPIKE'; if (!root.ghost) root.vy = max(root.vy || 0, 4.5); }
-    else if (a.air) { bonus += .25 * (lean.juggle || 1); tag = tag || 'JUGGLE'; if (!root.ghost) root.vy = min(root.vy || 0, -1.3); }
+    if (above) { mul *= 1.6 * (lean.spike || 1); tag = tag || 'SPIKE'; if (!root.ghost) root.vy = max(root.vy || 0, 4.5); }
+    else if (a.air) { mul *= 1.3 * (lean.juggle || 1); tag = tag || 'JUGGLE'; if (!root.ghost) root.vy = min(root.vy || 0, -1.3); }
   }
-  if ((fl.open || 0) > now) { if (heavy) { bonus += .35 * (lean.open || 1); tag = tag || 'BREAK'; fl.open = 0; } else bonus += .12 * (lean.open || 1); }
-  if (thrust && (stActive(root, 'hook') || stActive(root, 'pin') || stActive(root, 'reel'))) { bonus += .35 * (lean.skewer || 1); tag = tag || 'SKEWER'; }
-  if (heavy && (f.rhythm || 0) >= 2) { bonus += .1 * min(4, f.rhythm) * (lean.rhythm || 1); tag = tag || 'RHYTHM'; }
+  if ((fl.open || 0) > now) { if (heavy) { mul *= 1.5 * (lean.open || 1); tag = tag || 'BREAK'; fl.open = 0; } else mul *= 1.15 * (lean.open || 1); }
+  if (thrust && (stActive(root, 'hook') || stActive(root, 'pin') || stActive(root, 'reel'))) { mul *= 1.5 * (lean.skewer || 1); tag = tag || 'SKEWER'; }
+  if (m.counter && lean.counter) mul *= lean.counter;
   if (heavy) f.rhythm = 0;
-  const mul = min(2.05, (1 + bonus) * (m.counter && lean.counter ? lean.counter : 1));
-  return mul > 1.001 ? { mul, tag } : null;
+  return mul > 1.001 ? { mul: min(2.6, mul), tag } : null;
 }
-// A hit plants one ember; a timed, alternating follow-up turns it into a
-// two-beat ECHO, then a three-beat REFRAIN that leaves its target OPEN.
-function cadenceStep(a) {
-  if (a.link || a.cadenceCommitted || !a.timed) return a.cadenceStep || 0;
-  const q = a.cadenceBase;
-  return a.cadenceLink && q && q.until >= G.time && q.btn !== a.btn && q.set === a.setName ? min(3, q.count + 1) : 0;
-}
-function cadenceHit(a, e, beat, hx, hy) {
-  if (a.link || a.cadenceCommitted) return; a.cadenceCommitted = true; a.cadenceStep = beat; a.hit = true;
-  const f = a.f, root = e.root || e, step = beat || 1, refrain = step >= 3;
-  f.cadence = { btn: a.btn, count: refrain ? 1 : step, until: G.time + CADENCE_WINDOW, set: a.setName };
-  if (step < 2) return;
-  // A clean alternation returns most of the move's entry cost. A REFRAIN
-  // pays the full entry cost plus a small surplus, sustaining deliberate strings.
-  const perfect = !!a.perfect, paid = a.staminaPaid || (a.btn === 'H' ? 14 : 8), refund = refrain ? paid + (perfect ? 16 : 8) : max(8, round(paid * (perfect ? 1 : .7))), before = f.stam;
-  f.stam = min(f.maxstam, f.stam + refund); const restored = round(f.stam - before); f.stamDelay = 0;
-  const col = refrain ? '#ffd35a' : '#8ff5e6', word = (perfect ? 'PERFECT ' : '') + (refrain ? 'REFRAIN' : 'ECHO');
-  numPop(hx, hy - 17, word, perfect ? '#ffffff' : col, perfect ? 1.25 : refrain ? 1.2 : 1); if (restored) numPop(f.x + 3, f.y - 11, '+' + restored + ' STAM', perfect ? '#ffffff' : col, 1); sparks(hx, hy, perfect ? 18 : refrain ? 14 : 8, 0, perfect ? 3.2 : 2.8, perfect ? ['#ffffff', '#8ff5e6', '#ffd35a'] : refrain ? ['#ffd35a', '#fff1a8', '#ff8a3d'] : ['#8ff5e6', '#c9fff6', '#ffd35a']);
-  G.combo.pts += (refrain ? 5 : 2) + (perfect ? 2 : 0);
-  G.feed.unshift({ name: word + ' · +' + restored + ' STAM', fresh: true, isNew: false, t: 0, flow: 1 }); if (G.feed.length > 5) G.feed.pop();
-  if (refrain) { root.fl = root.fl || {}; root.fl.open = G.time + 60; flowTag(root, 'OPEN', '#8ff5e6'); }
-  if (perfect) { if (slowOK()) G.slowT = max(G.slowT, 6); G.hitstop = max(G.hitstop, 5); sfx('perfect', 0); }
-  else if (refrain) { sfx('charged', 0); }
-  else sfx('reflect', 0);
-}
-const cadenceMul = beat => beat >= 3 ? 1.16 : beat === 2 ? 1.08 : 1;
 function flowSet(a, e, lk, hx, hy) {
   const m = a.m, f = a.f, root = e.root || e, fl = root.fl || (root.fl = {}), now = G.time;
   if (m.flow === 'down') { fl.down = now + 60; flowTag(root, 'DOWN', '#ffb347'); }
@@ -244,26 +239,7 @@ function drawFamHud(c) {
   const lab = (FAM_NAME[sn] || '') + ' ' + FAM_STEP[st]; textS(c, lab, x, y, '#b9bdd0');
   if (st < 3) { const u = clamp((xp - FAM_AT[st]) / (FAM_AT[st + 1] - FAM_AT[st]), 0, 1), bx = x + textW(lab) + 4; c.fillStyle = '#2b2740'; c.fillRect(bx, y + 2, 40, 3); c.fillStyle = '#ffd35a'; c.fillRect(bx, y + 2, round(40 * u), 3); }
   const al = artLine(W); if (al) textS(c, al, x, y - 9, artFor(W) ? '#8ff5e6' : '#8b8fa3');
-  if ((p.rhythm || 0) >= 2) textS(c, 'RHYTHM ' + 'I'.repeat(min(4, p.rhythm)), x + 150, y, '#ffd35a');
-}
-function drawCadenceHud(c) {
-  const p = G.p; if (!p || UI.open) return; const uw = VS.uw, uh = VS.uh;
-  const a = p.atk, win = attackBeatWindow(a);
-  if (win) {
-    const rec = max(1, round(a.m.rec * (a.tm || a.W.wsp || 1))), next = a.btn === 'L' ? 'RMB / Q' : 'LMB';
-    const ready = a.pt >= win.from && a.pt <= win.to, perfect = ready && a.pt >= win.perfectFrom && a.pt <= win.perfectTo, y = hotbarLayout().y - 27;
-    textC(c, (perfect ? 'PERFECT!' : ready ? 'ON THE BEAT' : 'RECOVER') + '  •  NEXT ' + next, uw / 2, y, perfect ? '#8ff5e6' : ready ? '#ffd35a' : '#b9bdd0', 1, textO);
-    const bx = round(uw / 2 - 36), by = y + 8; c.fillStyle = '#302a42'; c.fillRect(bx, by, 72, 3);
-    const sx = bx + round(72 * win.from / rec), ex = bx + round(72 * (win.to + 1) / rec); c.fillStyle = '#8f6730'; c.fillRect(sx, by, max(1, ex - sx), 3);
-    c.fillStyle = ready ? '#ffd35a' : '#ffffff'; c.fillRect(bx, by, round(72 * clamp(a.pt / rec, 0, 1)), 3);
-    const ps = bx + round(72 * win.perfectFrom / rec), pe = bx + round(72 * (win.perfectTo + 1) / rec); c.fillStyle = '#8ff5e6'; c.fillRect(ps, by, max(2, pe - ps), 3);
-    c.fillStyle = '#ffffff'; c.fillRect(bx + round(72 * clamp(a.pt / rec, 0, 1)), by - 1, 1, 5);
-  }
-  const q = p.cadence; if (!q || q.until < G.time) return;
-  const label = q.count >= 2 ? 'REFRAIN +8 / PERFECT +16' : 'ECHO 70% / PERFECT 100%', next = q.btn === 'L' ? 'NEXT RMB / Q' : 'NEXT LMB', y = round(uh * .34) + 40;
-  const s = label + '  ' + next, x = uw - 8 - textW(s); textO(c, s, x, y, q.count >= 2 ? '#ffd35a' : '#8ff5e6');
-  for (let i = 0; i < 3; i++) { c.fillStyle = i < q.count ? (q.count >= 2 ? '#ffd35a' : '#8ff5e6') : '#4a4460'; c.fillRect(x + i * 6, y + 7, 4, 2); }
-  c.fillStyle = '#4a4460'; c.fillRect(x + 22, y + 7, 17, 2); c.fillStyle = '#ff8a3d'; c.fillRect(x + 22, y + 7, round(17 * clamp((q.until - G.time) / CADENCE_WINDOW, 0, 1)), 2);
+
 }
 function flowTag(root, text, col) { root.flT = { text, col, t: G.time + 50 }; }
 // small words over foes left open by your last move

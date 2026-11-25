@@ -130,6 +130,7 @@ function dimInteract(L) {
   for (const o of tileObjs.values()) {
     if (abs(o.x - ptx) > 6 || abs(o.y - pty) > 5) continue;
     if (o.id === ECHOSTONE) { const id = ECHOPOS.get(o.y * WW + o.x); if (id !== undefined) L.push({ x: o.x * T + 4, y: (o.y + 1) * T, r: 14, label: G.echoes.has(id) ? 'listen again' : 'listen to the echo', act: () => readEcho(id) }); }
+    else if (o.id === COLDHEARTH && DIM === 7) L.push({ x: o.x * T + 4, y: (o.y + 1) * T, r: 22, label: G.flags.hollowDead ? 'sit by the hearth' : hasItem('dawnring') ? 'set the Dawnring on the hearth' + (hasItem('ember_offering') ? ' (offering)' : '') : 'look at the cold hearth', act: hearthAct, hide: () => !!G.boss, host: 1 });
     else if (o.id === DALTAR && DIM) L.push({ x: o.x * T + 4, y: (o.y + 1) * T, r: 18, label: (G.flags[BOSSES[DIMP[DIM].boss].flag] ? 'wake the guardian again' : 'wake the guardian') + (hasItem(DIM_OFFER[DIMP[DIM].boss]) ? ' (offering)' : ''), act: altarAct, hide: () => !!G.boss, host: 1 });
   }
 }

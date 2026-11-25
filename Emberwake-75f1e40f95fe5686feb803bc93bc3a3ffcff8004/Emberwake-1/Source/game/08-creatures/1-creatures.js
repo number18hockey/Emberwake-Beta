@@ -22,16 +22,20 @@ function damageEnemy(e, dmg, kx, ky, o = {}) {
   if (e.ghost) return e.ghostDying ? 0 : netHitGhost(e, dmg, kx, ky, o);
   const root = e.root || e; if (e.dead || root.dead || root.invuln) return 0;
   if (o.dot) { root.hp -= dmg; e.flash = 3; numPop(e.x + e.w / 2, e.y - 2, dmg, '#ff9a3d'); if (root.hp <= 0) killEnemy(root); return 1; }
-  dmg = max(1, round(dmg * (e.dmgMul || 1) * (root.vuln || 1) * (o.blunt && e.armor ? max(e.armor, .9) : e.armor || 1)));
+  // a blow that does not bite (a lone light blow, a rushed one) hurts but does not stop a sturdy foe in its tracks
+  const glance = wardGlance(e, root, kx, o), bite = !glance && (o.bite !== false || !hasPoise(root) || root.stagT > 0); if (glance) dmg *= .35;
+  dmg = max(1, round(dmg * (e.dmgMul || 1) * (root.vuln || 1) * (root.stagT > 0 ? 1.3 : 1) * (o.blunt && e.armor ? max(e.armor, .9) : e.armor || 1)));
   if (e.armor && e.armor < 1) sparks(o.hx === undefined ? e.x + e.w / 2 : o.hx, o.hy === undefined ? e.y : o.hy, 4, 0, 1.6, ['#d67645', '#f0b070']);
   if (root.type === 'keeper' && root.state !== 'stagger' && root.state !== 'dying' && (root.poise -= dmg) <= 0) { root.state = 'stagger'; root.t = 0; root.poise = root.phase === 2 ? 150 : 110; sfx('hit2', 0); addShake(5); }
   root.hp -= dmg; e.flash = 6; root.flash = 6;
-  if (!root.noKb) {
+  if (!root.noKb && !bite) { e.vx = lerp(e.vx, kx * (1 - (e.kbRes || 0)), .35); }
+  else if (!root.noKb) {
     const kr = 1 - (e.kbRes || 0); e.vx = kx * kr; if (ky) { e.vy = ky * kr; e.onGround = false; }
     e.stun = max(e.stun, o.stagger || (o.stop >= 5 ? 22 : 13)); if (o.launch) e.launched = 34;
     if ((e.state === 'windup' || e.state === 'tele') && (o.stagger || o.stop >= 5 || e.t < 13)) { e.state = 'chase'; e.t = 0; }
     else if (e.state === 'swoop' || e.state === 'leap') { e.state = 'idle'; e.t = 0; }
   }
+  if (root.hp > 0 && !o.thorn && !glance) poiseHit(root, dmg * (o.pz || 1) * (bite ? 1 : .5), o);
   hitFx(o.hx === undefined ? e.x + e.w / 2 : o.hx, o.hy === undefined ? e.y + e.h / 2 : o.hy, e.y, dmg, o, kx, true);
   if (root.hp <= 0) { killEnemy(root); return 2; }
   return 1;
@@ -45,6 +49,7 @@ function killEnemy(e) {
   burst(cx, cy, 16, e.type === 'bat' ? ['#5a4a72', '#3a2f4a', '#ffd35a'] : e.type === 'mite' ? FROST : ['#544a5c', '#3a3340', '#ff7a2a'], 2.4, 34, { hit: 1 }); sparks(cx, cy, 8, 0, 2.4, e.type === 'mite' ? FROST : SPARK);
   const r = Math.random(); mobDeath(e);
   if (blessOn('fortune')) rollDrops(e.type, cx, cy);
+  if (e.elder) elderDrops(e, cx, cy); if ((wt('bounty') && Math.random() < .5) || Math.random() < seasonDrops() - 1) rollDrops(e.type, cx, cy);
   if (rollDrops(e.type, cx, cy)) { }
   else if (e.type === 'mote') { if (r < .75) spawnDrop('cinder', randi(1, 2), cx, cy); }
   else if (e.type === 'husk') { if (r < .5) spawnDrop('cinder', randi(1, 3), cx, cy); if (r > .8) spawnDrop('shard', 1, cx, cy); else if (r > .62) spawnDrop('iron_ore', randi(1, 3), cx, cy); if (Math.random() < .16) spawnDrop('glowcap', 1, cx, cy); }
@@ -62,13 +67,13 @@ function spawnTick() {
   spawnTick0();
 }
 function spawnTick0() {
-  if (WORLD.arena || WORLD.mode === 1 || G.boss || G.duel || (G.dialog && !netLive()) || G.cine || G.time < 500 || --G.spawnT > 0) return;
-  const night = G.dn < .3; G.spawnT = night ? 80 + frand(100) : 230 + frand(180); if (DIM) { dimSpawn(); return; }
-  const p = G.p, ptx = floor(p.x / T), pty = floor(p.y / T), realm = realmAt(ptx, pty), under = realm === 'under' || realm === 'deep';
+  if (WORLD.arena || WORLD.mode === 1 || G.boss || G.duel || (G.dialog && !netLive()) || G.cine || G.time < 500 || --G.spawnT > 0) return; G.spawnT = 120 + frand(150); if (DIM) { dimSpawn(); return; }
+  const p = G.p, ptx = floor(p.x / T), pty = floor(p.y / T), realm = realmAt(ptx, pty), night = G.dn < .3, under = realm === 'under' || realm === 'deep';
   if (placeAt(ptx, pty) === 'village' || abs(ptx - SPAWN_X) < VIL_W + 12 && !under) return;
   let n = 0, nh = 0; for (const e of G.enemies) if (!e.dead) n++; for (const f of G.fighters) if (f.hollow && !f.dead) nh++;
   if (G.ev && eventSpawn()) return;
-  if (n + nh >= (realm === 'deep' ? 5 : under ? 5 : realm === 'drift' ? 3 : night ? 7 : 2)) return;
+  if (G.spawnK !== G.time) { G.spawnK = G.time; G.spawnT *= traitPace(night, under || realm === 'drift'); }   // QUIET DAYS: slow by day, quick by night
+  if (n + nh >= (realm === 'deep' ? 5 : under ? 5 : realm === 'drift' ? 3 : traitCap(night ? 5 : 3, night, false) + seasonCap(night))) return;
   const edge = ceil(VS.vw / T / 2) + 4; // just past the edge of the screen
   if (realm === 'drift') {
     for (let tries = 0; tries < 10; tries++) { const x = p.x + (Math.random() < .5 ? -1 : 1) * frand(edge * T, edge * T + 100), y = p.y + frand(-60, 30); if (x < 40 || x > WW * T - 40 || boxHits(x, y, 18, 6)) continue; const e = mkEnemy(Math.random() < .85 ? 'skyray' : 'bat', x, y); e.hx = x; e.hy = y; G.enemies.push(e); return; }
@@ -88,11 +93,12 @@ function spawnTick0() {
     }
     let type;
     if (under) type = r < .25 ? 'bat' : r < .5 ? 'husk' : r < .62 ? 'crawler' : b === 'reach' ? (r < .8 ? 'mite' : 'glassfly') : b === 'scoria' ? 'rustback' : 'mote';
-    else type = pickMob(BIOME_MOBS[b] || BIOME_MOBS.moor, night);
+    else { const M = moodOf(tx, b); type = pickMob(M.mobs && Math.random() < .7 ? M.mobs : BIOME_MOBS[b] || BIOME_MOBS.moor, night); }   // each mood of a land has its own company
     if (type === 'crawler') { if (!trySpecialSpawn('under', b, ptx, pty, night)) type = 'husk'; else return; }
     if (type === 'serpent') { if (G.enemies.some(q => q.type === 'serpent') || TP[tileAt(tx, ty)].name !== 'Rustscale') type = 'ashhare'; }
     if (type === 'glassfly') { for (let k = 0; k < 3; k++) spawnMob('glassfly', tx + k, ty); return; }
-    spawnMob(type, tx, ty); return;
+    if (type === 'lurker') type = 'mote';
+    traitSpawned(spawnMob(type, tx, ty), tx, ty, under); return;
   }
 }
 // hollowborn: what the Deep makes of people who stayed too long. They fight like you do, sidearms and all
@@ -105,7 +111,6 @@ function hollowDrops(f) { const x = f.x + 3, y = f.y + 8, r = Math.random(); if 
 // with friends here, each creature goes after whichever of you is nearest
 function coopTarget(e) { let best = G.p, bd = 1e9; const ex = e.x + e.w / 2, ey = e.y + e.h / 2; for (const f of netPlayers()) { if (f.dead || f.noHit) continue; const d = abs(f.x + 3 - ex) + abs(f.y + 10 - ey) * 1.4 - (f === e.tgtF ? 40 : 0); if (d < bd) { bd = d; best = f; } } e.tgtF = best; return best; }
 function tickEnemies() {
-  if (WORLD.royale) { brTickMobs(); return; }
   if (netGuest()) return; const arr = G.enemies, keep = G.p, co = netHost() && COOP.peers.size > 0;
   for (let i = arr.length - 1; i >= 0; i--) { const e = arr[i]; if (co && !e.dead) G.p = coopTarget(e); try { tickEnemy(e, i, arr, G.p); } finally { G.p = keep; } }
 }
@@ -116,13 +121,14 @@ function tickEnemy(e, i, arr, p) {
     if (e.st && tickStatus(e)) return;
     if (e.root) return; if (e.type === 'boss') { tickBoss(e); return; } if (e.type === 'keeper') { tickKeeper(e); return; }
     if (e.type === 'dummy') { e.vy = min(e.vy + .3, 5); e.vx *= .6; moveBody(e); if (e.homeX === undefined) { e.homeX = e.x; e.homeY = e.y; } if (!e.tempPost && hypot(e.x - e.homeX, e.y - e.homeY) > 20 && e.flash <= 0 && (e.idle = (e.idle || 0) + 1) > 120) { dust(e.x + 4, e.y + e.h, 6); e.x = e.px = e.homeX; e.y = e.py = e.homeY; e.vx = e.vy = 0; e.idle = 0; dust(e.x + 4, e.y + e.h, 6); } else if (e.flash > 0) e.idle = 0; return; }
-    const dx = (p.x + 3) - (e.x + e.w / 2), dy = (p.y + 10) - (e.y + e.h / 2), dist0 = hypot(dx, dy), lost = (e.st && e.st.blind > 0) || p.veil > 0, dist = lost ? 999 : dist0 > 120 && !WXMOB.has(e.type) ? dist0 / wxSight() : dist0; // (fog, sand and rain hide you)
+    const dx = (p.x + 3) - (e.x + e.w / 2), dy = (p.y + 10) - (e.y + e.h / 2), dist0 = hypot(dx, dy), lost = (e.st && e.st.blind > 0) || p.veil > 0, dist = lost ? 999 : dist0;
     if (dist0 > 760 && !e.boss) { arr.splice(i, 1); return; }
     if (e.launched > 0) e.launched--;
+    if (tickPoise(e)) { e.vx *= .8; return; }
     if (e.stun > 0) { e.stun--; e.vy = min(e.vy + (e.launched > 0 ? .13 : .22), 5); e.vx *= e.onGround ? .8 : .97; moveBody(e); return; }
     if (e.st && e.st.frost > 0 && (G.time & 1)) { if (!e.fly) e.vy = min(e.vy + .22, 5); e.vx *= .9; if (e.type !== 'serpent' && !(e.type === 'crawler' && e.state === 'ceil')) moveBody(e); return; }
     e.t++;
-    if (MOBX[e.type]) { MOBX[e.type].ai(e, p, dx, dy, dist); return; }
+    if (MOBX[e.type]) { MOBX[e.type].ai(e, p, dx, dy, dist); if (e.boss) bossRage(e, p, dx, dy, dist); return; }
     if (e.type === 'mote') {
       if (e.onGround) { e.vx *= .7; if (e.t > e.wait) { const far = dist > 230 || p.dead; e.dir = sign(dx) || 1; if (far && Math.random() < .5) e.dir *= -1; e.vy = -(2.7 + frand(1.2)); e.vx = e.dir * (far ? .6 : 1.25 + frand(.5)); e.t = 0; e.wait = 28 + frand(40); e.sq = -1; } }
       e.vy = min(e.vy + .22, 5); const wg = e.onGround; moveBody(e); if (!wg && e.onGround) { e.sq = 1; dust(e.x + 5, e.y + e.h, 2, '#69636f'); } e.sq *= .86;
@@ -188,7 +194,7 @@ function tickEnemy(e, i, arr, p) {
 // ---------------- the Ashen Warden ----------------
 function spawnBoss() {
   const gx = SHRINE_X * T + 4, gy = SHRINE_Y * T;
-  const b = { type: 'boss', name: 'ASHEN WARDEN', x: gx - 20, y: gy - 20, w: 40, h: 32, vx: 0, vy: 0, hp: 1150, maxhp: 1150, flash: 0, stun: 0, noKb: true, state: 'intro', t: 0, phase: 1, atkN: 0, cd: 90, dead: false, gy, jaw: 0, core: 0, vuln: 1, dmg: 11, sub: null, rockT: 120, invuln: true, last: '', leash: 0 };
+  const b = { type: 'boss', name: 'ASHEN WARDEN', x: gx - 20, y: gy - 20, w: 40, h: 32, vx: 0, vy: 0, hp: 1500, maxhp: 1500, flash: 0, stun: 0, noKb: true, state: 'intro', t: 0, phase: 1, atkN: 0, cd: 90, dead: false, gy, jaw: 0, core: 0, vuln: 1, dmg: 11, sub: null, rockT: 120, invuln: true, last: '', leash: 0 };
   b.px = b.x; b.py = b.y;
   b.fists = [-1, 1].map(s => ({ type: 'fist', root: b, side: s, x: b.x + 20 + s * 34 - 8, y: gy - 10, px: 0, py: 0, w: 16, h: 15, vx: 0, vy: 0, flash: 0, stun: 0, state: 'rest', t: 0, dmgMul: .6, hot: false, dead: false }));
   for (const f of b.fists) { f.px = f.x; f.py = f.y; }
@@ -332,11 +338,11 @@ function endDuel(won) {
 // it cannot be pinned or burned, but a smoke pellet blinds it, and a blinded Keeper is open to the Ash Dance.
 function spawnKeeper() {
   const s = SPOTS.keeper, x = s.x * T, y = (s.y - 5) * T;
-  const k = { type: 'keeper', name: 'THE FORGE-KEEPER', x, y, px: x, py: y, w: 12, h: 34, vx: 0, vy: 0, hp: 1500, maxhp: 1500, flash: 0, stun: 0, state: 'intro', t: 0, phase: 1, dir: -1, face: -1, onGround: false, dead: false, heavy: true, fireproof: true, noKb: true, cd: 50, atkN: 0, poise: 110, dmg: 16, canStep: true, contact: false, invuln: true, leash: 0, last: '', core: 0, foes: [], vuln: 1, ph: 0 };
+  const k = { type: 'keeper', name: 'THE FORGE-KEEPER', x, y, px: x, py: y, w: 12, h: 34, vx: 0, vy: 0, hp: 1950, maxhp: 1950, flash: 0, stun: 0, state: 'intro', t: 0, phase: 1, dir: -1, face: -1, onGround: false, dead: false, heavy: true, fireproof: true, noKb: true, cd: 50, atkN: 0, poise: 110, dmg: 16, canStep: true, contact: false, invuln: true, leash: 0, last: '', core: 0, foes: [], vuln: 1, ph: 0 };
   G.boss = k; G.enemies = G.enemies.filter(e => e.type === 'keeper'); G.enemies.push(k); G.flags.keeperMet = true;
 }
 function keeperHit(k, x0, x1, y0, y1, dmg, kx, ky) { const p = G.p; if (!p.dead && p.x + p.w > x0 && p.x < x1 && p.y + p.h > y0 && p.y < y1) { if (hurtFighter(p, dmg, k.x + k.w / 2, { kx, ky, stagger: 1 })) { addShake(6); return true; } } return false; }
-function keeperShock(k, n) { const cx = k.x + k.w / 2, fy = k.y + k.h; for (const s of [-1, 1]) spawnProj({ type: 'shock', x: cx + s * 12, y: fy - 4, vx: s * (k.phase === 2 ? 3.5 : 2.8), vy: 0, r: 5, dmg: 13, life: n, pierce: true }); stripFire(cx - 24, cx + 24, fy, 150, null); }
+function keeperShock(k, n) { const cx = k.x + k.w / 2, fy = k.y + k.h; for (const s of [-1, 1]) spawnProj({ type: 'shock', x: cx + s * 12, y: fy - 4, vx: s * (k.phase === 2 ? 3.5 : 2.8), vy: 0, r: 5, dmg: 13, life: n, pierce: true }); G.fires.push({ x0: cx - 24, x1: cx + 24, y: fy, life: 150, max: 150, by: null }); }
 function tickKeeper(k) {
   k.t++; const p = G.p, P2 = k.phase === 2, cx = k.x + k.w / 2, pcx = p.x + 3, dx = pcx - cx, adx = abs(dx), blind = k.st && k.st.blind > 0, F = SPOTS.forge;
   k.foes = p.dead ? [] : [p]; k.face = k.dir; k.core = max(0, k.core - .03);
@@ -366,7 +372,7 @@ function tickKeeper(k) {
       if (k.t > 22 && p.st && (p.st.reel > 0 || p.st.hook > 0)) { k.state = 'slam'; k.t = 14; k.last = 'slam'; } else if (k.t > 48) next(); break;
     case 'tired': k.vx *= .8; k.vuln = 1.5; if (k.t % 12 === 0) P(cx + frand(-6, 6), k.y + 6, 0, -.5, 30, '#b9bdd0', { g: -.01 }); if (k.t > (P2 ? 100 : 140)) { k.vuln = 1; k.state = 'idle'; k.t = 0; k.cd = 30; k.atkN = 0; } break;
     case 'stagger': k.vx *= .7; k.vuln = 1.35; if (k.t > 80) { k.vuln = 1; k.state = 'idle'; k.t = 0; k.cd = 20; } break;
-    case 'roar': k.vx = 0; addShake(4); if (k.t === 1) { sfx('roar', 0); for (const o of tileObjs.values()) if (o.id === HEARTH) stripFire(o.x * T - 30, o.x * T + 38, (o.y + 1) * T, 240, null); }
+    case 'roar': k.vx = 0; addShake(4); if (k.t === 1) { sfx('roar', 0); for (const o of tileObjs.values()) if (o.id === HEARTH) G.fires.push({ x0: o.x * T - 30, x1: o.x * T + 38, y: (o.y + 1) * T, life: 240, max: 240, by: null }); }
       if (k.t % 3 === 0) { const an = frand(TAU); P(cx, k.y + 10, cos(an) * 3, sin(an) * 3, 24, fpick(SPARK), { glow: 1, g: 0 }); }
       if (k.t > 90) { k.state = 'idle'; k.t = 0; k.cd = 20; k.invuln = false; for (const s of [-1, 1]) { const e = mkEnemy('cinderling', cx + s * 70, k.y); G.enemies.push(e); } } break;
     case 'dying': k.invuln = true; k.vx = 0; if (k.t % 6 === 0) { const ex = cx + frand(-10, 10), ey = k.y + frand(0, 34); burst(ex, ey, 10, SPARK, 2.6, 26, { glow: 1 }); sfx('hit2', 0); addShake(3); }
@@ -416,7 +422,8 @@ function huskPose(e, al) {
   else if (e.state === 'recover') { const u = min(1, (e.t + al) / 36); P.wAng = lerp(1.1, -.3, ease.io(u)); P.armA = lerp(1.1, .6, u); P.lean = lerp(.45, .22, u); }
   return P;
 }
-function drawEnemy(e, al) {
+function drawEnemy(e, al) { if (!e.elder) { drawEnemy0(e, al); return; } ENT_K = 1.4; try { drawEnemy0(e, al); } finally { ENT_K = 1; } if (G.time % 5 === 0) P(e.x + frand(e.w), e.y + frand(e.h), 0, -.3, 30, fpick(['#ffd35a', '#fff1a8']), { g: -.004, fr: 1, glow: 1 }); }
+function drawEnemy0(e, al) {
   const x = lerp(e.px, e.x, al), y = lerp(e.py, e.y, al), o = { flash: e.flash > 3 };
   if (MOBX[e.type]) { MOBX[e.type].draw(e, x, y, o); return; }
   if (e.type === 'mote') { const s = e.sq + sin(G.time * .12 + e.seed) * .06; drawEnt(32, 16, 26, c => { c.scale(1 + s * .32, 1 - s * .32); c.drawImage(SPR.mote, -6, -9); }, x + e.w / 2, y + e.h, { flash: o.flash, ly: -5 }); }

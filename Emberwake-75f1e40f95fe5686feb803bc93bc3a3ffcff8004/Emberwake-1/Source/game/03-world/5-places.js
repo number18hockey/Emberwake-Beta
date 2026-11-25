@@ -81,17 +81,20 @@ function withRng(seed, fn) { const keep = rng; rng = mulberry32(seed >>> 0); try
 
 // ---------------- where the new places go ----------------
 const SKINDS2 = {
-  moor: ['hut', 'camp', 'circle', 'tower', 'well', 'graves', 'shrine', 'mill', 'mill', 'den'], mosswood: ['hut', 'camp', 'circle', 'well', 'den', 'shrine', 'mill'], willowmere: ['stilt', 'stilt', 'hut', 'wreck', 'shrine', 'den'], thorn: ['camp', 'hut', 'tower', 'circle', 'shrine', 'den', 'den'],
+  moor: ['hut', 'camp', 'circle', 'tower', 'well', 'graves', 'shrine', 'mill', 'mill', 'den'], thorn: ['camp', 'hut', 'tower', 'circle', 'shrine', 'den', 'den'],
   reach: ['camp', 'circle', 'tower', 'shrine', 'shrine', 'den'], fen: ['stilt', 'stilt', 'hut', 'wreck', 'shrine'], dunes: ['dune', 'well', 'graves', 'wreck', 'wreck', 'shrine'],
   scoria: ['tower', 'dune', 'graves', 'camp', 'shrine', 'den'], ash: ['graves', 'camp', 'circle', 'shrine', 'den']
 };
-const BKINDS = { moor: ['hamlet', 'hamlet', 'fort', 'castle'], mosswood: ['hamlet', 'hamlet', 'fort'], willowmere: ['hamlet', 'fort'], thorn: ['fort', 'fort', 'hamlet', 'castle'], reach: ['temple', 'temple', 'castle', 'hamlet'], fen: ['hamlet', 'fort'], dunes: ['pyramid', 'pyramid', 'fort'], scoria: ['fort', 'castle', 'pyramid'], ash: ['fort', 'castle', 'fort'] };
-const BHALF = { hamlet: 31, fort: 27, castle: 35, pyramid: 25, temple: 17 }, BIGW = 560, DEEPW = 700, CAMPW = 330;
+const BKINDS = { moor: ['hamlet', 'hamlet', 'fort', 'castle'], thorn: ['fort', 'fort', 'hamlet', 'castle'], reach: ['temple', 'temple', 'castle', 'hamlet'], fen: ['hamlet', 'fort'], dunes: ['pyramid', 'pyramid', 'fort'], scoria: ['fort', 'castle', 'pyramid'], ash: ['fort', 'castle', 'fort'] };
+const BHALF = { hamlet: 31, fort: 27, castle: 35, pyramid: 25, temple: 17, observatory: 10 }, BIGW = 560, DEEPW = 700, CAMPW = 330;
+// worlds made since the lands grew widest: big places further apart, and far fewer garrisons (an observatory instead)
+const BKINDS3 = { moor: ['hamlet', 'hamlet', 'observatory', 'fort'], thorn: ['hamlet', 'observatory', 'fort', 'hamlet'], reach: ['temple', 'observatory', 'hamlet', 'temple'], fen: ['hamlet', 'hamlet', 'observatory'], dunes: ['pyramid', 'observatory', 'pyramid'], scoria: ['pyramid', 'observatory', 'hamlet', 'fort'], ash: ['castle', 'observatory', 'hamlet', 'observatory'] };
+const bigW = () => WORLD.land >= 3 ? 860 : BIGW;
 const nearEcho = (x, r) => { for (let i = 0; i < (LORE_N[DIM] || 0); i++) if (abs(echoX(i) - x) < r) return true; return false; };
 function bigOf(k) {
   return pmemo('b' + k, () => {
     if (DIM || WORLD.arena || hh(k, 1100, SEED) > .62) return null;
-    const x = k * BIGW + 80 + floor(hh(k, 1101, SEED) * 400), kinds = BKINDS[biomeE(x)]; if (!kinds) return null;
+    const W = bigW(), x = k * W + 80 + floor(hh(k, 1101, SEED) * (W - 160)), kinds = (WORLD.land >= 3 ? BKINDS3 : BKINDS)[biomeE(x)]; if (!kinds) return null;
     const kind = kinds[floor(hh(k, 1102, SEED) * kinds.length)], w = BHALF[kind];
     if (!newLand(x - w - 10) || !newLand(x + w + 10) || inWindow(x, w + 30) || abs(x - SPAWN_X) < 300 || nearEcho(x, w + 8) || biomeE(x - w) !== biomeE(x) || biomeE(x + w) !== biomeE(x)) return null;
     let lo = 1e9, hi = -1e9; for (let o = -w; o <= w; o += 3) { if (lakeAt(x + o)) return null; const s = surf(x + o); lo = min(lo, s); hi = max(hi, s); }
@@ -99,7 +102,7 @@ function bigOf(k) {
     return { x, kind, w };
   });
 }
-function bigNear(x, pad) { const k = floor(x / BIGW); for (const q of [k - 1, k, k + 1]) { const s = bigOf(q); if (s && abs(x - s.x) < s.w + pad) return s; } return null; }
+function bigNear(x, pad) { const k = floor(x / bigW()); for (const q of [k - 1, k, k + 1]) { const s = bigOf(q); if (s && abs(x - s.x) < s.w + pad) return s; } return null; }
 const surfaceTubes = x => { for (const s of [floor(x / 260) - 1, floor(x / 260), floor(x / 260) + 1]) { const tx = s * 260 + 40 + floor(hh(s, 1011, SEED) * 180); if (hh(s, 1001, SEED) < .45 && abs(tx - x) < 70) return true; } for (const s of [floor(x / 400) - 1, floor(x / 400), floor(x / 400) + 1]) { const vx = s * 400 + 30 + floor(hh(s, 1031, SEED) * 330); if (hh(s, 1003, SEED) < .4 && abs(vx - x) < 40) return true; } for (const s of [floor(x / 300) - 1, floor(x / 300), floor(x / 300) + 1]) { const gx = s * 300 + 40 + floor(hh(s, 1021, SEED) * 220); if (hh(s, 1002, SEED) < .4 && abs(gx - x) < 40) return true; } return false; };
 function deepOf(k) {
   return pmemo('d' + k, () => {
@@ -126,7 +129,7 @@ function campOf(k) {
 function placeReserved(x) { if (DIM || WORLD.arena) return false; if (bigNear(x, 4)) return true; const k = floor(x / DEEPW); for (const q of [k - 1, k, k + 1]) { const d = deepOf(q); if (d && abs(d.x - x) < 7) return true; } return false; }
 function placesFinish(cx, x0, x1, here) {
   if (DIM || WORLD.arena) return;
-  for (let k = floor(x0 / BIGW) - 1; k <= floor(x1 / BIGW) + 1; k++) { const s = bigOf(k); if (s && here(s.x)) withRng(hh(s.x, 1150, SEED) * 4294967296, () => BIG_B[s.kind](s.x, s)); }
+  for (let k = floor(x0 / bigW()) - 1; k <= floor(x1 / bigW()) + 1; k++) { const s = bigOf(k); if (s && here(s.x)) withRng(hh(s.x, 1150, SEED) * 4294967296, () => BIG_B[s.kind](s.x, s)); }
   for (let k = floor(x0 / DEEPW) - 1; k <= floor(x1 / DEEPW) + 1; k++) { const s = deepOf(k); if (s && here(s.x)) withRng(hh(s.x, 1250, SEED) * 4294967296, () => dungeon(s.x, s.y)); }
   for (let k = floor(x0 / CAMPW) - 1; k <= floor(x1 / CAMPW) + 1; k++) { const s = campOf(k); if (s && here(s.x)) withRng(hh(s.x, 1350, SEED) * 4294967296, () => (s.kind === 'nest' ? nest : mcamp)(s.x, s.y)); }
 }
@@ -456,11 +459,11 @@ function placeHazards(f) {
 
 // ---------------- the other worlds get places of their own ----------------
 // Cinderdeep: slag bastions; the Rootdark: glowcap hollows; the Glass Expanse: prism spires. Blessing stones everywhere.
-const DPW = 520;
+const DPW = 520, dpw = () => WORLD.land >= 3 ? 760 : DPW;
 function dplaceOf(k) {
   return pmemo('p' + DIM + ':' + k, () => {
     if (!DIM || hh(k, 1500 + DIM, SEED) > .6) return null;
-    let x = k * DPW + 90 + floor(hh(k, 1501 + DIM, SEED) * 340); const kind = hh(k, 1502 + DIM, SEED) < .3 ? 'dshrine' : DIM === 1 ? 'bastion' : DIM === 2 ? 'hollow' : 'spire';
+    const W = dpw(); let x = k * W + 90 + floor(hh(k, 1501 + DIM, SEED) * (W - 180)); const kind = hh(k, 1502 + DIM, SEED) < .3 ? 'dshrine' : DIMP[DIM].dplace || 'spire';
     if (!newLand(x - 30) || !newLand(x + 30) || abs(x - SPAWN_X) < 90 || abs(x - DARENA_X) < 120 || nearEcho(x, 30)) return null;
     if (DIM !== 3 && [x - 18, x, x + 18].some(q => dimLakeAt(q))) return null;
     for (let q = floor(x / 210) - 1; q <= floor(x / 210) + 1; q++) { const rx = q * 210 + 30 + floor(hh(q, 1401 + DIM, SEED) * 150); if (hh(q, 1402 + DIM, SEED) <= .55 && abs(rx - x) < 40) return null; }
@@ -468,7 +471,7 @@ function dplaceOf(k) {
   });
 }
 function dimPlaces(cx, x0, x1, here) {
-  for (let k = floor(x0 / DPW) - 1; k <= floor(x1 / DPW) + 1; k++) {
+  for (let k = floor(x0 / dpw()) - 1; k <= floor(x1 / dpw()) + 1; k++) {
     const s = dplaceOf(k); if (!s || !here(s.x)) continue; let x = s.x;
     if (DIM === 3) { const I = gIsleC(floor(x / GCELL)) || gIsleC(floor(x / GCELL) + 1); if (!I || I.a < 11 || !here(I.cx)) continue; x = I.cx; }
     else if (![-10, -6, -3, 3, 6, 10].every(o => abs(heights[x + o] - heights[x]) <= 2)) continue;
@@ -478,7 +481,7 @@ function dimPlaces(cx, x0, x1, here) {
 }
 const DPLACE = {
   dshrine(x, gy) {
-    const F = DIM === 1 ? BASALT : DIM === 2 ? SHADESTONE : PALESTONE;
+    const F = DIMP[DIM].floor || PALESTONE;
     for (let dx = -5; dx <= 5; dx++) { for (let y = gy - 8; y < gy; y++) setT(x + dx, y, AIR, 0); setT(x + dx, gy, F); }
     bp(x - 3, gy - 2, ['...O...', '.CCCCC.'], { O: OBELISK, C: F, '.': undefined });
     lampAt(x - 4, gy - 3, [.6, .5, .95]); lampAt(x + 4, gy - 3, [.6, .5, .95]); reserve(x - 6, x + 6, 2);

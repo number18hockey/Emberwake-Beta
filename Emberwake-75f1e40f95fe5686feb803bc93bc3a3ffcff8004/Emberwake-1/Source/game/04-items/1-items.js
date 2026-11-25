@@ -107,10 +107,6 @@ function buildItems() {
   M('reed', 'Reed', 'fiber', 'reed', 'Hollow fen reeds. Thatch, baskets, paper.');
   defI('log', { name: 'Stalk Log', icon: SPR.i_wood, desc: 'Felled from lantern-stalks. Saw it, burn it, char it.' });
   M('bark', 'Bark', 'hide', 'bark', 'Stripped from felled stalks. Tans hides; brews a bitter tea.');
-  M('egg', 'Willow Egg', 'bowl', { a: '#fff1d0', b: '#e6c98c', c: '#a8845a', e: '#ffffff' }, 'A wild hen’s egg. Cook it, or carry it to a brewer.');
-  M('feather', 'Willow Feather', 'wing', { a: '#fff1d0', b: '#e6c98c', c: '#a8845a', e: '#ffffff' }, 'Soft, light and useful in brews and fletching.');
-  M('antler', 'Moss Antler', 'bone', { a: '#f4efe6', b: '#d8ccb8', c: '#a8987a', d: '#6a5a48', e: '#ffffff' }, 'A shed-looking tine from the moss deer. Strong enough for a handle.');
-  M('moonseed', 'Moonseed', 'berry', { a: '#e0d2ff', b: '#a58ae0', c: '#5a4a8a', d: '#3d2f5c', e: '#ffffff' }, 'A luminous seed that only grows in the quiet reaches of the Willowmere.');
   M('resin', 'Stalk Resin', 'nug', 'resin', 'Amber sap from felled stalks. Sticky, and it burns.');
   M('dirt', 'Loam', 'pile', 'loam', 'Soil. Pack it, mud it, sift it. Place 2 to fill a gap.', { type: 'block', tile: DIRT, cost: 2 });
   M('sand', 'Rustscale Sand', 'pile', 'sand', 'Melt it to glass, mix it to mortar. Place 2 to pour a drift.', { type: 'block', tile: SAND, cost: 2 });
@@ -232,8 +228,6 @@ function buildItems() {
   st('bloomery', 'Bloomery', BLOOMERY, 'Smelts ore with charcoal or coal. Pump the bellows to hold the heat.'); st('anvil', 'Stone Anvil', ANVIL, 'Smith sunmetal and bronze. Strike on the marks.');
   st('anvil2', 'Iron Anvil', ANVIL2, 'Smith anything. Strike on the marks.'); st('loom', 'Loom', LOOM, 'Weave in rhythm: A and D with the beat.');
   st('rack', 'Drying Rack', RACK, 'Hang hides, meat and mudbricks. Faster in the sun or by a fire.'); st('cauldron', 'Cauldron', CAULDRON, 'Brews. Stir steadily, ladle at the right colour.');
-  st('brewstand', 'Brewer’s Stand', BREW_STAND, 'A tier two brewing station. Makes measured infusions that a field cauldron cannot hold.');
-  st('moon_cauldron', 'Moon Cauldron', MOON_CAULDRON, 'A tier three vessel for delicate mooncraft and a living mirror draught.');
   st('mason', 'Mason\'s Bench', MASON, 'Chisel stone along its lines.'); st('post', 'Practice Post', POST, 'Hold a weapon and press F beside it: it calls out drills that teach that weapon\'s styles.'); st('sieve', 'Sieve', SIEVE, 'Shake loose gravel, sand, loam or ash for what hides in it.');
   IT.waystone.icon = outlined(STN_SPR[WAYSTONE].img); IT.charge.icon = outlined(STN_SPR[CHARGE].img); IT.bedroll.icon = outlined(STN_SPR[BEDROLL].img);
   // ---- sidearms and relics (the story keeps these ids) ----
@@ -243,21 +237,13 @@ function buildItems() {
   defI('smoke', { name: 'Smoke Pellet', type: 'arm', icon: SPR.i_smoke, stack: 30, desc: '[R] throw. Blinds whoever is caught in the cloud.' });
   M('frostflask', 'Frost Flask', 'jug', { a: '#ffffff', b: '#c9fff6', c: '#62a9bc', d: '#2a5a6a', e: '#ffffff' }, '[R] throw. Bursts into cold that slows everything it touches.', { type: 'arm', stack: 30 });
   M('arrow', 'Arrow', 'arrow', { a: '#e8edf2', b: '#8a6a48', e: '#f4efe6' }, 'Crafted bows need them. Dawnstring does not.', { stack: 300 });
-  M('swiftbrew', 'Quickstep Brew', 'vial', { a: '#c9fff6', b: '#62c7ac', c: '#247a70', d: '#164c52', e: '#ffffff' }, 'Drink for 40 seconds of quick, light-footed movement.', { type: 'food', food: 3, drink: true, consumeT: 58, brew: 'swift', stack: 3 });
-  M('mightbrew', 'Emberheart Brew', 'vial', { a: '#fff1a8', b: '#ff8a3d', c: '#c94a2e', d: '#6a2418', e: '#ffffff' }, 'Drink for 30 seconds of stronger attacks.', { type: 'food', food: 3, drink: true, consumeT: 68, brew: 'might', stack: 2 });
-  M('mirrordraught', 'Doublesoul Draught', 'vial', { a: '#e0d2ff', b: '#a58ae0', c: '#5a4a8a', d: '#24182f', e: '#8ff5e6' }, 'Drink to call a mirror Waker. It echoes your recent movement, then fights with its own mind for 40 seconds.', { type: 'food', food: 2, drink: true, consumeT: 82, brew: 'mirror', stack: 1 });
-  R('bench', 'brewstand', 1, { copper_bar: 2, glass: 2, stick: 4 });
-  R('mason', 'moon_cauldron', 1, { cauldron: 1, skyglass: 2, shard: 3 });
-  R('pot', 'swiftbrew', 2, { berries: 3, feather: 1, jug_w: 1 }, { lvl: 1, ret: { jug: 1 }, col: [111, 240, 224] });
-  R('pot', 'mightbrew', 1, { egg: 2, bark: 2, jug_w: 1 }, { lvl: 2, ret: { jug: 1 }, col: [226, 72, 59] });
-  R('pot', 'mirrordraught', 1, { moonseed: 1, glass_wing: 1, glowcap: 2, jug_w: 1 }, { lvl: 3, ret: { jug: 1 }, col: [165, 138, 224] });
   defI('wember', { name: "Warden's Ember", type: 'relic', stack: 1, icon: SPR.i_wember, desc: 'The first ember. Jump again in mid-air.' });
   defI('wember2', { name: 'Still Ember', type: 'relic', stack: 1, icon: SPR.i_wember2, desc: 'The second ember. Dodge twice in mid-air.' });
   defI('wember3', { name: 'Deep Ember', type: 'relic', stack: 1, icon: SPR.i_wember3, desc: 'The third ember. Molten cinder will not burn you.' });
-  buildTools(); buildWeapons(); buildArmor(); dimItemsPost();
+  buildTools(); buildWeapons(); buildArmor(); dimItemsPost(); wonderItems(); realmItemsPost();
   defI('scroll', { name: 'Technique Scroll', type: 'scroll', stack: 5, icon: scrollIcon(), desc: 'Brush drawings of a weapon form. Click to read it: the last weapon you held gains a rank of styles.' });
   for (const id of ['knifeblade', 'axehead', 'pickhead', 'shovelhead', 'spearhead']) { const k = KNAP.find(q => q.out === id), [c, x] = mk(10, 10); for (let i = 0; i < 25; i++) if (k.pat[i] === '#') { x.fillStyle = (i % 5 + (i / 5 | 0)) % 3 ? '#8a8296' : '#c9c2d6'; x.fillRect((i % 5) * 2, (i / 5 | 0) * 2, 2, 2); } IT[id].icon = outlined(c); }
-  benchItems(); trinketItems(); furnItems(); offeringItems(); regroupRecipes();
+  benchItems(); trinketItems(); furnItems(); offeringItems(); realmOfferings(); regroupRecipes();
   for (const r of RECIPES) for (const k of Object.keys(r.need).concat(r.out ? [r.out] : [], r.keep || [])) if (!IT[k]) console.warn('recipe item missing', k);
   buildUses();
 }
@@ -414,7 +400,7 @@ function buildUses() {
 const PACK0 = 20, PACK_MAX = 50;
 let INV_N = PACK0;
 let inv = [];
-const packCap = () => WORLD.arena && !WORLD.royale ? 10 : WORLD.mode === 1 ? PACK_MAX : min(PACK_MAX, PACK0 + (G.worn ? G.worn.size : 0) * 10);
+const packCap = () => WORLD.arena ? 10 : WORLD.mode === 1 ? PACK_MAX : min(PACK_MAX, PACK0 + (G.worn ? G.worn.size : 0) * 10);
 function fitPack() { const n = packCap(); if (inv.length < PACK_MAX) for (let i = inv.length; i < PACK_MAX; i++) inv[i] = null; const over = []; for (let i = n; i < PACK_MAX; i++) if (inv[i]) { over.push(inv[i]); inv[i] = null; } INV_N = n; for (const s of over) { const l = addItem(s.id, s.n); if (l && G.p) spawnDrop(s.id, l, G.p.x + 3, G.p.y + 4); } }
 function addItem(id, n = 1) {
   const it = IT[id]; if (!it) return 0; const st = it.stack;

@@ -9,7 +9,7 @@ FIND = r"""
 (() => {
   const out = {}, add = (kind, x, y) => { if (!out[kind]) out[kind] = []; if (out[kind].length < 3) out[kind].push([x, y]); };
   for (let k = floor((SPAWN_X - 9000) / 150); k < floor((SPAWN_X + 9000) / 150); k++) { const s = structOf(k); if (s && ['shrine', 'mill', 'wreck', 'den'].includes(s.kind)) add(s.kind, s.x, surf(s.x)); }
-  for (let k = floor((SPAWN_X - 12000) / BIGW); k < floor((SPAWN_X + 12000) / BIGW); k++) { const s = bigOf(k); if (s) add(s.kind, s.x, surf(s.x)); }
+  { const W = typeof bigW === 'function' ? bigW() : BIGW, k0 = floor(SPAWN_X / W); for (let i = 0; i < 140; i++) for (const k of i ? [k0 - i, k0 + i] : [k0]) { const s = bigOf(k); if (s) add(s.kind, s.x, surf(s.x)); } }
   for (let k = floor((SPAWN_X - 9000) / DEEPW); k < floor((SPAWN_X + 9000) / DEEPW); k++) { const s = deepOf(k); if (s) add('dungeon', s.x, s.y); }
   for (let k = floor((SPAWN_X - 6000) / CAMPW); k < floor((SPAWN_X + 6000) / CAMPW); k++) { const s = campOf(k); if (s) add(s.kind, s.x, s.y); }
   return out;

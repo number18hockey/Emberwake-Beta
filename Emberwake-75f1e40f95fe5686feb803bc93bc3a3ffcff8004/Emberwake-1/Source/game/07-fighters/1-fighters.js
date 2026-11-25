@@ -18,9 +18,9 @@ const AI_RANGE = { sword: 20, spear: 30, fangs: 13, maul: 22, bow: 125, chuks: 1
 function newFighter(x, y, o) {
   const f = {
     fighter: true, x, y, px: x, py: y, w: 6, h: 20, vx: 0, vy: 0, face: 1, onGround: false, canStep: true, stepVis: 0, hp: 100, maxhp: 100, stam: 100, maxstam: 100, stamDelay: 0,
-    inv: 0, iDodge: 0, dodgeT: 0, dodgeCd: 0, dodgeDir: 1, dodgeGrace: 0, dodgeGround: true, dbuf: 0, airDash: 1, updraft: true, dblUsed: false, airRiseUsed: false, pogoUsed: false, perfected: false,
-    state: 'normal', atk: null, buf: null, coyote: 0, jbuf: 0, runPh: 0, landT: 0, hurtT: 0, riposte: 0, lastMove: null, chainT: 0, cadence: null, hist: [], toolT: 0, mineX: -1, mineY: -1, mineP: 0,
-    placeCd: 0, dead: false, deadT: 0, healCd: 0, regenT: 0, sHold: 0, noCut: false, ghostReq: false, scarf: [], skin: 0, hat: 0, team: 'p', name: '', wid: 'sword', flash: 0, taken: 0, takenT: 0,
+    inv: 0, iDodge: 0, dodgeT: 0, dodgeCd: 0, dodgeDir: 1, dodgeGrace: 0, dodgeGround: true, dbuf: 0, airDash: 1, updraft: true, dblUsed: false, perfected: false,
+    state: 'normal', atk: null, buf: null, coyote: 0, jbuf: 0, runPh: 0, landT: 0, hurtT: 0, riposte: 0, lastMove: null, chainT: 0, hist: [], toolT: 0, mineX: -1, mineY: -1, mineP: 0,
+    placeCd: 0, dead: false, deadT: 0, healCd: 0, regenT: 0, sHold: 0, noCut: false, ghostReq: false, scarf: [], skin: 0, team: 'p', name: '', wid: 'sword', flash: 0, taken: 0, takenT: 0,
     kills: 0, deaths: 0, foes: [], atkN: 0
   };
   Object.assign(f, o);
@@ -28,18 +28,18 @@ function newFighter(x, y, o) {
   return f;
 }
 function newPlayer() {
-  const sx = SPOTS.camp ? SPOTS.camp.x - 6 : SPAWN_X, sy = SPOTS.camp ? SPOTS.camp.y : heights[SPAWN_X]; const p = newFighter(sx * T + 1, (sy - 3) * T, { isPlayer: true, skin: G.skin || 0, hat: G.hat || 0, name: G.nick || 'You' });
+  const sx = SPOTS.camp ? SPOTS.camp.x - 6 : SPAWN_X, sy = SPOTS.camp ? SPOTS.camp.y : heights[SPAWN_X]; const p = newFighter(sx * T + 1, (sy - 3) * T, { isPlayer: true, skin: G.skin || 0, name: G.nick || 'You' });
   while (boxHits(p.x, p.y, p.w, p.h)) p.y -= T; p.py = p.y; return p;
 }
 function reviveFighter(f, x, y) {
-  Object.assign(f, { x, y, px: x, py: y, vx: 0, vy: 0, hp: f.maxhp, stam: f.maxstam, dead: false, deadT: 0, inv: 120, iDodge: 0, state: 'normal', atk: null, buf: null, hurtT: 0, riposte: 0, taken: 0, chainT: 0, cadence: null, airRiseUsed: false, pogoUsed: false, mineP: 0 });
+  Object.assign(f, { x, y, px: x, py: y, vx: 0, vy: 0, hp: f.maxhp, stam: f.maxstam, dead: false, deadT: 0, inv: 120, iDodge: 0, state: 'normal', atk: null, buf: null, hurtT: 0, riposte: 0, taken: 0, chainT: 0, mineP: 0 });
   while (boxHits(f.x, f.y, f.w, f.h)) { f.y -= T; f.py = f.y; }
   for (const s of f.scarf) { s.x = s.ox = f.x + 3; s.y = s.oy = f.y + 5; }
 }
 function startDodge(f, md, I) {
   const c = atkContext(f, I), dir = md || -c.side;
-  if (f.atk) endAttack(f); f.state = 'dodge'; f.dodgeT = 0; f.dodgeDir = dir; f.dodgeGround = f.onGround || f.coyote > 0; if (!f.dodgeGround) f.airDash--;
-  f.iDodge = f === G.p && boonHas('veil') ? 15 : 10; f.dodgeCd = 24; f.stam = max(0, f.stam - 22); f.stamDelay = 38; f.dbuf = 0; f.perfected = false; if (md) f.face = dir;
+  if (f.atk) endAttack(f); f.state = 'dodge'; f.dodgeT = 0; f.dodgeDir = dir; f.dodgeGround = f.onGround || f.coyote > 0; if (!f.dodgeGround) { f.airDash--; f.vy = 0; }
+  f.iDodge = f === G.p && boonHas('veil') ? 15 : 10; f.dodgeCd = 24; f.stam = max(0, f.stam - 22 * (f.dodgeCost || 1)); f.stamDelay = 38; f.dbuf = 0; f.perfected = false; if (md) f.face = dir;
   fsx(f, 'dodge', 0); dust(f.x + 3, f.y + f.h, 5); f.ghostReq = true;
   if (f === G.p && G.drill) drillNote('dodge');
 }
@@ -49,37 +49,43 @@ function perfectDodge(f) {
   if (f === G.p) { if (slowOK()) G.slowT = 26; G.flash = max(G.flash, .25); G.flashCol = '143,245,230'; sfx('perfect', 0); comboHit(true); G.flags.perfect = true; }
   else fsx(f, 'reflect', 0);
 }
-// a creature is being run against someone other than you: what it does to them is kept, and applied once you are yourself again
 function hurtFighter(f, dmg, fromX, o = {}) {
-  if (G.proxy && f === G.p) { G.proxyHits.push([f, dmg, fromX, o]); return !(f.dead || f.iDodge > 0 || f.inv > 0); }
   if (f.remote && f.coop) return netHurtPeer(f, dmg, fromX, o || {}); if (f.ghostH) return netHitHollow(f, dmg, fromX, o || {});
   if (f.dead || G.state !== 'play' || f.remote) return false;
   if (f.iDodge > 0 && !o.link) { if (!f.perfected && (f.state === 'dodge' || f.dodgeGrace > 0)) perfectDodge(f); return false; }
   if (f.inv > (o.net ? 30 : o.link ? 999 : 0)) return false;
   if (f.state === 'link' && !o.link) return false;
-  const pvp = !!o.pvp, armored = f.atk && f.atk.m.armor && f.atk.phase < 2;
+  if (tryClash(f, dmg, fromX, o)) return false;
+  const pvp = !!o.pvp, armored = f.atk && f.atk.m.armor && f.atk.phase < 2, caught = caughtOpen(f, o), soft = pvp && o.bite === false;
+  if (caught) dmg *= 1.25;
   const gp = f === G.p && gearOn(); if (gp) { dmg = gearDamage(dmg, o); if ((gearHas('kindled') || gearHas('molten')) && o.by && o.by !== f && !o.by.dead && o.by.hp !== undefined && !o.by.fighter) applyStatus(o.by, 'burn', f, { d: 90 }); }
-  else if (f.brBot && f.br && f.br.gear) { const prot = GEAR_SLOTS.reduce((n, s) => n + (IT[f.br.gear[s]]?.prot || 0), 0); dmg *= 1 - prot / (prot + 60); }
-  dmg = max(1, round(dmg * (pvp && WORLD.arena ? .8 : 1) * (armored ? .65 : 1) * (f.dmgTaken || 1) * (f === G.p && !WORLD.arena && !o.net ? DIFF().taken * blessTaken() : 1) * (WORLD.royale ? (!pvp ? brWildHurt(f) : f.brBot && o.by && o.by.brBot ? .68 : 1) : 1)));
+  // a guardian's fight hits harder than the open road
+  const vsGuardian = f === G.p && !o.env && !WORLD.arena && G.boss && !G.boss.dead ? 1.2 : 1;
+  dmg = max(1, round(dmg * vsGuardian * (pvp && WORLD.royale ? .55 : pvp && WORLD.arena ? .8 : 1) * (armored ? .65 : 1) * (f.dmgTaken || 1) * (f === G.p && !WORLD.arena && !o.net ? DIFF().taken * blessTaken() : 1)));
   let warded = 0; if (WORLD.royale && f.ward > 0) { warded = min(f.ward, dmg); f.ward -= warded; dmg -= warded; if (warded) sparks(f.x + 3, f.y + 8, 5, 0, 1.6, ['#8fd0ff', '#ffffff']); }
   f.hp -= dmg; f.regenT = 0; f.flash = 6; if (o.by) f.lastHitBy = o.by;
   if (gp && boonHas('thorn') && !o.net && !pvp) { const by = o.by && !o.by.fighter && !o.by.dead ? o.by : G.enemies.find(e => !e.dead && !e.noHit && e.type !== 'dummy' && abs(e.x + e.w / 2 - (f.x + 3)) < 22 && abs(e.y + e.h / 2 - (f.y + 10)) < 24); if (by && by.hp !== undefined) damageEnemy(by, max(1, round(dmg * .25)), 0, 0, { thorn: 1 }); }
   const held = f.st && f.st.held > 0;
   if (held) { f.flash = 6; f.hurtT = 8; }
+  // cold, dark and the like wear at you without throwing you about
+  else if (o.env) { f.inv = max(f.inv, 12); }
   // hollow iron does not flinch at small blows
   else if (gp && dmg < 9 && gearHas('anvil')) { f.inv = 40; fsx(f, 'hit2', 0); sparks(f.x + 3, f.y + 8, 3, 0, 1.2); }
   else if (!armored) {
     const d = sign((f.x + 3) - fromX) || -f.face;
-    const pz = gp ? gearMul('poise') : 1; f.vx = (o.kx !== undefined ? o.kx * .85 : d * 2.7) * pz; f.vy = (o.ky !== undefined ? min(o.ky, -1.2) : -2.3) * (.4 + .6 * pz); f.onGround = false;
-    f.hurtT = pvp ? clamp(o.stagger ? 24 : 11 + (o.stop || 2), 10, 26) : 13; f.inv = pvp ? 7 : 58;
+    const pz = (gp ? gearMul('poise') : 1) * (soft ? .45 : 1); f.vx = (o.kx !== undefined ? o.kx * .85 : d * 2.7) * pz; if (!soft) { f.vy = (o.ky !== undefined ? min(o.ky, -1.2) : -2.3) * (.4 + .6 * pz); f.onGround = false; }
+    f.hurtT = soft ? 5 : pvp ? clamp(o.stagger ? 24 : 11 + (o.stop || 2), 10, 26) : 13; f.inv = pvp ? 7 : 50;
     if (o.link) f.inv = 0; else if (pvp && ++f.taken >= 4) { f.inv = 50; f.taken = 0; f.vx *= 1.4; sparks(f.x + 3, f.y + 10, 10, 0, 2, FROST); }
-    f.takenT = 70; if (f.atk) { f.atk = null; } f.state = 'normal'; f.buf = null;
+    f.takenT = 70; if (!(soft && f.atk && f.atk.phase === 1)) { f.atk = null; f.state = 'normal'; f.lastMove = null; f.chainT = 0; f.glintT = 0; } f.buf = null;
   } else fsx(f, 'hit2', 0);
-  if (f === G.p) {
-    G.combo.n = 0; G.combo.pts = 0; G.combo.t = 0; addShake(4.5); G.hitstop = max(G.hitstop, WORLD.royale ? 2 : 3); sfx('hurt', 0); G.flash = .24; G.flashCol = '226,72,59';
+  // a blow that lands takes your rhythm with it; one that catches you mid wind-up takes all of it
+  if (!o.env && !o.dot) { if (caught) { f.tempo = 0; numPop(f.x + 3, f.y - 14, 'CAUGHT', '#ff6b6b'); fsx(f, 'caught', 0); if (f === G.p) tempoHint('caught', 'CAUGHT. A blow that lands while you wind up, or after you rush, hurts a quarter more. Watch for the ! over a foe and answer it: dodge, or meet it with a swing of your own.'); } else if (f.tempo > 0) tempoAdd(f, -2); }
+  if (f === G.p && o.env) { sfx('hurt', 0); numPop(f.x + 3, f.y - 4, dmg, '#9adcf0'); }
+  else if (f === G.p) {
+    G.combo.n = 0; G.combo.pts = 0; G.combo.t = 0; addShake(4.5); G.hitstop = max(G.hitstop, 5); sfx('hurt', 0); G.flash = .24; G.flashCol = '226,72,59';
     if (dmg > 0) numPop(f.x + 3, f.y - 4, dmg, '#ff6b6b'); if (warded) numPop(f.x + 3, f.y - 12, warded, '#8fd0ff'); burst(f.x + 3, f.y + 10, 8, ['#e2483b', '#ff9a8a'], 1.8, 22);
   } else hitFx(o.hx === undefined ? f.x + 3 : o.hx, o.hy === undefined ? f.y + 10 : o.hy, f.y, dmg, o, o.kx || 0, o.by === G.p);
-  if (f.hp <= 0) { if (f.yieldAt) { f.hp = 1; f.yieldAt(f); } else killFighter(f, o.by); }
+  if (f.hp <= 0) { if (f.yieldAt) { f.hp = 1; f.yieldAt(f); } else if (!trCheatDeath(f)) killFighter(f, o.by); }
   return true;
 }
 function hurtPlayer(dmg, fromX) { return hurtFighter(G.p, dmg, fromX, {}); }
@@ -87,7 +93,6 @@ function killFighter(f, by) {
   if (f.hollow && !f.remote && netHost() && f.nid) sendAll({ t: 'hdie', id: f.nid, x: round(f.x), y: round(f.y), elite: f.elite || '' });
   f.hp = 0; f.dead = true; f.deadT = 0; f.atk = null; f.state = 'normal'; f.deaths++;
   burst(f.x + 3, f.y + 10, 40, f.skin === 4 ? FROST : SPARK, 3, 60, { glow: 1, g: .02 }); if (f === G.p) sfx('die', 0); else fsx(f, 'kill', 0);
-  if (f.isClone) { f.gone = true; return; }
   if (WORLD.arena) arenaDeath(f, by); else if (f === G.p) { G.deaths = (G.deaths || 0) + 1; G.dirty = true; }
   else if (f.hollow && !f.remote) hollowDrops(f);
 }
@@ -100,63 +105,51 @@ function tickFighter(f, I) {
   if (f.inv > 0) f.inv--; if (f.iDodge > 0) f.iDodge--; if (f.dodgeCd > 0) f.dodgeCd--; if (f.dodgeGrace > 0) f.dodgeGrace--; if (f.riposte > 0) f.riposte--;
   if (f.chainT > 0) f.chainT--; if (f.hurtT > 0) f.hurtT--; if (f.landT > 0) f.landT--; if (f.healCd > 0) f.healCd--; if (f.placeCd > 0) f.placeCd--;
   if (f.takenT > 0 && --f.takenT <= 0) f.taken = 0;
-  if (f.armCd > 0) f.armCd--; if (f.throwT > 0) f.throwT--; if (f.veil > 0) f.veil--;
+  if (f.armCd > 0) f.armCd--; if (f.throwT > 0) f.throwT--; if (f.veil > 0) f.veil--; tickTempo(f);
   if (f.state === 'link') { tickLink(f); tickScarf(f); return; }
   if (f.st && tickStatus(f)) { f.atk = null; if (f.state === 'attack') f.state = 'normal'; tickScarf(f); return; }
   if (tickGrapple(f)) { moveBody(f); tickScarf(f); return; }
   if (I.armP && f.hurtT <= 0) throwArm(f, I.wx, I.wy);
   if (I.jumpP) f.jbuf = 7; else if (f.jbuf > 0) f.jbuf--;
-  if (f.onGround) { f.coyote = 6; f.airDash = airDashMax(f); f.updraft = true; f.dblUsed = false; f.airRiseUsed = false; f.pogoUsed = false; } else if (f.coyote > 0) f.coyote--;
-  if (f.stamDelay > 0) f.stamDelay--; else f.stam = min(f.maxstam, f.stam + (f.isPlayer && (!WORLD.arena || WORLD.royale) ? (f.tonic > 0 ? 1.8 : 1) * (WORLD.mode !== 1 && G.food <= 0 ? .5 : 1) * gearMul('st') : 1) * wxBreath(f));
+  if (f.onGround) { f.coyote = 6; f.airDash = airDashMax(f); f.updraft = true; f.dblUsed = false; } else if (f.coyote > 0) f.coyote--;
+  if (f.stamDelay > 0) f.stamDelay--; else f.stam = min(f.maxstam, f.stam + .6 * (f.isPlayer && !WORLD.arena ? (f.tonic > 0 ? 1.8 : 1) * (WORLD.mode !== 1 && G.food <= 0 ? .5 : 1) * gearMul('st') : 1));
   f.regenT++;
   if (WORLD.arena && !WORLD.royale) { if (f.regenT > 240 && f.hp < f.maxhp && G.time % 4 === 0) f.hp++; }
   else if (f.isPlayer && f.regenT > 420 / DIFF().regen && G.time % max(1, round((WORLD.mode === 1 || G.food > 70 ? 40 : G.food > 30 ? 80 : 1e9) / DIFF().regen / blessRegen())) === 0 && f.hp < f.maxhp) f.hp++;
   const W = heldOf(f), isW = W && W.type === 'weapon', free = f.hurtT <= 0;
-  if (isW && free && (I.lp || I.rp)) {
-    const b = I.rp ? 'H' : 'L';
-    if (f !== G.p || f.state === 'normal' || f.state === 'dodge') f.buf = { b, t: 7, beat: false };
-    else if (f.state === 'attack' && f.atk) {
-      const win = attackBeatWindow(f.atk);
-      f.buf = win && f.atk.pt >= win.from && f.atk.pt <= win.to ? { b, t: 2, beat: true, perfect: f.atk.pt >= win.perfectFrom && f.atk.pt <= win.perfectTo } : null;
-    }
-  }
+  // every press is weighed against the beat: holding the button down does nothing, and hammering it is a mistake
+  if (isW && free) { if (I.rp) beatPress(f, 'H'); else if (I.lp) beatPress(f, 'L'); }
   if (f.buf && --f.buf.t < 0) f.buf = null;
   if (I.dodgeP) f.dbuf = 7; else if (f.dbuf > 0) f.dbuf--;
   let a = f.atk;
   if (f.dbuf > 0 && f.dodgeCd <= 0 && f.hurtT <= 0 && f.stam >= 12 && (f.state === 'normal' || (f.state === 'attack' && (a.phase === 2 || (a.phase === 0 && a.charge > 0)))) && (f.onGround || f.coyote > 0 || f.airDash > 0)) startDodge(f, I.md, I);
   if (f.buf && f.hurtT <= 0) {
-    a = f.atk; const ok = f.state === 'normal' || (f.state === 'dodge' && f.dodgeT >= 2) || (f.state === 'attack' && a.phase === 2 && (f.buf.beat || a.pt >= floor(a.m.rec * .38)));
-    if (ok) { const b = f.buf.b, beat = !!f.buf.beat, perfect = !!f.buf.perfect; f.buf = null; if (f.state === 'attack') endAttack(f); if (startAttack(f, b, I, false, beat, perfect)) f.atkN++; }
+    a = f.atk; const ok = f.state === 'normal' || (f.state === 'dodge' && f.dodgeT >= 2) || (f.state === 'attack' && a.phase === 2 && !a.rushed && a.pt >= beatOpen(a));
+    if (ok) { const b = f.buf.b; f.beatIn = f.state === 'dodge' ? 1 : f.buf.beat | 0; f.buf = null; if (f.state === 'attack') endAttack(f); if (startAttack(f, b, I)) f.atkN++; f.beatIn = 0; }
   }
-  let grav = .26; const gp = f === G.p && gearOn(), maxV = 1.45 * (gp ? gearMul('walk') : 1) * (f === G.p && typeof brewMul === 'function' ? brewMul('swift') : 1) * wxSpeed(f, I.md);
+  let grav = .26; const gp = f === G.p && gearOn(), maxV = 1.45 * (gp ? gearMul('walk') : 1) * (f.spd || 1) * (f.st && f.st.frost > 0 ? .72 : 1);
   if (gp && f.vy > 0 && (gearHas('feather') || gearHas('prismatic')) && I.jumpH && !f.onGround) grav = .17;
   if (f.state === 'dodge') {
-    f.dodgeT++; f.vx = f.dodgeDir * 3.5 * (f.dodgeT > 8 ? .7 : 1) * (f === G.p ? gearMul('dodge') : 1);
+    f.dodgeT++; f.vx = f.dodgeDir * 3.5 * (f.dodgeT > 8 ? .7 : 1) * (f === G.p ? gearMul('dodge') : 1); if (!f.dodgeGround) { f.vy = 0; grav = 0; }
     if (f.dodgeT % 2 === 0) f.ghostReq = true;
-    if (f.dodgeT >= 11) { f.state = 'normal'; f.dodgeGrace = 9; f.carryT = 16; f.vx *= .86; }
-  } else if (f.state === 'attack') { f.md = I.md; tickAttack(f, I); }
+    if (f.dodgeT >= 11) { f.state = 'normal'; f.dodgeGrace = 9; f.vx *= .5; }
+  } else if (f.state === 'attack') tickAttack(f, I);
   a = f.atk;
   if (f.state !== 'dodge' && !(a && a.dashT > 0 && a.phase === 1)) {
-    const ctrl = a ? (a.phase === 2 ? .85 : a.m.ctrl) : (f.hurtT > 0 ? .12 : 1), md = I.md;
-    if (md && ctrl > 0) {
-      // a blow leans on your stride without stopping it: light ones cost a little speed, heavy ones more.
-      // Speed you already had above a run (a dash, a leap) bleeds off slowly instead of being cut
-      const keep = a && a.phase < 2 ? max(a.btn === 'H' ? .62 : .8, min(1, ctrl + .15)) : 1, tgt = md * maxV * keep, along = sign(f.vx) === md;
-      const acc = (f.onGround ? .24 : .15) * (a ? max(ctrl, .6) : ctrl);
-      f.vx = along && abs(f.vx) > abs(tgt) ? approach(f.vx, tgt, abs(f.vx) > maxV ? .05 : .03) : approach(f.vx, tgt, acc);
-      // walking into a shut door pushes it open
-      if ((f === G.p && !WORLD.arena || WORLD.royale && !f.remote) && f.state === 'normal') { const tx = floor((f.x + (md > 0 ? f.w + 1.5 : -1.5)) / T); for (let y = floor(f.y / T); y <= floor((f.y + f.h - 1) / T); y++) if (tileAt(tx, y) === DOORC) { if (toggleDoor(tx, y)) G.autoDoors.push({ tx, ty: y, t: 150 }); break; } }
-    }
-    // hands off the keys: you glide to a stop, longer out of a dash or through a swing
-    else f.vx = approach(f.vx, 0, f.onGround ? (a ? .05 : f.dodgeGrace > 0 || f.carryT > 0 ? .07 : .16) * wxSlick(f) : (a ? .012 : .03));
+    const ctrl = a ? (a.phase === 2 ? .7 : a.m.ctrl) : (f.hurtT > 0 ? .12 : 1), md = I.md;
+    const tgt = md * maxV * (a && a.phase < 2 ? min(1, ctrl + .15) : 1), acc = (f.onGround ? .24 : .15) * ctrl;
+    if (md && ctrl > 0) f.vx = (abs(f.vx) > maxV && sign(f.vx) === md) ? approach(f.vx, tgt, .07) : approach(f.vx, tgt, acc);
+    // walking into a shut door pushes it open
+    if (md && f === G.p && !WORLD.arena && f.state === 'normal') { const tx = floor((f.x + (md > 0 ? f.w + 1.5 : -1.5)) / T); for (let y = floor(f.y / T); y <= floor((f.y + f.h - 1) / T); y++) if (tileAt(tx, y) === DOORC) { if (toggleDoor(tx, y)) G.autoDoors.push({ tx, ty: y, t: 150 }); break; } }
+    else f.vx = approach(f.vx, 0, (f.onGround ? .2 : .035) * (a ? .6 : 1));
   }
-  if (f.carryT > 0) f.carryT--;
   if (f.jbuf > 0 && !(f.climbing && !I.md) && f.hurtT <= 0 && (f.state === 'normal' || (f.state === 'attack' && a.phase === 2))) {
     if (f.coyote > 0) doJump(f, -4.55 * (f === G.p ? gearMul('jump') : 1));
     else if (canDbl(f) && !f.dblUsed) { f.dblUsed = true; doJump(f, -4.15); for (let i = 0; i < 12; i++) P(f.x + 3, f.y + f.h, cos(i / 12 * TAU) * 1.6, sin(i / 12 * TAU) * .5, 16, fpick(f.skin === 4 ? FROST : SPARK), { glow: 1, g: 0, fr: .9 }); }
   }
   if (!I.jumpH && f.vy < -1.7 && !f.noCut) f.vy = -1.7;
   a = f.atk;
+  if (a && a.phase < 2) { if (a.m.float) grav = .1; if (a.dashT > 0 && a.m.dash.vy === undefined && !a.m.dash.along && !f.onGround) grav = .04; }
   const liq = liqAt(f.x + 3, f.y + f.h - 5), head = liqAt(f.x + 3, f.y + 2);
   if (liq) {
     grav *= .3; f.vx *= .9; if (f.vy > 1.3) f.vy = lerp(f.vy, 1.3, .3);
@@ -177,8 +170,6 @@ function tickFighter(f, I) {
   tickScarf(f);
 }
 function doJump(f, v) { f.vy = v; f.onGround = false; f.coyote = 0; f.jbuf = 0; f.noCut = false; if (f.atk) endAttack(f); fsx(f, 'jump'); dust(f.x + 3, f.y + f.h, 3); }
-// a blow adds its step to the way you are already going. It never takes speed away, and never turns you round mid-retreat
-function stepIn(f, fc, step) { const v = f.vx * fc; if (v < -.2 && f.md === -fc) return; f.vx = fc * max(step, v); }
 function tickScarf(f) {
   const sc = f.scarf, ax = f.x + 3 - f.face * 2, ay = f.y + 6;
   sc[0].x = ax; sc[0].y = ay;
@@ -199,20 +190,18 @@ function playerInput() {
 function tickPlayer() {
   const p = G.p, I = playerInput();
   if (WORLD.royale && !brInput(p, I)) return;
-  if (p.consume && !p.brUse) { tickConsume(p); I.md = 0; I.jumpP = I.jumpH = I.l = I.r = I.lp = I.rp = I.dodgeP = I.armP = false; }
-  recordCloneInput(I);
   tickFighter(p, I);
   if (WORLD.royale) brAfter(p, I);
   if (p.dead) { if (!WORLD.royale && p.deadT > (WORLD.arena ? 150 : 190)) respawnPlayer(); return; }
-  if (WORLD.arena && !WORLD.royale) return;
+  if (WORLD.arena) return;
   // ---- tools, blocks, consumables ----
   toolTick(p, I);
   const hi = heldItem(); if (hi && hi.type === 'weapon') G.lastWeapon = G.sel;
-  if (!WORLD.royale && pressed.KeyH && !G.dialog) useHeal(countItem('salve') ? 'salve' : 'glowcap');
+  if (pressed.KeyH && !G.dialog) useHeal(countItem('salve') ? 'salve' : 'glowcap');
   if (pressed.KeyT && !G.dialog && !UI.open) cycleArm(p);
-  if (!WORLD.royale && !UI.open && !G.dialog && !G.cine) { if (pressed.KeyV) tryStyle(p, I); if (pressed.KeyX) swapOff(p, I); }
-  if (!WORLD.royale) tickStyles(p, I);
-  if (!WORLD.royale && pressed.KeyF && !UI.open) interact();
+  if (!UI.open && !G.dialog && !G.cine) { if (pressed.KeyV) tryStyle(p, I); if (pressed.KeyX) swapOff(p, I); }
+  tickStyles(p, I);
+  if (pressed.KeyF && !UI.open) interact();
 }
 function respawnPlayer() {
   const p = G.p;
@@ -243,7 +232,7 @@ function aiThink(f) {
   }
   const t = B.tgt; I.armP = false;
   if (!t || hypot(t.x - f.x, t.y - f.y) > 600) { I.md = 0; I.l = I.r = I.jumpH = I.down = false; return I; }
-  if (f.st && f.st.blind > 0) { if (--B.think <= 0) { B.think = 12; I.md = Math.random() < .6 ? (Math.random() < .5 ? -1 : 1) : 0; I.wx = f.x + 3 + I.md * 30; I.wy = f.y + 8; if (Math.random() < .25) I.lp = true; } return I; }
+  if (f.st && f.st.blind > 0) { if (--B.think <= 0) { B.think = 12; I.md = Math.random() < .6 ? (Math.random() < .5 ? -1 : 1) : 0; I.wx = f.x + 3 + I.md * 30; I.wy = f.y + 8; if (Math.random() < .25 && f.state === 'normal') I.lp = true; } return I; }
   if (t.veil > 0 && Math.random() < .7) { I.md = 0; return I; }
   const W = IT[f.wid], set = W.set, MS = MOVESETS[set], ranged = set === 'bow';
   const tcx = t.x + t.w / 2, tcy = t.y + t.h / 2, fx = f.x + 3, fy = f.y + 10, dx = tcx - fx, dy = tcy - fy, adx = abs(dx), dir = sign(dx) || 1, pref = AI_RANGE[set];
@@ -264,6 +253,11 @@ function aiThink(f) {
     if (want) { f.arm = want; I.armP = true; I.wx = tcx; I.wy = tcy - (want === 'flask' || want === 'smoke' ? 8 : 0); B.atkCd = 14; return I; }
   }
   if (t.st && (t.st.pin > 0 || t.st.hook > 0) && adx < 48 && f.state === 'normal' && f.hurtT <= 0) { I.lp = true; I.md = dir; return I; }
+  // --- keep the beat: a practised hand strikes again on the glint, a clumsy one rushes or lets it pass ---
+  if (f.state === 'attack' && f.atk) {
+    const a = f.atk; if (a.phase === 2 && B.chainN > 0 && !a.rushed && a.pt === beatOpen(a) + B.chainLag) { B.chainN--; B.chainLag = floor(Math.random() * (1 - sk) * 7); I.wx = tcx; I.wy = tcy; if (B.chainH) { I.rp = true; B.chainH = false; } else I.lp = true; }
+    else if (a.phase < 2 && a.pt === 2 && Math.random() < (1 - sk) * .1) I.lp = true;
+  }
   // --- a perfect dodge opens a riposte ---
   if (f.riposte > 0 && f.state !== 'attack' && adx < pref + 40) { I.lp = true; I.md = 0; return I; }
   if (B.hold > 0) { B.hold--; I.r = B.holdB === 'H'; I.l = B.holdB === 'L'; if (B.hold === 0) I.l = I.r = false; } else I.l = I.r = false;
@@ -281,9 +275,9 @@ function aiThink(f) {
   if (dy > 26 && f.onGround && adx < 70) I.down = true;
   // --- choose a form ---
   const inRange = ranged ? adx < 270 && abs(dy) < 130 : adx < pref + 14 && abs(dy) < 34;
-  if (inRange && B.atkCd <= 0 && f.hurtT <= 0 && (f.state === 'normal' || (f.state === 'attack' && f.atk.phase === 2))) {
-    const r = Math.random(), heavy = f.stam > 35 && Math.random() < .3;
-    B.atkCd = round(lerp(36, 9, sk) + Math.random() * 16);
+  if (inRange && B.atkCd <= 0 && f.hurtT <= 0 && f.state === 'normal') {
+    const r = Math.random(), heavy = f.stam > 35 && Math.random() < (f.tempo >= 3 ? .7 : .22);
+    B.atkCd = round(lerp(60, 30, sk) + Math.random() * 20); B.chainN = heavy || ranged ? 0 : Math.random() < .35 + sk * .6 ? 1 + (Math.random() < sk ? 1 : 0) + (Math.random() < sk * .5 ? 1 : 0) : 0; B.chainLag = floor(Math.random() * (1 - sk) * 7); B.chainH = B.chainN > 1 && Math.random() < .4;
     let ax = tcx, ay = tcy;
     if (r < .14 && f.onGround && !ranged) { I.jumpP = I.jumpH = true; B.plan = { b: heavy ? 'H' : 'L', t: 8, down: Math.random() < .3 }; }
     else if (r < .27 && adx > 30) { I.md = dir; ax = tcx + dir * 50; }
@@ -307,11 +301,6 @@ function armDraw(x, sx, sy, ang, ext, col, hand) {
   seg(x, sx, sy, ex, ey, 2, col); seg(x, ex, ey, hx, hy, 2, col); x.fillStyle = hand; x.fillRect(round(hx - 1), round(hy - 1), 2, 2);
 }
 function basePose() { return { l1a: .08, l1b: .08, l2a: -.08, l2b: -.08, lean: 0, bob: 0, armA: 1.15, armExt: .8, armB: 1.75, armBext: .85, wAng: -.6, wOff: 0, rot: 0, head: 0, crouch: 0, tuck: 0, kick: 0, stance: 0 }; }
-function drawHat(x, hat) {
-  if (hat === 1) { x.fillStyle = '#7a3222'; x.fillRect(-4, -11, 8, 2); x.fillStyle = '#ff8a3d'; x.fillRect(-3, -14, 6, 3); x.fillStyle = '#ffd35a'; x.fillRect(-1, -16, 2, 2); }
-  else if (hat === 2) { x.fillStyle = '#ffd35a'; x.fillRect(-4, -12, 8, 3); x.fillStyle = '#fff1a8'; x.fillRect(-3, -15, 2, 3); x.fillRect(1, -15, 2, 3); x.fillRect(-1, -14, 2, 2); }
-  else if (hat === 3) { x.fillStyle = '#4fd8c8'; x.fillRect(-4, -12, 8, 2); x.fillStyle = '#c9fff6'; x.fillRect(-2, -15, 4, 3); x.fillStyle = '#8ff5e6'; x.fillRect(-1, -17, 2, 2); }
-}
 function drawRig(x, P, S, wp, wp2) {
   x.save();
   if (P.spin !== undefined) { const s = P.spin; x.scale(abs(s) < .3 ? (s < 0 ? -.3 : .3) : s, 1); }
@@ -325,7 +314,7 @@ function drawRig(x, P, S, wp, wp2) {
   if (wp2) { const L2 = ARM * clamp(P.armBext, .3, 1), hx2 = shx - 1.5 + cos(P.armB) * L2, hy2 = shy + sin(P.armB) * L2; x.save(); x.translate(hx2, hy2); x.rotate(P.w2Ang !== undefined ? P.w2Ang : P.armB - 1.05); x.drawImage(wp2.held, -wp2.grip[0], -wp2.grip[1]); x.restore(); }
   armDraw(x, shx - 1.5, shy, P.armB, P.armBext, S.armB, S.handB);
   legDraw(x, -.9, hipY, l2a, l2b, S.legB, S.boot); legDraw(x, .9, hipY, l1a, l1b, S.leg, S.boot);
-  x.save(); x.translate(0, hipY); x.rotate(lean); x.drawImage(S.torso, -3, -8 + P.bob); x.translate(0, -7 + P.bob); x.rotate(P.head); x.drawImage(S.head, S.hx, S.hy); drawHat(x, S.hat || 0); x.restore();
+  x.save(); x.translate(0, hipY); x.rotate(lean); x.drawImage(S.torso, -3, -8 + P.bob); x.translate(0, -7 + P.bob); x.rotate(P.head); x.drawImage(S.head, S.hx, S.hy); x.restore();
   const L = ARM * clamp(P.armExt, .3, 1), hx = shx + cos(P.armA) * L, hy = shy + sin(P.armA) * L;
   if (wp) {
     x.save(); x.translate(hx, hy); x.rotate(P.wAng); if (P.wFlip !== undefined) x.scale(abs(P.wFlip) < .18 ? (P.wFlip < 0 ? -.18 : .18) : P.wFlip, 1);
@@ -335,7 +324,6 @@ function drawRig(x, P, S, wp, wp2) {
     x.restore();
   }
   armDraw(x, shx, shy, P.armA, P.armExt, S.arm, S.hand);
-  if (P.consumeIcon) { const L = ARM * clamp(P.armExt, .3, 1), hx = shx + cos(P.armA) * L, hy = shy + sin(P.armA) * L; x.drawImage(P.consumeIcon, round(hx - 3), round(hy - 7), 6, 6); }
   x.restore();
 }
 function fighterPose(f, al) {
@@ -359,7 +347,6 @@ function fighterPose(f, al) {
   if (st && (st.hook > 0 || st.reel > 0 || st.held > 0)) { P.lean = -.35; P.head = -.35 + sin(G.time * .3) * .1; P.armA = 2.4; P.armB = 2.7; P.l1a = .5; P.l2a = -.4; P.wAng = 2.2; if (!f.atk) return P; }
   if (f.throwT > 0 && !f.atk) { const u = 1 - f.throwT / 12; P.armA = lerp(-2.4, f.throwA || 0, ease.out(min(1, u * 2))); P.armExt = 1; P.lean = .25 * sin(u * PI); P.wAng = idle; }
   if (f.atk) atkPose(P, f.atk, al);
-  if (f.consume) { P.lean = lerp(P.lean, -.12, .8); P.head = lerp(P.head, -.14, .8); P.armA = f.consume.drink ? -1.3 : -1.58; P.armExt = .82; P.consumeIcon = IT[f.consume.id] && IT[f.consume.id].icon; }
   if (isW && it.chuks) { const a = f.atk; if (a && a.phase === 1 && a.m.kind === 'swing') P.nA = swingAng(a, max(0, a.pt + al - 2.2)) + (a.m.to > a.m.from ? -.5 : .5); else if (a && (a.m.kind === 'thrust' || a.m.kind === 'shot') && a.phase === 1) P.nA = P.wAng; else if (a && (a.m.kind === 'spin' || a.m.kind === 'flip')) P.nA = P.wAng + .35; else P.nA = PI / 2 + sin(t * .07) * .12 - P.lean; }
   else if (f.isPlayer && (f.toolT > 0 || f.toolCharge > 0) && (!it || it.type === 'tool' || it.fist)) {
     // the tool rises behind you, comes down along your aim, bites, and comes back
@@ -385,7 +372,6 @@ const TORCH_HELD = { held: null, grip: [2, 5] };
 function visHeld(f) { if (f.isPlayer && (f.toolT > 0 || f.toolCharge > 0) && f.swingTool && f.swingTool.held && !f.atk) return f.swingTool; if (f.isPlayer && (f.toolT > 0 || f.toolCharge > 0) && !f.atk && f.swingTool === HAND) return null; if (f === G.p) return f.atk && f.atk.W ? f.atk.W : heldItem() || heldOf(f); return heldOf(f); }
 function drawFighterRig(x, f, al, rx, ry) {
   const P = fighterPose(f, al), it = visHeld(f), S = f === G.p ? gearSkin(SK[f.skin] || SK[0], f.skin) : f.coop && f.gearObj ? gearSkinOf(f) : SK[f.skin] || SK[0];
-  S.hat = f.hat || 0;
   if (S.scarf) { const sc = f.scarf; for (let i = 1; i < sc.length; i++) seg(x, sc[i - 1].x - rx, sc[i - 1].y - ry, sc[i].x - rx, sc[i].y - ry, i < 3 ? 2.4 : 2, S.scarf[i % 2]); }
   let wp = null, wp2 = null; if (it) { if (it.held || it.chuks) { wp = it; if (it.dual) wp2 = it; } else if (it.id === 'torch') { TORCH_HELD.held = SPR.i_torch; wp = TORCH_HELD; } }
   x.save(); x.scale(f.face, 1); drawRig(x, P, S, wp, wp2); x.restore();
@@ -394,8 +380,9 @@ function drawFighter(f, al) {
   const rx = lerp(f.px, f.x, al) + 3, ry = lerp(f.py, f.y, al) + f.h + (f.stepVis || 0);
   const blink = f.inv > 0 && !f.dead && f.hurtT <= 0 && (G.time >> 2) & 1;
   const burn = f.st && f.st.burn > 0, veil = f.veil > 0;
-  const [dx, dy] = drawEnt(96, 48, 70, c => drawFighterRig(c, f, al, rx, ry), rx, ry, { flash: f.hurtT > 9 || f.flash > 3 && f !== G.p, alpha: (blink ? .45 : 1) * (f.fade === undefined ? 1 : f.fade) * (veil ? .45 : 1), ly: -10, tint: burn ? [255, 110, 40, .18 + .12 * sin(G.time * .4)] : null });
+  const [dx, dy] = drawEnt(96, 48, 70, c => drawFighterRig(c, f, al, rx, ry), rx, ry, { flash: f.hurtT > 9 || f.flash > 3 && f !== G.p, alpha: (blink ? .45 : 1) * (f.fade === undefined ? 1 : f.fade) * (veil ? .45 : 1), ly: -10, tint: burn ? [255, 110, 40, .18 + .12 * sin(G.time * .4)] : f === G.p && f.glintT > 0 && f.glintMax - f.glintT < f.glintP ? [255, 236, 170, .34] : null });
   if (f.ghostReq) { f.ghostReq = false; makeGhost(dx, dy, 96, f.riposte > 0 ? '#8ff5e6' : (SK[f.skin] || SK[0]).scarf ? (SK[f.skin] || SK[0]).scarf[1] : '#c9fff6'); }
+  if (wctx) { drawTempo(wctx, f, rx, ry); if (f === G.p) drawGlint(wctx, f, rx, ry); }
   return [rx, ry];
 }
 
@@ -404,22 +391,6 @@ const RB = 96;
 const [rigCv, rigX] = mk(RB, RB, { willReadFrequently: true });
 const [outCv, outX] = mk(RB, RB);
 const outImg = outX.createImageData(RB, RB), ghostPool = [];
-// The rig's canvas is read back every time it is drawn, so it lives in main memory. Draw one picture into it
-// that lives on the graphics card and the browser moves the whole canvas there, and from then on every read
-// stalls the frame (thirty Wakers on screen cost 68 ms that way). So sprites are copied over pixel by pixel,
-// once each, the first time they are used, and only the copies ever touch the rig. (They are read through a fresh
-// canvas, because the browser warns about reading any one picture twice, and icons have read some of them already.)
-const CPU_IMG = new WeakMap();
-function cpuImg(img) {
-  let c = CPU_IMG.get(img); if (c) return c;
-  if (!img || !img.getContext || !img.width || !img.height) c = img;
-  else { const w = img.width, h = img.height, [, rx] = mk(w, h), [cv2, x2] = mk(w, h, { willReadFrequently: true }); rx.drawImage(img, 0, 0); x2.putImageData(rx.getImageData(0, 0, w, h), 0, 0); c = cv2; }
-  if (img) CPU_IMG.set(img, c); return c;
-}
-{ const raw = rigX.drawImage.bind(rigX); rigX.drawImage = (img, ...a) => raw(cpuImg(img), ...a); }
-// In a crowd, everyone but you keeps the same drawn pose for a frame or two (they still move every frame). The poses
-// are kept here and not on the creature itself: in a shared world a creature's own fields are sent to everyone.
-const ENT = { key: null, i: 0, n: 0, last: 0, cv: null, kept: new WeakMap() };
 let wctx = null; const LIT = [1, 1, 1];
 function pixelize(n, o) {
   const src = rigX.getImageData(0, 0, n, n).data, dst = outImg.data, W4 = RB * 4, n4 = n * 4, fl = o && o.flash, tn = o && o.tint;
@@ -436,29 +407,22 @@ function pixelize(n, o) {
       else dst[di + 3] = 0;
     }
   }
-  return outImg;
+  outX.putImageData(outImg, 0, 0, 0, 0, n, n);
 }
+// (ENT_K: an ELDER creature is drawn half again as big, from its feet up)
+let ENT_K = 1;
 function drawEnt(n, ox, oy, fn, wx, wy, o) {
-  const key = ENT.key, every = key ? (ENT.last > 16 ? 3 : ENT.last > 7 ? 2 : 1) : 1; let c = null;
-  ENT.n++;
-  let kept = null; if (every > 1) { kept = ENT.kept.get(key); if (!kept) ENT.kept.set(key, kept = []); c = kept[ENT.i++] || null; }
-  if (every > 1 && c && c.n === n && c.fl === !!(o && o.flash) && RFRAME - c.at < every && RFRAME >= c.at && (RFRAME + (c.k | 0)) % every !== 0) ENT.cv = c.cv;
-  else {
-    rigX.setTransform(1, 0, 0, 1, 0, 0); rigX.clearRect(0, 0, n, n); rigX.translate(ox, oy); fn(rigX); rigX.setTransform(1, 0, 0, 1, 0, 0);
-    lightSample(wx, wy + (o && o.ly !== undefined ? o.ly : 0), LIT); if (o && o.unlit) LIT[0] = LIT[1] = LIT[2] = 1; pixelize(n, o);
-    if (every > 1) {
-      if (!c || c.n !== n) { const [cv2, x2] = mk(n, n); c = kept[ENT.i - 1] = { cv: cv2, x: x2, n, k: ENT.n }; }
-      c.x.putImageData(outImg, 0, 0, 0, 0, n, n); c.at = RFRAME; c.fl = !!(o && o.flash); ENT.cv = c.cv;
-    } else { outX.putImageData(outImg, 0, 0, 0, 0, n, n); ENT.cv = outCv; }
-  }
+  const K = ENT_K; if (K !== 1) { n = min(RB, ceil(n * K)); ox = round(ox * K); oy = round(oy * K); }
+  rigX.setTransform(1, 0, 0, 1, 0, 0); rigX.clearRect(0, 0, n, n); rigX.translate(ox, oy); if (K !== 1) rigX.scale(K, K); fn(rigX); rigX.setTransform(1, 0, 0, 1, 0, 0);
+  lightSample(wx, wy + (o && o.ly !== undefined ? o.ly : 0), LIT); if (o && o.unlit) LIT[0] = LIT[1] = LIT[2] = 1; pixelize(n, o);
   const S = VS.s, dx = round((wx - ox) * S) / S, dy = round((wy - oy) * S) / S;
   if (o && o.alpha !== undefined) wctx.globalAlpha = o.alpha;
-  wctx.drawImage(ENT.cv, 0, 0, n, n, dx, dy, n, n); wctx.globalAlpha = 1;
+  wctx.drawImage(outCv, 0, 0, n, n, dx, dy, n, n); wctx.globalAlpha = 1;
   return [dx, dy];
 }
 function makeGhost(dx, dy, n, col) {
   if (G.ghosts.length > 40) return;
   const cv = ghostPool.pop() || mk(RB, RB)[0], gx = cv.getContext('2d');
-  gx.globalCompositeOperation = 'copy'; gx.drawImage(ENT.cv || outCv, 0, 0); gx.globalCompositeOperation = 'source-in'; gx.fillStyle = col; gx.fillRect(0, 0, RB, RB);
+  gx.globalCompositeOperation = 'copy'; gx.drawImage(outCv, 0, 0); gx.globalCompositeOperation = 'source-in'; gx.fillStyle = col; gx.fillRect(0, 0, RB, RB);
   G.ghosts.push({ cv, x: dx, y: dy, n, life: 13, max: 13 });
 }

@@ -1,8 +1,8 @@
 # Start here
 
-Emberwake is a 2D pixel-art open-world game in the spirit of Terraria. Dig, build, craft and fight across an endless world and three other worlds beneath and above it, alone or with up to three friends. There is a battle royale too. No internet is needed to play alone.
+Emberwake is a 2D pixel-art open-world game in the spirit of Terraria. Dig, build, craft and fight across an endless world and seven other worlds beneath and above it, alone or with up to three friends. Fighting is about timing, not mashing. There are two arenas too: quick duels in the Cinder Ring, and the Ashfall Trials, a survival match for twelve. No internet is needed to play alone.
 
-![The title screen](pictures/title.jpg)
+![The home screen: alone, with friends, the arenas](pictures/title.jpg)
 
 ## What's in the folder
 
@@ -36,7 +36,5 @@ Double-click **Emberwake.html** to play in your web browser (Chrome, Safari, Edg
 Saves stay on the computer you play on. The app and each browser keep their own saves.
 
 To take a world from the app to a browser, or to another computer, choose **COPY** next to the world in your world list. On the other side, choose **PASTE A WORLD**.
-
-When you open the game, sign in with your account password or create an account. The game signs you out when it closes, so you need your password the next time you play. Account profiles are stored in that browser or app; they are not online accounts. Existing guest worlds move to the first account you create.
 
 > Everyone you play with needs this same version of the game. When you get a new version, send your friends the new Emberwake.html (or the app) too.

@@ -45,39 +45,52 @@ The **workshops** turn raw things into materials: the kiln (brick, glass, charco
 - **Signposts** show on your map. A **weapon rack** shows off a weapon. Lamp posts, candles and chandeliers light a room; tables, chairs, bookshelves (read them!), rugs, banners, fences, statues, flower pots, stained glass, polished stone, mosaic, roof tiles and mossy brick make it a home.
 - **Gadgets you carry** work from anywhere in your pack: the depth gauge, the pocket watch (the time, and how long until dark) and the ore seeker (ore near you glints).
 
-## Fighting
+## Fighting: the beat
+
+![Three embers of tempo circling the Waker, and a husk about to strike](pictures/fight.jpg)
+
+A fight has a pulse, and you win by keeping it. **Hammering the mouse button loses.** Holding it down does nothing at all.
+
+- **The glint.** After every blow your weapon **glints** (your Waker catches the light too, and there is a soft tick). Strike again **on the glint** and the chain goes on. Right on it is **CRISP**: a little more damage and some stamina back.
+- **Rushed.** Strike **before** the glint and the blow in your hand is **RUSHED**: weaker, much slower to recover from, and the chain starts over. This is what happens to anyone who mashes.
+- **Tempo.** Every blow struck in time lights an **ember** (up to five; they circle your Waker and show above the hotbar). Each ember makes your blows hit harder. Embers fade if you stop landing blows, and you lose them when you are hit, when you rush, or when you swing at nothing.
+- **Spending it.** A **heavy blow** (right mouse) takes every ember with it and hits far harder for each one. At five embers it is a **CRESCENDO**. Blades and fists get the most from this.
+- **Biting.** A lone light blow hurts a sturdy foe but does not stop it: it keeps coming. Blows in time, heavy blows and clean blows **bite**: the foe flinches. So one click at a time is the weakest way to fight, and a timed chain is the strongest.
+- **Clean hits.** Where the weapon lands matters. A blade or a chain: the outer half. A pike: the point, at full reach (too close and it is **JAMMED**). Fangs: in the back. A maul: the end of the swing. Fists: a punch that beats their wind-up. An arrow: the **HEAD**.
+- **Their guard.** Bigger foes have a guard (a thin amber bar under their health once you test it). Blows that bite wear it down; when it **BREAKS** they reel for a moment and everything hurts them more. Guardians have one too.
+- **Sunder.** A **heavy blow on a foe whose guard is broken** is a **SUNDER**: half again as hard, and it gives you back stamina and two embers. It works once each time the guard breaks. Break them, then finish it.
+- **Their blows.** A foe shows **!** over its head before it strikes. Answer it: **dodge** (Shift) through the blow and strike back for a **riposte**, or **CLASH**: time a swing of your own so it meets theirs, and theirs is turned aside.
+- **The answer.** For a second after a clash, your next blow is the **ANSWER**: it hits a quarter harder and always bites.
+- **Perfect release.** Hold the heavy button to charge a blow, and let go **just as it flashes**: a **PERFECT RELEASE**, a fifth harder. Hold on too long and it is only a charged blow.
+- **Caught.** Being hit while you wind up, or after you rush, hurts a quarter more and takes all your embers.
+- **Stamina.** A rushed blow and a swing at nothing both cost stamina, so mashing leaves you with no wind to dodge or strike heavy.
+- **Warded foes.** Now and then a foe carries a **shield** (you can see it, and its name says *Warded*). Plain blows from the front **glance off**. A heavy blow, a clean one or a critical one gets through, and so does anything **from behind**: dodge through it and turn. Break its guard and the shield drops while it reels.
+
+**Each kind of weapon keeps the beat its own way.** The forms page (**C**) says how, under *In time*:
+
+| Weapon | In time |
+|---|---|
+| Blades | heavy blows spend embers best |
+| Pikes | a clean point lights two embers |
+| Fangs | embers fade slowly |
+| Mauls | a heavy blow that lands keeps two embers |
+| Bows | a head shot lights two embers |
+| Chains | the glint lasts longer |
+| Fists | a wider moment to clash |
+
+**How hard things hit.** Each metal is about a fifth better than the one before it, all the way up. For the same metal, a slow weapon hits hardest and a long one least, but used well they all end up within reach of each other: pick the one whose rhythm you like. **Tools are not weapons**: a tapped pick or axe does about half what a sword of the same metal does, and a wound-up swing (hold the right button) nearly as much as one.
+
+The practice post in the village teaches all of this: press **F** at it with a weapon in hand. The journal (**J**) keeps a page called *The Beat of a Fight*. On **EASY** the timing is generous; **NORMAL** and **HARD** tighten it.
+
+### Styles, set-ups and arts
 
 Each kind of weapon (blades, pikes, fangs, mauls, bows, chains, fists) has its own **fighting style**, and you **learn it by using it**. A new weapon family starts at **BASICS** (the plain combo, the heavy blow, the air combo and the counter). Keep fighting with it and it grows to **FOOTWORK** (sweeps, rising strikes, dives), then **FLOW** and **MASTERY** (dashes, charged and aimed heavies). The forms page (**C**) shows what each step teaches.
 
-**Ember Cadence.** Tap each attack once; holding light will not repeat it. Land a light hit, then a heavy, then a light (or start heavy and alternate) before the ember fades. The second alternating hit sparks an **ECHO**; the third lands a **REFRAIN**, staggers and opens the foe for a heavy **BREAK**. The HUD shows which button to answer with. A miss or repeating the same button starts a fresh cadence.
-
-**Every attack sets up the next.** A sweep knocks a foe **DOWN**: hit a downed foe with a heavy blow or from above and it **CRUSHES**. Launch a foe and your air blows **JUGGLE** it, then a dive **SPIKES** it. Lunges and dashes leave a foe **OPEN** for a heavy blow that **BREAKS** it. Thrusts **SKEWER** a pinned, hooked or reeled foe, and a run of light blows builds **RHYTHM** for a heavier finish. Each family leans on some of these more than others.
+**Every attack sets up the next.** A sweep knocks a foe **DOWN**: hit a downed foe with a heavy blow or from above and it **CRUSHES**. Launch a foe and your air blows **JUGGLE** it, then a dive **SPIKES** it. Lunges and dashes leave a foe **OPEN** for a heavy blow that **BREAKS** it. Thrusts **SKEWER** a pinned, hooked or reeled foe. Each family leans on some of these more than others.
 
 **A perfect dodge** (dodge just as a blow lands) opens a **counter**: attack straight away for a riposte, aim up for a rising counter, hold **S** for a sweeping one, or use the heavy button for a reversal; in the air, a diving one.
 
 **Arts.** The better weapons (steel and up, and the old named weapons) each hide an **art**: a big, special move. Keep landing blows with one and it teaches you; then **hold the right mouse button** to call it.
-
-## Weather
-
-![A storm over the woods](pictures/weather.jpg)
-
-Most days are clear or overcast. Now and then the wind gets up, it rains, a thunderstorm comes over or fog rolls in. It comes to the Waking Lands and to the Ashfall, and everyone in a shared world stands under the same sky.
-
-| Weather | What it does |
-| --- | --- |
-| **High wind** | pushes you along or holds you back, shoves you in the air, bends arrows and thrown things; crowns bend and shed their leaves |
-| **Rain** | slows you a little and makes the ground slick; drops burst on the leaves, drip through, fill the hollows and run down the screen; puts you out if you burn |
-| **Thunderstorm** | all of that, with lightning: you see where it gathers before it strikes. It likes tall trees, sets them alight and can bring them down |
-| **Fog** | you can't see far, and nor can what hunts you |
-| **Snow** (the Reach) | rain, there: it slows you and lies on the ground |
-| **Sandstorm** (the dunes and the rust country) | slows you most of all, and tires you |
-| **Ashfall** (the ash) | slows you a little |
-
-Stand under a roof, in a cave or beneath a ledge and none of it touches you. The little picture beside your health shows the sky.
-
-Each kind of weather has something that only comes out in it. They are **rare**, and they go when the weather does: **puddlings** in rain, **stormcallers** in thunder, **galewisps** in the wind, **mistwraiths** in fog, **rimefangs** in snow and **dustmaws** in blowing sand.
-
-Fire flasks burn **where they break**: on a wall, under a roof, across a floor. Burst one in the air and it rains fire. Rain puts the flames out sooner.
 
 ## The road ahead
 
@@ -111,6 +124,23 @@ The guardians answer offerings, not chance. Build an **Offering Altar** (at a Ma
 
 Each guardian also leaves a trophy trinket the first time, and the first four each open a trinket slot. You can wake any of them again with another offering.
 
+## Above ground, and the four worlds past the floors
+
+The surface matters as much as the deep. **Sunstone** shows in high rock only by daylight. **Skyiron** lies where stars came down (craters). **Sunbloom** opens by day and **moonpetal** by night. Hawks round the peaks drop **skyfeathers**. **Sun shrines** on hilltops trade sunstone for health at midday, and **observatories** hold old gears, storm glass and a telescope that marks the four gates on your map. In a **thunderstorm**, a **lightning rod** you have raised turns strikes into **storm glass**; a **Storm Bell** calls a storm when you want one.
+
+Past the three floors there are four more worlds. Each has a gate on the surface, a key made from the last guardian's prize and from things that only the surface gives, three lands of its own, a better forge, its own steel and weapons, a new art for every weapon family, and a guardian:
+
+| World | Its gate | What is different there | Its forge and steel | Its guardian |
+| --- | --- | --- | --- | --- |
+| **The Long Winter** | the Frost Gate, on a peak in the cold country (Frost Key) | the cold: stay near fire or wear frostfur | Rime Forge, rimesteel (chills, then shatters) | the Winter Stag |
+| **The Stopped Hour** | the Stopped Clocktower (Hour Key) | spring pads, moving belts, and a great chime that stills everything but you | Escapement, hourbrass (blows echo a moment later) | the Horologist, who rewinds its own wounds |
+| **The Stormhead** | the Stormspire, which opens only in a thunderstorm (Storm Key) | wind, and lightning that hunts you | Thunder Anvil, stormsteel (arcs between foes) | the Stormwright |
+| **The Outside** | the Ringstair (the Dawnring) | the dark: carry light or be found | Dawn Anvil, dawnsteel (burns the hollow) | the Hollow King |
+
+Every guardian in the game leaves a **fragment** the first time it falls. All ten, with stormsteel and sunstone, forge the **Dawnring** at a Thunder Anvil. It opens the Ringstair; at the Cold Hearth in the Outside, with an Ember Offering, it calls the **Hollow King**. What happens after is the end of the story, and you can keep playing.
+
+Each guardian's offering needs things from several worlds and from the surface, so no guardian can be woken by staying in one place. The journal's leads (**J**) say exactly what each one wants. Guardians are harder than they were: more health, a guard to break, and a rage when nearly beaten.
+
 ## Places to find
 
 Beyond the land you have already seen, the world holds:
@@ -129,6 +159,38 @@ Guards wake when you come near and stay beaten once you clear a place. **Blessin
 Creatures live by world, by land, by depth and by event: cinder eels only in lava, gloam hounds hunting in packs in the rootwood, glass sentinels guarding the prism fields, fogwalkers only inside the Long Fog. The bestiary in your journal (**J**) says where each creature lives, even before you have met it.
 
 **Lore** is entirely optional. Echo stones stand by the roads of every world, and the journal keeps what you have heard. Nothing in the game needs you to read any of it.
+
+## No two worlds alike
+
+![Four moods of one world's lands](pictures/moods.jpg)
+
+Every world you forge from now on has a character of its own, worked out from its seed.
+
+**Three traits.** One for the **land**, one for what **lives** on it, one for its **sky**. The forge screen shows them before you commit (press **ROLL** for another seed until you like what you see), your list of worlds shows them, and the menu (**Esc**) explains them.
+
+| | Traits |
+|---|---|
+| Land | **Cragged** (shelves and cliffs), **Gentle** (low hills, wide lakes), **Hollow** (more caves), **Rich Veins** (more ore), **Drowned** (fens and lakes everywhere), **Long Winter** (the Reach spreads), **Scorched** (dunes, rust and ash spread), **Sky-Torn** (twice the islands) |
+| Life | **Old Growth** (tall, close stalks), **Barren** (little grows), **Feral** (creatures hunt in packs), **Quiet Days** (little by day, much by night), **Shield-Bearers** (warded foes three times as common), **Elder Beasts** (now and then a creature grown old and huge, carrying more), **Bountiful** (more drops, bushes fruit twice as fast) |
+| Sky | **Long Nights**, **Long Days**, **Storm-Wracked** (the sky turns twice as often), **Starlit** (bright nights, falling stars), **Twin Moons** (never fully dark), **Ember Skies** (red dawns, embers on the wind), **Mistbound** (mist every morning) |
+
+**Moods.** A land is not the same all the way along. A moor may be the Emberfelt Moor, or **the Burnt Moor** (ash underfoot, bare hooked stalks, husks), or **Lantern Meadows** (flowers, glowcaps in the open, hares). The Reach has **the Glass Spires** and **the White Quiet**; the fen **the Black Fen** and **the Reedsea**; the thornwood **the Bramble Deeps** and **the Gravel Barrens**; the dunes **the Bone Fields** and **the Glass Flats**; and so on. Each mood has its own plants, its own ground and its own company, and its name shows as you cross into it.
+
+**The year.** Three days to a season. **Kindling**: showers, and picked bushes fruit again fast. **Highsun**: long days. **Emberfall**: the stalks turn the colour of coals, and creatures carry more. **Ashrest**: snow, long nights, more abroad in them, and bushes slow to fruit. The menu shows the day and the season. Rain and snow come and go with the season.
+
+![The same world four ways: a village night, rain in Kindling, an Emberfall dusk, snow in Ashrest](pictures/look.jpg)
+
+![Curios on the road: a Waker's Rest, the Singing Stones, the Ribs, an ember spring](pictures/curios.jpg)
+
+**Curios.** Between the great places the road has small ones:
+
+- a **milestone** tells you how far home is, and points you at the nearest great place (it stays on your screen until you get there)
+- a **Waker's Rest**: a Waker of an older age carved mid-form. Study it once and you understand one kind of weapon better
+- an **ember spring** makes you whole and gives your wind back fast for a while, once a day
+- **the Singing Stones**: strike them low, middle, high, each **as the next one glints**. Get it right and for four minutes every chain you begin is already in time
+- **something buried** under turned ground, a **hermit's fire** with a note (and his jerky), **the Ribs** of something vast, a **broken cart**
+
+A world made before all this keeps exactly the land it had: no traits, no moods, no curios, every hill where it was. It still gets the seasons and the weather.
 
 ## A big world
 

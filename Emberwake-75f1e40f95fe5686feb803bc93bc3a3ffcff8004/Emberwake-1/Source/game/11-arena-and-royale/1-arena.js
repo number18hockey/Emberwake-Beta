@@ -1,38 +1,30 @@
 // ============================================================
-//  The Cinder Ring, online.
-//  Everyone who enters the same ring code fights in one arena. Each
-//  browser simulates its own Waker and shares it through the page's
-//  live room or the public message-board relay as presence:
+//  The Cinder Ring, online. Two ways in:
+//  - on claude.ai, the page's live room: everyone who enters the same
+//    ring code fights in one arena;
+//  - anywhere (the HTML file, the Mac app), a game code: one person hosts
+//    a ring and up to three friends join it with JOIN A FRIEND. The host's
+//    computer passes everyone's Waker on to the others.
+//  Either way Each browser simulates its own
+//  Waker and shares it through the page's live room as presence:
 //  position, pose, the move in progress, and the hits it landed.
 //  The person who was hit applies the hit (so a perfect dodge on
 //  your screen really dodges). Nothing is stored; closing the page
 //  leaves the ring. Alone in a ring? Echoes spar with you instead.
 // ============================================================
-const NET = { room: null, roomReady: Promise.resolve(), R: null, transport: '', signalPeers: new Map(), sentAt: 0, status: 'off', code: 'open', me: '', peers: new Map(), seen: new Map(), hitSeq: 0, shotSeq: 0, hits: [], shots: [], rd: 0, roundOver: 0, winner: '', deathN: 0, kb: ['', 0], unsubs: [], joinTok: 0 };
+const NET = { room: null, R: null, status: 'off', code: 'open', me: '', peers: new Map(), seen: new Map(), hitSeq: 0, shotSeq: 0, hits: [], shots: [], rd: 0, roundOver: 0, winner: '', deathN: 0, kb: ['', 0], unsubs: [], joinTok: 0 };
 const RING_WEAPONS = ['sword', 'spear', 'fangs', 'maul', 'bow', 'nunchaku'], ECHO_WEAPONS = ['sword', 'sword', 'spear', 'spear', 'fangs', 'fangs', 'maul', 'bow', 'nunchaku', 'nunchaku'], SHOT_TYPES = ['arrow', 'bomb', 'knife', 'javelin', 'wave', 'star', 'hook', 'flask', 'pellet'], ARM_SHOTS = ['star', 'hook', 'flask', 'pellet'];
 const KILLS_TO_WIN = 10, ECHO_NAMES = ['ECHO OF ASH', 'ECHO OF GLASS', 'ECHO OF RUST', 'ECHO OF DUSK', 'ECHO OF EMBER', 'ECHO OF MOSS'];
 const num = (v, d = 0) => typeof v === 'number' && isFinite(v) ? v : d;
 const r1 = v => round(v * 10) / 10, r2 = v => round(v * 100) / 100;
 function cleanName(s) { return (typeof s === 'string' ? s : '').toUpperCase().replace(/[^A-Z0-9 _-]/g, '').trim().slice(0, 12); }
 function cleanCode(s) { return (typeof s === 'string' ? s : '').toLowerCase().replace(/[^a-z0-9]/g, '').slice(0, 12); }
-function netBoot() {
-  try { if (window.claude && window.claude.use) NET.roomReady = window.claude.use('room').then(r => { NET.room = r || null; }, () => { NET.room = null; }); }
-  catch (e) { NET.room = null; }
-}
+function netBoot() { try { if (window.claude && window.claude.use) window.claude.use('room').then(r => { NET.room = r || null; }, () => { }); } catch (e) { } }
 
 async function netJoin(code) {
   NET.code = code || 'open'; NET.peers.clear(); NET.seen.clear(); NET.me = ''; NET.hits = []; NET.shots = [];
   const tok = ++NET.joinTok;
-  NET.transport = ''; NET.signalPeers.clear();
-  await NET.roomReady;
-  if (tok !== NET.joinTok || !WORLD.arena) return;
-  if (!NET.room) {
-    NET.transport = 'signal'; NET.status = 'connecting';
-    NET.me = 'r' + Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
-    SIG.myId = NET.me; sigStart('cinder-ring:' + NET.code, 'ring', netSignalMessage);
-    return;
-  }
-  NET.transport = 'room';
+  if (!NET.room) { NET.status = 'offline'; return; }
   NET.status = 'connecting';
   try {
     const R = await NET.room.join('ring-' + NET.code);
@@ -45,34 +37,8 @@ async function netJoin(code) {
 }
 function netLeave() {
   NET.joinTok++; for (const u of NET.unsubs) try { u(); } catch (e) { } NET.unsubs = [];
-  if (NET.transport === 'signal' && SIG.role === 'ring') {
-    sigSend({ t: 'ringLeave', g: NET.me, ring: NET.code });
-    sigStop();
-  }
   if (NET.R) { try { NET.R.leave().catch(() => { }); } catch (e) { } } NET.R = null; NET.status = 'off';
-  NET.transport = ''; NET.signalPeers.clear();
   for (const f of NET.peers.values()) f.gone = true; NET.peers.clear(); G.fighters = G.fighters.filter(f => !f.gone);
-}
-function netSignalMessage(m) {
-  if (NET.transport !== 'signal' || !m || typeof m.g !== 'string' || m.g === NET.me || m.ring !== NET.code) return;
-  if (m.t === 'ringLeave') NET.signalPeers.delete(m.g);
-  else if (m.t === 'ring' && m.p && typeof m.p === 'object' && m.p.ring === NET.code) NET.signalPeers.set(m.g, { presence: m.p, mask: num(m.b) | 0, at: performance.now() });
-}
-function netSignalPublishMask() {
-  const available = sigMask(); let selected = 0;
-  for (const q of NET.signalPeers.values()) {
-    const common = available & q.mask;
-    if (common) selected |= common & -common;
-  }
-  return selected || available;
-}
-function netSignalRefresh(now) {
-  const peers = [];
-  for (const [id, q] of NET.signalPeers) {
-    if (now - q.at > 10000) NET.signalPeers.delete(id);
-    else peers.push({ peer: id, presence: q.presence, kind: 'viewer', guest: false });
-  }
-  netPeers(peers);
 }
 function netPeers(list) {
   if (BR.on) return brPeers(list);
@@ -118,14 +84,15 @@ function netApply(f, s) {
 }
 // someone else's blow landed on my Waker, on their screen
 function netTakeHit(from, h) {
-  const p = G.p; if (p.dead || NET.roundOver || p.noHit) return;
+  const p = G.p; if (p.dead || NET.roundOver || p.onBarge) return;
   if (typeof h[7] === 'string' && WORLD.royale) from = BR.bots.get(h[7]) || from;
+  if (WORLD.royale && from && from.team === p.team) return;   // no blows between teammates
   const x = Array.isArray(h[6]) ? h[6] : null;
   if (x) {
     const k = x[0], d = clamp(num(x[1]) | 0, 0, 400), side = clamp(num(x[2]) | 0, -1, 1);
     if (k === 'rel') { const s = stOf(p); s.held = 0; p.heldT = 0; if (G.link && G.link.e === p && !G.link.L) { G.link = null; G.zoomT = 1; } }
     else if (k === 'held') { const s = stOf(p); s.held = 1; s.heldBy = from; p.heldT = d || 90; if (p.atk) endAttack(p); p.state = 'normal'; G.link = { f: from, e: p, L: null }; G.zoomT = 1.25; }
-    else if (['pin', 'hook', 'burn', 'blind', 'launched'].includes(k) && !(p.iDodge > 0)) applyStatus(p, k, from, { d: d || undefined, side, floor: !side });
+    else if (['pin', 'hook', 'burn', 'blind', 'launched', 'frost', 'poison', 'bleed'].includes(k) && !(p.iDodge > 0)) applyStatus(p, k, from, { d: d || undefined, side, floor: !side });
     if (num(h[2]) <= 0) return;
   }
   hurtFighter(p, clamp(num(h[2]), 1, 90), from.x + 3, { kx: clamp(num(h[3]), -8, 8), ky: clamp(num(h[4]), -8, 8), by: from, pvp: true, net: true, crit: !!h[5], stop: 3, shake: 2, link: !!(p.st && p.st.held) });
@@ -139,29 +106,19 @@ function netDeathSeen(victim, killerPeer) {
 }
 function netHit(target, dmg, kx, ky, crit, extra, by) { const h = [target.peer, ++NET.hitSeq, round(dmg), r1(kx), r1(ky), crit ? 1 : 0, extra || 0]; if (by && by.brBot && !by.remote) h.push(by.botTag); NET.hits.push(h); if (NET.hits.length > 10) NET.hits.shift(); }
 function netShot(pr) {
-  if (!WORLD.arena || (!NET.R && NET.transport !== 'signal')) return; const k = SHOT_TYPES.indexOf(pr.type); if (k < 0) return;
+  if (!WORLD.arena || !NET.R) return; const k = SHOT_TYPES.indexOf(pr.type); if (k < 0) return;
   NET.shots.push([++NET.shotSeq, k, r1(pr.x), r1(pr.y), r2(pr.vx), r2(pr.vy), round(pr.g * 1000) / 1000, pr.boom | 0, pr.owner && pr.owner.brBot ? pr.owner.botTag : 0]); if (NET.shots.length > 6) NET.shots.shift();
 }
-function netPresence() {
+function netSend() {
+  if (BR.on) return brSend();
+  const R = NET.R; if (!R || !R.connected()) return;
   const p = G.p, a = p.atk, W = heldOf(p);
-  return {
+  R.presence({
     v: 1, ring: NET.code, n: G.nick, sk: G.skin, w: W && RING_WEAPONS.includes(W.id) ? W.id : 'sword', x: r1(p.x), y: r1(p.y), vx: r2(p.vx), vy: r2(p.vy), f: p.face, g: p.onGround ? 1 : 0,
     st: p.dead ? 4 : p.state === 'dodge' ? 2 : p.hurtT > 0 ? 3 : a ? 1 : 0, dd: p.dodgeDir, hp: max(0, round(p.hp)), k: p.kills, d: p.deaths, rd: NET.rd,
     m: a ? a.id : '', an: p.atkN, mp: a ? a.phase : 0, mt: a ? a.pt : 0, ma: a ? r2(a.aimA) : 0, md: a ? round(a.dist) : 0, mc: a ? a.charge : 0, mf: a ? a.face : p.face, rp: p.riposte > 0 ? 1 : 0, sp: p.inv > 30 ? 1 : 0,
     hs: NET.hits, ps: NET.shots, kb: NET.kb, sx: p.st ? [p.st.pin > 0 ? (p.st.pinS || 0) + 2 : 0, p.st.burn > 0 ? 1 : 0, p.st.blind > 0 ? 1 : 0, p.st.hook > 0 || p.st.reel > 0 ? 1 : 0] : 0, lk: p.state === 'link' ? 1 : 0
-  };
-}
-function netSend() {
-  if (BR.on) return brSend();
-  if (NET.transport === 'signal') {
-    const now = performance.now(); if (now - NET.sentAt < 100) return; NET.sentAt = now;
-    sigSend({ t: 'ring', g: NET.me, ring: NET.code, p: netPresence() });
-    NET.status = SIG.conns.some(C => C.ok) ? 'online' : performance.now() - SIG.startT > 9000 ? 'offline' : 'connecting';
-    netSignalRefresh(now);
-    return;
-  }
-  const R = NET.R; if (!R || !R.connected()) return;
-  R.presence(netPresence()).catch(() => { });
+  }).catch(() => { });
 }
 // replay another person's Waker, about a tenth of a second behind, so motion is smooth
 function tickRemote(f) {
@@ -193,13 +150,14 @@ function tickRemote(f) {
 }
 
 // ---------------- the arena itself ----------------
-function enterArena(nick, skin, code) {
-  if (BR.on) brLeave(); netLeave(); if (COOP.role) coopLeave(); WORLD.guest = false; WORLD.id = ''; WORLD.mode = 0; genArena(); freshSession();
+function enterArena(nick, skin, code, via) {
+  if (BR.on) brLeave(); netLeave(); if (COOP.role && via !== 'rtc') coopLeave(); NET.via = via || 'room'; WORLD.guest = false; WORLD.id = ''; WORLD.mode = 0; genArena(); freshSession();
   G.nick = nick; G.skin = skin; NET.rd = 0; NET.roundOver = 0; NET.deathN = 0; NET.kb = ['', 0]; G.echoT = 60;
-  accountSaveProfile();
   inv = new Array(INV_N).fill(null); RING_WEAPONS.forEach((id, i) => inv[i] = { id, n: 1 });
   G.p = newPlayer(); G.fighters = [G.p]; G.npcs = []; G.clock = .57; arenaRespawn(G.p); G.p.inv = 60;
-  snapCam(); G.state = 'play'; G.banner = { text: 'THE CINDER RING', sub: NET.room ? 'ring code: ' + (code || 'open') : 'practice with the echoes', t: 0 };
+  snapCam(); G.state = 'play';
+  if (via === 'rtc') { ringRtcStart(code || 'friends'); G.banner = { text: 'THE CINDER RING', sub: netHost() ? 'friends pick JOIN A FRIEND and type your game code' : 'you are in ' + (COOP.hostName || 'your host') + '\'s ring', t: 0 }; return; }
+  G.banner = { text: 'THE CINDER RING', sub: NET.room ? 'ring code: ' + (code || 'open') : 'practice with the echoes', t: 0 };
   netJoin(code || 'open');
 }
 function arenaRespawn(f) {
@@ -241,5 +199,6 @@ function arenaTick() {
     let win = null; for (const f of G.fighters) if (f.kills >= KILLS_TO_WIN && (!f.remote || f.rd === NET.rd)) win = f;
     if (win) { NET.roundOver = 330; NET.winner = win.name; G.banner = { text: win === G.p ? 'YOU TAKE THE RING' : win.name + ' TAKES THE RING', sub: 'next round soon', t: 0 }; sfx('quest', 0); G.flash = .4; G.flashCol = '255,211,90'; }
   } else if (--NET.roundOver === 0) { NET.rd++; resetRound(); }
+  if (NET.via === 'rtc') { brRtcTick(); if (netHost()) sigHost('ring'); }
   if (G.time % 3 === 0) netSend();
 }

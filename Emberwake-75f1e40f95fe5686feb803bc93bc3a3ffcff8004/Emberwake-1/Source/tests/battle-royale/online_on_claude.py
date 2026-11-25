@@ -3,14 +3,13 @@
 # start a match, see the same island and the same echoes, hit echoes and each other, and the
 # second player takes over the echoes when the leader leaves.
 import asyncio, subprocess, time, io, os, sys
-PY = sys.executable
 from playwright.async_api import async_playwright
 from PIL import Image
 sys.path.insert(0, os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), 'helpers'))
 from where import GAME_URL, GAME_DIR, HELPERS, CHROME, shot
 from harness import sheet
 async def main():
-    srv = subprocess.Popen([PY, '-m', 'http.server', '8766', '--bind', '127.0.0.1'], cwd=GAME_DIR, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+    srv = subprocess.Popen(['python3', '-m', 'http.server', '8766', '--bind', '127.0.0.1'], cwd=GAME_DIR, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
     time.sleep(1)
     pw = await async_playwright().start()
     b = await pw.chromium.launch(headless=True, args=['--no-sandbox', '--disable-background-timer-throttling', '--disable-renderer-backgrounding', '--disable-backgrounding-occluded-windows'], **CHROME)
@@ -43,13 +42,13 @@ async def main():
     res['echoes: leader local / follower ghosts'] = [await L.evaluate("[...BR.bots.values()].filter(f => !f.remote).length"), await F.evaluate("[...BR.bots.values()].filter(f => f.remote).length")]
     res['each sees the other'] = [await L.evaluate("[...NET.peers.values()].map(f => f.name).join(',')"), await F.evaluate("[...NET.peers.values()].map(f => f.name).join(',')")]
     res['clock'] = [await L.evaluate("BR.t"), await F.evaluate("BR.t")]
-    # both hang until the horn, dive and land
-    await L.evaluate("keys.KeyS = true; 0"); await F.evaluate("keys.KeyS = true; 0")
-    await wait(L, "!G.p.glide && G.p.onGround", 45000); await wait(F, "!G.p.glide && G.p.onGround", 45000)
+    # both leap and land
+    await L.evaluate("pressed.Space = true"); await F.evaluate("pressed.Space = true")
+    await wait(L, "!G.p.onBarge && G.p.onGround", 20000); await wait(F, "!G.p.onBarge && G.p.onGround", 20000)
     res['landed'] = [await L.evaluate("[round(G.p.x / T), G.p.onGround]"), await F.evaluate("[round(G.p.x / T), G.p.onGround]")]
     # the follower hits an echo (the leader decides the blow)
-    await wait(F, "[...BR.bots.values()].some(f => !f.dead && !f.noHit && !f.glide)", 45000)
-    tag = await F.evaluate("(() => { const b = [...BR.bots.values()].find(f => !f.dead && !f.noHit && !f.glide); return b ? b.botTag : null; })()")
+    await wait(F, "[...BR.bots.values()].some(f => !f.dead && !f.onBarge && !f.glide)", 25000)
+    tag = await F.evaluate("(() => { const b = [...BR.bots.values()].find(f => !f.dead && !f.onBarge && !f.glide); return b ? b.botTag : null; })()")
     if tag:
         await L.evaluate("for (const f of BR.bots.values()) { f.ai = null; f.inv = 0; } 0")
         await L.evaluate("window.__bh = 0; const o = brBotHit; brBotHit = function (f, h) { window.__bh++; return o(f, h); }; 0")
@@ -59,7 +58,7 @@ async def main():
         await F.wait_for_timeout(1200)
         res['echo hit from the follower: hp before, after (leader)'] = [hp0, await L.evaluate("(() => { const b = BR.bots.get(%r); return [round(b.hp), b.dead]; })()" % tag)]
         fid0 = await F.evaluate("NET.me")
-        res['debug: F hits, L seen, L brBotHit calls, L bot'] = [await F.evaluate("JSON.stringify(NET.hits.slice(-3))"), await L.evaluate("JSON.stringify(NET.seen.get(%r))" % fid0), await L.evaluate("window.__bh"), await L.evaluate("(() => { const b = BR.bots.get(%r); return [b.hp, b.inv, b.noHit, b.dead, b.state, b.remote, b.glide, BR.lead, BR.phase]; })()" % tag), await L.evaluate("(() => { const q = BR.people.get(%r); return q ? [q.mi === BR.mi, q.ph, (q.pres.hs || []).length] : null; })()" % fid0)]
+        res['debug: F hits, L seen, L brBotHit calls, L bot'] = [await F.evaluate("JSON.stringify(NET.hits.slice(-3))"), await L.evaluate("JSON.stringify(NET.seen.get(%r))" % fid0), await L.evaluate("window.__bh"), await L.evaluate("(() => { const b = BR.bots.get(%r); return [b.hp, b.inv, b.noHit, b.onBarge, b.dead, b.state, b.remote, b.glide, BR.lead, BR.phase]; })()" % tag), await L.evaluate("(() => { const q = BR.people.get(%r); return q ? [q.mi === BR.mi, q.ph, (q.pres.hs || []).length] : null; })()" % fid0)]
         res['follower got the takedown'] = await F.evaluate("[G.p.kills, (G.kfeed[0] || {}).a, (G.kfeed[0] || {}).b, BR.bots.get(%r).dead]" % tag)
     # the leader takes the follower down
     fid = await F.evaluate("NET.me")

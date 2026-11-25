@@ -30,14 +30,13 @@ The multiplayer tests run several game windows on one computer and stand in for 
 
 Story, screens, controls, the pack and crafting.
 
-- `accounts.py` Password-required accounts, signing out on restart, guest-save migration and separate profile saves.
 - `benches_and_trinkets.py` The benches (each opens and lists its own work), trinkets made, worn and felt, a meal's boon, storage of three sizes kept through a save, planters, the bed, the ballista and traps, and the guardians' offerings.
-- `controls_and_settings.py` Simple controls (fists, chains), difficulty, FPS mode, digging by hand, knapping, and the menu settings.
+- `controls_and_settings.py` Simple controls (fists, chains), difficulty, digging by hand, knapping, and the menu settings.
 - `crafting.py` Crafting with the real mouse: a hand recipe from the pack, a plank at the workbench (one click, no mini-game).
 - `inventory.py` Moving things in and out of the pack with the real mouse: drag between slots, drag out to drop.
-- `phone.py` A phone held both ways: the stick, the buttons, a finger on the world and the panels, crafting, a pact. And a computer, where none of that gets in the way.
 - `screens.py` Screens: echo stones, the journal and other panels.
 - `story.py` The story: discovery scenes, the people of Hearthhold, leads and the journal.
+- `atmosphere.py` The look of the air: glow, the colour of each land and season, mist, each world's own sky, the ember wake, timed trails and the jolt of a hit. Checks that none of it throws anywhere (other worlds, the title, the arenas, a resized window).
 
 ### world
 
@@ -50,7 +49,8 @@ The land, digging, places, events and saving.
 - `places.py` Every kind of place (hamlets, forts, castles, pyramids, halls...) is built and looks right.
 - `saving.py` Saving and loading a world keeps the land, the pack and the stations.
 - `using_places.py` Using places: blessing stones, guards that wake, places that stay cleared.
-- `weather.py` Weather: how often each kind comes, what it does to you, the trees and the ground, shelter, lightning, and the rare creatures that come and go with it.
+- `surface_wonders.py` The surface's places: the four gates, the old observatory, a fallen star, a sun shrine, sunstone.
+- `world_character.py` What makes a world its own: the three traits and what each does to the land and to play, the moods of the lands, the curios (each one used), the seasons and the weather. **Also checks that worlds made before traits still come out tile for tile as they did** (it holds the hashes of five old lands).
 
 ### other-worlds
 
@@ -63,21 +63,22 @@ Cinderdeep, the Rootdark and the Glass Expanse.
 - `maps.py` How fast each other world forms, and a map picture of each.
 - `places.py` The places of the other worlds: slag bastions, glowcap hollows, prism spires.
 - `spots.py` Special spots: lava lakes, glowcap groves, bridges, the upper isles.
+- `new_worlds_look.py` The four worlds past the floors: each one entered, walked and photographed.
+- `last_guardians.py` The three later guardians and the Hollow: called, fought through their phases, put down, and what they leave.
 
 ### fighting
 
 Links, armour, weapon styles, creatures and guardians.
 
-- `cinder_ring.py` The Cinder Ring relay: players meet by code, select a shared broker, survive brief stalls, share movement and land PvP damage.
 - `armour.py` Armour: walking, jumping and damage taken with each set.
 - `bosses.py` Each guardian: summoned, every attack, the second phase, and its reward.
-- `cadence.py` Held light does not repeat; timed, alternating landed light and heavy hits build an ECHO and REFRAIN.
-- `attack_forms_and_momentum.py` The five situational forms, critical fall timing, sweep knockback, dash momentum, air dodge gravity and one lift per airtime.
-- `carried_momentum.py` Blows, dodges and landings keep the speed you had; fire burns on the wall, roof or floor it hit.
 - `creatures.py` Every creature of every world moves, fights, dies and drops things.
 - `mastery_and_flow.py` Learned forms (BASICS to MASTERY), follow-ups (CRUSH, BREAK, JUGGLE, SPIKE, RHYTHM), the four counters after a perfect dodge, and arts learned by use.
 - `links.py` Links: a thrown star pins a post to the wall, and every link on the practice post.
 - `weapon_styles.py` Weapon styles: locked until learned, learning them, the codex and the HUD.
+- `tempo.py` The beat: mashing must lose to timing; rushed blows, tempo, clean hits, clashes, guards, being caught; a rival that fights in time.
+- `balance.py` Balance: metal tiers climb steadily, kinds of weapon stay in one band when used well, tools hit half as hard as a sword of their metal; and the newer rules: sunder, perfect release, the answer, stamina for mashing, warded foes.
+- `ring_with_friends.py` The Cinder Ring with friends by game code, from the plain HTML file.
 
 ### together
 
@@ -94,16 +95,21 @@ Playing together: codes, the relay, sharing the world, finding friends, rejoinin
 - `relay_more.py` More relay cases: the claude.ai room, starting on the relay then switching to a direct line, and a host with no direct links.
 - `shared_creatures.py` The host's creatures as a friend sees them: every overworld creature, travel through a rift, and a guardian fought together.
 - `three_friends.py` Three friends with one host: everyone sees everyone, building, mining, a hollow, an event, a door, chat, and the host leaving.
+- `new_worlds_together.py` Two friends past the floors: the guest follows the host into the later worlds and both see a guardian's lightning.
+- `same_land.py` A friend who arrives somewhere from a different direction finds the same land.
+- `same_world_character.py` Two friends in a world with traits: the guest works out the same traits, moods and curios, and shares the host's day, season and weather.
+- `soak.py` Two friends play for a while and the two worlds are compared.
+- `soak_lag.py` The same over a slow, bumpy line.
 
 ### battle-royale
 
 The Ashfall: alone, with friends, online, over the relay.
 
-- `balance.py` Weapons of each level of making in duels between evenly matched echoes: none should win, or lose, nearly everything.
 - `leader_asleep.py` The Ashfall online while the leader's game sleeps: the other player takes over, and the leader steps aside on return.
 - `online_on_claude.py` The Ashfall online on claude.ai: two players meet in the room, share the island and the echoes, and hand the echoes over.
 - `over_the_relay.py` The Ashfall over the relay: the friend's window has no WebRTC at all.
-- `rewards.py` What a match pays: souls, coins, the wheel and the shop; and that nothing owned is carried into a match.
-- `rules.py` The Ashfall's rules: the island (size, lands, caves, fire beneath), empty hands, doors that open, digging, making and using a weapon, what chests hold, the border by numbers, pacts made and left, beasts, gifts, the Feast, the hounds.
-- `solo.py` The Ashfall alone with the echoes: the drop, the first minutes, the border, the fights.
-- `with_friends.py` The Ashfall with friends by game code: the host opens a lobby, a friend joins, the match starts for both; pacts made and left, dug ground and dropped things shared.
+- `solo.py` The Ashfall alone with the echoes: the barge, the leap, the storm, the fights.
+- `with_friends.py` The Ashfall with friends by game code: the host opens a lobby, a friend joins, and the match starts for both.
+- `teams.py` The Trials as a team: two friends in DUOS share a team, cannot hurt each other, rekindle each other and win together.
+- `kit.py` The Trials' own kit: perks (picked on the plinth and at dawn), amps fitted to weapons, relics, the match title and the career record.
+- `parties.py` Parties: two friends make a party, find a lobby another player opened on the public board, walk in together, and are put on one team.

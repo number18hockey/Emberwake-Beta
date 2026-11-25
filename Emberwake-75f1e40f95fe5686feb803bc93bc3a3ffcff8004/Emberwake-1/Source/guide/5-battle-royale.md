@@ -1,73 +1,115 @@
-# The Ashfall: battle royale
+# The Ashfall Trials
 
-On the title screen choose **THE ASHFALL : BATTLE ROYALE**.
+On the home screen, under **THE ARENAS**, choose **THE ASHFALL TRIALS**. It is a survival match for twelve: you, your friends, other people's parties, and echoes (computer players) in every empty place. A match lasts up to about fourteen minutes. The Trials have their own kit: **perks** you choose, **amps** you fit to your weapons, **relic** weapons found nowhere else, and two **arenas**.
 
-![Coming down over Lantern Green](pictures/royale.jpg)
+![The count on the plinths, round the Hearth](pictures/royale.jpg)
 
-## A match
+## A match, from the horn to the last ember
 
-Thirty-two of you fall out of the sky, each over a different stretch of an island 3,500 paces wide. Steer your canopy with **A / D** and hold **S** to dive. You land with **nothing**: no tools, no weapons, no salves. **Echoes** (computer players) fill the empty places, and they land with nothing too.
+1. **The plinths.** Everyone starts on a plinth round the **Hearth**, in the middle of the island. Nobody can move for ten seconds, and in those seconds you **choose a perk** (see below). Then the **horn** sounds.
+2. **Hearth or wilds.** The chests at the Hearth hold good weapons, and everyone can see everyone there. The wilds are safer and poorer. You start with bare fists.
+3. **Scavenge.** Press **F** at chests for weapons (the glow under a dropped weapon shows how rare it is), **salves** and **draughts** (health), **ward shards** and **flasks** (a ward that takes blows before your health does), sidearms, arrows, **rations** and **scrap iron**. Pick **berries** from bushes (**F**).
+4. **Hunger.** The bar under your health runs down. Well fed, you mend on your own; starving, you fade. Hold food and click to eat it, or press **H**.
+5. **Camps.** Each camp has a fire and an **anvil**. With a weapon in hand and enough scrap, **F** at the anvil **reforges** it into the next better weapon of the same kind.
+6. **Favor.** The crowd is watching. Blows struck in time, clean hits, clashes, crescendos, takedowns, finding new places, living through a night and rekindling a teammate all earn **favor**. When the bar fills, a **sponsor's gift** floats down to you: what you most need.
+7. **Night.** There are three days and three nights. At nightfall the names of **the fallen** are read out (you hear a cannon each time someone falls), it gets dark, and **Hollow Ones** walk the island until dawn. They drop food and scrap.
+8. **The barge.** Twice a match the Ember Barge sets down a **supply crate**. Everyone is told where, 25 seconds ahead; the strip at the top and the map (**M**) mark it.
+9. **The feast.** The two **sealed chests** on top of the Hearth open about six minutes in, with the best weapons on the island. Everyone is told half a minute ahead.
+10. **The ashfall.** It closes in from both sides and ends **on the Hearth**, so a match finishes where it began. Outside it you lose health, faster each time it closes.
 
-Gather, dig, make something sharp, find someone you trust, and outlast everyone else. The last Waker standing wins (or the last pact). When you fall you drop everything you carry, and can watch the others (**A / D** to switch). **Tab** shows who is left, **M** the island.
+## Perks
 
-## Making what you fight with
+![Choosing a perk on the plinth](pictures/royale_kit.jpg)
 
-Nobody finds a fine weapon in the first minute any more. You make yours, and the benches in your pack (**E**), the recipe book (**B**) and knapping (**K**) all work as they do in a world.
+On the plinth you are offered **three perks: pick one** (press **Z**, **X** or **V**, or click it). At each **dawn** you are offered three more. They last the match and show under your hotbar.
 
-1. **By hand.** Gather sticks, pebbles, berries, grass and reeds as you walk (they turn into rock, flint, fibre and food), and hit trees for logs. Three fibre make twine, and so do three reeds or a hide; in the dunes, the ash and the Reach, look for dead bushes. A **Stone Club** (a stick, two rocks, twine) or a **Flint Spear** (a spear point, two sticks, twine) is enough to win with.
-2. **At a workbench.** Most places on the map have one, or build your own by hand. Bone weapons, a bow, better tools.
-3. **At a bloomery and an anvil.** They stand in a few places on the surface and in the **Hollow Forges** underground. Copper, then bronze and iron, all from ore you dug yourself.
+| Perk | What it does |
+|---|---|
+| **Fleet** | You run a tenth faster. |
+| **Iron Gut** | Hunger comes on half as fast, and every meal mends you. |
+| **Night Eyes** | You see far in the dark. Hollow Ones pass you by unless you are close. |
+| **Scavenger** | Chests give one thing more. Bushes give double. |
+| **Tinker** | Reforging costs 1 scrap less. Your weapons take a third amp. |
+| **Second Wind** | Once a match, a killing blow leaves you standing at 1 health. |
+| **Crowd Favorite** | You win favor half again as fast. |
+| **Ashwalker** | The ashfall (or the slag) hurts you half as much. |
+| **Bloodrush** | A takedown gives back 30 health and all your stamina. |
+| **Steady Hands** | The glint lasts longer for you. Rushing costs no tempo. |
+| **Field Medic** | You rekindle teammates twice as fast. They rise with 70 health. |
+| **Brawler** | Your bare fists hit far harder. |
+| **Last Ember** | Under 35 health you hit a fifth harder and your tempo never fades. |
+| **Quicksilver** | Dodging costs half the stamina. |
 
-Better metal helps without deciding the fight: only half of what a weapon has over flint counts here, and quick or far-reaching weapons hit a little softer. Bows need arrows, and you make those too.
+## Amps
 
-**Chests** (**F**) are few. They hold two or three plain things, which drop at the chest's foot when it opens: sticks and fibre, a little ore, food, perhaps an **Ember Salve** or a **Ward Shard**. A weapon is rare, and it is never a great one. Chests with a gold lid, deep or hard to reach, are a little better.
+An **amp** is a small charm you find in chests, crates and gifts. **Hold it and click** and it is fitted to the weapon you held last. A weapon takes **two** amps (three if you are a Tinker). The pips beside a weapon in your hotbar show what it carries, and a weapon keeps its amps when it is dropped: take one from a fallen rival and you take theirs.
 
-Hold a salve or a ward and click to use it (or press **H**): it takes a moment, and a blow interrupts it. A ward takes blows before your health does.
+| Amp | What it does |
+|---|---|
+| **Sear** | Blows struck in time set the foe alight. |
+| **Rime** | Clean blows chill: the foe is slowed. |
+| **Leech** | Crisp blows give back 3 health. |
+| **Reach** | A sixth more reach. |
+| **Weight** | Blows throw foes further and break guards faster. Swings are a little slower. |
+| **Quicken** | Swings come a tenth faster. |
+| **Echo** | Every third blow in time lands again a moment later. |
+| **Thorn** | A clash hurts whoever you turned aside. |
+| **Kindle** | Your embers of tempo do not fade. |
+| **Venom** | Clean blows poison. |
 
-## Digging, the caves, and how deep is too deep
+Most amps only work for blows struck **in time** or **clean**: they reward the same play the rest of the game does.
 
-You can dig anywhere: with your hands through soil (slowly), with a pick through rock. Under the island are winding caves, great halls and places with names: the **Hollow Forge**, the **Underlake**, the **Bone Cathedral**, the **Crystal Heart**, the **Glowcap Garden** and the **Ember Brink**. Sinkholes and cave mouths lead down to them, with vines to climb back up (**W** to climb, and **W** with **A** or **D** to leap off). The good ore is there, and so are things that live there.
+## Relics
 
-Don't go too far. About **145 paces** down the rock itself begins to burn you, worse the further you go. At about **170 paces** is the molten sea, and nothing comes back out of it.
+Six weapons exist only in the Trials, one for each kind, and only in the **feast**, the **barge's crates** and **sponsors' gifts**. Each is a little stronger than the best ordinary weapon of its kind and comes with **two amps already in it**: **Embertongue** (blade: Sear, Kindle), **Longwatch** (pike: Reach, Weight), **the Whispers** (fangs: Venom, Leech), **the Anvil's Answer** (maul: Weight, Thorn), **Widow's String** (bow: Echo, Quicken) and **Stormcoil** (chain: Quicken, Sear).
 
-## The border
+## Two arenas
 
-The **ashfall** closes in from both sides, but it doesn't watch the clock: it waits for people to fall. The line under the strip at the top says how many must be left before it stirs (with 32 in the match: 24, 16, 10, 6, 3 and 2). Then you get a warning of 40 seconds, and it moves slowly enough to walk ahead of. The strip shows the safe ground, and white lines show the next safe ground. Outside it you lose health, faster each time it closes. (If nobody at all falls for five minutes, it grows restless and stirs anyway.)
+- **THE ASHEN ISLE**: the island described above. The ashfall closes from both sides.
+- **EMBER PEAK**: a mountain with the Hearth on its summit. There is no ashfall here: **slag rises** from below, so the fight climbs. There are no tunnels to hide in.
 
-![The island: the named places, the caves and the fire beneath](pictures/island.jpg)
+Choose one, or **EITHER** for a surprise (in a lobby the leader chooses).
 
-## Pacts
+When you fall you drop everything you carried and can watch the others (**A / D** to switch). **Tab** shows who is left.
 
-Stand close to another Waker, or to an echo, and press **P** to offer a pact. If one is offered to you, **P** accepts it. (An echo makes up its own mind: a hurt or cautious one is likelier to say yes, one you have just struck never will, and near the end a bold one may turn on you.) You can't hurt each other, you see each other on the map, and you can win together.
+Fights use the same rules as everywhere else: strike on the glint, never mash (see *How to play: Fighting*). Blows do less damage in the Trials than in the world, so a fight lasts long enough to be won by timing.
 
-To **leave a pact**, press **P** twice, or press **Esc** and choose **LEAVE PACT**. From then on you are fair game to each other. A pact also ends when one of you falls.
+## Teams
 
-## The games
+Choose **SOLO**, **DUOS** or **TRIOS** before you start (in a lobby, the leader chooses; press **TEAM** to ask for a team number, so friends can share one or face each other). Teammates stand on neighbouring plinths, show in green, cannot hurt each other, and are listed on the left with their health.
 
-- **Beasts** roam by day and hunt by night, different ones in every land, and they can kill you (and the echoes). Caves have their own, and some of the great rooms are nests.
-- **The weather** changes during a match, the same for everyone: see *Weather* in *How to play*.
-- **Sponsors.** Make your first weapon, take someone down, or come very close to dying, and a parcel may come down on a chute.
-- **The Feast.** When half the field has fallen, four tables are laid at the Crown, in the middle of the island. Everyone is told.
-- **The Marked One.** Whoever has taken down the most (three or more) is marked for all to see.
-- **Wildfire and poison fog** take a stretch of the safe ground for a while. The strip warns you first.
-- **The hounds** are let loose when only a few are left.
-- **The fallen.** A cannon sounds for each, and now and then their faces show in the sky.
+A fallen teammate leaves an **ember** for 45 seconds. Stand on it and **hold F** for about three seconds to **rekindle** them: they get up with 40 health and bare fists. A team is out when nobody on it is standing. The last team standing wins together.
 
-## What a match pays
+![Rekindling a fallen teammate](pictures/royale_team.jpg)
 
-Nothing you own is ever carried into a match: everyone starts with empty hands. What you earn is for show, and it is saved with your account in this browser.
+## Parties: with your friends, against other people
 
-- **Souls:** one for every Waker or echo you take down. On the **SOUL WHEEL** page, ten souls turn the wheel, which gives you a skin or a hat you don't own.
-- **Coins:** a hundred for a win. Spend them on the **SHOP** page, where you also put on what you own.
-- **ELO:** a rating, from ranked matches with others. The bar shows how far you are toward the next rank: **ASH**, **EMBER**, **CINDER**, **FLAME**, **CROWN**.
-- **Pass experience:** from every match. Each thousand is a level, and a level is a title.
+![A party in a lobby, with other people's parties](pictures/royale_party.jpg)
 
-## Three ways to play
+A **party** is you and your friends, kept together on **one team**, in a match that has other people in it too.
 
-All three are on the **QUEUE** page, with your name, the match's name and ranked or unranked.
+1. Choose **MAKE A PARTY (HOST A LOBBY)**. You get a game code. Your friends pick **JOIN A FRIEND** on the home screen and type it. Everyone who joins this way is in your party, and the lobby shows each party as a coloured bar.
+2. Then either:
+   - press **FIND AN OPEN MATCH** and pick one from the list: **your whole party goes with you** into that lobby, and lands on one team; or
+   - set **OPEN TO OTHERS: YES** so that other people (and their parties) can find your lobby and come to you, and press **START NOW** when you have enough.
 
-- **SOLO:** you and thirty-one echoes, right away.
-- **HOST:** a match for friends, with a lobby and a game code, for up to eight of you. Friends pick **JOIN A FRIEND** and type it, then you press **START NOW**; echoes fill the rest. Works from the HTML file and the Mac app, on any internet connection (the relay carries it when needed, as in *Playing together*).
-- **ONLINE** (only when the page is opened on claude.ai): everyone who has the page open and picks the same match name meets in one lobby. The first one in leads: the match starts after a short countdown, or when they press **START NOW**.
+Set the team size to fit your party (**DUOS** for two, **TRIOS** for three). A party bigger than a team is split across teams that start side by side. Up to **six people** can share a lobby; echoes fill the rest of the twelve places.
 
-With friends or online, the land you dig, dropped things, chests and echoes are the same for everyone. The beasts, and where lightning strikes, are not: each computer runs its own.
+**OPEN MATCHES** on the Trials screen shows every lobby that is open right now, without making a party first: pick one and you join it alone.
+
+On claude.ai, where everyone with the page open shares a lobby by name, type the same **PARTY** word as your friends and you are put on one team.
+
+## Your record
+
+When a match ends you get a **title** for how you played it: **the Reaper** (five takedowns), **the Answer** (blows turned aside), **the Metronome** (crisp blows), **the Keeper of Embers** (teammates rekindled), **the Magpie** (chests), **the Edge** (clean blows), **the Ghost** (a win without a takedown), and more. Your **career** (matches, wins, takedowns, best place) is kept on this computer and shown on the Trials screen.
+
+## Other ways to play
+
+- **PLAY WITH ECHOES:** you and eleven echoes, right away. In duos or trios the rest of your team are echoes: they stay near you, fight beside you and rekindle you.
+- **PLAY ONLINE** (only when the page is opened on claude.ai): everyone who has the page open and picks the same match name meets in one lobby. The first one in leads: the match starts after a short countdown, or when they press **START NOW**.
+
+Parties and open matches work from the HTML file and the Mac app, on any internet connection (the relay carries it when needed, as in *Playing together*).
+
+# The Cinder Ring
+
+Also under **THE ARENAS**: a small arena with every weapon, for quick duels to ten takedowns. **HOST A RING FOR FRIENDS (GAME CODE)** gives you a code for up to three friends (they pick **JOIN A FRIEND**); on claude.ai there is an open ring as well; and you can always practise against echoes.

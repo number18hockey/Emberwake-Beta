@@ -2,11 +2,11 @@
 //  Game state, physics bodies, particles, drops, projectiles
 // ============================================================
 const G = {
-  state: 'title', time: 0, clock: .1, proxy: null, proxyHits: [], fires: [], smokes: [], stuck: [], linksKnown: new Set(), link: null, zoom: 1, zoomT: 1, armT: 0, linkBanner: null, hitstop: 0, shake: 0, tscale: 1, slowT: 0, p: null, enemies: [], fighters: [], npcs: [], drops: [], projs: [], nums: [], parts: [], trails: [], ghosts: [],
+  state: 'title', time: 0, clock: .1, fires: [], smokes: [], stuck: [], linksKnown: new Set(), link: null, zoom: 1, zoomT: 1, armT: 0, linkBanner: null, hitstop: 0, shake: 0, tscale: 1, slowT: 0, p: null, enemies: [], fighters: [], npcs: [], drops: [], projs: [], nums: [], parts: [], trails: [], ghosts: [],
   flags: {}, combo: { n: 0, t: 0, pts: 0 }, feed: [], picks: [], cam: { x: 0, y: 0, px: 0, py: 0 }, boss: null, duel: null, flash: 0, flashCol: '255,255,255', sun: [1, 1, 1], dn: 1, spawnT: 0, biome: '', biomeT: 0,
-  sel: 0, selT: 0, known: new Set(), movesUsed: new Set(), journal: [], jNew: false, q: 0, qFlash: 0, says: [], sayCur: null, note: null, banner: null, dialog: null, kfeed: [], skin: 0, hat: 0, nick: '', dirty: false, played: 0, introI: 0, introT: 0
+  sel: 0, selT: 0, known: new Set(), movesUsed: new Set(), journal: [], jNew: false, q: 0, qFlash: 0, says: [], sayCur: null, note: null, banner: null, dialog: null, kfeed: [], skin: 0, nick: '', dirty: false, played: 0, introI: 0, introT: 0
 };
-const addShake = v => { if (!sfxHush) G.shake = max(G.shake, v * .6); };
+const addShake = v => { G.shake = max(G.shake, v * .6); };
 {
   let cur = null; const Q = [];
   Object.defineProperty(G, 'banner', { configurable: true, enumerable: true, get: () => cur, set: v => {
@@ -56,14 +56,14 @@ function moveBody(e) {
 }
 
 // ---------------- particles ----------------
-// (a match has thirty fights going on at once: sparks nobody can see are not made)
-function P(x, y, vx, vy, life, col, o) { if (SETTINGS.fpsMode || G.parts.length > 1100 || WORLD.royale && (x < G.cam.x - 130 || x > G.cam.x + VS.vw + 130 || y < G.cam.y - 170 || y > G.cam.y + VS.vh + 130)) return; const p = { x, y, vx, vy, life, max: life, col, sz: 1, g: .12, fr: .985, glow: 0, hit: 0 }; if (o) Object.assign(p, o); G.parts.push(p); }
+function P(x, y, vx, vy, life, col, o) { if (G.parts.length > 1400) return; const p = { x, y, vx, vy, life, max: life, col, sz: 1, g: .12, fr: .985, glow: 0, hit: 0 }; if (o) Object.assign(p, o); G.parts.push(p); }
 function burst(x, y, n, cols, sp, life, o) { for (let i = 0; i < n; i++) { const a = frand(TAU), v = frand(.2, 1) * sp; P(x, y, cos(a) * v, sin(a) * v, max(4, life * frand(.5, 1) | 0), fpick(cols), o); } }
 function tickParts() {
   const a = G.parts;
   for (let i = a.length - 1; i >= 0; i--) {
     const p = a[i]; if (--p.life <= 0) { a[i] = a[a.length - 1]; a.pop(); continue; }
     p.vy += p.g; p.vx *= p.fr; p.vy *= p.fr; p.x += p.vx; p.y += p.vy;
+    if (p.rain && solidAt(floor(p.x / T), floor(p.y / T))) { if (Math.random() < .3) P(p.x, p.y - p.vy, frand(-.5, .5), frand(-1, -.4), 10, '#c4e2f4', { g: .09 }); a[i] = a[a.length - 1]; a.pop(); continue; }
     if (p.hit && solidAt(floor(p.x / T), floor(p.y / T))) { p.y -= p.vy; p.vy *= -.35; p.vx *= .6; if (abs(p.vy) < .3) { p.vy = 0; p.g = 0; p.vx = 0; } }
   }
   const nm = G.nums; for (let i = nm.length - 1; i >= 0; i--) { const n = nm[i]; n.y += n.vy; n.vy *= .93; n.x += n.vx; if (--n.life <= 0) nm.splice(i, 1); }
@@ -76,25 +76,17 @@ function sparks(x, y, n, dirx = 0, sp = 2.4, cols = SPARK) { for (let i = 0; i <
 function dust(x, y, n, col = '#b9bdd0', sp = .8) { for (let i = 0; i < n; i++) P(x + frand(-3, 3), y, frand(-1, 1) * sp, frand(-.7, -.1), frand(14, 28) | 0, col, { g: -.005, fr: .93 }); }
 
 // ---------------- drops ----------------
-const DROP_MAX = 260; // a match's floor never holds more than this: the oldest, farthest loot crumbles first
-function spawnDrop(id, n, x, y, vx, vy, noBrSync = false, uid) {
-  if (!IT[id] || !IT[id].icon || n <= 0 || COOP.applying || !isFinite(x) || !isFinite(y)) return null;
-  const synced = WORLD.royale && (uid || !noBrSync); if (synced && !uid) uid = brQueueDrop(id, n, x, y, vx, vy);
-  if (!synced || BR.via === 'solo') for (const d of G.drops) if (d.id === id && d.t < 40 && abs(d.x + 3 - x) < 8 && abs(d.y + 3 - y) < 8 && d.n + n <= IT[id].stack) { d.n += n; return d; }
-  if (WORLD.royale && G.drops.length >= DROP_MAX) { let k = 0, worst = -1; for (let i = 0; i < G.drops.length; i++) { const d = G.drops[i], far = abs(d.x - G.p.x) > 420 ? 4000 : 0; if (d.t + far > worst) { worst = d.t + far; k = i; } } G.drops.splice(k, 1); }
-  const d = { id, n, x: x - 3, y: y - 3, px: x - 3, py: y - 3, w: 6, h: 6, vx: vx === undefined ? frand(-1, 1) : vx, vy: vy === undefined ? frand(-2, -.8) : vy, t: 0, delay: 26, onGround: false, uid: synced ? uid : undefined };
-  G.drops.push(d); return d;
-}
+function spawnDrop(id, n, x, y, vx, vy, amps) { if (!IT[id] || n <= 0 || COOP.applying) return; if (amps && amps.length) { G.drops.push({ id, n: 1, amps, x: x - 3, y: y - 3, px: x - 3, py: y - 3, w: 6, h: 6, vx: vx === undefined ? frand(-1, 1) : vx, vy: vy === undefined ? frand(-2, -.8) : vy, t: 0, delay: 26, onGround: false }); return; } for (const d of G.drops) if (d.id === id && !d.amps && d.t < 40 && abs(d.x + 3 - x) < 8 && abs(d.y + 3 - y) < 8 && d.n + n <= IT[id].stack) { d.n += n; return; } G.drops.push({ id, n, x: x - 3, y: y - 3, px: x - 3, py: y - 3, w: 6, h: 6, vx: vx === undefined ? frand(-1, 1) : vx, vy: vy === undefined ? frand(-2, -.8) : vy, t: 0, delay: 26, onGround: false }); }
 function tickDrops() {
   const p = G.p, a = G.drops;
   for (let i = a.length - 1; i >= 0; i--) {
     const d = a[i]; d.px = d.x; d.py = d.y; d.t++; if (d.delay > 0) d.delay--;
     const dx = p.x + 3 - (d.x + 3), dy = p.y + 10 - (d.y + 3), dist = hypot(dx, dy) || 1;
-    if (!p.dead && !p.glide && d.delay <= 0 && dist < (WORLD.arena ? 36 : G.magR || 36) && hasRoom(d.id)) {
+    if (!p.dead && d.delay <= 0 && dist < (WORLD.arena ? 36 : G.magR || 36) && hasRoom(d.id)) {
       d.vx = lerp(d.vx, dx / dist * 3.4, .25); d.vy = lerp(d.vy, dy / dist * 3.4, .25); d.x += d.vx; d.y += d.vy;
-      if (dist < 8) { const left = addItem(d.id, d.n); if (left < d.n) { sfx('pickup'); toastItem(d.id, d.n - left); onPickup(d.id); } if (left) { d.n = left; d.delay = 90; } else { netTook(d); a.splice(i, 1); continue; } }
-    } else if (!(d.onGround && d.rest > 30 && (d.t & 15))) { d.vy = min(d.vy + .2, 5); d.vx *= d.onGround ? .8 : .985; moveBody(d); d.rest = d.onGround && abs(d.vx) < .02 ? (d.rest | 0) + 1 : 0; if (liqAt(d.x + 3, d.y + 3) === 2) { P(d.x + 3, d.y, 0, -.6, 18, '#ff7a2a', { glow: 1 }); a.splice(i, 1); continue; } }
-    if (d.t > (WORLD.royale ? 14400 : 18000)) a.splice(i, 1);
+      if (dist < 8) { const left = d.amps ? (trTakeAmped(d) ? 0 : d.n) : addItem(d.id, d.n); if (left < d.n) { sfx('pickup'); toastItem(d.id, d.n - left); onPickup(d.id); } if (left) { d.n = left; d.delay = 90; } else { netTook(d); a.splice(i, 1); continue; } }
+    } else { d.vy = min(d.vy + .2, 5); d.vx *= d.onGround ? .8 : .985; moveBody(d); }
+    if (d.t > 18000) a.splice(i, 1);
   }
 }
 
@@ -117,7 +109,7 @@ function tickProjs() {
     else if (solid && pr.t > 1 && !pr.phase && pr.type !== 'cloud') {
       dead = true; const bx = pr.x - pr.vx, by = pr.y - pr.vy;
       if (pr.type === 'rock') { addShake(3); sfx('brk'); burst(pr.x, pr.y - 4, 12, ['#375666', '#22343f'], 2, 30, { hit: 1 }); }
-      else if (pr.type === 'bomb') { if (pr.ghost) boomFx(bx, by, pr.boom); else explode(bx, by, pr.boom, pr.dmg, ow, pr.cadenceAtk); }
+      else if (pr.type === 'bomb') { if (pr.ghost) boomFx(bx, by, pr.boom); else explode(bx, by, pr.boom, pr.dmg, ow); }
       else if (pr.type === 'glob') burst(bx, by, 8, ['#ff7a2a', '#ffd35a'], 1.4, 16, { glow: 1 });
       else if (pr.type === 'arrow' || pr.type === 'knife' || pr.type === 'javelin') { sparks(bx, by, 3, 0, 1.4); P(bx, by, 0, 0, 90, '#ffd35a', { g: 0, fr: 0, glow: 1 }); }
       else sparks(bx, by, 6);
@@ -134,15 +126,15 @@ function tickProjs() {
           if (e.dead || e.noHit) continue; const root = e.root || e;
           if (!pr.hits.has(root) && circBox(pr.x, pr.y, pr.r, e)) {
             pr.hits.add(root);
-            if (pr.boom) { explode(pr.x, pr.y, pr.boom, pr.dmg, ow, pr.cadenceAtk); dead = true; break; }
-            const beat = pr.cadenceAtk ? cadenceStep(pr.cadenceAtk) : 0, landed = strike(ow, e, round(pr.dmg * cadenceMul(beat)), (sign(pr.vx) || 1) * pr.kb[0], pr.kb[1], { stop: (pr.stop || 3) + (beat >= 3 ? 3 : beat === 2 ? 1 : 0), shake: 2, crit: pr.crit, stagger: beat >= 3 ? max(pr.stagger || 0, 48) : pr.stagger, hx: pr.x, hy: pr.y });
-            if (landed && pr.cadenceAtk) cadenceHit(pr.cadenceAtk, e, beat, pr.x, pr.y);
+            if (pr.boom) { explode(pr.x, pr.y, pr.boom, pr.dmg, ow); dead = true; break; }
+            const AS = arrowStrike(pr, ow, e); strike(ow, e, AS.dmg, (sign(pr.vx) || 1) * pr.kb[0], pr.kb[1], { stop: pr.stop || 3, shake: 2, crit: pr.crit, stagger: pr.stagger, hx: pr.x, hy: pr.y, bite: AS.bite, pz: AS.pz, gb: AS.gb }); if (pr.fx && !e.fighter) realmFxHit(pr.fx, ow, e, pr.dmg, pr.crit, pr.x, pr.y, pr);
             if (!pr.pierce) { dead = true; break; }
           }
         }
-      } else for (const f of G.fighters) if ((f.team === 'p' || WORLD.royale && f.brIn && !f.noHit) && !f.dead && (!f.remote || (f.coop && netHost())) && circBox(pr.x, pr.y, pr.r, f)) { const hit = hurtFighter(f, pr.dmg, pr.x - pr.vx * 6); if (hit && pr.burn) applyStatus(f, 'burn', null, { d: 120 }); if (hit && pr.poison) applyStatus(f, 'poison', null, { d: 150 }); if (hit && !pr.pierce) dead = true; }
+      } else for (const f of G.fighters) if (f.team === 'p' && !f.dead && (!f.remote || (f.coop && netHost())) && circBox(pr.x, pr.y, pr.r, f)) { const hit = hurtFighter(f, pr.dmg, pr.x - pr.vx * 6, pr.shock || pr.frost ? { shock: pr.shock, cold: pr.frost } : undefined); if (hit && pr.frost) applyStatus(f, 'frost', null, { d: 90 }); if (hit && pr.burn) applyStatus(f, 'burn', null, { d: 120 }); if (hit && pr.poison) applyStatus(f, 'poison', null, { d: 150 }); if ((hit || f.clashAt === G.time) && !pr.pierce) dead = true; }
     }
     if (dead) a.splice(i, 1);
   }
 }
 function circBox(cx, cy, r, e) { const nx = clamp(cx, e.x, e.x + e.w), ny = clamp(cy, e.y, e.y + e.h); return (cx - nx) ** 2 + (cy - ny) ** 2 <= r * r; }
+

@@ -14,7 +14,7 @@ async def run():
     # locked
     await h.step(1, "pressed.KeyV=true;"); print('locked ->', await h.ev("G.p.state"), await h.ev("(G.say||G.msg||{}).text||''"))
     # Juno's lesson
-    await h.ev("junoTalk()");
+    await h.ev("junoTalk()"); 
     for i in range(6):
         await h.step(3)
         if await h.ev("!!G.dialog"): await h.ev("dialogAdvance()")

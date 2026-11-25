@@ -33,22 +33,24 @@ The game is plain JavaScript in one page, with no libraries and no image files: 
 | Folder | What it does |
 | --- | --- |
 | `01-core` | constants, math, noise, input, sound, the pixel font |
-| `02-art` | sprites and textures (all drawn by code), the kinds of tiles, trees and other wild things |
-| `03-world` | world generation, structures, the endless land, the other worlds, places to find, the weather |
+| `02-art` | sprites and textures (all drawn by code), and the kinds of tiles |
+| `03-world` | world generation, structures, the endless land, the other worlds, places to find, the surface's wonders and gates, and the four worlds past the floors; `8-traits-and-moods.js` (the three traits a seed gives a world, and the moods of its lands), `9-the-year.js` (seasons and weather) and `10-curios.js` (small things on the road) |
 | `04-items` | items and recipes, weapons, the later tiers, the benches (and which bench makes what), trinkets and meals |
 | `05-physics` | game state, physics bodies, particles, drops, projectiles; mining and building; craters; armour; furniture and what it does |
-| `06-combat` | movesets and hits, links (chains and sidearms), weapon styles, learned forms, follow-ups, counters and arts, fire |
+| `06-combat` | movesets and hits, links (chains and sidearms), weapon styles, learned forms, follow-ups, counters and arts, the new worlds' weapon effects, and `6-tempo.js`: the beat (the glint, rushed blows, tempo, clean hits, clashes, guards, sunder, the answer, warded foes) |
 | `07-fighters` | the player and the other fighters (echoes, duelists) |
-| `08-creatures` | creatures and spawning, the guardians, world events, the offerings that wake the guardians, the creatures of the weather |
+| `08-creatures` | creatures and spawning, the guardians, world events, the offerings that wake the guardians |
 | `09-story` | people, leads, the journal, lore and echo stones |
 | `10-interface` | menus, the HUD, the pack, crafting stations, the map, the recipe book and trinket slots |
-| `11-arena-and-royale` | the Cinder Ring arena, and the Ashfall battle royale: its rules (the drop, the border, loot, pacts), online play, screens, the island, the echoes, and the games (beasts, gifts, the Feast...) |
+| `11-arena-and-royale` | the Cinder Ring arena, and the Ashfall Trials (island, ashfall, loot, echoes, online play, screens; `5-the-trials.js` holds teams, hunger, favor, nights, drops, the feast and rekindling; `6-perks-amps-relics.js` the Trials' own kit; `7-parties.js` parties and the board of open matches) |
 | `12-playing-together` | co-op (sharing a world), game codes, the relay |
 | `13-saving` | worlds: create, list, load, save |
-| `14-main` | the sky, drawing, the game loop, input, start-up, touch controls (their buttons are in the page in `build.py`) |
+| `14-main` | the sky, drawing, the game loop, input, start-up; `2-atmosphere.js` is the look of the air (glow, grading, mist, each world's stars, the ember wake, timed trails) |
+
+**Old worlds must not change.** The land is worked out from the seed, so any change to how it is made would move every hill in every saved world. Each world remembers which version of the land it was made with (`WORLD.land`); new rules apply only from the next version up (traits, moods and curios are land 4), and `tests/world/world_character.py` checks that older lands still come out tile for tile.
 
 A new file goes after anything it uses while loading (for example, a `const` built from another file's values). Code inside functions can use anything, wherever it lives.
 
 ## Publishing on claude.ai
 
-The game also runs as a claude.ai artifact page: publish `Emberwake.html` as its `index.html`. There the page can't reach the internet message boards, so online play (the arena, the battle royale's PLAY ONLINE, and game codes) goes through the page's own live room instead. Outside that artifact, the Cinder Ring uses the same public message-board relay as the game-code connection.
+The game also runs as a claude.ai artifact page: publish `Emberwake.html` as its `index.html`. There the page can't reach the internet message boards, so online play (the arena, the battle royale's PLAY ONLINE, and game codes) goes through the page's own live room instead.

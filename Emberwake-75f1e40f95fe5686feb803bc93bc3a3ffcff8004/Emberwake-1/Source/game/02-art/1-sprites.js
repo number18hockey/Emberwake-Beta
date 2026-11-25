@@ -209,8 +209,8 @@ function genTop(kind, v) {
   return { cv: c, pods };
 }
 // the Dawnforge: a broken ring of light hanging in the sky
-function genRing() {
-  const n = 121, r0 = 44, r1 = 52; const [c, x] = mk(n, n); const gaps = [[.2, .5], [1.9, 2.25], [3.3, 3.5], [4.6, 5.15]];
+function genRing(whole) {
+  const n = 121, r0 = 44, r1 = 52; const [c, x] = mk(n, n); const gaps = whole ? [] : [[.2, .5], [1.9, 2.25], [3.3, 3.5], [4.6, 5.15]];
   for (let Y = 0; Y < n; Y++) for (let X = 0; X < n; X++) {
     const dx = X - 60, dy = Y - 60, d = hypot(dx, dy), a = (atan2(dy, dx) + TAU) % TAU; let col = null;
     const gap = gaps.some(g => a > g[0] && a < g[1]);
@@ -219,7 +219,7 @@ function genRing() {
     else if (d < 15) col = d < 9 ? '#fff1a8' : ((X + Y) & 1) || d < 12 ? '#ffd35a' : null;
     if (col) { x.fillStyle = col; x.fillRect(X, Y, 1, 1); }
   }
-  const R = mulberry32(9); for (let i = 0; i < 14; i++) { const g = gaps[i % 4], a = g[0] + R() * (g[1] - g[0]), d = r0 - 4 + R() * 18, X = round(60 + cos(a) * d), Y = round(60 + sin(a) * d), s = 1 + (R() * 3 | 0); x.fillStyle = R() > .5 ? '#ffd35a' : '#ff9a3d'; x.fillRect(X, Y, s, s > 1 ? s - 1 : 1); }
+  const R = mulberry32(9); if (!whole) for (let i = 0; i < 14; i++) { const g = gaps[i % 4], a = g[0] + R() * (g[1] - g[0]), d = r0 - 4 + R() * 18, X = round(60 + cos(a) * d), Y = round(60 + sin(a) * d), s = 1 + (R() * 3 | 0); x.fillStyle = R() > .5 ? '#ffd35a' : '#ff9a3d'; x.fillRect(X, Y, s, s > 1 ? s - 1 : 1); }
   return c;
 }
 function genBoss() {

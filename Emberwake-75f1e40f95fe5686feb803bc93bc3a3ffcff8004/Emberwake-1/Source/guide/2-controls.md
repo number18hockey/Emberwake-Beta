@@ -5,8 +5,8 @@
 | **A / D** | move |
 | **Space** or **W** | jump (hold **S** to drop through bridges) |
 | **Shift** | dodge (dodge through a hit at the last moment, then strike back: a riposte) |
-| **Left mouse** | tap for one light attack. After a hit, alternate light and heavy to build an Ember Cadence. Clicking a creature always punches it, whatever you hold |
-| **Right mouse** or **Q** | heavy attack (hold to charge); also opens doors. Three landed alternating hits complete a **REFRAIN**, briefly opening the target |
+| **Left mouse** | a light blow. Strike again when your weapon **glints**, not before (see *Fighting: the beat*). Holding it down does not attack. Clicking a creature always punches it, whatever you hold |
+| **Right mouse** or **Q** | a heavy blow: spends your tempo for a harder hit (hold to charge); also opens doors |
 | **V** | change weapon style (five per weapon, unlocked by training) |
 | **X** | swap to your off-hand weapon (pairs make combo finishers) |
 | **1** to **0**, mouse wheel | hotbar |
@@ -17,8 +17,6 @@
 | **H** | quick heal |
 | **J** | journal: leads, lore, echoes, bestiary |
 | **M** | map (once you have drawn one; in the battle royale, the island) |
-| **P** (battle royale) | offer or accept a pact with whoever is beside you; twice to leave the one you have (**Esc** opens the menu there, with **LEAVE PACT**) |
-| **Tab** (battle royale) | who is left |
 | **K** | knapping (optional: stone heads can also be made by hand from flint) |
 | **C** | forms (your moves) |
 | **R / T** | throw / switch sidearm |
@@ -38,22 +36,16 @@ Under the pack, **WORN** holds your armour, your off-hand weapon and your **trin
 
 Anything you only carry (ore, bars, rope, keys, sidearms) leaves your fists free. Click and you punch: jab, cross, hook, uppercut. Aim up for an uppercut, aim down or hold **S** for a low kick, and use the right mouse button for a haymaker.
 
-Blocks, food and other usable things still do their job when you click empty space, but a click on a creature is always a punch. Tools swing where you point and hit creatures as well as rock. Pointing at ground within reach with empty hands digs by hand (in the battle royale too).
-
-## On a phone or tablet
-
-Touch controls appear by themselves, whichever way you hold it.
-
-- The **stick** moves you (down to crouch or dive); **JUMP**, **LIGHT**, **HEAVY** and **USE** are the buttons on either side. LIGHT and HEAVY strike at whoever is in front of you.
-- **Touch the world** to dig, gather or strike exactly there. Tap the hotbar to change what you hold.
-- **PACK** opens the pack and crafting: tap a recipe to make it, slide to scroll, **CLOSE** to go back. **HEAL** is a quick heal, **MENU** the menu.
-- In the battle royale, **MAP** shows the island and **PACT** offers, accepts and (tapped twice) leaves a pact.
+Blocks, food and other usable things still do their job when you click empty space, but a click on a creature is always a punch. Tools swing where you point and hit creatures as well as rock. Pointing at ground within reach with empty hands digs by hand.
 
 ## The menu (Esc)
 
 - **Controls: SIMPLE** (the default). Only where you aim (up, straight, down) and holding **S** choose your attack, so you never lunge or dash across the screen by surprise. **FULL** brings back the extra forms tied to the movement keys and how far away the cursor is (the forms page, **C**, greys them out in SIMPLE).
-- **Difficulty: EASY** (the default): you take 30% less damage, heal twice as fast and get hungry more slowly. **NORMAL** is the original balance. **HARD**: 25% more damage taken, slower healing, faster hunger.
+- **Difficulty: EASY** (the default): you take 30% less damage, heal twice as fast, get hungry more slowly, and the timing of your blows is generous. **NORMAL** is the original balance. **HARD**: 25% more damage taken, slower healing, faster hunger.
 - **Crafting: SIMPLE** (the default). At a station you click what you want and it is made after a short bar fills (shift-click makes five). Fires and kilns work whenever they have fuel, and light themselves from your sticks or logs; food never burns. **HANDS-ON** brings back the station games (sawing, the potter's wheel, the bellows, the anvil...), heat and the kiln's damper, and food that chars if you forget it.
-- **FPS MODE: OFF** (the default). Turn it on to stop ambient effects and particle effects for smoother play on slower computers. It changes only decoration; world simulation, gameplay and multiplayer stay the same.
+
+- **FX: FULL** (the default): the glow of fires and blades, the colour each land and season gives the air, the morning mist, the embers your Waker trails at a run. **FX: PLAIN** turns those off; try it if the game stutters on an older machine.
+
+The menu also shows the **day and the season**, and what kind of world this one is (its three traits).
 
 All four are remembered on this computer.

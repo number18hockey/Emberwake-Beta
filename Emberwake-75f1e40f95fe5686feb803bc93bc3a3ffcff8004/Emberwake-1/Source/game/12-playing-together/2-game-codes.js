@@ -63,7 +63,8 @@ function sigNewCode() { const r = crypto.getRandomValues(new Uint8Array(6)); ret
 const sigClean = s => String(s || '').toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 6);
 
 // ---------------- a tiny MQTT client (3.1.1 over a WebSocket): connect, subscribe, publish ----------------
-function mqttOpen(B, i) {
+// O (optional) = { topics, on(topic, text) }: a board used for something other than game codes (the list of open lobbies)
+function mqttOpen(B, i, O) {
   const url = typeof B === 'string' ? B : B && B.u, now0 = performance.now();
   const C = { url, i, ok: false, closed: false, buf: new Uint8Array(0), ping: now0, heard: now0, ws: null, fails: 0 };
   try { C.ws = new WebSocket(url, ['mqtt']); } catch (e) { C.closed = true; C.closeT = now0; return C; }
@@ -85,8 +86,8 @@ function mqttOpen(B, i) {
       if (i >= b.length || i >= 5) break; const start = i + 1; if (b.length < start + len) break;
       const type = b[0] >> 4, body = b.subarray(start, start + len); C.buf = b.slice(start + len);
       // on hello: listen to the game's board, and to my own mailbox on it (the relay)
-      if (type === 2) { if (body[1] === 0) { C.ok = true; C.fails = 0; SIG.everOk = true; C.ping = performance.now(); const sub = [0, 1, ...str(SIG.topic), 0]; if (SIG.rid) sub.push(...str(SIG.topic + '/' + SIG.rid), 0); send(pkt(0x82, sub)); } else C.close(); }
-      else if (type === 3) { const tl = (body[0] << 8) | body[1], q = (b[0] >> 1) & 3, off = 2 + tl + (q ? 2 : 0); sigIn(new TextDecoder().decode(body.subarray(off))); }
+      if (type === 2) { if (body[1] === 0) { C.ok = true; C.fails = 0; if (!O) SIG.everOk = true; C.ping = performance.now(); const sub = [0, 1]; if (O) for (const t of O.topics) sub.push(...str(t), 0); else { sub.push(...str(SIG.topic), 0); if (SIG.rid) sub.push(...str(SIG.topic + '/' + SIG.rid), 0); } send(pkt(0x82, sub)); } else C.close(); }
+      else if (type === 3) { const tl = (body[0] << 8) | body[1], q = (b[0] >> 1) & 3, off = 2 + tl + (q ? 2 : 0), txt = new TextDecoder().decode(body.subarray(off)); if (O) { try { O.on(new TextDecoder().decode(body.subarray(2, 2 + tl)), txt); } catch (e) { } } else sigIn(txt); }
     }
   };
   C.ws.onclose = C.ws.onerror = () => { if (!C.closed) C.closeT = performance.now(); C.ok = false; C.closed = true; };
@@ -119,7 +120,7 @@ function sigStart(code, role, on) {
       }, () => { }));
       sigRoomPush();
     }, () => { });
-  } else SIG.conns = sigBrokers().map(mqttOpen);
+  } else SIG.conns = sigBrokers().map((B, i) => mqttOpen(B, i));
 }
 function sigStop() {
   for (const C of SIG.conns) C.close(); SIG.conns = [];
@@ -137,8 +138,7 @@ function sigSend(obj) {
   if (!SIG.code) return; obj.b = sigMask(); obj.z = rlyZ() ? 1 : 0; const s = sigSeal(obj); SIG.seen.add(s.slice(0, 22));
   // the newest of each kind of note is enough (an offer, an answer to a friend, the host's hello)
   const k = obj.t + ':' + (obj.g || ''); SIG.out = SIG.out.filter(o => o.k !== k); SIG.out.push({ k, s }); if (SIG.out.length > 8) SIG.out.shift();
-  const mask = SIG.role === 'ring' ? netSignalPublishMask() : sigMask();
-  for (const C of SIG.conns) if (mask & (1 << C.i)) C.pub(s); sigRoomPush();
+  for (const C of SIG.conns) C.pub(s); sigRoomPush();
 }
 function sigIn(s) {
   if (typeof s !== 'string' || !SIG.code) return; const k = s.slice(0, 22); if (SIG.seen.has(k)) return; SIG.seen.add(k);
@@ -168,7 +168,7 @@ function sigHostMsg(m) {
   if (m.t !== 'offer' || typeof m.g !== 'string' || !/^[0-9a-f]{12}$/.test(m.g) || typeof m.sdp !== 'string') return;
   const P0 = SIG.guests.get(m.g); if (P0) { if (m.b) P0.bm = m.b | 0; if (P0.answer) sigSend({ t: 'answer', g: m.g, sdp: P0.answer === 'R' ? '' : P0.answer, r: P0.answer === 'R' ? 1 : 0 }); return; }
   if ((m.v | 0) !== NETV) { sigSend({ t: 'old', g: m.g, v: NETV, gv: GAME_VERSION }); return; }
-  if ([...COOP.peers.values()].filter(P => P.ok || P.connT).length >= coopPeerLimit()) { sigSend({ t: 'full', g: m.g }); return; }
+  if ([...COOP.peers.values()].filter(P => P.ok || P.connT).length >= brMaxG()) { sigSend({ t: 'full', g: m.g }); return; }
   sigAccept(m);
 }
 async function sigAccept(m) {
@@ -219,7 +219,7 @@ function sigGuestMsg(m) {
       const relay = () => { if (!P.relay) { SIG.stage = 'relay'; rlyBegin(P); } };
       if (m.r || !m.sdp || !P.pc) relay(); else P.pc.setRemoteDescription({ type: 'answer', sdp: m.sdp }).catch(relay);
     }
-    else if (m.t === 'full') sigGuestFail('That game is full (four Wakers at most).');
+    else if (m.t === 'full') sigGuestFail('That game is full.');
     else if (m.t === 'old') sigGuestFail(versionClash(m.gv));
   }
 }
@@ -232,9 +232,8 @@ function sigTick() {
   sigKeep(now); if (SIG.conns.some(C => C.ok)) SIG.everOk = true;
   if (COOP.peers.size) rlyTick(now);
   if (SIG.room && SIG.roomDirty && now - (SIG.roomT || 0) > RLY_ROOM.ms) sigRoomPush();
-  if (SIG.role === 'ring') return;
   if (SIG.role === 'host') {
-    if (now - SIG.sayT > 2000) { SIG.sayT = now; const n = [...COOP.peers.values()].filter(P => P.ok).length; sigSend({ t: 'host', n: coopName(), mode: SIG.mode || 'world', w: SIG.mode === 'br' ? '' : WORLD.name, v: NETV, gv: GAME_VERSION, full: n >= (SIG.mode === 'br' ? 7 : MAXG) ? 1 : 0 }); }
+    if (now - SIG.sayT > 2000) { SIG.sayT = now; const n = [...COOP.peers.values()].filter(P => P.ok).length; sigSend({ t: 'host', n: coopName(), mode: SIG.mode || 'world', w: SIG.mode === 'br' ? '' : WORLD.name, v: NETV, gv: GAME_VERSION, full: n >= brMaxG() ? 1 : 0 }); }
     for (const [g, P] of SIG.guests) if (COOP.peers.get(P.id) !== P && !P.ok && now - P.connT > 30000) SIG.guests.delete(g);
     if (!SIG.viaRoom && NET.room && !window.EW_BROKERS && !COOP.peers.size) { const c = SIG.code, md = SIG.mode; sigStart(c, 'host', sigHostMsg); SIG.mode = md; }
     return;

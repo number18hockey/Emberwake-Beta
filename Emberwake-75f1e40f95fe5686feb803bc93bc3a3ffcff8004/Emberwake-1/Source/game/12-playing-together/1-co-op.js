@@ -8,8 +8,7 @@
 //  shares it. Loot is everyone's own: each of you gets your share.
 // ============================================================
 const COOP = { role: null, me: '', seq: 1, pid: 0, peers: new Map(), pend: null, out: [], tiles: new Set(), stns: new Set(), applying: false, ghostFx: false, nid: 1, ghosts: new Map(), hghosts: new Map(), chat: [], note: '', t: 0, saveT: 0, uid: 0, hostName: '', busy: false, code: '', reply: '', err: '', chatOpen: false };
-const NETV = 3, MAXG = 3;
-const coopPeerLimit = () => COOP.br ? 7 : MAXG;
+const NETV = 6, MAXG = 3;
 const netOn = () => !!COOP.role, netHost = () => COOP.role === 'host', netGuest = () => COOP.role === 'guest';
 // someone is actually here with you (the world should not stop for menus then)
 const netLive = () => netGuest() ? !!COOP.joined : netHost() && [...COOP.peers.values()].some(P => P.ok);
@@ -40,7 +39,7 @@ async function iceDone(pc, ms) {
 // a direct line (WebRTC) when the networks allow it; otherwise the relay (3-relay.js)
 function wireDC(P, dc) {
   P.dc = dc;
-  dc.onopen = () => { P.open = true; P.heard = performance.now(); if (netGuest() && !P.ok) sendTo(P, { t: 'hello', v: NETV, n: coopName(), sk: G.skin | 0, ht: G.hat | 0 }); };
+  dc.onopen = () => { P.open = true; P.heard = performance.now(); if (netGuest() && !P.ok) sendTo(P, { t: 'hello', v: NETV, n: coopName(), sk: G.skin | 0 }); };
   dc.onclose = () => { if (P.dc === dc) P.dc = null; if (rlyFallback(P)) return; P.open = false; coopLost(P); };
   dc.onmessage = e => { P.heard = performance.now(); try { onRaw(P, e.data); } catch (err) { console.warn('coop', err); } };
 }
@@ -68,7 +67,7 @@ function onRaw(P, data) {
 // ---------------- host: inviting a friend ----------------
 async function coopInvite() {
   if (COOP.busy) return; if (!rtcOK()) { COOP.err = 'This window cannot connect to others. Open Emberwake.html in Chrome, Safari or Edge to play together.'; return; }
-  if (netGuest()) return; if ([...COOP.peers.values()].filter(P => P.ok).length >= coopPeerLimit()) { COOP.err = COOP.br ? 'An Ashfall party can have up to 8 Wakers.' : 'Four Wakers is the most one world can hold.'; return; }
+  if (netGuest()) return; if ([...COOP.peers.values()].filter(P => P.ok).length >= MAXG) { COOP.err = 'Four Wakers is the most one world can hold.'; return; }
   COOP.busy = true; COOP.err = ''; COOP.code = ''; COOP.reply = '';
   try {
     if (!COOP.role) coopHostStart();
@@ -116,7 +115,7 @@ function coopReset() {
   for (const P of COOP.peers.values()) { try { P.dc && P.dc.close(); } catch (e) { } try { P.pc && P.pc.close(); } catch (e) { } if (P.f) P.f.gone = true; }
   if (COOP.pend && COOP.pend.pc) try { COOP.pend.pc.close(); } catch (e) { }
   for (const g of COOP.ghosts.values()) g.dead = true; for (const f of COOP.hghosts.values()) f.gone = true;
-  Object.assign(COOP, { role: null, me: '', pend: null, code: '', reply: '', busy: false, note: '', err: '', chatOpen: false, joined: false, br: false, locks: new Map(), myLock: -1, slow: false, entering: false, backlog: [] }); COOP.peers.clear(); COOP.ghosts.clear(); COOP.hghosts.clear(); COOP.tiles.clear(); COOP.stns.clear(); COOP.applying = false;
+  Object.assign(COOP, { role: null, me: '', pend: null, code: '', reply: '', busy: false, note: '', err: '', chatOpen: false, joined: false, br: false, ring: false, locks: new Map(), myLock: -1, slow: false, entering: false, backlog: [] }); COOP.peers.clear(); COOP.ghosts.clear(); COOP.hghosts.clear(); COOP.tiles.clear(); COOP.stns.clear(); COOP.applying = false;
   if (G.fighters) G.fighters = G.fighters.filter(f => !f.gone); WORLD.guest = false;
 }
 function coopLeave() {
@@ -149,7 +148,7 @@ function onMsg(P, m, raw) {
   if (!H && COOP.entering && m.t !== 'bye' && m.t !== 'kick') { COOP.backlog.push([P, m, raw]); return; }
   if ((COOP.br || m.t === 'brw') && brRtcMsg(P, m)) return;
   switch (m.t) {
-    case 'hello': if (H && !P.ok && COOP.br) { brRtcWelcome(P, m); return; } if (!H || P.ok) return; P.name = cleanName(m.n) || P.name || 'WAKER'; P.skin = clamp(m.sk | 0, 0, 5); P.hat = clamp(m.ht | 0, 0, 3); hostWelcome(P); return;
+    case 'hello': if (H && !P.ok && COOP.br) { brRtcWelcome(P, m); return; } if (!H || P.ok) return; P.name = cleanName(m.n) || P.name || 'WAKER'; P.skin = clamp(m.sk | 0, 0, 3); hostWelcome(P); return;
     case 'welcome': if (H || COOP.joined) return; guestEnter(m); return;
     case 'me': {
       const id = H ? P.id : m.id; if (!id || id === COOP.me) return; const Q = H ? P : COOP.peers.get(id) || peerFor(id, m);
@@ -157,7 +156,7 @@ function onMsg(P, m, raw) {
     }
     case 'pj': if (!H && m.id !== COOP.me) { const Q = peerFor(m.id, m); Q.name = cleanName(m.n) || Q.name; chatLine('', Q.name + ' joined', '#7ddc6f'); } return;
     case 'pl': if (!H) { dropLocks(m.id); const Q = COOP.peers.get(m.id); if (Q && Q.ghostPeer) { COOP.peers.delete(m.id); if (Q.f) Q.f.gone = true; chatLine('', Q.name + ' left', '#8b8fa3'); } } return;
-    case 'tiles': if (Array.isArray(m.d)) { applyTiles(m.d); if (H) sendAll(m, P); } return;
+    case 'tiles': if (Array.isArray(m.d)) { applyTiles(m.d); if (H) { const back = tilesBack(m.d); sendAll(m, P); if (back.length) sendTo(P, { t: 'tiles', d: back }); } } return;
     case 'stn': if (m.o && typeof m.o === 'object') { netApplyStn(m.o); if (H) sendAll(m, P); } return;
     case 'chat': { const s = String(m.s || '').slice(0, 120), n = cleanName(H ? P.name : m.n) || 'WAKER'; if (!s) return; chatLine(n, s); if (H) sendAll({ t: 'chat', n, s }, P); return; }
     case 'shot': netGhostShot(m); if (H) sendAll(m, P); return;
@@ -177,6 +176,7 @@ function onMsg(P, m, raw) {
     case 'hdie': if (!H) onHdie(m); return;
     case 'bossdown': if (!H) onBossDown(m); return;
     case 'hurt': if (!H) onHurt(m); return;
+    case 'hz': if (!H) onHaz(m); return;
     case 'world': if (!H) onWorld(m); return;
     case 'dim': if (!H) onDim(m); return;
     case 'kick': if (!H) { guestSave(); coopReset(); G.state = 'join'; COOP.err = 'The host is full.'; } return;
@@ -190,10 +190,10 @@ function peerFor(id, m) {
 
 // ---------------- the host lets someone in ----------------
 function hostWelcome(P) {
-  if ([...COOP.peers.values()].filter(Q => Q.ok).length >= coopPeerLimit()) { sendTo(P, { t: 'kick' }); return; }
+  if ([...COOP.peers.values()].filter(Q => Q.ok).length >= brMaxG()) { sendTo(P, { t: 'kick' }); return; }
   const b = worldBlob(); b.drops = [];
   const p = G.p, pos = [r1(p.x + (Math.random() < .5 ? -14 : 14)), r1(p.y)];
-  sendTo(P, { t: 'welcome', v: NETV, id: P.id, host: coopName(), world: { id: WORLD.id, name: WORLD.name, seed: WORLD.seed, size: WORLD.size, shape: WORLD.shape, mode: WORLD.mode, gen: WORLD.gen || 1, legacy: WORLD.legacy || {} }, dim: DIM, blob: b, pos, clock: G.clock, ev: G.ev, dev: G.dev, devT: G.devT,
+  sendTo(P, { t: 'welcome', v: NETV, id: P.id, host: coopName(), world: { id: WORLD.id, name: WORLD.name, seed: WORLD.seed, size: WORLD.size, shape: WORLD.shape, mode: WORLD.mode, land: WORLD.land || 1, gates: WORLD.gates || null, legacy: WORLD.legacy || {} }, dim: DIM, blob: b, pos, clock: G.clock, ev: G.ev, dev: G.dev, devT: G.devT,
     players: [...COOP.peers.values()].filter(Q => Q.ok && Q !== P).map(Q => ({ id: Q.id, n: Q.name })) });
   P.ok = true; P.seen = new Map(); P.hseen = new Set(); makeRemote(P, { x: pos[0], y: pos[1], n: P.name, sk: P.skin });
   sendAll({ t: 'pj', id: P.id, n: P.name }, P); chatLine('', P.name + ' joined your world', '#7ddc6f'); COOP.note = ''; sfx('quest', 0);
@@ -208,7 +208,8 @@ function guestEnter(m) {
   setTimeout(() => {
     COOP.applying = true;
     try {
-      Object.assign(WORLD, { id: String(w.id || 'shared'), name: String(w.name || 'Shared World').slice(0, 30), seed: w.seed | 0, size: clamp(w.size | 0, 0, 2), shape: clamp(w.shape | 0, 0, 2), mode: w.mode ? 1 : 0, gen: GENS[w.gen | 0] ? w.gen | 0 : 1, arena: false });
+      Object.assign(WORLD, { id: String(w.id || 'shared'), name: String(w.name || 'Shared World').slice(0, 30), seed: w.seed | 0, size: clamp(w.size | 0, 0, 2), shape: clamp(w.shape | 0, 0, 2), mode: w.mode ? 1 : 0, land: LANDS[w.land | 0] ? w.land | 0 : 1, arena: false });
+      WORLD.legacy = cleanLegacy(w.legacy); WORLD.gates = cleanGates(w.gates); WORLD.known = null;
       netLeave(); SEED = WORLD.seed; initEndless(); fixLeadTexts(); freshSession(); for (const k in DSTASH) delete DSTASH[k];
       WORLD.legacy = cleanLegacy(w.legacy); WORLD.guest = true; PLC.clear();
       const d = DIMP[m.dim | 0] && (m.dim | 0) ? m.dim | 0 : 0; if (d) initDim(d);
@@ -255,13 +256,13 @@ function guestLoad() {
 function fighterState(f, me) {
   const a = f.atk, held = me ? (visHeld(f) || null) : IT[f.wid];
   const o = { x: r1(f.x), y: r1(f.y), vx: r2(f.vx), vy: r2(f.vy), f: f.face, g: f.onGround ? 1 : 0, st: f.dead ? 4 : f.state === 'dodge' ? 2 : f.hurtT > 0 ? 3 : a ? 1 : 0, hp: max(0, round(f.hp)), mhp: round(f.maxhp || 100),
-    w: held && held.id ? held.id : '', m: a ? a.id : '', wa: a && a.W ? a.W.id : '', an: f.atkN | 0, mp: a ? a.phase : 0, mt: a ? r1(a.pt) : 0, ma: a ? r2(a.aimA || 0) : 0, md: a ? round(a.dist || 40) : 0, mc: a ? a.charge | 0 : 0, mf: a ? a.face : f.face,
-    tt: f.toolT | 0, tc: f.toolCharge | 0, tw: f.swingTool ? (f.swingTool === HAND ? 'hand' : f.swingTool.id || '') : '', tk: r2(f.toolK || 0), tn: f.throwT | 0, iv: f.inv > 0 || f.iDodge > 0 ? 1 : 0, dd: f.dodgeDir | 0, n: f.name || '', sk: f.skin | 0, ht: f.hat | 0 };
+    w: held && held.id ? held.id : '', m: a ? a.id : '', wa: a && a.W ? a.W.id : '', an: f.atkN | 0, mp: a ? a.phase : 0, mt: a ? r1(a.pt) : 0, ma: a ? r2(a.aimA || 0) : 0, md: a ? round(a.dist || 40) : 0, mc: a ? a.charge | 0 : 0, mf: a ? a.face : f.face, tp: f.tempo | 0,
+    tt: f.toolT | 0, tc: f.toolCharge | 0, tw: f.swingTool ? (f.swingTool === HAND ? 'hand' : f.swingTool.id || '') : '', tk: r2(f.toolK || 0), tn: f.throwT | 0, iv: f.inv > 0 || f.iDodge > 0 ? 1 : 0, dd: f.dodgeDir | 0, n: f.name || '', sk: f.skin | 0 };
   if (me) { o.gr = GEAR_SLOTS.map(s => G.gear && G.gear[s] ? G.gear[s].id : '').join(','); o.d = DIM; if (G.away) o.aw = 1; }
   o.ts = round(performance.now()); return o;
 }
 function makeRemote(Q, s) {
-  const f = newFighter(num(s.x, G.p ? G.p.x : 0), num(s.y, G.p ? G.p.y : 0), { remote: true, coop: true, peer: Q.id, team: 'p', name: cleanName(s.n) || Q.name || 'WAKER', skin: clamp(s.sk | 0, 0, 5), hat: clamp(s.ht | 0, 0, 3), snaps: [], spawnT: 30 });
+  const f = newFighter(num(s.x, G.p ? G.p.x : 0), num(s.y, G.p ? G.p.y : 0), { remote: true, coop: true, peer: Q.id, team: 'p', name: cleanName(s.n) || Q.name || 'WAKER', skin: clamp(s.sk | 0, 0, 3), snaps: [], spawnT: 30 });
   f.wid = ''; Q.f = f; G.fighters.push(f); return f;
 }
 function pushSnap(f, s) {
@@ -275,7 +276,7 @@ function pushSnap(f, s) {
     for (const q of S) if (isFinite(q.ts)) q.t = q.ts + f.toff; s.t = s.ts + f.toff; f.delay = clamp((f.gap || 50) + 1.5 * f.jit + 35, 85, 650);
   } else s.t = now;
   S.push(s); if (S.length > 30) S.shift(); f.away = !!s.aw;
-  if (s.n && !f.hollow) f.name = cleanName(s.n) || f.name; if (s.sk !== undefined) f.skin = clamp(s.sk | 0, 0, f.hollow ? 11 : 5); if (s.ht !== undefined) f.hat = clamp(s.ht | 0, 0, 3);
+  if (s.n && !f.hollow) f.name = cleanName(s.n) || f.name; if (s.sk !== undefined) f.skin = clamp(s.sk | 0, 0, f.hollow ? 11 : 3);
   f.hp = num(s.hp, f.hp); f.maxhp = num(s.mhp, f.maxhp || 100); f.inDim = s.d;
   if (s.gr !== undefined && s.gr !== f.grKey) { f.grKey = s.gr; const ids = String(s.gr).split(','); f.gearObj = {}; GEAR_SLOTS.forEach((k, i) => { if (IT[ids[i]] && IT[ids[i]].type === 'armor') f.gearObj[k] = { id: ids[i], n: 1 }; }); f.gskin = null; }
 }
@@ -289,7 +290,7 @@ function coopReplay(f) {
   let x, y; if (b) { const u = clamp((rt - a.t) / max(1, b.t - a.t), 0, 1); x = lerp(a.x, b.x, u); y = lerp(a.y, b.y, u); } else { const e = clamp((rt - a.t) / 16.67, 0, 6); x = a.x + a.vx * e; y = a.y + (a.g ? 0 : a.vy * e); }
   if (!isFinite(x) || !isFinite(y)) return;
   if (hypot(x - f.x, y - f.y) > 90) { f.px = x; f.py = y; for (const s of f.scarf) { s.x = s.ox = x + 3; s.y = s.oy = y + 5; } }
-  f.x = x; f.y = y; f.vx = num(a.vx); f.vy = num(a.vy); f.face = a.f < 0 ? -1 : 1; f.onGround = !!a.g; f.dodgeDir = a.dd | 0; f.inv = a.iv ? 2 : 0;
+  f.x = x; f.y = y; f.vx = num(a.vx); f.vy = num(a.vy); f.face = a.f < 0 ? -1 : 1; f.onGround = !!a.g; f.dodgeDir = a.dd | 0; f.inv = a.iv ? 2 : 0; f.tempo = clamp(a.tp | 0, 0, 5);
   const wasDead = f.dead; f.dead = a.st === 4; if (f.dead && !wasDead) f.deadT = 0; if (f.dead) f.deadT++;
   f.state = a.st === 2 ? 'dodge' : a.st === 1 ? 'attack' : 'normal'; f.hurtT = a.st === 3 ? 6 : 0; if (f.state === 'dodge' && G.time % 2 === 0) f.ghostReq = true;
   if (f.onGround && abs(f.vx) > .3) f.runPh += abs(f.vx) * .21;
@@ -311,9 +312,22 @@ function netTile(i) { if (COOP.role && !COOP.applying && G.state === 'play') COO
 function chipEnc(c) { let s = '', acc = 0, bits = 0; for (let k = 0; k < 64; k++) { acc = ((acc << 2) | (c[k] ? (c[k] < 120 ? 1 : c[k] < 205 ? 2 : 3) : 0)) & 0xffff; bits += 2; if (bits >= 6) { bits -= 6; s += B64C[(acc >> bits) & 63]; } } if (bits) s += B64C[(acc << (6 - bits)) & 63]; return s; }
 function chipDec(h) { const c = new Uint8Array(64); let acc = 0, bits = 0, k = 0; for (const ch of String(h)) { const v = B64C.indexOf(ch); if (v < 0) break; acc = ((acc << 6) | v) & 0xffff; bits += 6; while (bits >= 2 && k < 64) { bits -= 2; c[k++] = [0, 80, 165, 255][(acc >> bits) & 3]; } } return c; }
 function flushTiles() {
-  if (!COOP.tiles.size) return; const d = [];
-  for (const i of COOP.tiles) { if (d.length >= 700) break; d.push([i, tiles[i], walls[i], CHIP.has(i) ? chipEnc(CHIP.get(i)) : 0, PLACED.has(i) ? 1 : 0]); COOP.tiles.delete(i); }
+  if (!COOP.tiles.size) return; const d = [], S = netHost() ? COOP.sentT || (COOP.sentT = new Map()) : null;
+  for (const i of COOP.tiles) { if (d.length >= 700) break; d.push([i, tiles[i], walls[i], CHIP.has(i) ? chipEnc(CHIP.get(i)) : 0, PLACED.has(i) ? 1 : 0]); COOP.tiles.delete(i); if (S) S.set(i, COOP.t); }
   sendAll({ t: 'tiles', d });
+}
+// Two people changing the same tile at once: each sees its own change first and the other's after, so the two
+// worlds would end up different. The host's world is the true one: when a friend's change lands on a tile the
+// host has sent out lately (its own change, or another friend's), the host tells that friend how the tile ended up.
+function tilesBack(d) {
+  const S = COOP.sentT || (COOP.sentT = new Map()), out = [];
+  if (COOP.t % 600 === 0) for (const [i, t] of S) if (COOP.t - t > 300) S.delete(i);
+  for (const r of d) {
+    if (!Array.isArray(r)) continue; const i = r[0] | 0; if (!(i >= 0 && i < WW * WH)) continue;
+    const t0 = S.get(i); S.set(i, COOP.t);
+    if (t0 !== undefined && COOP.t - t0 < 300 && chunkReadyAt(i % WW)) out.push([i, tiles[i], walls[i], CHIP.has(i) ? chipEnc(CHIP.get(i)) : 0, PLACED.has(i) ? 1 : 0]);
+  }
+  return out;
 }
 function applyTiles(d) {
   const was = MODS_ON; COOP.applying = true; MODS_ON = true;
@@ -438,7 +452,7 @@ function ghostTick() {
 // a guest's blow lands: it shows at once, and the host does the rest
 function netHitGhost(e, dmg, kx, ky, o) {
   const tgt = e.root && e.root.ghost ? e : e; if (e.dead || (e.root || e).invuln) return 0; const id = tgt.nid; if (!id) return 0;
-  const oo = {}; for (const k of ['crit', 'stagger', 'launch', 'blunt', 'stop', 'shake', 'dot', 'big', 'hx', 'hy', 'pierce', 'elem']) if (o && (typeof o[k] === 'number' || typeof o[k] === 'boolean' || typeof o[k] === 'string')) oo[k] = o[k];
+  const oo = {}; for (const k of ['crit', 'stagger', 'launch', 'blunt', 'stop', 'shake', 'dot', 'big', 'hx', 'hy', 'pierce', 'elem', 'bite', 'pz', 'gb']) if (o && (typeof o[k] === 'number' || typeof o[k] === 'boolean' || typeof o[k] === 'string')) oo[k] = o[k];
   sendAll({ t: 'hit', id, dmg: round(dmg * 10) / 10, kx: r2(kx || 0), ky: r2(ky || 0), o: oo });
   e.flash = 6; if (e.root) e.root.flash = 6; numPop(e.x + e.w / 2, e.y - 2, max(1, round(dmg * (e.dmgMul || 1))), o && o.dot ? '#ff9a3d' : o && o.crit ? '#ffd35a' : '#ffffff');
   return 1;
@@ -446,7 +460,7 @@ function netHitGhost(e, dmg, kx, ky, o) {
 const foeById = id => G.enemies.find(e => e.nid === id && !e.dead);
 function hostHit(P, m) {
   const e = foeById(m.id); if (!e) return; const o = {}; if (m.o && typeof m.o === 'object') for (const k in m.o) if (['number', 'boolean', 'string'].includes(typeof m.o[k])) o[k] = m.o[k];
-  o.by = P.f; damageEnemy(e, clamp(num(m.dmg), 0, 999), clamp(num(m.kx), -9, 9), clamp(num(m.ky), -9, 9), o);
+  o.by = P.f; if (o.pz !== undefined) o.pz = clamp(num(o.pz, 1), 0, 8); damageEnemy(e, clamp(num(m.dmg), 0, 999), clamp(num(m.kx), -9, 9), clamp(num(m.ky), -9, 9), o);
 }
 function hostFHit(P, m) {
   const h = G.fighters.find(f => f.nid === m.id && f.hollow && !f.remote && !f.dead); if (!h) return;
@@ -481,6 +495,11 @@ function onEdie(m) {
 }
 function onHdie(m) { if (!G.p || abs(G.p.x - num(m.x)) > 70 * T) return; const f = { x: num(m.x), y: num(m.y), elite: m.elite || null, arms: ['shuriken'] }; hollowDrops(f); }
 function onBossDown(m) { const g = COOP.ghosts.get(m.id); if (!g) return; COOP.ghosts.delete(m.id); g.state = 'dying'; if (G.p && abs(G.p.x - g.x) < 90 * T) { COOP.ghostFx = true; try { bossDown(g); } finally { COOP.ghostFx = false; } } g.dead = true; if (G.boss === g) G.boss = null; }
+// a guardian's lightning and fire pillars: the host says where, and each player's own game decides whether it caught them
+function onHaz(m) {
+  if (!G.p || (m.k !== 'bolt' && m.k !== 'pillar')) return; const x = num(m.x), y = num(m.y), d = clamp(m.d | 0, 1, 200); if (abs(x - G.p.x) > 90 * T) return;
+  G.trails.push({ kind: 'warn', x, y, life: d, max: d }); (G.dhaz || (G.dhaz = [])).push({ kind: m.k, x, y, delay: d, life: clamp(m.l | 0, 1, 60), dmg: clamp(num(m.dmg, 24), 0, 60), hurt: !!m.h, net: true });
+}
 // shots: everyone sees everyone's arrows; only the shooter's game counts the hits
 function netShotOut(pr) {
   if (!COOP.role || COOP.applying || pr.ghost || pr.arm || pr.net) return; if (netGuest() && !(pr.owner === G.p)) return;
@@ -491,17 +510,18 @@ function netGhostShot(m) {
   spawnProj({ type: m.k, owner: null, ghost: true, net: true, x: num(m.x), y: num(m.y), vx: clamp(num(m.vx), -16, 16), vy: clamp(num(m.vy), -16, 16), g: clamp(num(m.g), 0, .5), r: clamp(num(m.r, 3), 1, 14), life: clamp(num(m.l, 120), 1, 400), boom: m.b | 0, dmg: 0 });
 }
 // things you throw down for a friend: they are there for everyone, until someone picks them up
-function netDropOut(d) { if (WORLD.royale || !COOP.role || COOP.applying || !d) return; d.uid = COOP.me + ':' + (++COOP.uid); sendAll({ t: 'drop', u: d.uid, id: d.id, n: d.n, x: r1(d.x), y: r1(d.y), vx: r2(d.vx), vy: r2(d.vy) }); }
+function netDropOut(d) { if (!COOP.role || COOP.applying || !d) return; d.uid = COOP.me + ':' + (++COOP.uid); sendAll({ t: 'drop', u: d.uid, id: d.id, n: d.n, x: r1(d.x), y: r1(d.y), vx: r2(d.vx), vy: r2(d.vy) }); }
 function netDropIn(m) { if (!IT[m.id] || !(m.n > 0) || typeof m.u !== 'string' || G.drops.some(d => d.uid === m.u)) return; const x = num(m.x), y = num(m.y); G.drops.push({ id: m.id, n: clamp(m.n | 0, 1, IT[m.id].stack), x, y, px: x, py: y, w: 6, h: 6, vx: num(m.vx), vy: num(m.vy), t: 0, delay: 40, onGround: false, uid: m.u }); }
 function netTakeIn(m) { for (let i = G.drops.length - 1; i >= 0; i--) if (G.drops[i].uid === m.u) G.drops.splice(i, 1); }
-function netTook(d) { if (WORLD.royale) { brTook(d); return; } if (COOP.role && d.uid) sendAll({ t: 'take', u: d.uid }); }
+function netTook(d) { if (COOP.role && d.uid) sendAll({ t: 'take', u: d.uid }); }
 
 // ---------------- the sky and the clock follow the host ----------------
-function worldState() { return { t: 'world', c: r2(G.clock * 1e4) / 1e4, ev: G.ev || null, dev: G.dev || null, devT: G.devT | 0, wx: G.wx ? [G.wx.id, G.wx.dir] : 0 }; }
+function worldState() { return { t: 'world', c: r2(G.clock * 1e4) / 1e4, ev: G.ev || null, dev: G.dev || null, devT: G.devT | 0, d: r2(worldDays()), wx: G.wx ? [G.wx.k, G.wx.t | 0, r2(G.wx.a)] : 0 }; }
 function onWorld(m) {
-  if (Array.isArray(m.wx) && Object.keys(WX).includes(m.wx[0]) && G.wx && (G.wx.id !== m.wx[0] || G.wx.dir !== (m.wx[1] < 0 ? -1 : 1))) wxSet(m.wx[0], m.wx[1] < 0 ? -1 : 1);
   const c = num(m.c, G.clock); if (abs(c - G.clock) > .002 && abs(c - G.clock) < .998) G.clock = c;
   G.ev = m.ev && typeof m.ev === 'object' ? m.ev : null; G.dev = m.dev && typeof m.dev === 'object' ? m.dev : null; G.devT = m.devT | 0;
+  if (isFinite(m.d) && abs(m.d - worldDays()) > .02) G.days = max(0, +m.d);
+  const w = m.wx; if (Array.isArray(w) && (w[0] === 'rain' || w[0] === 'snow')) { if (!G.wx || G.wx.k !== w[0]) G.wx = { k: w[0], t: w[1] | 0, a: clamp(num(w[2], 0), 0, 1) }; else G.wx.t = w[1] | 0; } else if (G.wx && G.wx.t > 240) G.wx.t = 240;
 }
 // through a rift: the host leads, everyone follows
 function netAfterDim() {
@@ -579,7 +599,8 @@ function drawCoopHud(c) {
   COOP.chat.forEach((l, i) => { c.globalAlpha = COOP.chatOpen ? 1 : clamp((900 - l.t) / 120, 0, 1); const y = y0 + i * 10; if (l.n) { textS(c, l.n + ':', 4, y, '#ffd35a'); textS(c, l.s, 8 + textW(l.n + ':'), y, l.col); } else textS(c, l.s, 4, y, l.col); c.globalAlpha = 1; });
   if (!COOP.chatOpen && !UI.open) textS(c, '[ENTER] chat', 4, hb.y - 10, '#6a6485');
   if (!UI.open && !G.cine) drawFriendArrows(c);
-  // who is here
+  // who is here (the ring keeps its own scoreboard)
+  if (COOP.ring || COOP.br) return;
   const list = [{ n: coopName() + (netHost() ? ' (host)' : ''), hp: G.p.hp, mx: G.p.maxhp, me: 1 }]; for (const P of COOP.peers.values()) if (P.ok && P.f) list.push({ n: P.f.name + (P.id === 'h' ? ' (host)' : ''), hp: P.f.hp, mx: P.f.maxhp || 100, away: P.f.inDim !== undefined && P.f.inDim !== DIM });
   const x = 4; list.forEach((q, i) => { const y = 62 + i * 11; textS(c, q.n.slice(0, 16), x, y, q.me ? '#8ff5e6' : q.away ? '#6a6485' : '#e8edf2'); bar(c, x, y + 8, 60, 2, clamp(q.hp / (q.mx || 100), 0, 1), '#e2483b', '#8f2233'); });
 }
@@ -678,7 +699,7 @@ function drawJoinLong(c) {
   drawText(c, 'Best on the same Wi-Fi; most home internet works too.', fx, y + h - 24, '#8b8fa3');
   button(c, x + w - 70, y + h - 16, 60, 13, 'BACK', () => { COOP.long = false; coopLeave(); COOP.err = ''; sfx('ui'); });
 }
-function wrapDraw(c, s, x, y, w, col) { wrapText(s, w).forEach((line, i) => drawText(c, line, x, y + i * 10, col)); }
+function wrapDraw(c, s, x, y, w, col) { const words = String(s).split(' '); let line = '', yy = y; for (const wd of words) { const t = line ? line + ' ' + wd : wd; if (textW(t) > w && line) { drawText(c, line, x, yy, col); yy += 10; line = wd; } else line = t; } if (line) drawText(c, line, x, yy, col); }
 
 // ---------------- moving a world between computers (or from the Mac app to a browser) as text ----------------
 async function worldCopy(m) {
