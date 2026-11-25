@@ -65,12 +65,48 @@ PAGE = '''<!DOCTYPE html>
 <title>Emberwake</title>
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <style>
-html,body{margin:0;height:100%;background:#0e0b14;overflow:hidden}
-canvas{display:block;width:100vw;height:100vh;image-rendering:pixelated;image-rendering:crisp-edges;cursor:none;outline:none;touch-action:none;user-select:none}
+html,body{margin:0;width:100%;height:100%;height:100dvh;background:#0e0b14;overflow:hidden;overscroll-behavior:none}
+canvas{display:block;width:100vw;height:100vh;height:100dvh;image-rendering:pixelated;image-rendering:crisp-edges;cursor:none;outline:none;touch-action:none;user-select:none;-webkit-user-select:none}
+#mobileControls{display:none;position:fixed;inset:0;z-index:2;pointer-events:none;touch-action:none;user-select:none;-webkit-user-select:none}
+#mobileControls.visible,#mobileControls.panel{display:block}
+#mobileControls.panel>:not(#mobileBar),#mobileControls.panel #mobileBar>:not(#mobileClose),#mobileControls:not(.panel) #mobileClose,.touchPill.off{display:none}
+#movePad{position:absolute;left:calc(env(safe-area-inset-left,0px) + 18px);bottom:calc(env(safe-area-inset-bottom,0px) + 18px);width:clamp(112px,22vmin,156px);height:clamp(112px,22vmin,156px);border:2px solid rgba(255,211,90,.52);border-radius:50%;background:radial-gradient(circle,rgba(49,39,63,.48),rgba(17,14,25,.58));box-shadow:0 4px 20px #0008;pointer-events:auto;touch-action:none}
+#movePad:before{content:"";position:absolute;inset:24%;border:1px solid rgba(255,255,255,.16);border-radius:50%}
+#moveKnob{position:absolute;left:50%;top:50%;width:43%;height:43%;transform:translate(-50%,-50%);border:2px solid rgba(255,241,168,.8);border-radius:50%;background:radial-gradient(circle at 35% 30%,rgba(255,211,90,.8),rgba(255,122,61,.64));box-shadow:0 2px 8px #0009;pointer-events:none}
+#moveLabel{position:absolute;left:0;right:0;bottom:8%;text-align:center;color:#fff9;font:700 9px/1 system-ui,sans-serif;letter-spacing:1px;pointer-events:none}
+.touchButton{position:absolute;display:grid;place-items:center;width:clamp(58px,15vmin,82px);height:clamp(58px,15vmin,82px);padding:0;border:2px solid rgba(255,211,90,.68);border-radius:50%;background:radial-gradient(circle at 35% 28%,rgba(255,174,88,.8),rgba(104,40,43,.86));box-shadow:0 4px 16px #0009;color:#fff5d5;font:800 clamp(9px,2.4vmin,12px)/1 system-ui,sans-serif;letter-spacing:.5px;text-shadow:0 1px 3px #000;pointer-events:auto;touch-action:none;-webkit-tap-highlight-color:transparent}
+.touchButton:active,.touchButton.pressed{transform:scale(.94);filter:brightness(1.25)}
+#attackLight{right:calc(env(safe-area-inset-right,0px) + 18px);bottom:calc(env(safe-area-inset-bottom,0px) + 18px)}
+#attackHeavy{right:calc(env(safe-area-inset-right,0px) + 18px);bottom:calc(env(safe-area-inset-bottom,0px) + 96px)}
+#mobileJump{left:calc(env(safe-area-inset-left,0px) + 18px + clamp(112px,22vmin,156px) + 8px);bottom:calc(env(safe-area-inset-bottom,0px) + 18px);width:clamp(54px,13vmin,68px);height:clamp(54px,13vmin,68px);border-color:rgba(143,245,230,.72);background:radial-gradient(circle at 35% 28%,rgba(143,245,230,.82),rgba(39,76,88,.9))}
+#mobileUse{right:calc(env(safe-area-inset-right,0px) + 18px + clamp(58px,15vmin,82px) + 12px);bottom:calc(env(safe-area-inset-bottom,0px) + 35px);width:clamp(48px,12vmin,60px);height:clamp(48px,12vmin,60px);border-color:rgba(143,245,230,.72);background:radial-gradient(circle at 35% 28%,rgba(143,245,230,.82),rgba(39,76,88,.9))}
+#mobileTextInput{position:fixed;z-index:3;left:0;bottom:0;width:2px;height:2px;padding:0;border:0;opacity:.01;font-size:16px;color:transparent;background:transparent}
+#mobileBar{position:absolute;left:calc(env(safe-area-inset-left,0px) + 8px);top:calc(env(safe-area-inset-top,0px) + 76px);display:flex;flex-direction:column;gap:5px}
+.touchPill{width:56px;height:30px;padding:0;border:2px solid rgba(143,245,230,.6);border-radius:9px;background:rgba(29,26,41,.82);color:#dcf7f5;font:800 11px/1 system-ui,sans-serif;letter-spacing:.5px;pointer-events:auto;touch-action:none;-webkit-tap-highlight-color:transparent}
+.touchPill:active,.touchPill.pressed{filter:brightness(1.5)}
+#mobileClose{border-color:rgba(255,211,90,.8);color:#fff1a8}
+#mobileControls.panel #mobileBar{left:auto;right:calc(env(safe-area-inset-right,0px) + 6px);top:calc(env(safe-area-inset-top,0px) + 2px)}
+@media (orientation:portrait){#movePad,#mobileJump,#attackLight{bottom:calc(env(safe-area-inset-bottom,0px) + 66px)}#attackHeavy{bottom:calc(env(safe-area-inset-bottom,0px) + 144px)}#mobileUse{bottom:calc(env(safe-area-inset-bottom,0px) + 83px)}#mobileBar{top:calc(env(safe-area-inset-top,0px) + 130px)}}
 </style>
 </head>
 <body>
 <canvas id="c" tabindex="0"></canvas>
+<div id="mobileControls" aria-hidden="true">
+  <div id="movePad" aria-label="Move joystick"><div id="moveKnob"></div><span id="moveLabel">MOVE</span></div>
+  <button id="mobileJump" class="touchButton" type="button" aria-label="Jump">JUMP</button>
+  <button id="mobileUse" class="touchButton" type="button" aria-label="Interact or open">USE</button>
+  <button id="attackHeavy" class="touchButton" type="button" aria-label="Right-click attack">HEAVY</button>
+  <button id="attackLight" class="touchButton" type="button" aria-label="Left-click attack">LIGHT</button>
+  <div id="mobileBar">
+    <button id="mobilePack" class="touchPill" type="button" aria-label="Pack and crafting">PACK</button>
+    <button id="mobileMap" class="touchPill" type="button" aria-label="Map">MAP</button>
+    <button id="mobileHeal" class="touchPill" type="button" aria-label="Quick heal">HEAL</button>
+    <button id="mobilePact" class="touchPill" type="button" aria-label="Offer, accept or leave a pact">PACT</button>
+    <button id="mobileMenu" class="touchPill" type="button" aria-label="Menu">MENU</button>
+    <button id="mobileClose" class="touchPill" type="button" aria-label="Close this panel">CLOSE</button>
+  </div>
+</div>
+<input id="mobileTextInput" type="text" aria-label="Game text input" autocomplete="off" autocapitalize="off" spellcheck="false">
 <script>
 {{GAME}}
 </script>

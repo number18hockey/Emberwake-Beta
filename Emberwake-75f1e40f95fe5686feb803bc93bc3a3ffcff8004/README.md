@@ -37,6 +37,7 @@ You can also open the included [`Emberwake Guide.html`](Emberwake-1/Emberwake%20
 - Shared multiplayer worlds for up to four players
 - The Ashfall, a battle royale for 32 with echoes or friends: fall from the sky with nothing, gather, dig, craft, make pacts, outlast the rest
 - Weather that slows you, sways the trees and brings out rare creatures
+- Touch controls for phones and tablets
 - Synthesized pixel graphics and sound with no image or audio downloads
 
 ## Controls

@@ -29,7 +29,8 @@ const BR = {
   dlSeen: new Set(), dl: null, place: 0, spec: null, specT: 0, overT: 0, winner: '', winMe: false, pois: [], caves: [], nests: [], lakes: [], segs: [], segX: [], bio: null, mapCv: null,
   note: '', noteT: 0, chan: null, inStorm: false, poiNow: '', mapOpen: false, total: 0, lastAlive: 0, lastTeams: 0, lobbyT: 0, err: '', wxList: null, wxAt: 0,
   pactWith: '', pactFrom: '', pactFromT: 0, teammate: '', pactSeen: false, leaveT: 0, dropsOut: [], dropSeq: 0, dropSeen: new Map(), tookOut: [], tookSeq: 0, tookSeen: new Map(), tileOut: new Map(), applying: false,
-  fallen: [], fallenT: 0, show: null, gifts: [], giftAt: 0, feast: 0, hazard: null, hounds: 0, bounty: null, mobT: 0, botMobT: 0
+  fallen: [], fallenT: 0, show: null, gifts: [], giftAt: 0, feast: 0, hazard: null, hounds: 0, bounty: null, mobT: 0, botMobT: 0,
+  menuTab: 'queue', menuScroll: 0, menuRows: 1, menuMsg: ''
 };
 const brOn = () => WORLD.royale && BR.on;
 const brTag = f => !f ? '' : f === G.p ? (NET.me || 'me') : f.botTag || f.peer || '';
@@ -39,13 +40,25 @@ const brSay = (s, t = 150) => { BR.note = s; BR.noteT = t; };
 // (added after every other recipe: saved worlds know recipes by their number)
 R('hand', 'twine', 1, { reed: 3 });
 
-// ---------------- what carries over between matches: a pass level, a rating, a title ----------------
+// ---------------- what carries over between matches: a pass level, a rating, a title, coins, souls and looks ----------------
+// Nothing here is ever carried into a match: everyone starts one with empty hands. Coins (a win) buy looks in the
+// shop; souls (a kill each) turn the wheel, which gives a look you don't own.
+const BR_SKIN_NAMES = ['CINDER', 'ROSE', 'AETHER', 'MOSS', 'GLASS', 'DUNE'], BR_HAT_NAMES = ['NO HAT', 'EMBER', 'CROWN', 'FROST'];
+const BR_SKIN_COSTS = [0, 0, 100, 150, 200, 250], BR_HAT_COSTS = [0, 75, 100, 125], BR_SPIN = 10;
+const BR_LOOKS = [...BR_SKIN_NAMES.map((name, id) => ({ kind: 'skin', id, name, cost: BR_SKIN_COSTS[id] })), ...BR_HAT_NAMES.map((name, id) => ({ kind: 'hat', id, name, cost: BR_HAT_COSTS[id] }))];
+const brOwns = (p, k) => (k.kind === 'skin' ? p.skins : p.hats).includes(k.id), brWheelPool = p => BR_LOOKS.filter(k => k.cost > 0 && !brOwns(p, k));
 function brProfile() {
   const key = 'ew2.br.' + (typeof accountId === 'function' ? accountId() : 'none');
   try {
     const raw = typeof LS === 'object' ? JSON.parse(LS.get(key) || '{}') : {};
-    return { xp: max(0, num(raw.xp) | 0), elo: clamp(num(raw.elo, 1000) | 0, 0, 9999), wins: max(0, num(raw.wins) | 0), matches: max(0, num(raw.matches) | 0), kills: max(0, num(raw.kills) | 0) };
-  } catch (e) { return { xp: 0, elo: 1000, wins: 0, matches: 0, kills: 0 }; }
+    const valid = (values, maxN) => Array.isArray(values) ? [...new Set(values.map(v => num(v, -1) | 0).filter(v => v >= 0 && v < maxN))] : null;
+    const skins = valid(raw.skins, SKINS.length) || [0, clamp(num(G.skin, FORM.skin) | 0, 0, SKINS.length - 1)], hats = valid(raw.hats, BR_HAT_NAMES.length) || [0, clamp(num(G.hat, FORM.hat) | 0, 0, BR_HAT_NAMES.length - 1)];
+    if (!skins.length) skins.push(0); if (!hats.length) hats.push(0);
+    const p = { xp: max(0, num(raw.xp) | 0), elo: clamp(num(raw.elo, 1000) | 0, 0, 9999), wins: max(0, num(raw.wins) | 0), matches: max(0, num(raw.matches) | 0), kills: max(0, num(raw.kills) | 0), coins: max(0, num(raw.coins) | 0), souls: max(0, num(raw.souls) | 0), skins, hats };
+    // (kits unlocked before matches began empty-handed: no longer used, but not thrown away)
+    if (Array.isArray(raw.kits)) p.kits = raw.kits.filter(k => typeof k === 'string').slice(0, 40);
+    return p;
+  } catch (e) { return { xp: 0, elo: 1000, wins: 0, matches: 0, kills: 0, coins: 0, souls: 0, skins: [0], hats: [0] }; }
 }
 function brSaveProfile(p) {
   const key = 'ew2.br.' + (typeof accountId === 'function' ? accountId() : 'none');
@@ -54,19 +67,39 @@ function brSaveProfile(p) {
 }
 function brPassLevel() { return floor(brProfile().xp / 1000); }
 const brTitle = lv => BR_TITLES[clamp(lv | 0, 0, BR_TITLES.length - 1)];
+function brSpinSoulWheel() {
+  const p = brProfile(), pool = brWheelPool(p);
+  if (p.souls < BR_SPIN) { BR.menuMsg = 'Earn ' + BR_SPIN + ' souls from kills to spin.'; return null; }
+  if (!pool.length) { BR.menuMsg = 'You already own every look!'; return null; }
+  const k = fpick(pool); p.souls -= BR_SPIN; (k.kind === 'skin' ? p.skins : p.hats).push(k.id);
+  if (!brSaveProfile(p)) { BR.menuMsg = 'Could not save what the wheel gave you.'; return null; }
+  BR.menuMsg = 'THE SOUL WHEEL GIVES YOU: ' + k.name + (k.kind === 'hat' ? ' (HAT)' : ' (SKIN)') + '. Wear it from the shop.'; sfx('quest', 0); return k;
+}
+function brShopCosmetic(kind, id) {
+  const p = brProfile(), isSkin = kind === 'skin', owned = isSkin ? p.skins : p.hats, costs = isSkin ? BR_SKIN_COSTS : BR_HAT_COSTS;
+  if (costs[id] === undefined) return false;
+  if (!owned.includes(id)) {
+    if (p.coins < costs[id]) { BR.menuMsg = 'You need ' + costs[id] + ' coins for that.'; sfx('deny'); return false; }
+    p.coins -= costs[id]; owned.push(id);
+  }
+  if (!brSaveProfile(p)) { BR.menuMsg = 'Could not save your look.'; return false; }
+  if (isSkin) FORM.skin = G.skin = id; else FORM.hat = G.hat = id;
+  accountSaveProfile(); BR.menuMsg = 'WEARING: ' + (isSkin ? BR_SKIN_NAMES[id] : BR_HAT_NAMES[id]); sfx('ui'); return true;
+}
+function brRewardKill() { const p = brProfile(); p.souls++; brSaveProfile(p); }
 function brRewardMatch() {
   if (BR.rewarded || !G.p || !BR.place) return;
   BR.rewarded = true;
   const p = brProfile(), won = BR.winMe, place = clamp(BR.place, 1, max(1, BR.total));
   const ranked = BR.matchType === 'ranked' && BR.via !== 'solo';
   const xp = 100 + max(0, BR.total - place) * 20 + G.p.kills * 50 + (won ? 300 : 0);
-  p.xp += xp; p.matches++; p.kills += G.p.kills; if (won) p.wins++;
+  p.xp += xp; p.matches++; p.kills += G.p.kills; if (won) { p.wins++; p.coins += 100; }
   if (ranked) {
     const progress = BR.total > 1 ? (BR.total - place) / (BR.total - 1) : won ? 1 : 0;
     p.elo = clamp(p.elo + round((progress - .5) * 32), 0, 9999);
   }
   brSaveProfile(p);
-  BR.rewardText = `+${xp} PASS XP` + (ranked ? `  ·  ELO ${p.elo}` : '');
+  BR.rewardText = `+${xp} XP` + (won ? '  ·  +100 COINS' : '') + (ranked ? `  ·  ELO ${p.elo}` : '');
 }
 
 // ---------------- how hard things hit here ----------------
@@ -212,8 +245,8 @@ function brDropPile(x, y, items) { items = items.slice(0, 14); items.forEach(([i
 // ---------------- starting a match ----------------
 // everyone runs this with the same seed, so everyone stands on the same island
 function brEnterMatch(mi, seed, roster, nb) {
-  const nick = G.nick, skin = G.skin;
-  genRoyale(seed); freshSession(); WORLD.mode = 0; G.nick = nick; G.skin = skin; G.clock = .08; updateSun();
+  const nick = G.nick, skin = G.skin, hat = G.hat;
+  genRoyale(seed); freshSession(); WORLD.mode = 0; G.nick = nick; G.skin = skin; G.hat = hat; G.clock = .08; updateSun();
   const ro = roster.slice(0, BR_MAX);
   Object.assign(BR, { mapHide: false, mi, seed, t: 0, ro, nb: clamp(nb | 0, 0, BR_MAX - ro.length), rewarded: false, rewardText: '', phase: 'drop', open: new Set(), mine: new Set(), bots: new Map(), bk: [], bkSeq: 0, bkSeen: new Map(), dlSeen: new Set(), dl: null, place: 0, spec: null, specT: 0, overT: 0, winner: '', winMe: false, chan: null, note: '', noteT: 0, inStorm: false, poiNow: '', mapOpen: false, lastAlive: 0, lastTeams: 0, ring: { n: 0, at: 0 }, lastFall: 0, pactWith: '', pactFrom: '', pactFromT: 0, teammate: '', pactSeen: false, leaveT: 0, dropsOut: [], dropSeq: 0, dropSeen: new Map(), tookOut: [], tookSeq: 0, tookSeen: new Map(), tileOut: new Map(), applying: false, fallen: [], fallenT: 0, show: null, gifts: [], giftAt: 60 * 60, feast: 0, hazard: null, hounds: 0, bounty: null, mobT: 600, botMobT: 1200, wxAt: 0 });
   BR.total = BR.ro.length + BR.nb; BR.zones = brZones(seed); BR.storm = brStormAt(); BR.slots = brSlots(seed, BR.total); BR.wxList = wxSchedule(seed); NET.deathN = 0; NET.kb = ['', 0]; NET.hits = []; NET.shots = []; NET.seen.clear();
@@ -289,7 +322,7 @@ function brDeath(f, by) {
   brFallen(f);
   if (G.kfeed.length > 6) G.kfeed.length = 6;
 }
-function brTookDown(f) { G.p.kills++; G.banner = { text: 'TAKEN DOWN', sub: f ? f.name : '', t: 120 }; comboHit(true); sfx('newmove', 0); brDeed('kill'); }
+function brTookDown(f) { G.p.kills++; brRewardKill(); G.banner = { text: 'TAKEN DOWN', sub: (f ? f.name + '  ·  ' : '') + '+1 SOUL', t: 120 }; comboHit(true); sfx('newmove', 0); brDeed('kill'); }
 // a cannon for every one of the fallen, and their face in the sky when the light goes
 function brFallen(f) {
   if (f.counted) return; f.counted = true; BR.lastFall = BR.t; BR.fallen.push({ name: f.name, skin: f.skin | 0 }); if (f !== G.p && BR.teammate && BR.teammate === brTag(f)) brBreakPact(true);

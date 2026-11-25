@@ -35,6 +35,7 @@ Story, screens, controls, the pack and crafting.
 - `controls_and_settings.py` Simple controls (fists, chains), difficulty, FPS mode, digging by hand, knapping, and the menu settings.
 - `crafting.py` Crafting with the real mouse: a hand recipe from the pack, a plank at the workbench (one click, no mini-game).
 - `inventory.py` Moving things in and out of the pack with the real mouse: drag between slots, drag out to drop.
+- `phone.py` A phone held both ways: the stick, the buttons, a finger on the world and the panels, crafting, a pact. And a computer, where none of that gets in the way.
 - `screens.py` Screens: echo stones, the journal and other panels.
 - `story.py` The story: discovery scenes, the people of Hearthhold, leads and the journal.
 
@@ -102,6 +103,7 @@ The Ashfall: alone, with friends, online, over the relay.
 - `leader_asleep.py` The Ashfall online while the leader's game sleeps: the other player takes over, and the leader steps aside on return.
 - `online_on_claude.py` The Ashfall online on claude.ai: two players meet in the room, share the island and the echoes, and hand the echoes over.
 - `over_the_relay.py` The Ashfall over the relay: the friend's window has no WebRTC at all.
+- `rewards.py` What a match pays: souls, coins, the wheel and the shop; and that nothing owned is carried into a match.
 - `rules.py` The Ashfall's rules: the island (size, lands, caves, fire beneath), empty hands, doors that open, digging, making and using a weapon, what chests hold, the border by numbers, pacts made and left, beasts, gifts, the Feast, the hounds.
 - `solo.py` The Ashfall alone with the echoes: the drop, the first minutes, the border, the fights.
 - `with_friends.py` The Ashfall with friends by game code: the host opens a lobby, a friend joins, the match starts for both; pacts made and left, dug ground and dropped things shared.

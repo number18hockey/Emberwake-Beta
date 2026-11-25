@@ -40,6 +40,15 @@ Anything you only carry (ore, bars, rope, keys, sidearms) leaves your fists free
 
 Blocks, food and other usable things still do their job when you click empty space, but a click on a creature is always a punch. Tools swing where you point and hit creatures as well as rock. Pointing at ground within reach with empty hands digs by hand (in the battle royale too).
 
+## On a phone or tablet
+
+Touch controls appear by themselves, whichever way you hold it.
+
+- The **stick** moves you (down to crouch or dive); **JUMP**, **LIGHT**, **HEAVY** and **USE** are the buttons on either side. LIGHT and HEAVY strike at whoever is in front of you.
+- **Touch the world** to dig, gather or strike exactly there. Tap the hotbar to change what you hold.
+- **PACK** opens the pack and crafting: tap a recipe to make it, slide to scroll, **CLOSE** to go back. **HEAL** is a quick heal, **MENU** the menu.
+- In the battle royale, **MAP** shows the island and **PACT** offers, accepts and (tapped twice) leaves a pact.
+
 ## The menu (Esc)
 
 - **Controls: SIMPLE** (the default). Only where you aim (up, straight, down) and holding **S** choose your attack, so you never lunge or dash across the screen by surprise. **FULL** brings back the extra forms tied to the movement keys and how far away the cursor is (the forms page, **C**, greys them out in SIMPLE).

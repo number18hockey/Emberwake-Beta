@@ -16,11 +16,13 @@ Newest first.
 - **Beasts** that can kill you, **sponsors' gifts**, **the Feast**, **the Marked One**, **wildfire and poison fog**, **the hounds**, and the faces of the fallen in the sky.
 - Echoes gather, dig, craft, hide, run and make pacts as you do.
 - Reeds twist into twine, dead bushes give a little fibre, and ropes, ladders and vines no longer snag your shoulder or catch you again when you leap off.
+- **Souls, coins and looks:** kills earn souls that turn the soul wheel, wins earn coins for the shop, and both give skins and hats. Nothing you own is carried into a match.
 - **Fixed:** weapons you made couldn't be used, some houses couldn't be entered, bare hands couldn't dig, a ward wore away by itself.
 
 **Everywhere**
 
 - **Weather** in the Waking Lands and the Ashfall, with rare creatures of its own (see *How to play*).
+- **Phones and tablets:** touch controls, and menus that fit a small screen.
 - **More kinds of tree** (oak, willow, maple, pine, palm, mangrove), which sway in the wind.
 - **You keep your momentum.** A blow or a dodge no longer stops you dead until you press a direction again.
 - **Fire burns where it lands**, with real flames instead of a red streak.

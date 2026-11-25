@@ -478,7 +478,7 @@ function frameStep(now) {
     G.shake *= .86; G.flash *= .88; acc = 1;
     if (WORLD.arena && G.state === 'play' && G.time % 3 === 0) netSend();
   }
-  render(G.hitstop > 0 || G.state !== 'play' ? 1 : clamp(acc, 0, 1));
+  syncMobileControls(); render(G.hitstop > 0 || G.state !== 'play' ? 1 : clamp(acc, 0, 1));
   if ((RFRAME & 7) === 0) wxAudio();
 }
 // ---------------- while the window is hidden ----------------
@@ -528,6 +528,7 @@ function quitToTitle() {
 // ---------------- input ----------------
 function setMouse(e) { const r = cv.getBoundingClientRect(); mouse.x = (e.clientX - r.left) * (cv.width / r.width); mouse.y = (e.clientY - r.top) * (cv.height / r.height); mouse.ux = mouse.x / VS.ui; mouse.uy = mouse.y / VS.ui; }
 addEventListener('keydown', e => {
+  if (e.target === mobileTextInput) return;
   const k = e.code;
   if (UI.focus && G.state !== 'play') {
     if (!e.metaKey && !e.ctrlKey) e.preventDefault();
@@ -578,6 +579,7 @@ cv.addEventListener('contextmenu', e => e.preventDefault());
 cv.addEventListener('wheel', e => {
   e.preventDefault(); const d = sign(e.deltaY);
   if (G.state === 'worlds' || G.state === 'accounts') { UI.scroll = max(0, UI.scroll + d); return; }
+  if (G.state === 'brform' && BR.menuTab !== 'queue') { BR.menuScroll = clamp(BR.menuScroll + d, 0, max(0, BR_LOOKS.length - BR.menuRows)); return; }
   if (G.state !== 'play') return;
   if (UI.open === 'map') mapZoom(d);
   else if (UI.open) UI.scroll = max(0, UI.scroll + d * (UI.open === 'inv' ? 1 : 2));

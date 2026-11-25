@@ -53,12 +53,21 @@ To **leave a pact**, press **P** twice, or press **Esc** and choose **LEAVE PACT
 - **The hounds** are let loose when only a few are left.
 - **The fallen.** A cannon sounds for each, and now and then their faces show in the sky.
 
-Every match earns pass experience and, in ranked matches, a rating. A higher pass earns a title and nothing else: everyone starts with empty hands.
+## What a match pays
+
+Nothing you own is ever carried into a match: everyone starts with empty hands. What you earn is for show, and it is saved with your account in this browser.
+
+- **Souls:** one for every Waker or echo you take down. On the **SOUL WHEEL** page, ten souls turn the wheel, which gives you a skin or a hat you don't own.
+- **Coins:** a hundred for a win. Spend them on the **SHOP** page, where you also put on what you own.
+- **ELO:** a rating, from ranked matches with others. The bar shows how far you are toward the next rank: **ASH**, **EMBER**, **CINDER**, **FLAME**, **CROWN**.
+- **Pass experience:** from every match. Each thousand is a level, and a level is a title.
 
 ## Three ways to play
 
-- **PLAY WITH ECHOES:** you and thirty-one echoes, right away.
-- **HOST A MATCH FOR FRIENDS:** a lobby with a game code, for up to eight of you. Friends pick **JOIN A FRIEND** and type it, then you press **START NOW**; echoes fill the rest. Works from the HTML file and the Mac app, on any internet connection (the relay carries it when needed, as in *Playing together*).
-- **PLAY ONLINE** (only when the page is opened on claude.ai): everyone who has the page open and picks the same match name meets in one lobby. The first one in leads: the match starts after a short countdown, or when they press **START NOW**.
+All three are on the **QUEUE** page, with your name, the match's name and ranked or unranked.
+
+- **SOLO:** you and thirty-one echoes, right away.
+- **HOST:** a match for friends, with a lobby and a game code, for up to eight of you. Friends pick **JOIN A FRIEND** and type it, then you press **START NOW**; echoes fill the rest. Works from the HTML file and the Mac app, on any internet connection (the relay carries it when needed, as in *Playing together*).
+- **ONLINE** (only when the page is opened on claude.ai): everyone who has the page open and picks the same match name meets in one lobby. The first one in leads: the match starts after a short countdown, or when they press **START NOW**.
 
 With friends or online, the land you dig, dropped things, chests and echoes are the same for everyone. The beasts, and where lightning strikes, are not: each computer runs its own.

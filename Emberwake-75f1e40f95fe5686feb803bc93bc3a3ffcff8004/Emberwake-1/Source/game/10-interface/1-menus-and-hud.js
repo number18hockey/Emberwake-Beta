@@ -11,21 +11,27 @@ const hit = (x, y, w, h, fn, slot) => HITS_NEXT.push({ x, y, w, h, fn, slot: !!s
 function panel(c, x, y, w, h, title) {
   c.fillStyle = INK; c.fillRect(x - 1, y - 1, w + 2, h + 2); c.fillStyle = '#1d1a29'; c.fillRect(x, y, w, h);
   c.fillStyle = '#4a4460'; c.fillRect(x, y, w, 1); c.fillRect(x, y, 1, h); c.fillStyle = '#2b2740'; c.fillRect(x, y + h - 1, w, 1); c.fillRect(x + w - 1, y, 1, h);
-  if (title) { c.fillStyle = '#2b2740'; c.fillRect(x + 1, y + 1, w - 2, 11); textS(c, title, x + 5, y + 3, '#ffd35a'); }
+  if (title) { c.fillStyle = '#2b2740'; c.fillRect(x + 1, y + 1, w - 2, 11); const sc = min(1, max(0, w - 10) / max(1, textW(title))); c.save(); c.beginPath(); c.rect(x + 4, y + 1, max(0, w - 8), 11); c.clip(); textS(c, title, x + 5, y + 3, '#ffd35a', sc); c.restore(); }
 }
 function button(c, x, y, w, h, label, fn, o = {}) {
   const hv = !o.off && inR(x, y, w, h), on = o.on;
   c.fillStyle = o.off ? '#2b2740' : hv || on ? '#ffd35a' : '#4a4460'; c.fillRect(x, y, w, h);
   c.fillStyle = hv ? '#3a3350' : on ? '#3d3320' : '#262234'; c.fillRect(x + 1, y + 1, w - 2, h - 2);
-  textC(c, label, x + w / 2, y + round(h / 2) - 4, o.off ? '#6a6485' : hv || on ? '#ffd35a' : (o.col || '#fff'), 1, drawText);
+  c.save(); c.beginPath(); c.rect(x + 2, y + 1, max(0, w - 4), max(1, h - 2)); c.clip();
+  const sc = min(1, max(1, w - 8) / max(1, textW(label)));
+  textC(c, label, x + w / 2, y + round((h - 8 * sc) / 2), o.off ? '#6a6485' : hv || on ? '#ffd35a' : (o.col || '#fff'), sc, drawText);
+  c.restore();
   if (!o.off) hit(x, y, w, h, fn);
 }
 function field(c, x, y, w, key, ph) {
   const f = UI.focus === key, raw = FORM[key], secret = key === 'accountPassword' || key === 'accountConfirm', v = secret ? '*'.repeat(min(raw.length, max(1, floor((w - 8) / 6)))) : raw;
   c.fillStyle = f ? '#ffd35a' : inR(x, y, w, 14) ? '#8c86a8' : '#4a4460'; c.fillRect(x, y, w, 14); c.fillStyle = INK; c.fillRect(x + 1, y + 1, w - 2, 12);
-  if (v) drawText(c, v, x + 4, y + 4, '#fff'); else drawText(c, ph, x + 4, y + 4, '#6a6485');
-  if (f && (performance.now() / 400 | 0) & 1) { c.fillStyle = '#ffd35a'; c.fillRect(x + 5 + (v ? textW(v) : -1), y + 3, 1, 8); }
-  hit(x, y, w, 14, () => { UI.focus = key; sfx('ui'); });
+  const shown = v && textW(v) > w - 10 ? [...v].reduceRight((out, ch) => textW(ch + out) <= w - 10 ? ch + out : out, '') : v;
+  c.save(); c.beginPath(); c.rect(x + 2, y + 2, max(0, w - 4), 10); c.clip();
+  if (shown) drawText(c, shown, x + 4, y + 4, '#fff'); else drawText(c, ph, x + 4, y + 4, '#6a6485');
+  if (f && (performance.now() / 400 | 0) & 1) { c.fillStyle = '#ffd35a'; c.fillRect(x + 5 + (shown ? textW(shown) : -1), y + 3, 1, 8); }
+  c.restore();
+  hit(x, y, w, 14, () => { UI.focus = key; focusMobileText(key); sfx('ui'); });
 }
 function chooser(c, x, y, w, label, names, key, descs) {
   drawText(c, label, x, y + 4, '#b9bdd0'); const bx = x + 46, bw = w - 46;
@@ -36,10 +42,11 @@ function chooser(c, x, y, w, label, names, key, descs) {
 }
 function skinPicker(c, x, y) {
   drawText(c, 'LOOK', x, y + 8, '#b9bdd0');
+  const available = max(1, VS.uw - x - 54), step = min(24, available / SKINS.length), tile = min(20, step - 2), icon = min(14, tile - 4);
   for (let i = 0; i < SKINS.length; i++) {
-    const bx = x + 46 + i * 24, on = FORM.skin === i; c.fillStyle = on ? '#ffd35a' : inR(bx, y, 20, 22) ? '#8c86a8' : '#4a4460'; c.fillRect(bx, y, 20, 22); c.fillStyle = '#262234'; c.fillRect(bx + 1, y + 1, 18, 20);
-    c.drawImage(SK[i].head, bx + 3, y + 2, 14, 14); c.fillStyle = SKINS[i][4]; c.fillRect(bx + 3, y + 17, 7, 2); c.fillStyle = SKINS[i][0]; c.fillRect(bx + 10, y + 17, 7, 2);
-    hit(bx, y, 20, 22, () => { FORM.skin = i; sfx('ui'); });
+    const bx = x + 46 + i * step, on = FORM.skin === i; c.fillStyle = on ? '#ffd35a' : inR(bx, y, tile, 22) ? '#8c86a8' : '#4a4460'; c.fillRect(bx, y, tile, 22); c.fillStyle = '#262234'; c.fillRect(bx + 1, y + 1, tile - 2, 20);
+    c.drawImage(SK[i].head, bx + (tile - icon) / 2, y + 2, icon, icon); c.fillStyle = SKINS[i][4]; c.fillRect(bx + 2, y + 17, max(1, (tile - 4) / 2), 2); c.fillStyle = SKINS[i][0]; c.fillRect(bx + 2 + (tile - 4) / 2, y + 17, max(1, (tile - 4) / 2), 2);
+    hit(bx, y, tile, 22, () => { FORM.skin = i; sfx('ui'); });
   }
 }
 function hatPicker(c, x, y) {
@@ -121,24 +128,28 @@ function fmtTime(s) { s = s | 0; const h = (s / 3600) | 0, m = ((s % 3600) / 60)
 
 // ---------------- menus ----------------
 function drawLogo(c, cy, sub) {
-  const uw = VS.uw, sc = uw > 520 ? 5 : uw > 380 ? 4 : 3, s = 'EMBERWAKE', w = textW(s, sc), x = round((uw - w) / 2);
+  const uw = VS.uw, sc = uw > 520 ? 5 : uw > 380 ? 4 : uw > 260 ? 3 : 2, s = 'EMBERWAKE', w = textW(s, sc), x = round((uw - w) / 2);
   textO(c, s, x, cy, '#e2542b', sc, INK); c.save(); c.beginPath(); c.rect(0, cy, uw, sc * 4); c.clip(); drawText(c, s, x, cy, '#ffd35a', sc); c.restore();
   c.save(); c.beginPath(); c.rect(0, cy, uw, sc * 2); c.clip(); drawText(c, s, x, cy, '#fff1a8', sc); c.restore();
   if (sub) textC(c, sub, uw / 2, cy + sc * 8 + 6, '#fff', 1, textO);
 }
 function drawTitle(c) {
-  const uw = VS.uw, uh = VS.uh; c.fillStyle = 'rgba(18,13,31,.38)'; c.fillRect(0, 0, uw, uh);
-  drawLogo(c, round(uh * .16), 'THREE EMBERS : GO ANYWHERE');
-  const bw = 176, bx = round((uw - bw) / 2), by = round(uh * .47);
-  button(c, bx, by, bw, 18, 'WORLDS', () => { G.state = 'worlds'; UI.scroll = 0; UI.confirm = null; G.menuNote = ''; sfx('ui'); });
-  button(c, bx, by + 23, bw, 18, 'JOIN A FRIEND', () => { G.state = 'join'; UI.focus = null; COOP.err = ''; COOP.note = ''; COOP.long = false; if (!FORM.nick) FORM.nick = cleanName(G.nick) || 'WAKER' + ((Math.random() * 90 + 10) | 0); sfx('ui'); });
-  button(c, bx, by + 46, bw, 18, 'THE CINDER RING : ONLINE PVP', () => { G.state = 'ring'; UI.focus = null; if (!FORM.nick) FORM.nick = 'WAKER' + ((Math.random() * 90 + 10) | 0); sfx('ui'); });
-  button(c, bx, by + 69, bw, 18, 'THE ASHFALL : BATTLE ROYALE', () => { G.state = 'brform'; UI.focus = null; if (!FORM.nick) FORM.nick = cleanName(G.nick) || 'WAKER' + ((Math.random() * 90 + 10) | 0); if (FORM.brcode === undefined) FORM.brcode = ''; sfx('ui'); });
-  button(c, bx, by + 92, bw, 18, 'ACCOUNT: ' + (ACCOUNT.active ? ACCOUNT.active.name.toUpperCase().slice(0, 16) : 'GUEST'), () => { G.state = 'accounts'; ACCOUNT.note = ''; UI.focus = null; sfx('ui'); });
-  button(c, bx, by + 115, bw, 18, muted ? 'SOUND: OFF' : 'SOUND: ON', () => { muted = !muted; sfx('ui'); });
-  textC(c, 'build, explore, and fight with every form', uw / 2, uh - 26, '#d8d4e6', 1, textO);
-  textC(c, 'mouse + keyboard', uw / 2, uh - 15, '#8b8fa3', 1, textO);
-  const vs = 'version ' + GAME_VERSION; textS(c, vs, uw - textW(vs) - 4, uh - 10, '#6a6485');
+  const uw = VS.uw, uh = VS.uh, compact = uh < 250, bw = min(176, uw - 16), bx = round((uw - bw) / 2), bh = compact ? 15 : 18, gap = compact ? 3 : 5, step = bh + gap, groupH = bh * 6 + gap * 5;
+  c.fillStyle = 'rgba(18,13,31,.38)'; c.fillRect(0, 0, uw, uh);
+  if (uh >= 155) drawLogo(c, compact ? round(uh * .08) : round(uh * .16), uw < 200 ? '' : 'THREE EMBERS : GO ANYWHERE');
+  const by = compact ? max(4, uh - groupH - 12) : round(uh * .47);
+  const labels = uw < 200 ? ['WORLDS', 'JOIN FRIEND', 'CINDER RING PVP', 'ASHFALL : ROYALE'] : ['WORLDS', 'JOIN A FRIEND', 'THE CINDER RING : ONLINE PVP', 'THE ASHFALL : BATTLE ROYALE'];
+  button(c, bx, by, bw, bh, labels[0], () => { G.state = 'worlds'; UI.scroll = 0; UI.confirm = null; G.menuNote = ''; sfx('ui'); });
+  button(c, bx, by + step, bw, bh, labels[1], () => { G.state = 'join'; UI.focus = null; COOP.err = ''; COOP.note = ''; COOP.long = false; if (!FORM.nick) FORM.nick = cleanName(G.nick) || 'WAKER' + ((Math.random() * 90 + 10) | 0); sfx('ui'); });
+  button(c, bx, by + step * 2, bw, bh, labels[2], () => { G.state = 'ring'; UI.focus = null; if (!FORM.nick) FORM.nick = 'WAKER' + ((Math.random() * 90 + 10) | 0); sfx('ui'); });
+  button(c, bx, by + step * 3, bw, bh, labels[3], () => { G.state = 'brform'; UI.focus = null; BR.menuTab = 'queue'; BR.menuScroll = 0; BR.menuMsg = ''; FORM.skin = G.skin | 0; FORM.hat = G.hat | 0; if (!FORM.nick) FORM.nick = cleanName(G.nick) || 'WAKER' + ((Math.random() * 90 + 10) | 0); if (FORM.brcode === undefined) FORM.brcode = ''; sfx('ui'); });
+  button(c, bx, by + step * 4, bw, bh, uw < 200 ? 'ACCOUNT' : 'ACCOUNT: ' + (ACCOUNT.active ? ACCOUNT.active.name.toUpperCase().slice(0, 16) : 'GUEST'), () => { G.state = 'accounts'; ACCOUNT.note = ''; UI.focus = null; sfx('ui'); });
+  button(c, bx, by + step * 5, bw, bh, muted ? 'SOUND: OFF' : 'SOUND: ON', () => { muted = !muted; sfx('ui'); });
+  if (!compact) {
+    if (uw > 240) textC(c, 'build, explore, and fight with every form', uw / 2, uh - 26, '#d8d4e6', 1, textO);
+    textC(c, mobileDevice ? 'touch to move and fight' : 'mouse + keyboard', uw / 2, uh - 15, '#8b8fa3', 1, textO);
+    const vs = 'version ' + GAME_VERSION; textS(c, vs, uw - textW(vs) - 4, uw > 240 ? uh - 10 : 4, '#6a6485');
+  }
 }
 function drawWorlds(c) {
   const uw = VS.uw, uh = VS.uh, w = min(360, uw - 16), x = round((uw - w) / 2), y = 16, h = uh - 32;
@@ -271,7 +282,7 @@ function drawHUD(c) {
   bar(c, 15, 14, 72, 4, p.stam / p.maxstam, p.stam < 22 ? '#ffd35a' : '#7ddc6f', p.stam < 22 ? '#b85a1e' : '#2f8a43');
   if ((!A || WORLD.royale) && WORLD.mode !== 1) { const f = G.food / 100; bar(c, 15, 20, 72, 2, f, f < .25 && (G.time >> 4) & 1 ? '#ff9a8a' : '#e0a050', '#7a4a1a'); if (f < .3) textO(c, f <= 0 ? 'STARVING' : 'HUNGRY', 91, 16, '#e0a050'); }
   if (p.riposte > 0 && (G.time >> 2) & 1) textO(c, 'RIPOSTE READY', 15, 22, '#8ff5e6');
-  else if (!UI.open && !(WORLD.royale && (BR.t > 60 * 60 || G.note || p.dead))) textS(c, WORLD.royale ? '[LMB] hit / dig  [F] open  [E] pack  [B] recipes  [K] knap  [H] heal  [P] pact  [M] map' : A ? '[TAB] scores  [C] forms  [P] menu  1-6 weapons  [R] sidearm [T] swap' : '[E] pack  [K] knap  [F] use  [J] journal  [P] menu', 4, WORLD.royale ? 35 : 25, '#8b8fa3');
+  else if (!UI.open && !mobileDevice && !(WORLD.royale && (BR.t > 60 * 60 || G.note || p.dead))) textS(c, WORLD.royale ? '[LMB] hit / dig  [F] open  [E] pack  [B] recipes  [K] knap  [H] heal  [P] pact  [M] map' : A ? '[TAB] scores  [C] forms  [P] menu  1-6 weapons  [R] sidearm [T] swap' : '[E] pack  [K] knap  [F] use  [J] journal  [P] menu', 4, WORLD.royale ? 35 : 25, '#8b8fa3');
   if (!A && G.jNew && (G.time >> 4) & 1) textS(c, 'NEW JOURNAL ENTRY [J]', 4, 32, '#ffd35a');
   drawBless(c); drawMealHud(c); drawGadgetHud(c); drawCoopHud(c); wxHud(c, 126, 3);
   if (G.savedNote) { const t = G.savedNote.t; c.globalAlpha = clamp((120 - t) / 30, 0, 1); textS(c, G.savedNote.ok ? (SAVE.db ? 'saved to your account' : 'saved') : 'could not save', 4, A ? 32 : 42, '#7ddc6f'); c.globalAlpha = 1; }
@@ -300,8 +311,8 @@ function drawHUD(c) {
   else if (v && !v.yielded) { const bw = clamp(uw - 300, 110, 220), bx = round((uw - bw) / 2); textC(c, 'VESPER, THE GLASS WAKER', uw / 2, 5, '#8ff5e6', 1, textO); bar(c, bx, 15, bw, 6, v.hp / v.maxhp, v.phase === 2 ? '#8ff5e6' : '#6fb9c9', '#3f7f92'); }
   // banners and notes
   if (G.biomeT > 0 && !G.banner && G.state === 'play') { const a = min(1, G.biomeT / 40, (200 - G.biomeT) / 30); c.globalAlpha = max(0, a); const s = BIOME[G.biome] || ''; textC(c, s, uw / 2, round(uh * .2), '#fff', 2, textO); c.fillStyle = '#ffd35a'; c.fillRect(round(uw / 2 - 30), round(uh * .2) + 20, 60, 1); c.globalAlpha = 1; }
-  if (G.banner && G.banner.t >= 0) { const t = G.banner.t, a = clamp(min(t / 25, (230 - t) / 30), 0, 1); c.globalAlpha = a; textC(c, G.banner.text, uw / 2, round(uh * .24), '#ffd35a', 2, textO); if (G.banner.sub) textC(c, G.banner.sub, uw / 2, round(uh * .24) + 22, '#fff', 1, textO); c.globalAlpha = 1; }
-  if (G.note && G.note.t >= 0) { c.globalAlpha = clamp(min(G.note.t / 15, (240 - G.note.t) / 30), 0, 1); textC(c, G.note.text, uw / 2, WORLD.royale ? 48 : 36, '#ffd35a', 1, textO); c.globalAlpha = 1; }
+  if (G.banner && G.banner.t >= 0) { const t = G.banner.t, a = clamp(min(t / 25, (230 - t) / 30), 0, 1); c.globalAlpha = a; textC(c, G.banner.text, uw / 2, round(uh * .24), '#ffd35a', textW(G.banner.text, 2) > uw - 8 ? 1 : 2, textO); if (G.banner.sub) wrapText(G.banner.sub, uw - 8).forEach((l, i) => textC(c, l, uw / 2, round(uh * .24) + 22 + i * 10, '#fff', 1, textO)); c.globalAlpha = 1; }
+  if (G.note && G.note.t >= 0) { c.globalAlpha = clamp(min(G.note.t / 15, (240 - G.note.t) / 30), 0, 1); textC(c, G.note.text, uw / 2, WORLD.royale ? (uw < 300 ? 112 : 48) : 36, '#ffd35a', 1, textO); c.globalAlpha = 1; }
   if (G.linkBanner) { const t = G.linkBanner.t, a = clamp(min(t / 8, (150 - t) / 25), 0, 1), y = round(uh * .36); c.globalAlpha = a; textC(c, G.linkBanner.first ? 'NEW LINK' : 'LINK', uw / 2, y - 12, '#8ff5e6', 1, textO); textC(c, G.linkBanner.name.toUpperCase(), uw / 2 + (t < 8 ? (8 - t) * 3 : 0), y, '#fff1a8', 2, textO); c.globalAlpha = 1; }
   if (G.leadDone) { const t = G.leadDone.t; c.globalAlpha = clamp(min(t / 15, (200 - t) / 30), 0, 1); textC(c, 'LEAD FOLLOWED : ' + G.leadDone.title, uw / 2, 48, '#7ddc6f', 1, textO); c.globalAlpha = 1; }
   G.picks.forEach((q, i) => { c.globalAlpha = clamp((200 - q.t) / 40, 0, 1); const ic = IT[q.id].icon, y = uh - 16 - i * 12; c.drawImage(ic, 4, y - (ic.height >> 1) + 4); textS(c, `+${q.n} ${IT[q.id].name}`, 24, y, '#fff'); }); c.globalAlpha = 1;

@@ -266,7 +266,17 @@ function textO(c, s, x, y, col = '#fff', sc = 1, oc = '#0e0b14') { s = String(s)
 function textC(c, s, cx, y, col, sc = 1, fn = textS) { return fn(c, s, round(cx - textW(s, sc) / 2), y, col, sc); }
 function wrapText(s, w, sc = 1) {
   const out = []; for (const para of String(s).split('\n')) {
-    let line = ''; for (const word of para.split(' ')) { const t = line ? line + ' ' + word : word; if (textW(t, sc) > w && line) { out.push(line); line = word; } else line = t; }
+    let line = ''; for (let word of para.split(/\s+/)) {
+      if (line && textW(line + ' ' + word, sc) <= w) { line += ' ' + word; continue; }
+      if (line) { out.push(line); line = ''; }
+      while (word && textW(word, sc) > w) {
+        let part = '';
+        while (word && textW(part + word[0], sc) <= w) { part += word[0]; word = word.slice(1); }
+        if (!part) { part = word[0]; word = word.slice(1); }
+        out.push(part);
+      }
+      line = word;
+    }
     out.push(line);
   } return out;
 }

@@ -678,7 +678,7 @@ function drawJoinLong(c) {
   drawText(c, 'Best on the same Wi-Fi; most home internet works too.', fx, y + h - 24, '#8b8fa3');
   button(c, x + w - 70, y + h - 16, 60, 13, 'BACK', () => { COOP.long = false; coopLeave(); COOP.err = ''; sfx('ui'); });
 }
-function wrapDraw(c, s, x, y, w, col) { const words = String(s).split(' '); let line = '', yy = y; for (const wd of words) { const t = line ? line + ' ' + wd : wd; if (textW(t) > w && line) { drawText(c, line, x, yy, col); yy += 10; line = wd; } else line = t; } if (line) drawText(c, line, x, yy, col); }
+function wrapDraw(c, s, x, y, w, col) { wrapText(s, w).forEach((line, i) => drawText(c, line, x, y + i * 10, col)); }
 
 // ---------------- moving a world between computers (or from the Mac app to a browser) as text ----------------
 async function worldCopy(m) {

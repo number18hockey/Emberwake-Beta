@@ -45,7 +45,7 @@ The game is plain JavaScript in one page, with no libraries and no image files: 
 | `11-arena-and-royale` | the Cinder Ring arena, and the Ashfall battle royale: its rules (the drop, the border, loot, pacts), online play, screens, the island, the echoes, and the games (beasts, gifts, the Feast...) |
 | `12-playing-together` | co-op (sharing a world), game codes, the relay |
 | `13-saving` | worlds: create, list, load, save |
-| `14-main` | the sky, drawing, the game loop, input, start-up |
+| `14-main` | the sky, drawing, the game loop, input, start-up, touch controls (their buttons are in the page in `build.py`) |
 
 A new file goes after anything it uses while loading (for example, a `const` built from another file's values). Code inside functions can use anything, wherever it lives.
 
