@@ -554,6 +554,11 @@ cv.addEventListener('contextmenu', e => e.preventDefault());
 cv.addEventListener('wheel', e => {
   e.preventDefault(); const d = sign(e.deltaY);
   if (G.state === 'worlds' || G.state === 'accounts') { UI.scroll = max(0, UI.scroll + d); return; }
+  if (G.state === 'brform' && (BR.menuTab === 'kits' || BR.menuTab === 'style')) {
+    const count = BR.menuTab === 'kits' ? BR_KITS.length : BR_SKIN_NAMES.length + BR_HAT_NAMES.length;
+    const visible = BR.menuTab === 'kits' ? brMenuVisibleKits() : brMenuVisibleShop();
+    BR.menuScroll = clamp(BR.menuScroll + d, 0, max(0, count - visible)); return;
+  }
   if (G.state !== 'play') return;
   if (UI.open === 'map') mapZoom(d);
   else if (UI.open) UI.scroll = max(0, UI.scroll + d * (UI.open === 'inv' ? 1 : 2));

@@ -192,7 +192,7 @@ function brBotHit(from, h) {
 function brDeathSeen(victim, tag) {
   const k = tag === brMe() ? G.p : NET.peers.get(tag) || BR.bots.get(tag) || null;
   if (!victim.dead) { victim.dead = true; victim.deadT = 0; victim.hp = 0; }
-  if (k === G.p) { G.p.kills++; G.banner = { text: 'TAKEN DOWN', sub: victim.name, t: 120 }; comboHit(true); sfx('newmove', 0); }
+  if (k === G.p) { G.p.kills++; brRewardKill(); G.banner = { text: 'TAKEN DOWN', sub: victim.name, t: 120 }; comboHit(true); sfx('newmove', 0); }
   else if (k && k.brBot && !k.remote) k.kills++;
   G.kfeed.unshift({ a: k ? k.name : '', b: victim.name, t: 0, me: k === G.p ? 1 : 0, txt: k ? '' : 'fell to the ashfall' }); if (G.kfeed.length > 6) G.kfeed.length = 6;
   burst(victim.x + 3, victim.y + 10, 30, SPARK, 3, 50, { glow: 1, g: .02 });

@@ -25,22 +25,52 @@ const BR = {
   cd: 0, cdAt: 0, cdMax: 0, chests: [], open: new Set(), mine: new Set(), zones: [], storm: null, bots: new Map(), bk: [], bkSeq: 0, bkSeen: new Map(),
   dlSeen: new Set(), dl: null, place: 0, spec: null, specT: 0, overT: 0, winner: '', winMe: false, pois: [], segs: BR_BIOMES.slice(), segW: BRW / 5, mapCv: null,
   note: '', noteT: 0, chan: null, inStorm: false, poiNow: '', mapOpen: false, total: 0, lastAlive: 0, lastTeams: 0, lobbyT: 0, err: '',
-  cache: null, pactWith: '', pactFrom: '', teammate: '', dropsOut: [], dropSeq: 0, dropSeen: new Map(), tileOut: new Map(), applying: false, caves: []
+  cache: null, pactWith: '', pactFrom: '', teammate: '', dropsOut: [], dropSeq: 0, dropSeen: new Map(), tileOut: new Map(), applying: false, caves: [],
+  menuTab: 'queue', menuScroll: 0, menuMsg: ''
 };
 const brOn = () => WORLD.royale && BR.on;
 const brTag = f => !f ? '' : f === G.p ? (NET.me || 'me') : f.botTag || f.peer || '';
 const BR_KITS = [
-  { id: 'miner', name: 'MINER', unlock: 0, desc: 'Ore, a flint pick and torches. Explore underground and craft up.', items: [['flint_pick', 1], ['torch', 3], ['rock', 3], ['br_salve', 1], ['spear', 1]] },
+  { id: 'miner', name: 'MINER', unlock: 0, desc: 'A pick, torches and ore for a quick start underground.', items: [['flint_pick', 1], ['torch', 3], ['rock', 3], ['br_salve', 1], ['spear', 1]] },
   { id: 'scavenger', name: 'SCAVENGER', unlock: 1, desc: 'A knife, rope and map. Reach structures before the crowd.', items: [['flint_knife', 1], ['rope', 2], ['fieldmap', 1], ['br_salve', 1], ['sword', 1]] },
-  { id: 'forager', name: 'FORAGER', unlock: 2, desc: 'Food, fiber and a bow. Sustain yourself and fight from range.', items: [['bow', 1], ['arrow', 12], ['berries', 5], ['fiber', 4], ['spear', 1]] },
-  { id: 'ranger', name: 'RANGER', unlock: 4, desc: 'A bow, arrows and a glider. Scout high ground and pick fights.', items: [['bow', 1], ['arrow', 18], ['glider', 1], ['br_salve', 1], ['spear', 1]] }
+  { id: 'forager', name: 'FORAGER', unlock: 2, desc: 'Food, fiber and a bow to sustain a long fight.', items: [['bow', 1], ['arrow', 12], ['berries', 5], ['fiber', 4], ['spear', 1]] },
+  { id: 'ranger', name: 'RANGER', unlock: 4, desc: 'A bow, arrows and a glider for scouting from above.', items: [['bow', 1], ['arrow', 18], ['glider', 1], ['br_salve', 1], ['spear', 1]] },
+  { id: 'vanguard', name: 'VANGUARD', desc: 'A sturdy sword, armor and a healing salve.', items: [['sword', 1], ['hide_body', 1], ['br_salve', 2], ['flint_pick', 1]] },
+  { id: 'duelist', name: 'DUELIST', desc: 'Fast blades and a spare weapon for close combat.', items: [['flint_knife', 1], ['nunchaku', 1], ['br_salve', 1], ['rope', 1]] },
+  { id: 'guardian', name: 'GUARDIAN', desc: 'A spear and extra ward to hold your ground.', items: [['spear', 1], ['br_ward', 1], ['br_shard', 2], ['hide_head', 1]] },
+  { id: 'archer', name: 'ARCHER', desc: 'A bow, a full quiver and a knife for close calls.', items: [['bow', 1], ['arrow', 20], ['flint_knife', 1], ['br_salve', 1]] },
+  { id: 'alchemist', name: 'ALCHEMIST', desc: 'Extra healing and ward supplies for the long game.', items: [['sword', 1], ['br_draught', 1], ['br_shard', 2], ['berries', 3]] },
+  { id: 'smith', name: 'SMITH', desc: 'A heavy axe, stone and a torch to work by.', items: [['battleaxe', 1], ['rock', 4], ['torch', 2], ['br_salve', 1]] },
+  { id: 'shadow', name: 'SHADOW', desc: 'Quick strikes, rope and a little healing.', items: [['nunchaku', 1], ['flint_knife', 1], ['rope', 2], ['br_salve', 1]] },
+  { id: 'warden', name: 'WARDEN', desc: 'A spear and layered wards to weather incoming hits.', items: [['spear', 1], ['br_ward', 1], ['br_shard', 2], ['glider', 1]] },
+  { id: 'trailblazer', name: 'TRAILBLAZER', desc: 'A map, glider and bow for finding your own route.', items: [['glider', 1], ['fieldmap', 1], ['rope', 2], ['bow', 1], ['arrow', 10]] },
+  { id: 'frostguard', name: 'FROSTGUARD', desc: 'A sword, ward and draught to stay in the fight.', items: [['sword', 1], ['br_draught', 1], ['br_shard', 1], ['hide_head', 1]] },
+  { id: 'emberborn', name: 'EMBERBORN', desc: 'A battleaxe, salve and ward for an aggressive start.', items: [['battleaxe', 1], ['br_salve', 1], ['br_ward', 1], ['torch', 2]] },
+  { id: 'spelunker', name: 'SPELUNKER', desc: 'A pick, plenty of light and extra stone.', items: [['flint_pick', 1], ['torch', 5], ['rock', 5], ['br_draught', 1]] },
+  { id: 'stormcaller', name: 'STORMCALLER', desc: 'A bow and defensive supplies to outlast the ashfall.', items: [['bow', 1], ['arrow', 14], ['br_ward', 1], ['br_shard', 1], ['glider', 1]] },
+  { id: 'ironclad', name: 'IRONCLAD', desc: 'Armor, a heavy axe and a dependable salve.', items: [['battleaxe', 1], ['hide_body', 1], ['hide_head', 1], ['br_salve', 1]] },
+  { id: 'wayfinder', name: 'WAYFINDER', desc: 'Rope and a map for reaching the safest ground.', items: [['fieldmap', 1], ['rope', 3], ['glider', 1], ['spear', 1]] },
+  { id: 'last-ember', name: 'LAST EMBER', desc: 'A balanced kit of blades, healing and ward.', items: [['sword', 1], ['br_draught', 1], ['br_ward', 1], ['bow', 1], ['arrow', 8]] }
 ];
+const BR_SKIN_NAMES = ['CINDER', 'ROSE', 'AETHER', 'MOSS', 'GLASS', 'DUNE'];
+const BR_HAT_NAMES = ['NO HAT', 'EMBER', 'CROWN', 'FROST'];
+const BR_SKIN_COSTS = [0, 0, 100, 150, 200, 250], BR_HAT_COSTS = [0, 75, 100, 125];
 function brProfile() {
   const key = 'ew2.br.' + (typeof accountId === 'function' ? accountId() : 'none');
   try {
     const raw = typeof LS === 'object' ? JSON.parse(LS.get(key) || '{}') : {};
-    return { xp: max(0, num(raw.xp) | 0), elo: clamp(num(raw.elo, 1000) | 0, 0, 9999), wins: max(0, num(raw.wins) | 0), matches: max(0, num(raw.matches) | 0), kills: max(0, num(raw.kills) | 0) };
-  } catch (e) { return { xp: 0, elo: 1000, wins: 0, matches: 0, kills: 0 }; }
+    const xp = max(0, num(raw.xp) | 0), legacyKits = BR_KITS.slice(0, 4).filter(k => k.unlock <= floor(xp / 1000)).map(k => k.id);
+    const valid = (values, maxN) => Array.isArray(values) ? [...new Set(values.map(v => num(v, -1) | 0).filter(v => v >= 0 && v < maxN))] : null;
+    const kits = Array.isArray(raw.kits) ? [...new Set(raw.kits.filter(id => BR_KITS.some(k => k.id === id)))] : legacyKits;
+    const skins = valid(raw.skins, SKINS.length) || [0, clamp(num(G.skin, FORM.skin) | 0, 0, SKINS.length - 1)];
+    const hats = valid(raw.hats, BR_HAT_NAMES.length) || [0, clamp(num(G.hat, FORM.hat) | 0, 0, BR_HAT_NAMES.length - 1)];
+    if (!kits.length) kits.push('miner'); if (!skins.length) skins.push(0); if (!hats.length) hats.push(0);
+    return {
+      xp, elo: clamp(num(raw.elo, 1000) | 0, 0, 9999), wins: max(0, num(raw.wins) | 0), matches: max(0, num(raw.matches) | 0), kills: max(0, num(raw.kills) | 0),
+      coins: max(0, num(raw.coins) | 0), souls: max(0, num(raw.souls) | 0),
+      kits, skins, hats, kit: kits.includes(raw.kit) ? raw.kit : kits[kits.length - 1]
+    };
+  } catch (e) { return { xp: 0, elo: 1000, wins: 0, matches: 0, kills: 0, coins: 0, souls: 0, kits: ['miner'], skins: [0], hats: [0], kit: 'miner' }; }
 }
 function brSaveProfile(p) {
   const key = 'ew2.br.' + (typeof accountId === 'function' ? accountId() : 'none');
@@ -48,11 +78,37 @@ function brSaveProfile(p) {
   return true;
 }
 function brPassLevel() { return floor(brProfile().xp / 1000); }
-function brKit(id = BR.kit) { return BR_KITS.find(k => k.id === id && k.unlock <= brPassLevel()) || BR_KITS[0]; }
+function brKit(id = BR.kit) { const p = brProfile(); return BR_KITS.find(k => k.id === id && p.kits.includes(k.id)) || BR_KITS.find(k => k.id === p.kit && p.kits.includes(k.id)) || BR_KITS[0]; }
 function brGrantKit() {
   const kit = brKit(FORM.brkit || BR.kit);
   BR.kit = kit.id;
   for (const [id, n] of kit.items) if (IT[id]) addItem(id, n);
+}
+function brSpinSoulWheel() {
+  const p = brProfile(), locked = BR_KITS.filter(k => !p.kits.includes(k.id));
+  if (p.souls < 10) { BR.menuMsg = 'Earn 10 souls from kills to spin.'; return false; }
+  if (!locked.length) { BR.menuMsg = 'You already own every kit!'; return false; }
+  const kit = locked[floor(Math.random() * locked.length)];
+  p.souls -= 10; p.kits.push(kit.id); p.kit = kit.id;
+  if (!brSaveProfile(p)) { BR.menuMsg = 'Could not save your kit unlock.'; return false; }
+  FORM.brkit = kit.id; BR.kit = kit.id; BR.menuMsg = 'SOUL WHEEL UNLOCKED: ' + kit.name + '!'; sfx('quest', 0);
+  return true;
+}
+function brShopCosmetic(kind, id) {
+  const p = brProfile(), isSkin = kind === 'skin', owned = isSkin ? p.skins : p.hats, costs = isSkin ? BR_SKIN_COSTS : BR_HAT_COSTS;
+  if (costs[id] === undefined) return false;
+  if (!owned.includes(id)) {
+    if (p.coins < costs[id]) { BR.menuMsg = 'You need ' + costs[id] + ' coins for that cosmetic.'; return false; }
+    p.coins -= costs[id]; owned.push(id);
+  }
+  if (isSkin) FORM.skin = G.skin = id;
+  else FORM.hat = G.hat = id;
+  if (!brSaveProfile(p)) { BR.menuMsg = 'Could not save your cosmetic.'; return false; }
+  accountSaveProfile(); BR.menuMsg = 'EQUIPPED: ' + (isSkin ? BR_SKIN_NAMES[id] : BR_HAT_NAMES[id]); sfx('ui');
+  return true;
+}
+function brRewardKill() {
+  const p = brProfile(); p.souls++; brSaveProfile(p); BR.menuMsg = '+1 SOUL'; BR.note = '+1 SOUL'; BR.noteT = 90;
 }
 function brRewardMatch() {
   if (BR.rewarded || !G.p || !BR.place) return;
@@ -60,13 +116,13 @@ function brRewardMatch() {
   const p = brProfile(), won = BR.winMe, place = clamp(BR.place, 1, max(1, BR.total));
   const ranked = BR.matchType === 'ranked' && BR.via !== 'solo';
   const xp = 100 + max(0, BR.total - place) * 20 + G.p.kills * 50 + (won ? 300 : 0);
-  p.xp += xp; p.matches++; p.kills += G.p.kills; if (won) p.wins++;
+  p.xp += xp; p.matches++; p.kills += G.p.kills; if (won) { p.wins++; p.coins += 100; }
   if (ranked) {
     const progress = BR.total > 1 ? (BR.total - place) / (BR.total - 1) : won ? 1 : 0;
     p.elo = clamp(p.elo + round((progress - .5) * 32), 0, 9999);
   }
   brSaveProfile(p);
-  BR.rewardText = `+${xp} PASS XP` + (ranked ? `  ·  ELO ${p.elo}` : '');
+  BR.rewardText = `+${xp} XP` + (won ? '  ·  +100 COINS' : '') + (ranked ? `  ·  ELO ${p.elo}` : '');
 }
 
 // ---------------- loot ----------------
@@ -379,8 +435,8 @@ function brNewBot(i, skill) {
 function brSkill() { const d = SETTINGS.diff; return d === 'hard' ? frand(.58, .82) : d === 'normal' ? frand(.42, .66) : frand(.3, .52); }
 // everyone runs this with the same seed, so everyone stands on the same island
 function brEnterMatch(mi, seed, roster, nb) {
-  const nick = G.nick, skin = G.skin;
-  genRoyale(seed); freshSession(); WORLD.mode = 0; G.nick = nick; G.skin = skin; G.clock = [.3, .36, .2, .58][seed % 4]; updateSun();
+  const nick = G.nick, skin = G.skin, hat = G.hat;
+  genRoyale(seed); freshSession(); WORLD.mode = 0; G.nick = nick; G.skin = skin; G.hat = hat; G.clock = [.3, .36, .2, .58][seed % 4]; updateSun();
   Object.assign(BR, { mapHide: false, mi, seed, t: 0, ro: roster.slice(), nb, phase: 'drop', open: new Set(), mine: new Set(), bots: new Map(), bk: [], bkSeq: 0, bkSeen: new Map(), dlSeen: new Set(), dl: null, place: 0, spec: null, specT: 0, overT: 0, winner: '', winMe: false, chan: null, note: '', noteT: 0, inStorm: false, poiNow: '', mapOpen: false, lastAlive: 0, lastTeams: 0, cache: null, cacheAnnounced: false, pactWith: '', pactFrom: '', teammate: '', dropsOut: [], dropSeq: 0, dropSeen: new Map(), tileOut: new Map(), applying: false });
   BR.zones = brZones(seed); BR.storm = brStormAt(0); NET.deathN = 0; NET.kb = ['', 0]; NET.hits = []; NET.shots = []; NET.seen.clear();
   inv = new Array(INV_N).fill(null); G.sel = 0;
@@ -435,7 +491,7 @@ function brDeath(f, by) {
     BR.place = brAlive().length + 1; const items = brSpill(f); BR.dl = [NET.deathN, round(f.x + 3), round(f.y + 10), items]; brDropPile(f.x + 3, f.y + 10, items);
     G.kfeed.unshift({ a: ka, b: f.name, t: 0, me: 2, txt: by ? '' : 'fell to the ashfall' }); BR.spec = by && !by.dead && by !== f ? by : null; BR.specT = 0; f.brUse = null;
   } else if (f.brBot && !f.remote) {
-    if (by === G.p) { G.p.kills++; G.banner = { text: 'TAKEN DOWN', sub: f.name, t: 120 }; comboHit(true); sfx('newmove', 0); } else if (by && by.brBot && !by.remote) by.kills++;
+    if (by === G.p) { G.p.kills++; brRewardKill(); G.banner = { text: 'TAKEN DOWN', sub: f.name, t: 120 }; comboHit(true); sfx('newmove', 0); } else if (by && by.brBot && !by.remote) by.kills++;
     const items = brSpill(f); brDropPile(f.x + 3, f.y + 10, items); f.brUse = null;
     BR.bk.push([f.botTag, brTag(by), ++BR.bkSeq, round(f.x + 3), round(f.y + 10), items]); if (BR.bk.length > 8) BR.bk.shift();
     G.kfeed.unshift({ a: ka, b: f.name, t: 0, me: by === G.p ? 1 : 0, txt: by ? '' : 'fell to the ashfall' });

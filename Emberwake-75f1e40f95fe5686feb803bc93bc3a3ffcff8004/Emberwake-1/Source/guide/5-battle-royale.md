@@ -19,3 +19,9 @@ The **ashfall** closes in from both sides. The strip at the top shows the safe g
 - **PLAY WITH ECHOES:** you and seven echoes, right away.
 - **HOST A MATCH FOR FRIENDS:** a lobby with a game code. Friends pick **JOIN A FRIEND** and type it, then you press **START NOW**. Works from the HTML file and the Mac app, on any internet connection (the relay carries it when needed, as in *Playing together*).
 - **PLAY ONLINE** (only when the page is opened on claude.ai): everyone who has the page open and picks the same match name meets in one lobby. The first one in leads: the match starts after a short countdown, or when they press **START NOW**.
+
+## Kits and rewards
+
+The Ashfall menu shows your **ELO** progress, coins, souls and kit ownership. Open **KITS** to browse all 20 kits; owned kits can be selected before a match. Each player you take down earns **1 soul**. Spend **10 souls** at the Soul Wheel to randomly unlock one kit you do not own.
+
+Winning a match earns **100 coins**. Open **SHOP** to buy and equip skins and hats with coins. Your Battle Royale progress is saved in this browser profile.

@@ -2,22 +2,116 @@
 //  The Ashfall on screen: the menu, the lobby, the barge, chests,
 //  the storm, the match HUD, the map, and the end of a match.
 // ============================================================
+function drawBrBanner(c, x, y, w, h) {
+  const sky = c.createLinearGradient(x, y, x, y + h);
+  sky.addColorStop(0, '#33223f'); sky.addColorStop(.62, '#a74638'); sky.addColorStop(1, '#e58a4b');
+  c.fillStyle = sky; c.fillRect(x, y, w, h);
+  c.fillStyle = 'rgba(255,211,90,.16)'; c.fillRect(x, y + h - 4, w, 4);
+  c.fillStyle = '#211b32'; c.beginPath(); c.moveTo(x, y + h - 3); c.lineTo(x + w * .2, y + h * .5); c.lineTo(x + w * .4, y + h - 4); c.lineTo(x + w * .64, y + h * .4); c.lineTo(x + w, y + h - 3); c.lineTo(x + w, y + h); c.lineTo(x, y + h); c.closePath(); c.fill();
+  drawText(c, 'ASHFALL', x + 8, y + 7, '#fff1a8');
+  drawText(c, 'LAST WAKER STANDING', x + 8, y + h - 11, '#ffe2b8');
+}
+function brMenuVisibleKits() {
+  const h = min(380, VS.uh - 12), listTop = (VS.uh < 260 ? 84 + 22 : 98 + 34);
+  return max(1, floor((h - 65 - listTop) / 14));
+}
+function brMenuVisibleShop() {
+  const h = min(380, VS.uh - 12), listTop = (VS.uh < 260 ? 84 : 98) + 18;
+  return max(1, floor((h - 65 - listTop) / 16));
+}
 function drawBrForm(c) {
-  const uw = VS.uw, uh = VS.uh, w = min(350, uw - 16), h = 258, x = round((uw - w) / 2), y = max(8, round((uh - h) / 2));
-  c.fillStyle = 'rgba(18,13,31,.55)'; c.fillRect(0, 0, uw, uh); panel(c, x, y, w, h, 'THE ASHFALL : BATTLE ROYALE');
-  const fx = x + 10, fw = w - 20;
-  drawText(c, 'NAME', fx, y + 22, '#b9bdd0'); field(c, fx + 46, y + 18, fw - 46, 'nick', 'WAKER');
-  skinPicker(c, fx, y + 38);
-  drawText(c, 'MATCH', fx, y + 70, '#b9bdd0'); field(c, fx + 46, y + 66, fw - 46, 'brcode', 'open  (or a private code)');
-  const L = ['Ride the Ember Barge over the island and leap off (SPACE).', 'Open chests (F) for weapons, salves and wards. The ashfall', 'storm closes in from both sides: last one standing wins.', 'Echoes fill any empty places, so a match is never empty.'];
-  L.forEach((l, i) => drawText(c, l, fx, y + 92 + i * 10, '#d8d4e6'));
-  const go = (fn) => { UI.focus = null; const nick = cleanName(FORM.nick) || 'WAKER'; FORM.nick = nick; G.nick = nick; G.skin = FORM.skin | 0; accountSaveProfile(); G.state = 'loading'; G.loadMsg = 'Raising the island...'; setTimeout(fn, 30); sfx('quest', 0); };
-  let by = y + 140;
-  if (NET.room) { button(c, fx, by, fw, 17, 'PLAY ONLINE', () => go(() => brLobbyEnter('room', cleanCode(FORM.brcode) || 'open'))); drawText(c, 'Everyone with this page open on claude.ai who picks the same match meets here.', fx, by + 20, '#8b8fa3'); by += 34; }
-  else { drawText(c, 'Online lobby: only on claude.ai (open this page there to find others).', fx, by + 4, '#ffb347'); by += 16; }
-  if (netOK()) { button(c, fx, by, fw, 17, 'HOST A MATCH FOR FRIENDS', () => go(() => { COOP.br = true; brLobbyEnter('rtc', 'friends'); })); drawText(c, 'Invite up to 3 friends with codes; they pick JOIN A FRIEND.', fx, by + 20, '#8b8fa3'); by += 34; }
-  button(c, fx, by, fw, 17, 'PLAY WITH ECHOES', () => go(() => brSolo())); by += 22;
-  button(c, x + w - 70, y + h - 22, 60, 15, 'BACK', () => { G.state = 'title'; UI.focus = null; sfx('ui'); });
+  const uw = VS.uw, uh = VS.uh, h = min(380, uh - 12), w = min(440, uw - 16), x = round((uw - w) / 2), y = max(6, round((uh - h) / 2)), fx = x + 10, fw = w - 20;
+  const p = brProfile(), compact = uh < 380, tiny = uh < 260, tabY = y + (tiny ? 13 : 48), contentY = y + (tiny ? 56 : 98), actionY = y + h - (tiny ? 19 : 43);
+  c.fillStyle = 'rgba(18,13,31,.65)'; c.fillRect(0, 0, uw, uh); panel(c, x, y, w, h, tiny ? 'BR' : 'ASHFALL : BATTLE ROYALE');
+  if (!tiny) drawBrBanner(c, fx, y + 14, fw, compact ? 27 : 32);
+  else button(c, x + w - 43, y + 1, 38, 12, 'BACK', () => { G.state = 'title'; UI.focus = null; sfx('ui'); });
+  const tabs = [['queue', 'QUEUE'], ['kits', 'KITS'], ['style', 'SHOP']], tw = fw / tabs.length;
+  for (let i = 0; i < tabs.length; i++) button(c, fx + i * tw, tabY, tw - 3, 14, tabs[i][1], () => { BR.menuTab = tabs[i][0]; BR.menuScroll = 0; BR.menuMsg = ''; }, { on: BR.menuTab === tabs[i][0] });
+  const rank = ['ASH', 'EMBER', 'CINDER', 'FLAME', 'CROWN'][min(4, floor(p.elo / 2000))], progress = (p.elo % 2000) / 2000;
+  const wallet = `ELO ${p.elo}   ${p.coins} COINS   ${p.souls} SOULS`;
+  if (tiny) {
+    const tinyWallet = `ELO ${p.elo}   ${p.coins}C   ${p.souls}S`;
+    textS(c, tinyWallet, fx, y + 29, '#8ff5e6', min(1, fw / max(1, textW(tinyWallet))));
+  }
+  else if (textW(wallet) <= fw) drawText(c, wallet, fx, y + 68, '#8ff5e6');
+  else { drawText(c, `ELO ${p.elo}`, fx, y + (tiny ? 55 : 67), '#8ff5e6'); textS(c, `${p.coins}C  ${p.souls}S`, x + w - 10 - textW(`${p.coins}C  ${p.souls}S`), y + (tiny ? 55 : 67), '#8ff5e6'); }
+  textS(c, rank, fx, y + (tiny ? 39 : 79), '#ffd35a'); textS(c, `${round(progress * 100)}%`, x + w - 10 - textW(`${round(progress * 100)}%`), y + (tiny ? 39 : 79), '#d8d4e6');
+  bar(c, fx, y + (tiny ? 47 : 90), fw, 4, progress, '#ff8a3d', '#2b2740');
+  if (BR.menuTab === 'queue') {
+    drawText(c, 'NAME', fx, contentY + 2, '#b9bdd0'); field(c, fx + 42, contentY - 2, fw - 42, 'nick', 'WAKER');
+    const half = (fw - 44) / 2;
+    if (!tiny) {
+      drawText(c, 'ROOM', fx, contentY + 21, '#b9bdd0'); field(c, fx + 42, contentY + 17, fw - 42, 'brcode', 'open / private code');
+    }
+    const modeY = contentY + (tiny ? 17 : 37);
+    button(c, fx + 42, modeY, half, 15, 'UNRANKED', () => { FORM.brRanked = false; }, { on: !FORM.brRanked });
+    button(c, fx + 44 + half, modeY, half, 15, 'RANKED', () => { FORM.brRanked = true; }, { on: !!FORM.brRanked });
+    wrapDraw(c, 'Survive the ashfall. Kills earn souls; wins pay 100 coins.', fx, contentY + (tiny ? 38 : 60), fw, '#d8d4e6');
+    const start = fn => {
+      UI.focus = null; FORM.nick = cleanName(FORM.nick) || 'WAKER'; G.nick = FORM.nick;
+      const selected = brKit(FORM.brkit); BR.kit = FORM.brkit = selected.id; G.skin = FORM.skin | 0; G.hat = FORM.hat | 0;
+      const profile = brProfile(); profile.kit = selected.id; brSaveProfile(profile); accountSaveProfile();
+      BR.matchType = FORM.brRanked ? 'ranked' : 'unranked'; G.state = 'loading'; G.loadMsg = 'Raising the island...'; setTimeout(fn, 30); sfx('quest', 0);
+    };
+    const third = fw / 3;
+    if (NET.room) button(c, fx, actionY, third - 2, 17, 'ONLINE', () => start(() => brLobbyEnter('room', cleanCode(FORM.brcode) || 'open')));
+    if (netOK()) button(c, fx + third, actionY, third - 2, 17, 'HOST', () => start(() => { COOP.br = true; brLobbyEnter('rtc', 'friends'); }));
+    button(c, fx + third * 2, actionY, third - 2, 17, 'SOLO', () => start(() => brSolo()));
+  } else if (BR.menuTab === 'kits') {
+    const selected = brKit(FORM.brkit), desc = wrapText(selected.desc, fw);
+    if (!tiny || !BR.menuMsg) drawText(c, 'SELECTED: ' + selected.name, fx, contentY, '#ffd35a');
+    if (!tiny) desc.slice(0, 2).forEach((line, i) => drawText(c, line, fx, contentY + 11 + i * 9, '#d8d4e6'));
+    const listY = contentY + (tiny ? 22 : 34), listBottom = actionY - (tiny ? 5 : 22), rowH = 14, visible = max(1, floor((listBottom - listY) / rowH));
+    BR.menuScroll = clamp(BR.menuScroll, 0, max(0, BR_KITS.length - visible));
+    const first = BR.menuScroll + 1, last = min(BR_KITS.length, BR.menuScroll + visible);
+    drawText(c, `KITS ${first}-${last}/${BR_KITS.length}`, fx, listY - 12, '#8b8fa3');
+    button(c, fx + fw - 32, listY - 14, 14, 12, '<', () => { BR.menuScroll = max(0, BR.menuScroll - visible); });
+    button(c, fx + fw - 16, listY - 14, 14, 12, '>', () => { BR.menuScroll = min(BR_KITS.length - visible, BR.menuScroll + visible); });
+    c.save(); c.beginPath(); c.rect(fx, listY, fw, listBottom - listY); c.clip();
+    for (let i = 0; i < visible; i++) {
+      const index = BR.menuScroll + i, kit = BR_KITS[index]; if (!kit) continue;
+      const ry = listY + i * rowH, owned = p.kits.includes(kit.id), chosen = kit.id === selected.id;
+      c.fillStyle = chosen ? '#3d3320' : i % 2 ? '#211e2c' : '#191622'; c.fillRect(fx, ry, fw, rowH - 1);
+      drawText(c, `${String(index + 1).padStart(2, '0')} ${kit.name}`, fx + 4, ry + 3, chosen ? '#ffd35a' : owned ? '#fff' : '#8b8fa3');
+      const status = owned ? 'OWNED' : 'NOT OWNED'; textS(c, status, fx + fw - textW(status) - 5, ry + 3, owned ? '#7ddc6f' : '#8b8fa3');
+      hit(fx, ry, fw, rowH, () => {
+        if (!p.kits.includes(kit.id)) { BR.menuMsg = 'Spin the soul wheel to unlock a kit.'; return; }
+        FORM.brkit = BR.kit = kit.id; p.kit = kit.id;
+        if (brSaveProfile(p)) BR.menuMsg = kit.name + ' SELECTED';
+      });
+    }
+    c.restore();
+    const wheel = BR_KITS.every(k => p.kits.includes(k.id));
+    button(c, fx, actionY, fw, 17, tiny ? `WHEEL ${p.souls}/10` : wheel ? 'ALL KITS OWNED' : 'SOUL WHEEL  ·  10 SOULS', () => brSpinSoulWheel(), { off: wheel || p.souls < 10 });
+    if (!tiny && !wheel && p.souls < 10) drawText(c, `${10 - p.souls} more souls needed`, fx, actionY - 10, '#8b8fa3');
+  } else {
+    const items = [
+      ...BR_SKIN_NAMES.map((name, id) => ({ kind: 'skin', id, name, cost: BR_SKIN_COSTS[id] })),
+      ...BR_HAT_NAMES.map((name, id) => ({ kind: 'hat', id, name, cost: BR_HAT_COSTS[id] }))
+    ];
+    const listY = contentY + (tiny ? 24 : 18), listBottom = tiny ? y + h - 14 : actionY - 22, rowH = 16, visible = max(1, floor((listBottom - listY) / rowH));
+    BR.menuScroll = clamp(BR.menuScroll, 0, max(0, items.length - visible));
+    const first = BR.menuScroll + 1, last = min(items.length, BR.menuScroll + visible);
+    drawText(c, `STYLE ${first}-${last}/${items.length}`, fx, listY - 12, '#8b8fa3');
+    button(c, fx + fw - 32, listY - 14, 14, 12, '<', () => { BR.menuScroll = max(0, BR.menuScroll - visible); });
+    button(c, fx + fw - 16, listY - 14, 14, 12, '>', () => { BR.menuScroll = min(items.length - visible, BR.menuScroll + visible); });
+    c.save(); c.beginPath(); c.rect(fx, listY, fw, listBottom - listY); c.clip();
+    for (let i = 0; i < visible; i++) {
+      const item = items[BR.menuScroll + i]; if (!item) continue;
+      const ry = listY + i * rowH, owned = item.kind === 'skin' ? p.skins.includes(item.id) : p.hats.includes(item.id);
+      const equipped = item.kind === 'skin' ? G.skin === item.id : G.hat === item.id;
+      drawText(c, `${item.kind.toUpperCase()}: ${item.name}`, fx + 3, ry + 4, '#d8d4e6');
+      const label = equipped ? 'ON' : owned ? 'USE' : `BUY ${item.cost}`, bw = max(44, textW(label) + 10);
+      button(c, fx + fw - bw, ry, bw, rowH - 1, label, () => brShopCosmetic(item.kind, item.id), { on: equipped });
+    }
+    c.restore();
+  }
+  if (BR.menuMsg && tiny && BR.menuTab !== 'queue') textS(c, BR.menuMsg, fx, contentY, '#ffd35a', min(1, fw / max(1, textW(BR.menuMsg))));
+  else if (BR.menuMsg && !tiny) {
+    const msg = wrapText(BR.menuMsg, fw);
+    msg.slice(0, 2).forEach((line, i) => drawText(c, line, fx, actionY - 20 + i * 9, '#ffd35a'));
+  }
+  if (!tiny) button(c, x + w - 70, y + h - 22, 60, 15, 'BACK', () => { G.state = 'title'; UI.focus = null; sfx('ui'); });
 }
 function drawBrLobby(c) {
   const uw = VS.uw, uh = VS.uh, host = BR.via === 'rtc' && netHost(), w = min(384, uw - 16), h = host ? 250 : 196, x = round((uw - w) / 2), y = max(8, round((uh - h) / 2)), fx = x + 10, fw = w - 20;
@@ -166,7 +260,8 @@ function brResults(c) {
   panel(c, x, y, w, h, BR.winMe ? 'VICTORY' : 'THE ASHFALL SETTLES');
   textC(c, BR.winMe ? 'You are the last ember burning.' : BR.winner ? BR.winner + ' is the last ember.' : 'Nobody walked out of the ashfall.', uw / 2, y + 18, BR.winMe ? '#ffd35a' : '#fff', 1, textO);
   textC(c, 'You placed #' + (BR.place || 1) + ' of ' + BR.total + '   :   ' + G.p.kills + ' taken down', uw / 2, y + 32, '#d8d4e6', 1, drawText);
-  if (BR.via !== 'solo') textC(c, 'back to the lobby in ' + max(0, ceil((60 * 14 - BR.overT) / 60)) + 's', uw / 2, y + 46, '#8b8fa3', 1, drawText);
+  if (BR.rewardText) textC(c, BR.rewardText, uw / 2, y + 46, '#8ff5e6', 1, drawText);
+  if (BR.via !== 'solo') textC(c, 'back to the lobby in ' + max(0, ceil((60 * 14 - BR.overT) / 60)) + 's', uw / 2, y + 58, '#8b8fa3', 1, drawText);
   const bw = 110; if (BR.via !== 'solo') button(c, x + 10, y + h - 24, bw, 15, 'BACK TO LOBBY', () => brBackToLobby()); else button(c, x + 10, y + h - 24, bw, 15, 'PLAY AGAIN', () => brSolo());
   button(c, x + w - bw - 10, y + h - 24, bw, 15, 'LEAVE', () => brLeave());
 }
