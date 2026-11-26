@@ -121,7 +121,7 @@ function tickEnemy(e, i, arr, p) {
     if (e.st && tickStatus(e)) return;
     if (e.root) return; if (e.type === 'boss') { tickBoss(e); return; } if (e.type === 'keeper') { tickKeeper(e); return; }
     if (e.type === 'dummy') { e.vy = min(e.vy + .3, 5); e.vx *= .6; moveBody(e); if (e.homeX === undefined) { e.homeX = e.x; e.homeY = e.y; } if (!e.tempPost && hypot(e.x - e.homeX, e.y - e.homeY) > 20 && e.flash <= 0 && (e.idle = (e.idle || 0) + 1) > 120) { dust(e.x + 4, e.y + e.h, 6); e.x = e.px = e.homeX; e.y = e.py = e.homeY; e.vx = e.vy = 0; e.idle = 0; dust(e.x + 4, e.y + e.h, 6); } else if (e.flash > 0) e.idle = 0; return; }
-    const dx = (p.x + 3) - (e.x + e.w / 2), dy = (p.y + 10) - (e.y + e.h / 2), dist0 = hypot(dx, dy), lost = (e.st && e.st.blind > 0) || p.veil > 0, dist = lost ? 999 : dist0;
+    const dx = (p.x + 3) - (e.x + e.w / 2), dy = (p.y + 10) - (e.y + e.h / 2), dist0 = hypot(dx, dy), lost = (e.st && e.st.blind > 0) || p.veil > 0, dist = lost ? 999 : dist0 > 120 && !WXMOB.has(e.type) ? dist0 / wxSight() : dist0; // (fog and rain hide you)
     if (dist0 > 760 && !e.boss) { arr.splice(i, 1); return; }
     if (e.launched > 0) e.launched--;
     if (tickPoise(e)) { e.vx *= .8; return; }
@@ -342,7 +342,7 @@ function spawnKeeper() {
   G.boss = k; G.enemies = G.enemies.filter(e => e.type === 'keeper'); G.enemies.push(k); G.flags.keeperMet = true;
 }
 function keeperHit(k, x0, x1, y0, y1, dmg, kx, ky) { const p = G.p; if (!p.dead && p.x + p.w > x0 && p.x < x1 && p.y + p.h > y0 && p.y < y1) { if (hurtFighter(p, dmg, k.x + k.w / 2, { kx, ky, stagger: 1 })) { addShake(6); return true; } } return false; }
-function keeperShock(k, n) { const cx = k.x + k.w / 2, fy = k.y + k.h; for (const s of [-1, 1]) spawnProj({ type: 'shock', x: cx + s * 12, y: fy - 4, vx: s * (k.phase === 2 ? 3.5 : 2.8), vy: 0, r: 5, dmg: 13, life: n, pierce: true }); G.fires.push({ x0: cx - 24, x1: cx + 24, y: fy, life: 150, max: 150, by: null }); }
+function keeperShock(k, n) { const cx = k.x + k.w / 2, fy = k.y + k.h; for (const s of [-1, 1]) spawnProj({ type: 'shock', x: cx + s * 12, y: fy - 4, vx: s * (k.phase === 2 ? 3.5 : 2.8), vy: 0, r: 5, dmg: 13, life: n, pierce: true }); stripFire(cx - 24, cx + 24, fy, 150, null); }
 function tickKeeper(k) {
   k.t++; const p = G.p, P2 = k.phase === 2, cx = k.x + k.w / 2, pcx = p.x + 3, dx = pcx - cx, adx = abs(dx), blind = k.st && k.st.blind > 0, F = SPOTS.forge;
   k.foes = p.dead ? [] : [p]; k.face = k.dir; k.core = max(0, k.core - .03);
@@ -372,7 +372,7 @@ function tickKeeper(k) {
       if (k.t > 22 && p.st && (p.st.reel > 0 || p.st.hook > 0)) { k.state = 'slam'; k.t = 14; k.last = 'slam'; } else if (k.t > 48) next(); break;
     case 'tired': k.vx *= .8; k.vuln = 1.5; if (k.t % 12 === 0) P(cx + frand(-6, 6), k.y + 6, 0, -.5, 30, '#b9bdd0', { g: -.01 }); if (k.t > (P2 ? 100 : 140)) { k.vuln = 1; k.state = 'idle'; k.t = 0; k.cd = 30; k.atkN = 0; } break;
     case 'stagger': k.vx *= .7; k.vuln = 1.35; if (k.t > 80) { k.vuln = 1; k.state = 'idle'; k.t = 0; k.cd = 20; } break;
-    case 'roar': k.vx = 0; addShake(4); if (k.t === 1) { sfx('roar', 0); for (const o of tileObjs.values()) if (o.id === HEARTH) G.fires.push({ x0: o.x * T - 30, x1: o.x * T + 38, y: (o.y + 1) * T, life: 240, max: 240, by: null }); }
+    case 'roar': k.vx = 0; addShake(4); if (k.t === 1) { sfx('roar', 0); for (const o of tileObjs.values()) if (o.id === HEARTH) stripFire(o.x * T - 30, o.x * T + 38, (o.y + 1) * T, 240, null); }
       if (k.t % 3 === 0) { const an = frand(TAU); P(cx, k.y + 10, cos(an) * 3, sin(an) * 3, 24, fpick(SPARK), { glow: 1, g: 0 }); }
       if (k.t > 90) { k.state = 'idle'; k.t = 0; k.cd = 20; k.invuln = false; for (const s of [-1, 1]) { const e = mkEnemy('cinderling', cx + s * 70, k.y); G.enemies.push(e); } } break;
     case 'dying': k.invuln = true; k.vx = 0; if (k.t % 6 === 0) { const ex = cx + frand(-10, 10), ey = k.y + frand(0, 34); burst(ex, ey, 10, SPARK, 2.6, 26, { glow: 1 }); sfx('hit2', 0); addShake(3); }

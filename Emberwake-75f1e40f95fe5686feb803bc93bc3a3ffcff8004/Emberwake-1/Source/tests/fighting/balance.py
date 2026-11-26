@@ -25,6 +25,9 @@ async def dps(h, wid):
 async def run():
     ok = []
     h = await H().start(seed=4242, size=1)
+    # This test weighs weapons, not the weather. With its fixed dice it rains partway through, and rain now slows you and
+    # makes the ground slick (tests/world/weather.py covers that), so what the weather does is switched off here.
+    await h.ev("if (typeof tickWeatherWays === 'function') tickWeatherWays = () => { }; 1")
     await h.ev("SETTINGS.diff = 'normal'; Math.random = (() => { let s = 12345; return () => { s = (s * 1664525 + 1013904223) >>> 0; return s / 4294967296; }; })(); for (const k of ['rush','crisp','clean','broken','clash','caught','ablaze','head','sunder','warded','release']) G.flags['th_' + k] = 1; 1")
 
     # 1. metal tiers: each one better than the last, by a steady step

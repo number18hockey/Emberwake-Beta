@@ -113,7 +113,7 @@ function tickFighter(f, I) {
   if (I.armP && f.hurtT <= 0) throwArm(f, I.wx, I.wy);
   if (I.jumpP) f.jbuf = 7; else if (f.jbuf > 0) f.jbuf--;
   if (f.onGround) { f.coyote = 6; f.airDash = airDashMax(f); f.updraft = true; f.dblUsed = false; } else if (f.coyote > 0) f.coyote--;
-  if (f.stamDelay > 0) f.stamDelay--; else f.stam = min(f.maxstam, f.stam + .6 * (f.isPlayer && !WORLD.arena ? (f.tonic > 0 ? 1.8 : 1) * (WORLD.mode !== 1 && G.food <= 0 ? .5 : 1) * gearMul('st') : 1));
+  if (f.stamDelay > 0) f.stamDelay--; else f.stam = min(f.maxstam, f.stam + .6 * (f.isPlayer && !WORLD.arena ? (f.tonic > 0 ? 1.8 : 1) * (WORLD.mode !== 1 && G.food <= 0 ? .5 : 1) * gearMul('st') : 1) * wxBreath(f));
   f.regenT++;
   if (WORLD.arena && !WORLD.royale) { if (f.regenT > 240 && f.hp < f.maxhp && G.time % 4 === 0) f.hp++; }
   else if (f.isPlayer && f.regenT > 420 / DIFF().regen && G.time % max(1, round((WORLD.mode === 1 || G.food > 70 ? 40 : G.food > 30 ? 80 : 1e9) / DIFF().regen / blessRegen())) === 0 && f.hp < f.maxhp) f.hp++;
@@ -128,7 +128,7 @@ function tickFighter(f, I) {
     a = f.atk; const ok = f.state === 'normal' || (f.state === 'dodge' && f.dodgeT >= 2) || (f.state === 'attack' && a.phase === 2 && !a.rushed && a.pt >= beatOpen(a));
     if (ok) { const b = f.buf.b; f.beatIn = f.state === 'dodge' ? 1 : f.buf.beat | 0; f.buf = null; if (f.state === 'attack') endAttack(f); if (startAttack(f, b, I)) f.atkN++; f.beatIn = 0; }
   }
-  let grav = .26; const gp = f === G.p && gearOn(), maxV = 1.45 * (gp ? gearMul('walk') : 1) * (f.spd || 1) * (f.st && f.st.frost > 0 ? .72 : 1) * (f === G.p ? brewMul('swift') : 1);
+  let grav = .26; const gp = f === G.p && gearOn(), maxV = 1.45 * (gp ? gearMul('walk') : 1) * (f.spd || 1) * (f.st && f.st.frost > 0 ? .72 : 1) * (f === G.p ? brewMul('swift') : 1) * wxSpeed(f);
   if (gp && f.vy > 0 && (gearHas('feather') || gearHas('prismatic')) && I.jumpH && !f.onGround) grav = .17;
   if (f.state === 'dodge') {
     f.dodgeT++; f.vx = f.dodgeDir * 3.5 * (f.dodgeT > 8 ? .7 : 1) * (f === G.p ? gearMul('dodge') : 1); if (!f.dodgeGround) { f.vy = 0; grav = 0; }
@@ -149,7 +149,7 @@ function tickFighter(f, I) {
     }
     // hands off the keys you come to a stop (a little later out of a dodge); and anyone but you in the open world
     // is braked while reeling from a blow, key or no key, so a hit throws them exactly as far as it always did
-    if (!steer || f.hurtT > 0 && !(f === G.p && !WORLD.arena)) f.vx = approach(f.vx, 0, f.onGround ? (a ? .12 : f.carryT > 0 ? .07 : .2) : (a ? .021 : .035));
+    if (!steer || f.hurtT > 0 && !(f === G.p && !WORLD.arena)) f.vx = approach(f.vx, 0, f.onGround ? (a ? .12 : f.carryT > 0 ? .07 : .2) * wxSlick(f) : (a ? .021 : .035));
   }
   if (f.carryT > 0) f.carryT--;
   if (f.jbuf > 0 && !(f.climbing && !I.md) && f.hurtT <= 0 && (f.state === 'normal' || (f.state === 'attack' && a.phase === 2))) {

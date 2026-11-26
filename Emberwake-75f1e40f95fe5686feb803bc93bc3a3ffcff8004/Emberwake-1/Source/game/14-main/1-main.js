@@ -172,7 +172,7 @@ function renderView(al) {
     else if (o.id === GATE) addLight(o.x * T + 4, o.y * T - 4, .6 + (F.vesperDone ? .25 : 0), .2, .08);
   }
   RFRAME++; const kx0 = floor(cx / 256) - 1, kx1 = floor((cx + VS.vw) / 256) + 1;
-  for (const fi of G.fires) if (fi.x1 > cx - 60 && fi.x0 < cx + VS.vw + 60) for (let X = fi.x0; X < fi.x1; X += 12) addLight(X, fi.y - 4, .8, .4, .12);
+  fireLights(cx, cy);
   for (const e of G.enemies) if (e.type === 'cinderling' && !e.dead && e.x > cx - 60 && e.x < cx + VS.vw + 60) addLight(e.x + 4, e.y + 4, .7, .32, .1);
   for (let k = kx0; k <= kx1; k++) { const bk = PROPB.get(k); if (bk) for (const q of bk) if (q.light && q.x > cx - 120 && q.x < cx + VS.vw + 120 && q.y > cy - 120 && q.y < cy + VS.vh + 120) { const fl = .93 + .07 * sin(G.time * .21 + q.x); addLight(q.x + (q.img.width >> 1), q.y + (q.lyo !== undefined ? q.lyo : q.img.height * .6), q.light[0] * fl, q.light[1] * fl, q.light[2] * fl); } }
   if (!WORLD.arena) { stationLights(); curioLights(vx0, vx1); }
@@ -242,6 +242,7 @@ function renderView(al) {
   if (showP) drawFighter(p, al);
   if (WORLD.royale) brActors(ctx, al);
   drawStates(ctx, al);
+  drawFires(ctx, cx, cy, false);
   drawLiquids(ctx, vx0, vx1, vy0, vy1);
   ctx.setTransform(1, 0, 0, 1, 0, 0);
   drawFG(cx, cy, ax0, ay0, offx, offy, tx0, ty0, tw, th, kx0, kx1);
@@ -257,7 +258,7 @@ function renderView(al) {
     else if (o.id === SHRINE2) { f.globalAlpha = mirrorOn ? .55 : .2; f.fillStyle = '#8ff5e6'; f.fillRect(px - 2, py - 6, 12, 9); f.globalAlpha = 1; if ((G.time >> 3) % 7 === 0) { f.fillStyle = '#ffffff'; f.fillRect(px + (G.time >> 3) % 8 - 1, py - 5 + ((G.time >> 5) % 4), 1, 1); } }
     else if (o.id === GATE) { const k = .45 + .25 * sin(G.time * .05); f.globalAlpha = k; f.fillStyle = '#e2542b'; f.fillRect(px - 1, py - 5, 8, 6); f.globalAlpha = 1; if (F.vesperDone) { f.fillStyle = '#ffd35a'; f.fillRect(px - 5, py - 9, 2, 2); f.fillStyle = '#8ff5e6'; f.fillRect(px + 9, py - 9, 2, 2); } }
   }
-  for (const fi of G.fires) { const a = min(1, fi.life / 40); for (let X = fi.x0; X < fi.x1; X += 2) { const hg = 2 + ((hh(X | 0, fi.y, G.time >> 2) * 7) | 0) * a - abs(X - (fi.x0 + fi.x1) / 2) / 8; if (hg <= 0) continue; f.globalAlpha = .75 * a; f.fillStyle = (X >> 1) & 1 ? '#ffd35a' : '#ff7a2a'; f.fillRect(round(X), round(fi.y - hg), 2, round(hg)); } f.globalAlpha = .18 * a; f.fillStyle = '#ff7a2a'; f.fillRect(round(fi.x0), round(fi.y - 8), round(fi.x1 - fi.x0), 8); } f.globalAlpha = 1;
+  drawFires(f, cx, cy, true);
   for (const v of VENTS) { if (v.cx < cx - 30 || v.cx > cx + VS.vw + 30) continue; for (let k = 0; k < 7; k++) { const span = (v.gy - v.top) * T, yy = v.gy * T - ((G.time * (1.6 + k * .2) + k * 53) % span), xx = v.cx + sin(G.time * .04 + k * 2.1) * 7; if (yy < cy - 10 || yy > cy + VS.vh + 10) continue; f.globalAlpha = .22 * min(1, (v.gy * T - yy) / 40); f.fillStyle = '#dcf7f5'; f.fillRect(round(xx), round(yy), 1, 6); } } f.globalAlpha = 1;
   curioGlow(f, vx0, vx1, vy0, vy1);
   const nightK = clamp(1.3 - G.dn * 1.5, .15, 1);
@@ -436,7 +437,7 @@ function tick() {
   refreshFoes(); tickPlayer();
   for (const f of G.fighters) { if (f === G.p) continue; if (f.remote) { if (f.coop || f.ghostH) coopReplay(f); else tickRemote(f); } else if (f.ai) { if (f.onBarge) brBotRide(f); else { tickFighter(f, f.brBot ? brBotThink(f) : f.isClone ? cloneThink(f) : aiThink(f)); if (f.brBot) brBotAfter(f); } } }
   if (G.duel) tickDuel();
-  tickEnemies(); spawnTick(); tickDrops(); tickProjs(); tickParts(); tickStory(); tickStructs(); if (!netGuest()) tickLiquids(); tickCam(); ambient(); ambientMore(); wxParticles(); atmoTick();
+  tickEnemies(); spawnTick(); tickDrops(); tickProjs(); tickParts(); tickStory(); tickStructs(); if (!netGuest()) tickLiquids(); tickCam(); ambient(); ambientMore(); wxParticles(); tickWeatherWays(); atmoTick();
   if (!WORLD.arena) { tickFalling(); tickFelled(); tickRubble(); tickDoors(); tickDrill(); tickStations(); if (!G.away) tickHunger(); tickBrews(); if (!netGuest()) tickRegrow(); tickDims(); tickLairs(); tickBless(); tickFurniture(); tickMeal(); if (G.time % 20 === 0) { mapReveal(); G.magR = hasUtil('magnet') ? 76 : 36; } }
   if (WORLD.arena) arenaTick();
   if (G.combo.t > 0 && --G.combo.t <= 0) { G.combo.n = 0; G.combo.pts = 0; }
@@ -510,7 +511,7 @@ function freshSession() {
     leads: new Set(), pin: null, found: new Set(), linksKnown: new Set(), fam: {}, arts: new Set(), artk: {}, respawn: null, fires: [], smokes: [], stuck: [], link: null, zoom: 1, zoomT: 1, armT: 0, linkBanner: null, leadDone: null, cine: null, bars: 0,
     falling: [], felled: [], rubble: [], autoDoors: [], regrow: [], lairs: new Set(), bless: null, blessUsed: {}, ev: null, dev: null, devT: 2400, evClock: undefined, dhaz: [], echoes: new Set(), beasts: {}, gear: { head: null, body: null, legs: null, feet: null, off: null }, trink: [], meal: null, brew: null, cloneTape: [], rest: 0, nearWarm: false, nearFount: false, mast: {}, pairsKnown: new Set(), drill: null, days: yearStart(), wx: null, wxT: undefined, curios: {}, sing: null, way: null, mood: 0, biomeN: '', biomeS: '', food: 100, worn: new Set(), spy: false, lampOff: false, quality: {}, reqs: null, seen: null, hintT: -999
   });
-  for (const k in YACC) delete YACC[k]; INV_N = packCap(); mapReset();
+  for (const k in YACC) delete YACC[k]; INV_N = packCap(); mapReset(); FIRE_DROPS.length = 0;
   UI.open = null; UI.held = null; UI.scroll = 0; acc = 0;
 }
 function beginPlay(fresh) {
@@ -589,7 +590,7 @@ addEventListener('pagehide', e => {
 });
 
 // ---------------- boot ----------------
-buildTiles(); buildTiles2(); buildSprites(); buildSprites2(); buildTiles3(); buildMobSprites(); buildDimArt(); buildWonderArt(); buildRealmArt(); buildPlaceArt(); buildCurioArt(); buildBenchArt(); buildFurnArt(); buildDimMobs(); buildRealmMobs(); dimItemsPre(); realmItemsPre(); buildItems(); brItems(); resize(); buildBayer();
+buildTiles(); buildTiles2(); buildSprites(); buildSprites2(); buildTiles3(); buildMobSprites(); buildWeatherMobs(); buildDimArt(); buildWonderArt(); buildRealmArt(); buildPlaceArt(); buildCurioArt(); buildBenchArt(); buildFurnArt(); buildDimMobs(); buildRealmMobs(); dimItemsPre(); realmItemsPre(); buildItems(); brItems(); resize(); buildBayer();
 SIL = [genSil(31, 0), genSil(77, 1)]; for (let i = 0; i < 4; i++) VEILS.push(genVeil(i * 17));
 SHARDMOON = spr(['.....w.....', '....wWc....', '....WWc....', '...wWWcc...', '...WWWcc...', '..wWWWccc..', '..WWWWccd..', '.wWWWWcccd.', '..WWWccdd..', '..WWWcccd..', '...WWccd...', '...Wcccd...', '....ccd....', '....cd.....', '.....d.....'], { w: '#ffffff', W: '#dcf7f5', c: '#8fd0d8', d: '#62a9bc' });
 accountBoot(); netBoot();

@@ -116,7 +116,7 @@ async def main():
     must([r['Cauldron']['emberheart'], r["Brewer's Stand"]['emberheart'], r['Moon Cauldron']['doublesoul']] == [False, True, True], 'each rank of cauldron should unlock its own brew')
     await h.ev("snapCam();"); await h.step(4, ""); ims.append(await h.pcrop(200, 90)); labels.append('cauldron, brewer\'s stand, moon cauldron')
     await h.ev("(() => { %s G.flags.seen1 = true; openStation(tx + 5, ty); })()" % here); await h.step(3, ""); (await h.shot()).save(shot('the_brewers_stand.png')); await h.ev("closeUI()")
-    r = await h.ev("""(async () => { %s saveWorld(true); const id = WORLD.id, meta = JSON.parse(localStorage.getItem('ew2.index')).find(m => m.id === id);
+    r = await h.ev("""(async () => { %s saveWorld(true); const id = WORLD.id, meta = JSON.parse(localStorage.getItem(profileKey('index'))).find(m => m.id === id);
       if (!meta) return 'no save'; quitToTitle(); await new Promise(r => setTimeout(r, 200)); await openWorld(meta); await new Promise(r => setTimeout(r, 500)); if (G.state === 'intro') beginPlay(false);
       return [tileAt(tx + 3, ty), tileAt(tx + 5, ty), tileAt(tx + 7, ty), tileAt(tx - 4, ty), TP[tileAt(tx + 5, ty)].name, TP[tileAt(tx - 4, ty)].name, G.brew, G.fighters.length]; })()""" % here)
     res['after a save and load: cauldron, stand, moon cauldron, stone'] = r

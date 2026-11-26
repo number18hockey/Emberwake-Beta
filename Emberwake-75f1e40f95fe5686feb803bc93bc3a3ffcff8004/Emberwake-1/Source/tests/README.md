@@ -53,6 +53,7 @@ The land, digging, places, events and saving.
 - `using_places.py` Using places: blessing stones, guards that wake, places that stay cleared.
 - `surface_wonders.py` The surface's places: the four gates, the old observatory, a fallen star, a sun shrine, sunstone.
 - `world_character.py` What makes a world its own: the three traits and what each does to the land and to play, the moods of the lands, the curios (each one used), the seasons and the weather. **Also checks that worlds made before traits still come out tile for tile as they did** (it holds the hashes of five old lands).
+- `weather.py` What the weather does: rain, snow, a thunderstorm, fog and ashfall slow you, make the ground slick, take your breath or hide you; a roof keeps it off; rain puts fire out and lightning starts one; and the rare creatures each kind brings come and go with it. **Also checks that a clear sky, an arena, another world and the title change nothing.**
 
 ### other-worlds
 

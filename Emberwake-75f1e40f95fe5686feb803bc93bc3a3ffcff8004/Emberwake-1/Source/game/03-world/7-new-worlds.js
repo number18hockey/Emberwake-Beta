@@ -355,7 +355,7 @@ function drawBolt(f, t, u) {
 function boltHit(z) {
   G.trails.push({ kind: 'bolt', x: z.x, y: z.y, life: 10, max: 10, seed: (Math.random() * 1e9) | 0 });
   const p = G.p; addShake(6); sfx('boom', 30); G.bolt = 20; G.flash = max(G.flash, .35); G.flashCol = '220,230,255';
-  burst(z.x, z.y - 4, 24, ['#ffffff', '#e8f0ff', '#9ab0ff'], 3, 30, { glow: 1 });
+  burst(z.x, z.y - 4, 24, ['#ffffff', '#e8f0ff', '#9ab0ff'], 3, 30, { glow: 1 }); wxStruck(z);
   if (z.rod) { spawnDrop('storm_glass', randi(1, 2), z.x, z.y - 10); G.flags.rodStruck = (G.flags.rodStruck | 0) + 1; return; }
   if (z.hurt && p && !p.dead && abs(p.x + 3 - z.x) < 12 && p.y + p.h > z.y - 160) { hurtFighter(p, z.dmg, z.x, { kx: (sign(p.x + 3 - z.x) || 1) * 3, ky: -3.4, shock: 1 }); }
   if (!z.net) for (const e of G.enemies) if (!e.dead && !e.boss && abs(e.x + e.w / 2 - z.x) < 14 && e.y + e.h > z.y - 160) damageEnemy(e, 40, sign(e.x - z.x) * 3, -3, { stop: 3 });
