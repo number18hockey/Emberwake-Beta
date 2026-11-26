@@ -132,17 +132,25 @@ function tickFighter(f, I) {
   if (f.state === 'dodge') {
     f.dodgeT++; f.vx = f.dodgeDir * 3.5 * (f.dodgeT > 8 ? .7 : 1) * (f === G.p ? gearMul('dodge') : 1); if (!f.dodgeGround) { f.vy = 0; grav = 0; }
     if (f.dodgeT % 2 === 0) f.ghostReq = true;
-    if (f.dodgeT >= 11) { f.state = 'normal'; f.dodgeGrace = 9; f.vx *= .5; }
-  } else if (f.state === 'attack') tickAttack(f, I);
+    if (f.dodgeT >= 11) { f.state = 'normal'; f.dodgeGrace = 9; f.carryT = 16; f.vx *= .5; }
+  } else if (f.state === 'attack') { f.md = I.md; tickAttack(f, I); }
   a = f.atk;
   if (f.state !== 'dodge' && !(a && a.dashT > 0 && a.phase === 1)) {
-    const ctrl = a ? (a.phase === 2 ? .7 : a.m.ctrl) : (f.hurtT > 0 ? .12 : 1), md = I.md;
-    const tgt = md * maxV * (a && a.phase < 2 ? min(1, ctrl + .15) : 1), acc = (f.onGround ? .24 : .15) * ctrl;
-    if (md && ctrl > 0) f.vx = (abs(f.vx) > maxV && sign(f.vx) === md) ? approach(f.vx, tgt, .07) : approach(f.vx, tgt, acc);
-    // walking into a shut door pushes it open
-    if (md && f === G.p && !WORLD.arena && f.state === 'normal') { const tx = floor((f.x + (md > 0 ? f.w + 1.5 : -1.5)) / T); for (let y = floor(f.y / T); y <= floor((f.y + f.h - 1) / T); y++) if (tileAt(tx, y) === DOORC) { if (toggleDoor(tx, y)) G.autoDoors.push({ tx, ty: y, t: 150 }); break; } }
-    else f.vx = approach(f.vx, 0, (f.onGround ? .2 : .035) * (a ? .6 : 1));
+    const ctrl = a ? (a.phase === 2 ? .7 : a.m.ctrl) : (f.hurtT > 0 ? .12 : 1), md = I.md, steer = md && ctrl > 0;
+    if (steer) {
+      // a blow leans on your stride without stopping it: light ones cost a little speed, heavy ones more.
+      // Speed you already had above the pace you may keep (a run into a swing, a dash, a leap) bleeds off instead of being cut
+      const keep = a && a.phase < 2 ? max(a.btn === 'H' ? .62 : .8, min(1, ctrl + .15)) : 1, tgt = md * maxV * keep, along = sign(f.vx) === md;
+      const acc = (f.onGround ? .24 : .15) * (a ? max(ctrl, .6) : ctrl);
+      f.vx = along && abs(f.vx) > abs(tgt) ? approach(f.vx, tgt, abs(f.vx) > maxV ? .07 : .03) : approach(f.vx, tgt, acc);
+      // walking into a shut door pushes it open
+      if (f === G.p && !WORLD.arena && f.state === 'normal') { const tx = floor((f.x + (md > 0 ? f.w + 1.5 : -1.5)) / T); for (let y = floor(f.y / T); y <= floor((f.y + f.h - 1) / T); y++) if (tileAt(tx, y) === DOORC) { if (toggleDoor(tx, y)) G.autoDoors.push({ tx, ty: y, t: 150 }); break; } }
+    }
+    // hands off the keys you come to a stop (a little later out of a dodge); and anyone but you in the open world
+    // is braked while reeling from a blow, key or no key, so a hit throws them exactly as far as it always did
+    if (!steer || f.hurtT > 0 && !(f === G.p && !WORLD.arena)) f.vx = approach(f.vx, 0, f.onGround ? (a ? .12 : f.carryT > 0 ? .07 : .2) : (a ? .021 : .035));
   }
+  if (f.carryT > 0) f.carryT--;
   if (f.jbuf > 0 && !(f.climbing && !I.md) && f.hurtT <= 0 && (f.state === 'normal' || (f.state === 'attack' && a.phase === 2))) {
     if (f.coyote > 0) doJump(f, -4.55 * (f === G.p ? gearMul('jump') : 1));
     else if (canDbl(f) && !f.dblUsed) { f.dblUsed = true; doJump(f, -4.15); for (let i = 0; i < 12; i++) P(f.x + 3, f.y + f.h, cos(i / 12 * TAU) * 1.6, sin(i / 12 * TAU) * .5, 16, fpick(f.skin === 4 ? FROST : SPARK), { glow: 1, g: 0, fr: .9 }); }
@@ -170,6 +178,8 @@ function tickFighter(f, I) {
   tickScarf(f);
 }
 function doJump(f, v) { f.vy = v; f.onGround = false; f.coyote = 0; f.jbuf = 0; f.noCut = false; if (f.atk) endAttack(f); fsx(f, 'jump'); dust(f.x + 3, f.y + f.h, 3); }
+// a blow's step forward never takes speed away, and never turns you round while you are holding away from it
+function stepIn(f, fc, step) { const v = f.vx * fc; if (v < -.2 && f.md === -fc) return; f.vx = fc * max(step, v); }
 function tickScarf(f) {
   const sc = f.scarf, ax = f.x + 3 - f.face * 2, ay = f.y + 6;
   sc[0].x = ax; sc[0].y = ay;

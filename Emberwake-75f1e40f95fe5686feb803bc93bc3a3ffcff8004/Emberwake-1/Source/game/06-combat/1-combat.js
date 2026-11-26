@@ -336,8 +336,9 @@ function tickAttack(f, I) {
 }
 function beginActive(a) {
   const f = a.f, m = a.m, fc = a.face; tempoSpend(a);
-  if (m.plant) f.vx = fc * max(m.step || 0, min(f.vx * fc, .9));
-  else if (m.step) f.vx = fc * max(m.step, f.vx * fc);
+  // a planted blow adds no speed past a run, but it keeps the run you had
+  if (m.plant) { if (f.vx * fc > 1.45) f.vx = fc * max(1.45, f.vx * fc * .9); else stepIn(f, fc, m.step || 0); }
+  else if (m.step) stepIn(f, fc, m.step);
   if (m.back) f.vx = -fc * m.back;
   if (m.hop) { f.vy = m.hop; f.onGround = false; f.noCut = true; }
   if (m.rise) { f.vy = m.rise; f.onGround = false; f.noCut = true; dust(f.x + 3, f.y + f.h, 5); }
