@@ -21,7 +21,7 @@
 | **C** | forms (your moves) |
 | **R / T** | throw / switch sidearm |
 | **O** | sound on or off |
-| **P** or **Esc** | menu (**PLAY TOGETHER** is in here) |
+| **P** or **Esc** | menu (**PLAY TOGETHER** is in here). In the Wilds **P** offers, accepts and leaves a pact, and only **Esc** opens the menu |
 | **Enter** | chat, when playing with friends |
 
 ## Your pack
@@ -47,6 +47,7 @@ Touch controls appear by themselves, whichever way up you hold it. With a mouse 
 - **Touch the world** to dig, gather or strike exactly there. Tap the hotbar to change what you hold.
 - **PACK** opens your pack and crafting: tap a recipe to make it, slide a finger to scroll, **CLOSE** to go back. **HEAL** is a quick heal, **MAP** the map (once you have drawn one) and **MENU** the menu.
 - **CHAT** shows when friends are in your world.
+- **PACT** shows in a Wilds match: it offers and accepts a pact, and tapped twice leaves it.
 - Tap a name, a seed, a game code or an account field to type in it: your keyboard comes up.
 
 ## The menu (Esc)

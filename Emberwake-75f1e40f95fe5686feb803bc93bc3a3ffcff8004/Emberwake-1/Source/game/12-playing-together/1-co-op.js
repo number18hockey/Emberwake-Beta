@@ -8,7 +8,9 @@
 //  shares it. Loot is everyone's own: each of you gets your share.
 // ============================================================
 const COOP = { role: null, me: '', seq: 1, pid: 0, peers: new Map(), pend: null, out: [], tiles: new Set(), stns: new Set(), applying: false, ghostFx: false, nid: 1, ghosts: new Map(), hghosts: new Map(), chat: [], note: '', t: 0, saveT: 0, uid: 0, hostName: '', busy: false, code: '', reply: '', err: '', chatOpen: false };
-const NETV = 6, MAXG = 3;
+// (NETV says which games can play together: only those with the same number. It went up to 7 when hats, the Wilds and the two
+// new lands came in: a game without them could not read what this one sends, so the two are told to share the newest files)
+const NETV = 7, MAXG = 3;
 const netOn = () => !!COOP.role, netHost = () => COOP.role === 'host', netGuest = () => COOP.role === 'guest';
 // someone is actually here with you (the world should not stop for menus then)
 const netLive = () => netGuest() ? !!COOP.joined : netHost() && [...COOP.peers.values()].some(P => P.ok);

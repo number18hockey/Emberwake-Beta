@@ -19,10 +19,11 @@ This version joins two that had grown apart. One had the Trials, the four worlds
 - **Eating takes a moment**, and a blow interrupts it (you keep the food).
 - **Brews.** Quickstep at a cauldron, Emberheart at a **Brewer's Stand**, and at a **Moon Cauldron** the Doublesoul Draught, which calls a mirror of you to fight at your side. And a new meal, the Willow Omelet. See *How to play: Eating and brews*.
 - **Two new lands** in worlds you forge from now on: the **Mosswood** (deep green, oaks, moss deer) and the **Willowmere** (reeds, still water, willows, willow hens). Worlds made before keep their land exactly as it was.
+- **A third arena for the Ashfall: THE WILDS.** Thirty-two fall from the sky with nothing, over an island 3,500 paces wide with caves beneath it. Dig, gather, make your weapons, make pacts. It pays **souls** and **coins** for the **soul wheel** and the **shop**, where skins and hats are won and worn. See *The Ashfall Trials: A third arena*.
 - A frame that goes wrong no longer stops the game.
 - **This version can't play with older ones, so send your friends the new files.**
 
-**And new in this one: the echoes think.** They find a real way to where they are going (over walls, across gaps, up to a chest above the ground, round what they cannot climb, never into slag), run to somewhere safe instead of just away, pick the fights they can win, and keep the beat as well as their skill allows. See *The Ashfall Trials: The echoes*.
+**And new in this one: the echoes think.** They find a real way to where they are going (over walls, across gaps, up to a chest above the ground, round what they cannot climb, never into slag), run to somewhere safe instead of just away, pick the fights they can win, and keep the beat as well as their skill allows. The echoes of the Wilds find their way too, and dig one where there is none. See *The Ashfall Trials: The echoes*.
 
 ## Worlds with a character of their own, the Trials' own kit, parties, a new look
 

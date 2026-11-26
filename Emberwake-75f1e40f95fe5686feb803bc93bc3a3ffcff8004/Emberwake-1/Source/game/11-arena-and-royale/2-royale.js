@@ -408,7 +408,7 @@ function brSee(f, o) {
 }
 // the ashfall's walls and the slag's line, for whoever plans a route in a match (see 07-fighters/2-nav.js)
 const BR_NAV = { L: -1e9, R: 1e9, floor: 1e9 };
-function brNav() { const z = BR.storm, ash = !!z && z.dps > 0 && BR.arena !== 1; BR_NAV.L = ash ? z.L : -1e9; BR_NAV.R = ash ? z.R : 1e9; BR_NAV.floor = BR.arena === 1 ? BR.slagY + 3 : 1e9; return BR_NAV; }
+function brNav() { if (BR.wild) return wBrNav(); const z = BR.storm, ash = !!z && z.dps > 0 && BR.arena !== 1; BR_NAV.L = ash ? z.L : -1e9; BR_NAV.R = ash ? z.R : 1e9; BR_NAV.floor = BR.arena === 1 ? BR.slagY + 3 : 1e9; return BR_NAV; }
 // how well armed someone is (-1: bare hands)
 const brArm = o => { const W = o.isPlayer ? heldOf(o) : IT[o.wid]; return W && W.type === 'weapon' && !W.fist ? brTier(W.id) : -1; };
 // How a fight with this foe looks from here: above 1 the echo fancies its chances. Health and ward, steel against steel,

@@ -81,8 +81,23 @@ function brBotDig(f, tx, ty) {
   const t = tileAt(tx, ty), q = TP[t]; if (!q.solid || q.ghost || q.liquid || t === BEDROCK || q.hard === Infinity || q.dyn || !inW(tx, ty)) return false;
   const y = MAT[t] && MAT[t].y && MAT[t].y[0] ? MAT[t].y[0][0] : null; breakAt(tx, ty, { noYield: true, quiet: !near(f), by: f }); if (y && IT[y]) f.br.bag[y] = (f.br.bag[y] || 0) + 1; f.throwT = 10; f.throwA = .3; if (near(f)) sfx('mine', 60); return true;
 }
-// (the pathfinder, navTo in 07-fighters/2-nav.js, was not in the tree when the Wilds came in: once it is, ask it here as the Trials' brWalk does)
-function wBrWalk(f, I, gx) {
+// what the pathfinder is told of the Wilds: ground the border has taken costs dear, and nothing is planned down in the hot
+// rock over the lava sea (the row from which an echo already turns and climbs out)
+const WBR_NAV = { L: -1e9, R: 1e9, floor: (BR_HOT - 22) * T };
+function wBrNav() { const z = BR.storm, on = !!z && z.dps > 0; WBR_NAV.L = on ? z.L : -1e9; WBR_NAV.R = on ? z.R : 1e9; return WBR_NAV; }
+// An echo on its way to a place (gy: the height of the ground there; left out, the open ground at gx). It goes by a real
+// route, as the echoes of the Trials do. The pathfinder does not plan digging, so when it finds no way the echo goes on as
+// echoes here always have (wBrSteer below): straight at it, and through whatever is in the way
+function wBrWalk(f, I, gx, gy) {
+  const way = navTo(f, I, gx, gy, wBrNav()); if (way === 'stuck') wBrSteer(f, I, gx); else { I.wx = f.x + 3 + I.md * 40; I.wy = f.y + 8; wBrStuck(f, I); }
+  return way;
+}
+// getting nowhere? (hopping on the spot is not getting anywhere: only where they stand counts)
+function wBrStuck(f, I) {
+  const br = f.br, cx = f.x + 3; if (f.onGround) br.gy = f.y;
+  if (G.time % 24 === (f.botI | 0) % 24) { if (I.md && abs(cx - br.lx) < 4 && abs(br.gy - br.ly) < 10) br.stuck++; else br.stuck = max(0, br.stuck - 1); br.lx = cx; br.ly = br.gy; }
+}
+function wBrSteer(f, I, gx) {
   const B = f.ai, br = f.br, cx = f.x + 3, d = gx - cx, row = floor((f.y + f.h - 1) / T), tx = floor(cx / T), surfRow = heights[clamp(tx, 0, WBRW - 1)], under = row > surfRow + 4;
   I.md = abs(d) < 5 ? 0 : sign(d); I.jumpH = false; I.down = false; I.wx = cx + I.md * 40; I.wy = f.y + 8;
   const wet = liqAt(cx, f.y + f.h - 5); if (wet) { I.jumpH = true; if (G.time % 20 === 0) I.jumpP = true; }
@@ -95,8 +110,7 @@ function wBrWalk(f, I, gx) {
   }
   const under1 = tileAt(tx, row + 1); if (under1 === PLATFORM && br.goal && br.goal.y !== undefined && br.goal.y > row + 2) I.down = true;
   // not getting anywhere: dig through it, or dig up and out
-  if (f.onGround) br.gy = f.y; // (hopping on the spot is not getting anywhere: only where they stand counts)
-  if (G.time % 24 === (f.botI | 0) % 24) { if (I.md && abs(cx - br.lx) < 4 && abs(br.gy - br.ly) < 10) br.stuck++; else br.stuck = max(0, br.stuck - 1); br.lx = cx; br.ly = br.gy; }
+  wBrStuck(f, I);
   if (br.stuck >= 3 && I.md && --br.digT <= 0) {
     br.digT = 9; const ax = tx + I.md; let dug = false; const top = row - 2, climb = under || br.stuck > 6;
     for (const [x, y] of climb ? [[tx, top - 1], [ax, top - 1], [ax, top], [ax, row - 1]] : [[ax, row - 1], [ax, row], [ax, top]]) if (brBotDig(f, x, y)) { dug = true; break; }
@@ -128,7 +142,7 @@ function brClimbOut(f, I) {
   }
   if (br.hopT > 0) { br.hopT--; if (!f.onGround && br.pil < 0) { I.md = br.hopD; return I; } }
   if (liqAt(f.x + 3, f.y + f.h - 5)) { br.pil = -1; br.wetT = (br.wetT | 0) + 1; if (br.wetT % 240 > 170) I.md = (f.botI & 1) ? 1 : -1; return I; }
-  if (br.side > 0) { br.side--; wBrWalk(f, I, f.x + 3 + br.sideD * 50); br.stuck = max(br.stuck, 3); return I; }
+  if (br.side > 0) { br.side--; wBrSteer(f, I, f.x + 3 + br.sideD * 50); br.stuck = max(br.stuck, 3); return I; }
   if (abs(f.x - (tx * T + 1)) > .6) f.vx = clamp((tx * T + 1 - f.x) * .3, -1, 1); else f.vx = 0;
   if (--br.digT <= 0) { br.digT = 7; for (const k of [3, 4, 5]) if (TP[tileAt(tx, row - k)].solid) { if (!brBotDig(f, tx, row - k)) { br.side = 46; br.sideD = br.sideD ? -br.sideD : f.botI & 1 ? 1 : -1; } break; } }
   if (f.onGround && B.jumpCd <= 0) { I.jumpP = true; B.jumpCd = 14; br.pil = row; }
@@ -188,6 +202,9 @@ function wBrBotThink(f) {
   const B = f.ai, I = B.I, br = f.br;
   I.lp = I.rp = I.jumpP = I.dodgeP = I.armP = false; I.l = I.r = false;
   if (f.dead) { I.md = 0; return I; }
+  // (an updraft would hold a canopy over it for ever, and nobody can win while one echo is still in the sky: an echo that is
+  // being lifted makes for a place a little further along)
+  if (f.glide && f.vy < 0) f.slotX += f.botI & 1 ? 5 : -5;
   if (f.glide) { const dx = f.slotX + sin(f.botI * 7) * 160 - (f.x + 3); I.md = abs(dx) > 14 ? sign(dx) : 0; I.down = f.y < heights[clamp(floor(f.x / T), 0, WBRW - 1)] * T - 150 && (f.botI & 3) !== 0; I.jumpH = false; return I; }
   if (f.brUse) { I.md = 0; return I; }
   const z = BR.storm, cx = f.x + 3, out = wBrOut(f) || (z && (z.dps > 0 || z.moving) && (cx < z.L + 8 || cx > z.R - 8)), row = (f.y + f.h) / T;
@@ -215,11 +232,16 @@ function wBrBotThink(f) {
   if (brInHazard(cx) && BR.hazard) { br.goal = null; wBrWalk(f, I, cx - BR.hazard.L < BR.hazard.R - cx ? BR.hazard.L - 60 : BR.hazard.R + 60); return I; }
   // with an ally: stay close, and watch what they are fighting
   if (br.ally && (!br.ally.brBot || br.ally.botI < f.botI)) {   // (of two echoes, one leads)
-    const a = br.ally, dx = a.x - f.x; if (brLoyal(f)) { if (abs(dx) > 70 || abs(a.y - f.y) > 60) { wBrWalk(f, I, a.x + 3 - sign(dx) * 26); return I; } if (f.wid !== 'fists') { I.md = 0; if (abs(dx) > 34) wBrWalk(f, I, a.x + 3 - sign(dx) * 30); return I; } }
+    const a = br.ally, dx = a.x - f.x; if (brLoyal(f)) { if (abs(dx) > 70 || abs(a.y - f.y) > 60) { wBrWalk(f, I, a.x + 3 - sign(dx) * 26, a.y + a.h); return I; } if (f.wid !== 'fists') { I.md = 0; if (abs(dx) > 34) wBrWalk(f, I, a.x + 3 - sign(dx) * 30, a.y + a.h); return I; } }
   }
+  // (a thing it has been this near all that while and never laid a hand on: there is a way that keeps failing. Let it go)
+  if (br.goal && br.think <= 1 && br.goal.y !== undefined && !(br.workT > 0) && abs(br.goal.x * T + 4 - cx) < 240) br.skip.set(br.goal.x, BR.t + 3600);
   if (!br.goal || --br.think <= 0) { br.goal = br.goal && br.workT > 0 ? br.goal : brPlan(f); br.think = 420 + randiF(0, 200); br.workT = 0; br.stuck = 0; if ((G.time + f.botI) % 2 === 0) brBotMeet(f); }
   const g = br.goal, gx = g.x * T + 4; if (g.y !== undefined ? abs(gx - cx) < 9 && abs((g.y + 1) * T - (f.y + f.h)) < (g.kind === 'mine' ? 76 : 18) : abs(gx - cx) < 12) { if (g.kind === 'go') { br.goal = null; I.md = 0; return I; } brWork(f, I, g); return I; }
-  wBrWalk(f, I, gx);
+  // (what stands on the ground is gone to where it stands; ore is dug for from the open ground above it. Once the pathfinder
+  // has said there is no way to it, the echo goes the old way for as long as it wants this thing: asked again every few
+  // seconds, the pathfinder would lead it off and the old way back, and it would never get there or let go)
+  if (g.noWay) wBrSteer(f, I, gx); else if (wBrWalk(f, I, gx, g.y !== undefined && g.kind !== 'mine' ? (g.y + 1) * T : undefined) === 'stuck') g.noWay = true;
   // over or under it and no way to it: let it go
   if (g.y !== undefined && abs(gx - cx) < 12) { if (++br.off > 50) { br.off = 0; br.skip.set(g.x, BR.t + 3600); br.goal = null; } } else br.off = 0;
   return I;

@@ -43,6 +43,7 @@ This version joins two that had grown apart: the uploaded "Emberwake 2" (the hom
 - Story leads, lore, echo stones, a journal, creatures, guardians woken by offerings, and world events
 - Shared multiplayer worlds for up to four players
 - The Ashfall Trials, a survival match for twelve with echoes or friends, with teams, perks, amps, relics, two arenas and parties; and the Cinder Ring for quick duels
+- The Wilds, a third arena for 32: fall with nothing, gather, dig, craft, make pacts; souls and coins for the soul wheel and the shop
 - Echoes (computer players) that find real routes over walls and gaps, choose their fights, and keep the beat as well as their skill allows
 - Accounts kept in the browser: a name and a password, a look and a hat, and each account's own worlds
 - Touch controls for phones and tablets
@@ -71,7 +72,7 @@ This version joins two that had grown apart: the uploaded "Emberwake 2" (the hom
 | `C` | Forms (your moves) |
 | `R` / `T` | Throw / switch sidearm |
 | `O` | Sound on or off |
-| `P` or `Esc` | Menu (**PLAY TOGETHER** is in here) |
+| `P` or `Esc` | Menu (**PLAY TOGETHER** is in here). In the Wilds `P` offers, accepts and leaves a pact, and only `Esc` opens the menu |
 | `Enter` | Chat while playing together |
 
 ### Touch

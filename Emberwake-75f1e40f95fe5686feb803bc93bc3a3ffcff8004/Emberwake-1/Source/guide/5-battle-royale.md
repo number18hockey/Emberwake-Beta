@@ -1,6 +1,6 @@
 # The Ashfall Trials
 
-On the home screen, under **THE ARENAS**, choose **THE ASHFALL TRIALS**. It is a survival match for twelve: you, your friends, other people's parties, and echoes (computer players) in every empty place. A match lasts up to about fourteen minutes. The Trials have their own kit: **perks** you choose, **amps** you fit to your weapons, **relic** weapons found nowhere else, and two **arenas**.
+On the home screen, under **THE ARENAS**, choose **THE ASHFALL TRIALS**. It is a survival match for twelve: you, your friends, other people's parties, and echoes (computer players) in every empty place. A match lasts up to about fourteen minutes. The Trials have their own kit: **perks** you choose, **amps** you fit to your weapons, **relic** weapons found nowhere else, and two **arenas**. A third arena, **the Wilds**, is a match of its own for thirty-two (see *A third arena: the Wilds*).
 
 ![The count on the plinths, round the Hearth](pictures/royale.jpg)
 
@@ -73,6 +73,29 @@ Choose one, or **EITHER** for a surprise (in a lobby the leader chooses).
 When you fall you drop everything you carried and can watch the others (**A / D** to switch). **Tab** shows who is left.
 
 Fights use the same rules as everywhere else: strike on the glint, never mash (see *How to play: Fighting*). Blows do less damage in the Trials than in the world, so a fight lasts long enough to be won by timing.
+
+## A third arena: the Wilds
+
+On the Trials screen, in the **ARENA** row, choose **WILDS**. It opens the Wilds' own screen, **THE WILDS** (**BACK** returns you to the Trials). It is the Ashfall played another way: no plinths, no horn, no kit. Thirty-two of you fall out of the sky, each over a different stretch of an island 3,500 paces wide, with caves beneath it. Steer your canopy with **A / D** and hold **S** to dive. You land with **nothing**. **Echoes** fill the empty places, and they land with nothing too.
+
+Gather, dig, make something sharp, find someone you trust, and outlast everyone else. The last Waker standing wins, or the last pact. You fight by the beat here as everywhere. When you fall you drop everything you carry, and can watch the others (**A / D** to switch). **Tab** shows who is left, **M** the island. There is no weather in the Wilds.
+
+- **You make what you fight with.** Your pack (**E**), the recipe book (**B**) and knapping (**K**) work as they do in a world. Gather sticks, pebbles, berries, grass and reeds as you walk, and hit trees for logs. A **Stone Club** or a **Flint Spear** is enough to win with. Most places have a workbench; a few have a bloomery and an anvil, for copper, bronze and iron from ore you dug yourself. Better metal helps without deciding the fight. Bows need arrows, and you make those too.
+- **Chests** (**F**) are few and plain: sticks and fibre, a little ore, food, perhaps an **Ember Salve** or a **Ward Shard**. A weapon is rare and never a great one.
+- **Dig anywhere:** with your hands through soil, with a pick through rock. Under the island are winding caves and places with names: the **Hollow Forge**, the **Underlake**, the **Bone Cathedral**, the **Crystal Heart**, the **Glowcap Garden** and the **Ember Brink**. The good ore is there, and so are things that live there. Don't go too far: about **145 paces** down the rock begins to burn you, and at about **170** is the molten sea.
+- **The border** closes in from both sides, but it waits for people to fall, not for the clock. The line under the strip at the top says how many must be left before it stirs (with 32: 24, 16, 10, 6, 3 and 2). You get a warning of 40 seconds. If nobody falls for five minutes, it stirs anyway.
+- **Pacts.** Stand close to another Waker or an echo and press **P** to offer a pact; **P** accepts one offered to you. You can't hurt each other, you see each other on the map, and you can win together. Press **P** twice to leave it, or choose **LEAVE PACT** in the menu (**Esc**). On a phone, the **PACT** button does what **P** does.
+- **The games.** Beasts roam by day and hunt by night. A parcel may come down on a chute when you make your first weapon, take someone down or nearly die. When half have fallen, **the Feast** is laid at the Crown in the middle of the island. Whoever has taken down the most (three or more) is **the Marked One**, for all to see. **Wildfire and poison fog** take a stretch of the safe ground for a while. **The hounds** are let loose when only a few are left.
+- **The echoes** gather, dig, make their own weapons, hide and make pacts, as you do. They find a real way to what they want: up to it, down to it, round what is in between. Where there is no way they dig one. They never plan a way into the burning rock.
+
+**What a match pays.** Nothing you own is ever carried into a match. What you earn is for show, and it is saved with your account.
+
+- **Souls:** one for every Waker or echo you take down. On the **SOUL WHEEL** page, ten souls turn the wheel, which gives you a skin or a hat you don't own.
+- **Coins:** a hundred for a win. Spend them on the **SHOP** page, where you also put on what you own.
+- Trials matches pay souls and coins too.
+- A **RANKED** match against other people moves your **ELO**, and with it your rank: **ASH**, **EMBER**, **CINDER**, **FLAME**, **CROWN**. Every match adds to your **pass level**, which gives you a title.
+
+**Ways to play the Wilds:** **SOLO** (you and thirty-one echoes, right away), **HOST** (a lobby and a game code for a party of up to eight; echoes fill the rest) and, on claude.ai, **ONLINE**. A Wilds code and a Trials code are different kinds, and a Wilds lobby never mixes with a Trials lobby: the join screen says which kind a code is.
 
 ## Teams
 
