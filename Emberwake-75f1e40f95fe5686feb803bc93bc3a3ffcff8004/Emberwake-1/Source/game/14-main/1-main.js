@@ -434,10 +434,10 @@ function tick() {
   if (G.dialog && !WORLD.arena && !netLive()) { tickParts(); tickStory(); tickCam(); endTick(); return; }
   coopTick();
   refreshFoes(); tickPlayer();
-  for (const f of G.fighters) { if (f === G.p) continue; if (f.remote) { if (f.coop || f.ghostH) coopReplay(f); else tickRemote(f); } else if (f.ai) { if (f.onBarge) brBotRide(f); else { tickFighter(f, f.brBot ? brBotThink(f) : aiThink(f)); if (f.brBot) brBotAfter(f); } } }
+  for (const f of G.fighters) { if (f === G.p) continue; if (f.remote) { if (f.coop || f.ghostH) coopReplay(f); else tickRemote(f); } else if (f.ai) { if (f.onBarge) brBotRide(f); else { tickFighter(f, f.brBot ? brBotThink(f) : f.isClone ? cloneThink(f) : aiThink(f)); if (f.brBot) brBotAfter(f); } } }
   if (G.duel) tickDuel();
   tickEnemies(); spawnTick(); tickDrops(); tickProjs(); tickParts(); tickStory(); tickStructs(); if (!netGuest()) tickLiquids(); tickCam(); ambient(); ambientMore(); wxParticles(); atmoTick();
-  if (!WORLD.arena) { tickFalling(); tickFelled(); tickRubble(); tickDoors(); tickDrill(); tickStations(); if (!G.away) tickHunger(); if (!netGuest()) tickRegrow(); tickDims(); tickLairs(); tickBless(); tickFurniture(); tickMeal(); if (G.time % 20 === 0) { mapReveal(); G.magR = hasUtil('magnet') ? 76 : 36; } }
+  if (!WORLD.arena) { tickFalling(); tickFelled(); tickRubble(); tickDoors(); tickDrill(); tickStations(); if (!G.away) tickHunger(); tickBrews(); if (!netGuest()) tickRegrow(); tickDims(); tickLairs(); tickBless(); tickFurniture(); tickMeal(); if (G.time % 20 === 0) { mapReveal(); G.magR = hasUtil('magnet') ? 76 : 36; } }
   if (WORLD.arena) arenaTick();
   if (G.combo.t > 0 && --G.combo.t <= 0) { G.combo.n = 0; G.combo.pts = 0; }
   if (G.slowT > 0) G.slowT--; if (G.selT > 0) G.selT--;
@@ -508,7 +508,7 @@ function freshSession() {
     boss: null, duel: null, flash: 0, spawnT: 200, biome: '', biomeT: 0, sel: 0, selT: 0, known: new Set(), movesUsed: new Set(), journal: ['waking', 'forge'], jNew: false, q: 0, qFlash: 0, says: [], sayCur: null,
     note: null, banner: null, dialog: null, kills: 0, deaths: 0, played: 0, dirty: false, saveT: 0, savedNote: null, clock: .1, introI: 0, introT: 0, echoT: 60,
     leads: new Set(), pin: null, found: new Set(), linksKnown: new Set(), fam: {}, arts: new Set(), artk: {}, respawn: null, fires: [], smokes: [], stuck: [], link: null, zoom: 1, zoomT: 1, armT: 0, linkBanner: null, leadDone: null, cine: null, bars: 0,
-    falling: [], felled: [], rubble: [], autoDoors: [], regrow: [], lairs: new Set(), bless: null, blessUsed: {}, ev: null, dev: null, devT: 2400, evClock: undefined, dhaz: [], echoes: new Set(), beasts: {}, gear: { head: null, body: null, legs: null, feet: null, off: null }, trink: [], meal: null, rest: 0, nearWarm: false, nearFount: false, mast: {}, pairsKnown: new Set(), drill: null, days: yearStart(), wx: null, wxT: undefined, curios: {}, sing: null, way: null, mood: 0, biomeN: '', biomeS: '', food: 100, worn: new Set(), spy: false, lampOff: false, quality: {}, reqs: null, seen: null, hintT: -999
+    falling: [], felled: [], rubble: [], autoDoors: [], regrow: [], lairs: new Set(), bless: null, blessUsed: {}, ev: null, dev: null, devT: 2400, evClock: undefined, dhaz: [], echoes: new Set(), beasts: {}, gear: { head: null, body: null, legs: null, feet: null, off: null }, trink: [], meal: null, brew: null, cloneTape: [], rest: 0, nearWarm: false, nearFount: false, mast: {}, pairsKnown: new Set(), drill: null, days: yearStart(), wx: null, wxT: undefined, curios: {}, sing: null, way: null, mood: 0, biomeN: '', biomeS: '', food: 100, worn: new Set(), spy: false, lampOff: false, quality: {}, reqs: null, seen: null, hintT: -999
   });
   for (const k in YACC) delete YACC[k]; INV_N = packCap(); mapReset();
   UI.open = null; UI.held = null; UI.scroll = 0; acc = 0;

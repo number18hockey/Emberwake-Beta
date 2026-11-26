@@ -330,7 +330,7 @@ function tickAttack(f, I) {
     if (a.pogoed && a.pt > a.pogoT + 2) end = true;
     if (end) {
       a.phase = 2; a.pt = 0; fadeTrail(a); if (m.dash) f.vx *= .5; tempoWhiff(a);
-      if (m.quake && f.onGround) { for (const s of m.quake2 ? [1, -1] : [1]) spawnProj({ type: 'shock', owner: f, x: f.x + 3 + a.face * s * 14, y: f.y + f.h - 4, vx: a.face * s * 3.3, vy: 0, r: 6, dmg: round(a.W.dmg * m.quake), life: m.quake2 ? 40 : 28, pierce: true, kb: [1.5, -3.2] }); if (near(f)) { addShake(m.shake); sfx('boom'); } dust(f.x + 3 + a.face * 14, f.y + f.h, 8, '#b9bdd0', 2); if (m.quake2) landShock(a, { r: 44, dmg: 1.5, kb: [3.4, -4] }, f.x + 3 + a.face * 12); }
+      if (m.quake && f.onGround) { for (const s of m.quake2 ? [1, -1] : [1]) spawnProj({ type: 'shock', owner: f, x: f.x + 3 + a.face * s * 14, y: f.y + f.h - 4, vx: a.face * s * 3.3, vy: 0, r: 6, dmg: round(a.W.dmg * m.quake * combatDmgMul(f)), life: m.quake2 ? 40 : 28, pierce: true, kb: [1.5, -3.2] }); if (near(f)) { addShake(m.shake); sfx('boom'); } dust(f.x + 3 + a.face * 14, f.y + f.h, 8, '#b9bdd0', 2); if (m.quake2) landShock(a, { r: 44, dmg: 1.5, kb: [3.4, -4] }, f.x + 3 + a.face * 12); }
     }
   } else { if (a.pt === beatOpen(a) && !a.rushed) beatGlint(a); if (a.pt >= atkRec(a)) endAttack(f); }
 }
@@ -373,7 +373,7 @@ function fireArrows(a, count) {
     let vx, vy, g = A.g === undefined ? .05 : A.g;
     if (A.rain) { const tx = a.tx + (A.n > 1 ? (a.shotI - (A.n - 1) / 2) * 10 : 0) + frand(-3, 3), Tf = A.tf || 46; g = .16; vx = clamp((tx - sx) / Tf, -7, 7); vy = (a.ty - sy - .5 * g * Tf * Tf) / Tf; }
     else { const v = A.v || 6.5; if (A.radial) { const th = a.shotI / A.n * TAU; vx = cos(th) * v; vy = sin(th) * v; } else { const th = a.th + (A.spread ? (a.shotI - (A.n - 1) / 2) * A.spread : 0) + (A.burst ? frand(-.025, .025) : 0); vx = fc * cos(th) * v; vy = sin(th) * v; } }
-    spawnProj({ type: A.boom ? 'bomb' : 'arrow', owner: f, x: sx, y: sy, vx, vy, g, r: 3, dmg: max(1, round(a.W.dmg * m.dmg * a.stale * (f.dmgMul || 1))), pierce: !!A.pierce, boom: A.boom || 0, life: 190, kb: [m.kb[0], m.kb[1]], crit: a.crit, stagger: m.stagger, stop: m.stop, fx: realmFx(a), beat: a.rushed ? 0 : a.beat, tk: (1 + .07 * (f.tempo | 0)) * (a.rushed ? .7 : 1) });
+    spawnProj({ type: A.boom ? 'bomb' : 'arrow', owner: f, x: sx, y: sy, vx, vy, g, r: 3, dmg: max(1, round(a.W.dmg * m.dmg * a.stale * (f.dmgMul || 1) * combatDmgMul(f))), pierce: !!A.pierce, boom: A.boom || 0, life: 190, kb: [m.kb[0], m.kb[1]], crit: a.crit, stagger: m.stagger, stop: m.stop, fx: realmFx(a), beat: a.rushed ? 0 : a.beat, tk: (1 + .07 * (f.tempo | 0)) * (a.rushed ? .7 : 1) });
   }
   fsx(f, 'bolt', 0); fsx(f, 'thrust', 0);
 }
@@ -439,7 +439,7 @@ function applyHit(a, e, hx, hy) {
   if (last !== undefined && (!m.multi || a.pt - last < m.multi)) return; a.hits.set(root, a.pt);
   const P0 = f === G.p, sharp = P0 && f.sharp > 0;
   const crit = a.crit || Math.random() < .07 + (a.W.crit || 0) + (a.critB || 0) + (P0 ? boonAdd('crit') : 0);
-  let dmg = a.W.dmg * m.dmg * a.stale * (P0 ? 1 + rankI() * .02 + qBonus(a.W.id) + (sharp ? .2 : 0) : 1) * (crit && !a.crit ? 1.6 : 1) * (f.dmgMul || 1) * (a.gm || 1) * (P0 ? (a.btn === 'H' ? boonMul('hdmg') : 1) * (m.counter ? boonMul('counter') : 1) : 1);
+  let dmg = a.W.dmg * m.dmg * a.stale * (P0 ? 1 + rankI() * .02 + qBonus(a.W.id) + (sharp ? .2 : 0) : 1) * (crit && !a.crit ? 1.6 : 1) * (f.dmgMul || 1) * combatDmgMul(f) * (a.gm || 1) * (P0 ? (a.btn === 'H' ? boonMul('hdmg') : 1) * (m.counter ? boonMul('counter') : 1) : 1);
   const lk = P0 ? flowPay(a, e) : null; if (lk) dmg *= lk.mul * (lk.tag ? boonMul('flow') : 1);
   const edge = edgeOf(a, e, hx, hy), TH = tempoHit(a, e, edge, crit); dmg *= TH.k * (WORLD.royale ? trHitMul(a, f, e) : 1);
   const root0 = e.root || e, sunder = !e.fighter && root0.stagT > 0 && a.btn === 'H' && !root0.sundered; if (sunder) { dmg *= 1.5; root0.sundered = true; }
@@ -474,7 +474,7 @@ function explode(x, y, r, dmg, by) {
   for (const e of foesOf(by)) { if (e.dead || e.noHit) continue; if (circBox(x, y, r, e)) strike(by, e, dmg, (sign(e.x + e.w / 2 - x) || 1) * 3, -2.6, { stop: 4, shake: 2, hx: e.x + e.w / 2, hy: e.y + e.h / 2 }); }
 }
 function fireProj(a) {
-  const f = a.f, m = a.m, fc = a.face, cx = f.x + 3, cy = f.y + 7, dm = f.dmgMul || 1;
+  const f = a.f, m = a.m, fc = a.face, cx = f.x + 3, cy = f.y + 7, dm = (f.dmgMul || 1) * combatDmgMul(f);
   if (m.proj === 'wave') { const el = clamp(a.aimA, -.6, .6); spawnProj({ type: 'wave', owner: f, x: cx + fc * 10, y: cy + 2, vx: fc * cos(el) * 4.8, vy: sin(el) * 4.8, r: 11, dmg: round(a.W.dmg * 2.2 * dm), pierce: true, life: 46, kb: [3.5, -1.5] }); fsx(f, 'wave', 0); }
   else if (m.proj === 'javelin') spawnProj({ type: 'javelin', owner: f, x: cx + fc * 8, y: cy, vx: fc * cos(a.th) * 6.4, vy: sin(a.th) * 6.4, g: .09, r: 4, dmg: round(a.W.dmg * 2.8 * dm), life: 130, kb: [4, -1], spr: a.W.held });
   else if (m.proj === 'knife') spawnProj({ type: 'knife', owner: f, x: cx + fc * 6, y: cy, vx: fc * cos(a.th) * 7, vy: sin(a.th) * 7, g: .03, r: 3, dmg: round(a.W.dmg * 1.3 * dm), life: 90, kb: [1.5, -.4] });

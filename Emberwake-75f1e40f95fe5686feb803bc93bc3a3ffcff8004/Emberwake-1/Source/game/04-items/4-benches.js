@@ -35,7 +35,7 @@ const BENCHES = [
   { st: 'tink', n: "Tinker's Table", item: 'tinker', d: 'Gadgets you carry, traps and the ember ballista: lanterns, glider, claws, compass, gauges.' },
   { st: 'jewel', n: "Jeweller's Bench", item: 'jeweller', d: 'Trinkets you wear in your trinket slots: rings, charms and amulets that change how you move and fight.' },
   { st: 'oven', n: 'Hearth Oven', item: 'oven', d: 'Hot meals. A meal fills you up and gives a boon for a few minutes (one at a time).' },
-  { st: 'pot', n: 'Cauldron', item: 'cauldron', d: 'Brews: salves, tonics, antidotes, and flasks to throw.' },
+  { st: 'pot', n: 'Cauldron', item: 'cauldron', d: 'Brews: field tonics at a cauldron, stronger infusions at a brewer\'s stand, and mooncraft at a moon cauldron.' },
   { st: 'altar', n: 'Offering Altar', item: 'offering_altar', d: 'Offerings that wake the guardians, the lamps that call the sky, and the keys between worlds.' },
   { st: 'mason', n: "Mason's Bench", item: 'mason', d: 'Cut stone: blocks, walls, statues, fountains, the stone anvil and the oven.' },
   { st: 'loom', n: 'Loom', item: 'loom', d: 'Workshop. Cloth, rugs, banners, bedrolls and bags.' },
@@ -92,6 +92,6 @@ function regroupRecipes() {
 }
 // the best anvil within reach, for the armourer's stand
 const anvilNear = () => { for (const t of [DAWNANVIL, THUNDERANVIL, ESCAPEMENT, RIMEFORGE, SLAGFORGE, ANVIL2, ANVIL]) if (nearStation(t)) return ANVIL_LVL[t]; return 0; };
-const LVL_NEED = { anvil: ['', 'a stone anvil', 'an iron anvil', 'a Slagforge', 'a Rime Forge', 'an Escapement', 'a Thunder Anvil', 'the Dawnforge'], armr: ['', 'a stone anvil close by', 'an iron anvil close by', 'a Slagforge close by', 'a Rime Forge close by', 'an Escapement close by', 'a Thunder Anvil close by', 'the Dawnforge close by'] };
+const LVL_NEED = { anvil: ['', 'a stone anvil', 'an iron anvil', 'a Slagforge', 'a Rime Forge', 'an Escapement', 'a Thunder Anvil', 'the Dawnforge'], armr: ['', 'a stone anvil close by', 'an iron anvil close by', 'a Slagforge close by', 'a Rime Forge close by', 'an Escapement close by', 'a Thunder Anvil close by', 'the Dawnforge close by'], pot: ['', 'a cauldron', 'a brewer\'s stand', 'a moon cauldron'] };
 // where an item is made, for its tooltip
 function madeAt(id) { const s = []; for (const r of RECIPES) if (r.out === id && !s.includes(r.st)) s.push(r.st); return s.map(benchName); }

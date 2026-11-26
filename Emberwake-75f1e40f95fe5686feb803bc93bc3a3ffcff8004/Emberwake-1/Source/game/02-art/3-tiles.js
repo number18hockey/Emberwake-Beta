@@ -8,7 +8,7 @@
 const GRAVEL = 40, MUD = 41, PEAT = 42, TIN = 43, COAL = 44, SALT = 45, CLAY = 46, TRUNK4 = 47, REED = 48, BERRY = 49, BUSH = 50, PEBBLE = 51, STICKS = 52, BONES = 53, GEODE = 54,
   PACKED = 56, COBBLE = 57, CUTSTONE = 58, MUDBRICK = 59, LOGWALL = 60, WATTLE = 61, THATCH = 62, WINDOW = 63, BEAM = 64, BEAMH = 65, DOORC = 66, DOORO = 67, LADDER = 68, ROPE = 69, CINDERBRICK = 70,
   CHEST = 72, BEDROLL = 73, FIRE = 74, WHEEL = 75, QUERN = 76, BLOOMERY = 77, ANVIL = 78, ANVIL2 = 79, LOOM = 80, RACK = 81, CAULDRON = 82, MASON = 83, SIEVE = 84, WAYSTONE = 85, CHARGE = 86,
-  CREEPER = 87, GLASSROOT = 88, RUSTCHAIN = 89, POST = 90;
+  CREEPER = 87, GLASSROOT = 88, RUSTCHAIN = 89, POST = 90, BREW_STAND = 95, MOON_CAULDRON = 96;
 const W_WATTLE = 10, W_MUDB = 11, W_COBBLE = 12, W_CUT = 13, W_LOG = 14;
 defT(GRAVEL, { name: 'Gravel', solid: true, full: true, hard: 12, hi: '#8a8296', dust: '#6b6478' });
 defT(MUD, { name: 'Fen Mud', solid: true, full: true, hard: 12, hi: '#6f5a66', dust: '#4a3438' });
@@ -50,7 +50,8 @@ defStn(WHEEL, 'Potter\'s Wheel', 'wheel'); defStn(QUERN, 'Quern', 'quern', { dus
 defStn(ANVIL, 'Stone Anvil', 'anvil', { dust: '#8d8794' }); defStn(ANVIL2, 'Iron Anvil', 'anvil2', { dust: '#5f5a69' }); defStn(LOOM, 'Loom', 'loom'); defStn(RACK, 'Drying Rack', 'rack');
 defStn(CAULDRON, 'Cauldron', 'cauldron', { dust: '#a0786a' }); defStn(MASON, 'Mason\'s Bench', 'mason', { dust: '#8d8794' }); defStn(SIEVE, 'Sieve', 'sieve');
 defStn(WAYSTONE, 'Waystone', 'waystone', { light: [.3, .2, .55], dust: '#8a84a0' }); defStn(CHARGE, 'Blasting Charge', null, { hard: 1 }); defStn(POST, 'Practice Post', 'post', { dust: '#8a6a48' });
-const STATIONS = { [BENCH]: 'bench', [FURNACE]: 'kiln', [FIRE]: 'fire', [WHEEL]: 'wheel', [QUERN]: 'quern', [BLOOMERY]: 'bloom', [ANVIL]: 'anvil', [ANVIL2]: 'anvil', [LOOM]: 'loom', [RACK]: 'rack', [CAULDRON]: 'pot', [MASON]: 'mason', [SIEVE]: 'sieve', [CHEST]: 'chest', [WAYSTONE]: 'way', [POST]: 'train' };
+defStn(BREW_STAND, 'Brewer\'s Stand', 'brewstand', { dust: '#8fd0d8', light: [.08, .2, .22] }); defStn(MOON_CAULDRON, 'Moon Cauldron', 'moon_cauldron', { dust: '#a58ae0', light: [.18, .1, .3] });
+const STATIONS = { [BENCH]: 'bench', [FURNACE]: 'kiln', [FIRE]: 'fire', [WHEEL]: 'wheel', [QUERN]: 'quern', [BLOOMERY]: 'bloom', [ANVIL]: 'anvil', [ANVIL2]: 'anvil', [LOOM]: 'loom', [RACK]: 'rack', [CAULDRON]: 'pot', [BREW_STAND]: 'pot', [MOON_CAULDRON]: 'pot', [MASON]: 'mason', [SIEVE]: 'sieve', [CHEST]: 'chest', [WAYSTONE]: 'way', [POST]: 'train' };
 TP[BENCH].part = 1; TP[FURNACE].part = 1; TP[PLANK].part = 1; TP[BRICK].part = 1; TP[PLATFORM].part = 1;
 
 // ---------------- what mining sees ----------------
@@ -81,13 +82,13 @@ defM(GEODE, { hp: 10, tier: 3, k: 'glass', y: [['snow', 2], ['rock', .5]] });
 defM([TRUNK, TRUNK2, TRUNK3, TRUNK4], { hp: 6, tier: 1, k: 'wood', y: [['log', 1]] });
 defM([PLANK, LOGWALL, WATTLE, THATCH, BEAM, BEAMH, DOORC, DOORO, LADDER, ROPE, PLATFORM, CHEST, BEDROLL, WHEEL, LOOM, RACK, SIEVE, BENCH], { hp: 4, k: 'wood' });
 defM([PACKED], { hp: 4, k: 'soil' }); defM([MUDBRICK], { hp: 5, k: 'clay' });
-defM([COBBLE, CUTSTONE, BRICK, QUERN, ANVIL, MASON, WAYSTONE, FURNACE, FIRE, BLOOMERY, CAULDRON], { hp: 7, tier: 1, k: 'stone' });
+defM([COBBLE, CUTSTONE, BRICK, QUERN, ANVIL, MASON, WAYSTONE, FURNACE, FIRE, BLOOMERY, CAULDRON, BREW_STAND, MOON_CAULDRON], { hp: 7, tier: 1, k: 'stone' });
 defM([CINDERBRICK, ANVIL2], { hp: 9, tier: 2, k: 'stone' }); defM([WINDOW], { hp: 2, k: 'glass' });
 MAT[PLANK].y = [['plank', 1]]; MAT[BRICK].y = [['brick', 1]]; MAT[PLATFORM].y = [['platform', 1]];
 for (let t = 0; t < TP.length; t++) if (TP[t] && TP[t].part && TP[t].drop && MAT[t] && !MAT[t].y.length) MAT[t].y = [[TP[t].drop, 1]];
 // what plants, litter and urns give when you take them by hand
 const PLUCK = {
-  [TALLGRASS]: [['fiber', 1, 2]], [FLOWER]: [['fiber', 1, 1]], [GLOWCAP]: [['glowcap', 1, 1]], [DEADBUSH]: [['stick', 2, 3]], [VINE]: [['fiber', 1, 1]], [CRYSTAL]: [['snow', 1, 2]],
+  [TALLGRASS]: [['fiber', 1, 2]], [FLOWER]: [['fiber', 1, 1]], [GLOWCAP]: [['glowcap', 1, 1]], [DEADBUSH]: [['stick', 2, 3], ['fiber', 1, 2]], [VINE]: [['fiber', 1, 1]], [CRYSTAL]: [['snow', 1, 2]],
   [REED]: [['reed', 2, 3]], [BERRY]: [['berries', 2, 3], ['stick', 0, 1]], [BUSH]: [['stick', 1, 2]], [PEBBLE]: [['rock', 1, 2], ['flint', 0, 1]], [STICKS]: [['stick', 2, 3]],
   [BONES]: [['bone', 1, 3]], [FUNGUS]: [['fungus', 1, 1]]
 };
@@ -125,7 +126,7 @@ function buildTiles3() {
   TEX[PEBBLE] = genTex((px, py, v) => { const pts = [[1 + v % 2, 6], [4, 6 + (v >> 1) % 2], [6 - v % 2, 7]]; for (const [cx, cy] of pts) { const d = abs(px - cx) + abs(py - cy); if (d === 0) return '#8a8296'; if (d === 1 && py >= cy) return '#4a4458'; } return null; });
   TEX[STICKS] = genTex((px, py, v) => { if (py === 7 - ((px + v) >> 2) && px < 7) return '#7a5a40'; if (py === 5 + ((px + v) >> 2) % 3 && px > 1 && px < 7 && (px + v) % 3) return '#5a4030'; return null; });
   TEX[BONES] = genTex((px, py, v) => { if (py === 6 && px > 0 && px < 7) return '#e6dccc'; if ((py === 5 || py === 7) && (px === 1 || px === 6)) return '#c9bca6'; if (py === 7 - abs(px - 4) && v > 1 && py > 4) return '#d8ccb8'; return null; });
-  for (const id of [CHEST, BEDROLL, FIRE, WHEEL, QUERN, BLOOMERY, ANVIL, ANVIL2, LOOM, RACK, CAULDRON, MASON, SIEVE, WAYSTONE, CHARGE, POST]) TEX[id] = TEX[DIRT];
+  for (const id of [CHEST, BEDROLL, FIRE, WHEEL, QUERN, BLOOMERY, ANVIL, ANVIL2, LOOM, RACK, CAULDRON, MASON, SIEVE, WAYSTONE, CHARGE, POST, BREW_STAND, MOON_CAULDRON]) TEX[id] = TEX[DIRT];
   TEX[CREEPER] = genTex((px, py, v) => { const vx = 3 + round(sin((py + v * 3) * .9)); if (px === vx) return '#2c4a34'; if (abs(px - vx) === 1 && (py + v) % 3 === 0) return '#5a9a5e'; if (abs(px - vx) === 2 && (py + v) % 3 === 1) return hh(px, py, 361 + v) > .4 ? '#3a7a52' : null; return null; });
   TEX[GLASSROOT] = genTex((px, py, v) => { const vx = 3 + ((py + v) % 4 < 2 ? 0 : 1); if (px === vx) return '#62a9bc'; if (px === vx + 1 && (py + v) % 4 === 1) return '#c9fff6'; if (px === vx - 1 && (py + v) % 5 === 2) return '#8fd0d8'; return null; });
   TEX[RUSTCHAIN] = genTex((px, py, v) => { const k = (py + v) % 4; if ((px === 3 || px === 4) && (k === 0 || k === 2)) return k === 0 ? '#bd5a36' : '#7a3222'; if ((px === 2 || px === 5) && k === 1) return '#d67645'; return py % 8 === 0 && px === 4 ? '#5f5a69' : null; });
@@ -163,6 +164,8 @@ function buildStationSprites() {
   S(LOOM, ['a..........a', 'aaaaaaaaaaaa', 'a.e.e.e.e..a', 'a.e.e.e.e..a', 'a.ffffffff.a', 'a.e.e.e.e..a', 'a.e.e.e.e..a', 'aaaaaaaaaaaa', 'a..........a', 'a..........a', 'aa........aa'], { a: '#7a5a40', e: '#e8d8b0', f: '#c94a4e' }, -2, -3);
   S(RACK, ['a..........a', 'aaaaaaaaaaaa', 'a..........a', 'a..........a', 'a..........a', 'a..........a', 'a..........a', 'aa........aa'], { a: '#7a5a40' }, -2, 0);
   S(CAULDRON, ['.aaaaaaaa.', 'abbbbbbbbc', 'abbbbbbbbc', '.bbbbbbbc.', '..cccccc..', '.d......d.', 'd........d'], { a: '#8d8794', b: '#5f5a69', c: '#3f3a4c', d: '#2a2436' }, -1, 1);
+  S(BREW_STAND, ['....e....', '...ebe...', '..abfba..', '...bfb...', '...bfb...', '.aabbbba.', '..cc.cc..', '..cc.cc..'], { a: '#8a6a48', b: '#5f5a69', c: '#3a3448', e: '#8ff5e6', f: '#c9fff6' }, -1, 1);
+  S(MOON_CAULDRON, ['..eeee..', '.eaaaee.', 'eabbbbae', 'eabffbae', '.abffba.', '..cccc..', '.d....d.', 'd......d'], { a: '#a58ae0', b: '#5a4a8a', c: '#3d2f5c', d: '#24182f', e: '#e0d2ff', f: '#8ff5e6' }, -1, 0);
   S(MASON, ['......h.....', '..aaaaaaaa..', '.abbbbbbbbc.', 'dddddddddddd', '.d........d.', '.d........d.', '.dd......dd.'], { a: '#c0bac8', b: '#8a8496', c: '#5f5a69', d: '#5a4030', h: '#cfd6e0' }, -2, 1);
   S(SIEVE, ['a........a', 'aeaeaeaeaa', 'aaaaaaaaaa', '.d......d.', '.d......d.', 'dd......dd'], { a: '#7a5a40', e: '#c9a44a', d: '#5a4030' }, -1, 2);
   S(WAYSTONE, ['..aaaa..', '.abbbbc.', '.abbbbc.', '.abebbc.', '.abeebc.', '.abbebc.', '.abebbc.', '.abbbbc.', '.abbbbc.', 'abbbbbbc', 'abbbbbbc', 'dddddddd'], { a: '#c0bac8', b: '#8a84a0', c: '#5f5a69', d: '#3f3a4c', e: '#b49cff' }, 0, -4);

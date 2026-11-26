@@ -66,6 +66,50 @@ function boons() {
   return BOON_C = b;
 }
 const boonMul = k => boons().mul[k] || 1, boonAdd = k => boons().add[k] || 0, boonHas = t => boons().tags.has(t), boonRes = k => boons().res[k] || 0;
+const brewActive = k => !!(G.brew && G.brew.k === k && G.brew.t > 0);
+const brewMul = k => k === 'swift' && brewActive(k) ? 1.28 : 1;
+// what a brew adds to a blow: exactly 1 unless the Emberheart brew is burning in you
+const combatDmgMul = f => f === G.p && brewActive('might') ? 1.22 : 1;
+// A save knows a recipe by its number, so the brews, their two stations and the omelet are written into the list last of all
+// (buildItems calls this after every other recipe is in).
+function brewRecipes() {
+  R('bench', 'brewstand', 1, { copper_bar: 2, glass: 2, stick: 4 });
+  R('mason', 'moon_cauldron', 1, { cauldron: 1, skyglass: 2, shard: 3 });
+  R('pot', 'swiftbrew', 2, { berries: 3, feather: 1, jug_w: 1 }, { lvl: 1, ret: { jug: 1 }, col: [111, 240, 224] });
+  R('pot', 'mightbrew', 1, { egg: 2, bark: 2, jug_w: 1 }, { lvl: 2, ret: { jug: 1 }, col: [226, 72, 59] });
+  R('pot', 'mirrordraught', 1, { moonseed: 1, glass_wing: 1, glowcap: 2, jug_w: 1 }, { lvl: 3, ret: { jug: 1 }, col: [165, 138, 224] });
+  R('oven', 'egg_scramble', 1, { egg: 2, salt: 1, berries: 1 });
+}
+function drinkBrew(k) {
+  if (k === 'mirror') { spawnMirrorClone(); return; }
+  G.brew = { k, t: k === 'swift' ? 2400 : 1800 };
+  const name = k === 'swift' ? 'QUICKSTEP' : 'EMBERHEART', col = k === 'swift' ? '#8ff5e6' : '#ff8a3d';
+  numPop(G.p.x + 3, G.p.y - 12, name, col, 1.15); say(`${name} kindles for ${k === 'swift' ? '40' : '30'} seconds.`); sfx('charged', 0);
+}
+function spawnMirrorClone() {
+  const p = G.p, tape = G.cloneTape || [], W = heldOf(p), id = W && W.type === 'weapon' ? W.id : 'fists';
+  const f = newFighter(p.x - p.face * 12, p.y, { name: 'MIRROR WAKER', skin: p.skin, team: p.team || 'p', wid: id, hp: 48, maxhp: 48, dmgMul: .68, ai: newBrain(.5), isClone: true, cloneT: 2400, cloneIdx: max(0, tape.length - 18) });
+  f.py = f.y; f.face = p.face; G.fighters.push(f); p.cloneCd = 3600;
+  burst(f.x + 3, f.y + 8, 18, ['#e0d2ff', '#8ff5e6', '#ffffff'], 1.8, 36, { glow: 1, g: -.01 });
+  numPop(p.x + 3, p.y - 12, 'DOUBLE SOUL', '#e0d2ff', 1.2); say('Your mirror repeats the last few steps, then reads its own fights.'); sfx('reflect', 0);
+}
+function recordCloneInput(I) {
+  if (!G.cloneTape) G.cloneTape = []; const tape = G.cloneTape;
+  tape.push({ md: I.md, jumpP: I.jumpP, jumpH: I.jumpH, down: I.down, lp: I.lp, rp: I.rp, l: I.l, r: I.r, dodgeP: I.dodgeP, wx: I.wx, wy: I.wy, faceAim: I.faceAim });
+  if (tape.length > 300) tape.splice(0, tape.length - 300);
+}
+function cloneThink(f) {
+  const foe = foesOf(f).find(e => !e.dead && !e.noHit && hypot(e.x - f.x, e.y - f.y) < 210);
+  if (foe) return aiThink(f);
+  const tape = G.cloneTape || [], src = tape[f.cloneIdx++];
+  if (src) return Object.assign({}, src);
+  return { md: 0, jumpP: false, jumpH: false, down: false, lp: false, rp: false, l: false, r: false, dodgeP: false, wx: f.x + f.face * 20, wy: f.y + 8, faceAim: true };
+}
+function tickBrews() {
+  if (G.brew && G.brew.t > 0 && --G.brew.t <= 0) { const n = G.brew.k === 'swift' ? 'Quickstep' : 'Emberheart'; G.brew = null; say(`The ${n} brew fades.`); }
+  const p = G.p; if (p && p.cloneCd > 0) p.cloneCd--;
+  for (const f of G.fighters) if (f.isClone && !f.gone) { if (--f.cloneT <= 0) { f.gone = true; burst(f.x + 3, f.y + 8, 12, ['#e0d2ff', '#8ff5e6'], 1.4, 25, { glow: 1 }); if (p) say('Your mirror folds back into the glass.'); } }
+}
 
 // ---------------- wearing trinkets ----------------
 function wearTrinket(id, slot) {
@@ -103,7 +147,9 @@ function tickMeal() {
 function drawMealHud(c) {
   if (WORLD.arena) return; const y = G.bless && G.bless.t > 0 ? 61 : 52; let x = 4;
   if (G.meal && G.meal.t > 0) { const B = MEALB[G.meal.k], s = ceil(G.meal.t / 60); x += textS(c, `MEAL: ${B.n}  ${floor(s / 60)}:${String(s % 60).padStart(2, '0')}`, x, y, G.meal.t < 600 && (G.time >> 3) & 1 ? '#8b8fa3' : B.c) + 8; }
-  if (G.rest > 0) textS(c, 'RESTED', x, y, '#ffd35a');
+  if (G.rest > 0) x += textS(c, 'RESTED', x, y, '#ffd35a') + 8;
+  if (G.brew && G.brew.t > 0) { const n = G.brew.k === 'swift' ? 'QUICKSTEP' : 'EMBERHEART', col = G.brew.k === 'swift' ? '#8ff5e6' : '#ff8a3d'; x += textS(c, `${n}  ${ceil(G.brew.t / 60)}s`, x, y, col) + 8; }
+  const clone = G.fighters.find(f => f.isClone && !f.gone && !f.dead); if (clone) textS(c, `MIRROR  ${ceil(clone.cloneT / 60)}s`, x, y, '#e0d2ff');
 }
 
 // ---------------- the items ----------------
@@ -150,6 +196,7 @@ function trinketItems() {
   meal('berry_pie', 'Emberberry Pie', ['.aaaaaa.', 'abebebea', 'abbbbbbc', 'dddddddd', '.dddddd.'], { a: '#f0c070', b: '#c93a2a', c: '#8a2a1a', d: '#c98a2b', e: '#ff6a4a' }, 35, 6, 'quick', 'A boon: QUICK. You walk faster for 4 minutes.');
   meal('hunter_pie', "Hunter's Pie", ['.aaaaaa.', 'abebebea', 'abbbbbbc', 'dddddddd', '.dddddd.'], { a: '#f0c070', b: '#8a4a2a', c: '#5a2a18', d: '#c98a2b', e: '#c98a5a' }, 50, 10, 'hearty', 'A boon: HEARTY. You heal between fights and take less, for 4 minutes.');
   meal('mush_soup', 'Mushroom Soup', bowl, { a: '#8a5a32', b: '#8a6a48', c: '#4a3220', e: '#c9b4d8' }, 28, 16, null, 'Warm and kind to wounds.');
+  meal('egg_scramble', 'Willow Omelet', ['..aaaa..', '.abbbba.', 'abebbbbc', '.cccccc.', '..d..d..'], { a: '#fff1a8', b: '#d8ba78', c: '#8a6a48', d: '#5a4030', e: '#ff8a3d' }, 42, 10, 'hearty', 'A restorative camp meal. HEARTY settles your breathing and helps healing for 4 minutes.');
   meal('honey_cake', 'Honey Cake', ['...e....', '..aaaa..', '.abbbba.', '.ffffff.', '.bbbbbb.', '.cccccc.'], { a: '#fff1a8', b: '#f0c070', c: '#a8702e', e: '#e2483b', f: '#ffb347' }, 40, 8, 'sweet', 'A boon: SWEET. Stamina comes back faster for 4 minutes.');
   meal('fire_roast', 'Fire Roast', ['..abbc..', '.abbbcc.', '.bbebcc.', '.bcccd..', '..cdd...', '...ww...', '....ww..'], PAL.cmeat, 60, 12, 'warm', 'A boon: WARM. The cold barely touches you, for 4 minutes.');
   meal('glow_stew', 'Glowcap Stew', bowl, { a: '#5a4030', b: '#2fb8a8', c: '#1e6a64', e: '#c8fff0' }, 35, 20, 'glow', 'A boon: GLOWING. You shed light for 4 minutes.');

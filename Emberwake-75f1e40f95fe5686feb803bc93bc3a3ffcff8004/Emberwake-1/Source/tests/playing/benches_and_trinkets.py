@@ -34,8 +34,8 @@ async def main():
     res['slots at the start, then with the Warden beaten'] = await h.ev("(() => { const a = trinkSlots(); G.flags.wardenDead = true; const b = trinkSlots(); G.flags.wardenDead = false; return [a, b]; })()")
     res['third trinket with two slots'] = await h.ev("(() => { addItem('might_band', 1); addItem('stone_ring', 1); wearTrinketAt(inv.findIndex(s => s && s.id === 'might_band')); const ok = wearTrinket('stone_ring'); return [ok, G.trink.filter(Boolean)]; })()")
     res['damage and harm with the band'] = await h.ev("(() => { tickBless(); return [+G.p.dmgMul.toFixed(2), +boonMul('taken').toFixed(2)]; })()")
-    # ---- a meal ----
-    res['a berry pie'] = await h.ev("(() => { addItem('berry_pie', 1); G.food = 100; const a = gearMul('walk'); G.p.eatCd = 0; eat(IT.berry_pie); return [G.meal && G.meal.k, +a.toFixed(3), +gearMul('walk').toFixed(3), countItem('berry_pie')]; })()")
+    # ---- a meal (eating takes a moment now, so the bites are counted out before looking) ----
+    res['a berry pie'] = await h.ev("(() => { addItem('berry_pie', 1); G.food = 100; const a = gearMul('walk'); G.p.eatCd = 0; eat(IT.berry_pie); for (let k = 0; k < 90 && G.p.consume; k++) tickConsume(G.p); return [G.meal && G.meal.k, +a.toFixed(3), +gearMul('walk').toFixed(3), countItem('berry_pie')]; })()")
     # ---- storage of three sizes, kept through a save ----
     res['storage sizes'] = await h.ev("""(() => { %s const out = []; for (const [t, d] of [[CRATE, 2], [BARREL, 3], [STRONGBOX, 4]]) { tryPlace(IT[TP[t].drop], tx + d, ty) || setTile(tx + d, ty, t); stnPlaced(tx + d, ty, t); const s = stnState(ty * WW + tx + d, t); out.push(s.items.length); }
       const s = stnState(ty * WW + tx + 4, STRONGBOX); s.items[25] = { id: 'rock', n: 7 }; return out; })()""" % here)

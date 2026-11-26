@@ -331,12 +331,27 @@ function toolTick(p, I) {
 }
 // ---------------- eating and the hunger it answers ----------------
 function eat(it) {
-  const p = G.p; if (p.eatCd > 0) return; if (!WORLD.mode && G.food >= 99 && !(it.heal > 0 && p.hp < p.maxhp) && !it.buff) { say('You are full.'); return; }
-  removeItem(it.id, 1); p.eatCd = 30; G.food = min(100, (G.food || 0) + (it.food || 0)); if (it.heal) { p.hp = min(p.maxhp, p.hp + it.heal); numPop(p.x + 3, p.y - 4, '+' + it.heal, '#7ddc6f'); }
+  const p = G.p; if (p.eatCd > 0 || p.consume || countItem(it.id) < 1) return; if (!WORLD.mode && G.food >= 99 && !(it.heal > 0 && p.hp < p.maxhp) && !it.buff) { say('You are full.'); return; }
+  if (it.brew === 'mirror' && ((p.cloneCd || 0) > 0 || G.fighters.some(f => f.isClone && !f.gone && !f.dead))) { say('Your mirror is still finding its way home.'); sfx('deny'); return; }
+  const drink = !!it.drink || it.brew || it.id === 'tonic' || it.id === 'antidote';
+  p.consume = { id: it.id, drink: !!drink, t: 0, dur: it.consumeT || (drink ? 48 : it.meal ? 38 : 28) }; p.eatCd = p.consume.dur + 12; p.vx *= .45;
+  sfx(drink ? 'stir' : 'ui', 0);
+}
+function finishEat(it) {
+  const p = G.p; if (!p || !it || countItem(it.id) < 1) return;
+  removeItem(it.id, 1); G.food = min(100, (G.food || 0) + (it.food || 0)); if (it.heal) { p.hp = min(p.maxhp, p.hp + it.heal); numPop(p.x + 3, p.y - 4, '+' + it.heal, '#7ddc6f'); }
   if (it.meal) startMeal(it);
   if (it.buff === 'tonic') p.tonic = 1800; if (it.buff === 'ward') { p.ward = 1800; if (p.st) p.st.poison = p.st.bleed = 0; } if (it.buff === 'bandage') { p.bandT = 600; if (p.st) p.st.bleed = 0; }
-  sfx('pickup', 0); for (let k = 0; k < 6; k++) P(p.x + 3, p.y + 6, frand(-.8, .8), frand(-1.2, -.3), 18, fpick(['#ffd35a', '#f4efe6', '#e2483b']), { g: .08 });
+  if (it.brew) drinkBrew(it.brew);
+  sfx('pickup', 0); for (let k = 0; k < 6; k++) P(p.x + 3, p.y + 6, frand(-.8, .8), frand(-1.2, -.3), 18, fpick(it.brew ? ['#8ff5e6', '#c9fff6', '#b49cff'] : ['#ffd35a', '#f4efe6', '#e2483b']), { g: .08 });
   G.flags['ate_' + it.id] = true;
+}
+function tickConsume(p) {
+  if (!p || !p.consume) return false; const u = p.consume, it = IT[u.id];
+  if (p.dead || p.hurtT > 0) { p.consume = null; p.eatCd = 0; if (p === G.p) say('Interrupted. You keep the food.'); return false; }
+  u.t++; p.vx *= .7;
+  if (u.t >= u.dur) { p.consume = null; finishEat(it); }
+  return true;
 }
 function tickHunger() {
   const p = G.p; if (!p || p.dead || WORLD.arena || WORLD.mode === 1) return;
