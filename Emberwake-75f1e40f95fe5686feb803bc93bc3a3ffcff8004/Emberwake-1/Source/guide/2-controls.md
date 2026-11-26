@@ -38,6 +38,17 @@ Anything you only carry (ore, bars, rope, keys, sidearms) leaves your fists free
 
 Blocks, food and other usable things still do their job when you click empty space, but a click on a creature is always a punch. Tools swing where you point and hit creatures as well as rock. Pointing at ground within reach with empty hands digs by hand.
 
+## On a phone or tablet
+
+Touch controls appear by themselves, whichever way up you hold it. With a mouse and keys they never show.
+
+- The **stick** moves you. Pull it down to drop through a bridge or aim low. **JUMP**, **USE**, **LIGHT** and **HEAVY** are the buttons around it. **USE** is the **F** key, and you can hold it.
+- **LIGHT** and **HEAVY** strike at whoever is in front of you. The beat is the same as with a mouse: tap again when your weapon **glints**. Holding a button down does not attack again.
+- **Touch the world** to dig, gather or strike exactly there. Tap the hotbar to change what you hold.
+- **PACK** opens your pack and crafting: tap a recipe to make it, slide a finger to scroll, **CLOSE** to go back. **HEAL** is a quick heal, **MAP** the map (once you have drawn one) and **MENU** the menu.
+- **CHAT** shows when friends are in your world.
+- Tap a name, a seed, a game code or an account field to type in it: your keyboard comes up.
+
 ## The menu (Esc)
 
 - **Controls: SIMPLE** (the default). Only where you aim (up, straight, down) and holding **S** choose your attack, so you never lunge or dash across the screen by surprise. **FULL** brings back the extra forms tied to the movement keys and how far away the cursor is (the forms page, **C**, greys them out in SIMPLE).

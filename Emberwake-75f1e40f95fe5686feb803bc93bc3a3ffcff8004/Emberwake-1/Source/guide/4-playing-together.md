@@ -24,6 +24,7 @@ The first time a friend visits your world they start with **nothing**, just like
 
 ![Two Wakers in Hearthhold: names over their heads, everyone's health on the left](pictures/friends.jpg)
 
+- **How you look:** friends see the look and the **hat** you chose for your account.
 - **What you share:** the land (everything anyone digs or builds), chests and stations, the creatures (the host's game runs them, so you all fight the same ones), the sky, events and bosses, explosions, and a chat (**Enter**).
 - **Loot is everyone's own:** when a creature falls, each of you nearby gets your own share. Drop something from your pack and your friends can pick it up.
 - **One at a time:** a chest, campfire, kiln or drying rack is used by one person at a time, so nothing gets doubled or lost. If someone else has it open, you're told who.

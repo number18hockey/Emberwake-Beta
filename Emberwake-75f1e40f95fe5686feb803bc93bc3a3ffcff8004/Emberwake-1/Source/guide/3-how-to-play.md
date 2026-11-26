@@ -33,6 +33,24 @@ The **workshops** turn raw things into materials: the kiln (brick, glass, charco
 
 **Meals** from the Hearth Oven fill you up and give one boon for a few minutes: an Emberberry Pie makes you **QUICK**, a Hunter's Pie **HEARTY**, a Honey Cake **SWEET** (stamina), a Fire Roast **WARM**, a Glowcap Stew **GLOWING**, Spiced Jerky **FIERCE**, a Miner's Stew **DELVING**, and the Waker's Feast does several at once. The last meal you ate is the one that counts. Flour comes from reeds at the quern; honey from a beehive.
 
+## Eating and brews
+
+**Eating takes a moment.** Your Waker stops to lift the food, a bite is quick, and a meal or a drink takes a little longer. **A blow interrupts it**, and you keep the food. So eat before the fight or step out of it first.
+
+**Brews** are drinks that change a fight for a short while. Each rank of brew needs a better vessel:
+
+| Brew | Made at | What it does |
+| --- | --- | --- |
+| **Quickstep Brew** | a **Cauldron** | you move more than a quarter faster for 40 seconds |
+| **Emberheart Brew** | a **Brewer's Stand** (built at a Workbench) | your blows hit about a fifth harder for 30 seconds |
+| **Doublesoul Draught** | a **Moon Cauldron** (built at a Mason's Bench, around a cauldron) | calls a **mirror** of you for 40 seconds |
+
+Only one of the first two burns in you at a time: drink another and it takes the place of the first. The time left shows with your boons.
+
+**The mirror** stands up beside you with the weapon you hold. It repeats your last few steps, then fights with a mind of its own. It hits more lightly than you do and can be beaten down. You can have one mirror at a time, and after it goes home it needs a minute before it will come again.
+
+The brews want things from the two new lands (see *No two worlds alike*): a **willow feather** for Quickstep, **willow eggs** for Emberheart, a **moonseed** for the Doublesoul Draught. Two eggs, salt and berries at the Hearth Oven make a **Willow Omelet**, a **HEARTY** meal. The recipe book (**B**) has every recipe.
+
 ## Things to place
 
 ![A home: a bed, table and chair, candles, a bookshelf, a weapon rack, a strongbox, a barrel, a planter of berries, a brazier, and outside a ballista, a spike trap, a beehive and a lamp post](pictures/home.jpg)
@@ -81,6 +99,10 @@ A fight has a pulse, and you win by keeping it. **Hammering the mouse button los
 **How hard things hit.** Each metal is about a fifth better than the one before it, all the way up. For the same metal, a slow weapon hits hardest and a long one least, but used well they all end up within reach of each other: pick the one whose rhythm you like. **Tools are not weapons**: a tapped pick or axe does about half what a sword of the same metal does, and a wound-up swing (hold the right button) nearly as much as one.
 
 The practice post in the village teaches all of this: press **F** at it with a weapon in hand. The journal (**J**) keeps a page called *The Beat of a Fight*. On **EASY** the timing is generous; **NORMAL** and **HARD** tighten it.
+
+### Keeping your run
+
+A blow or a dodge no longer stops you dead. **Hold a direction** through a swing and you keep most of your run, so you can strike on the way past and carry on. A dodge flows back into a run the same way. Take your hands off the keys and you glide to a stop. Strike behind you while you back away and you do not turn round. A blow thrown standing still is exactly as it was.
 
 ### Styles, set-ups and arts
 
@@ -176,9 +198,36 @@ Every world you forge from now on has a character of its own, worked out from it
 
 **Moods.** A land is not the same all the way along. A moor may be the Emberfelt Moor, or **the Burnt Moor** (ash underfoot, bare hooked stalks, husks), or **Lantern Meadows** (flowers, glowcaps in the open, hares). The Reach has **the Glass Spires** and **the White Quiet**; the fen **the Black Fen** and **the Reedsea**; the thornwood **the Bramble Deeps** and **the Gravel Barrens**; the dunes **the Bone Fields** and **the Glass Flats**; and so on. Each mood has its own plants, its own ground and its own company, and its name shows as you cross into it.
 
+**Two new lands.** Worlds forged from now on have two more lands in the mild middle of the country, between the thornwood and the fen. **The Mosswood** is deep green and hilly, under **oaks**. **Moss deer** graze there by day; they leave meat, hide and **moss antler**, and once in a long while a **moonseed**. **The Willowmere** is low and wet: reeds, still water and **willows**. **Willow hens** live there by day and leave **eggs** and **feathers**; moss deer wander in too. A stretch of each lies within a walk of home, the Mosswood on one side and the Willowmere on the other, and there is more of both far out. Each has its own ground, plants, places and moods.
+
 **The year.** Three days to a season. **Kindling**: showers, and picked bushes fruit again fast. **Highsun**: long days. **Emberfall**: the stalks turn the colour of coals, and creatures carry more. **Ashrest**: snow, long nights, more abroad in them, and bushes slow to fruit. The menu shows the day and the season. Rain and snow come and go with the season.
 
 ![The same world four ways: a village night, rain in Kindling, an Emberfall dusk, snow in Ashrest](pictures/look.jpg)
+
+**What the weather does.** In the Waking Lands the weather is felt, not only seen:
+
+| Weather | Out in it |
+| --- | --- |
+| **Rain** | you go a little slower and the ground is slick; creatures see a little less far; fires die quickly, and the rain washes the flames off anyone who is burning |
+| **A thunderstorm** | all that rain does, and a bolt **sets fire** to what it strikes (a lightning rod takes the bolt to earth instead) |
+| **Snow** | you go slower, the ground is slick, and your breath comes back more slowly |
+| **Ashfall** | a little slower, and short of breath |
+| **The Long Fog** | creatures see about half as far |
+
+**Shelter.** Under a roof, beneath a ledge, in a cave or anywhere below ground, none of it reaches you. Under a clear sky, in the arenas and in the other worlds nothing changes.
+
+**What the weather brings out.** Each kind of weather has creatures that only come out in it. They are rare, one or two at a time, and they go when the sky changes.
+
+| Creature | Comes with | What it does |
+| --- | --- | --- |
+| **Puddling** | rain, a thunderstorm | sinks into a puddle, slides under you and bursts up; it leaves your legs **mired** and slow |
+| **Stormcaller** | a thunderstorm | a drifting bell of cloud; it marks the ground, then lightning strikes there. Step off the mark |
+| **Galewisp** | a thunderstorm | a walking whirl that flings you off your feet |
+| **Mistwraith** | the Long Fog | barely there until it is beside you; its touch **blinds** |
+| **Rimefang** | snow | circles, crouches and pounces; it leaves you stiff with cold |
+| **Dustmaw** | ashfall | swims through the ground and leaps |
+
+**Fire.** An Ember Flask burns **where it breaks**: flames take hold on the floor, up a wall or under a roof, on every bare face the fire can reach through open air. It does not pass through a wall. One that bursts on a creature in the air rains burning drops. Rain puts a fire out about three times sooner.
 
 ![Curios on the road: a Waker's Rest, the Singing Stones, the Ribs, an ember spring](pictures/curios.jpg)
 
@@ -190,7 +239,7 @@ Every world you forge from now on has a character of its own, worked out from it
 - **the Singing Stones**: strike them low, middle, high, each **as the next one glints**. Get it right and for four minutes every chain you begin is already in time
 - **something buried** under turned ground, a **hermit's fire** with a note (and his jerky), **the Ribs** of something vast, a **broken cart**
 
-A world made before all this keeps exactly the land it had: no traits, no moods, no curios, every hill where it was. It still gets the seasons and the weather.
+A world made before all this keeps exactly the land it had: no traits, no moods, no curios, every hill where it was. It still gets the seasons and the weather. In the same way, a world made before the Mosswood and the Willowmere does not have them, and nothing in it moves.
 
 ## A big world
 

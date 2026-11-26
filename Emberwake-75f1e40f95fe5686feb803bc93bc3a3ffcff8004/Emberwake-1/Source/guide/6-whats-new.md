@@ -2,6 +2,26 @@
 
 Newest first.
 
+## Two versions made into one
+
+This version joins two that had grown apart. One had the Trials, the four worlds past the floors and fighting by the beat. The other had accounts, touch controls and weather you can feel. Now they are one game.
+
+**Kept as it was, from the entry below:** the home screen, the look, fighting by the beat, the Ashfall Trials with their perks, amps and relics, parties, traits, moods, seasons, curios and the worlds past the floors.
+
+**Brought in from the other side:**
+
+- **Accounts and hats.** The game opens on a sign-in board. Make an account (a name and a password, kept in this browser) and your worlds are yours alone. Worlds from before go to the first account. Pick a look and a **hat**, and change them later with **CHANGE LOOK**. See *Start here: Signing in*.
+- **Phones and tablets.** Touch controls appear by themselves: a stick, **JUMP**, **USE**, **LIGHT** and **HEAVY**, with buttons for the pack, the map, a quick heal, the menu and chat. The beat is the same under a thumb. See *Controls: On a phone or tablet*.
+- **You keep your run.** Hold a direction through a blow or a dodge and you keep most of your pace instead of stopping dead. Hands off, you glide to a stop. A blow thrown from standing is exactly as it was.
+- **Weather is felt.** Rain and snow slow you in the open and make the ground slick, snow and ash steal your breath, and creatures see less far in rain and fog. A roof, a ledge or a cave shelters you from all of it.
+- **Six creatures of the weather:** the puddling, the stormcaller, the galewisp, the mistwraith, the rimefang and the dustmaw. Each comes out only in its own weather and goes when it does.
+- **Fire burns where it breaks:** on a floor, up a wall, under a roof, in many small moving flames. Rain puts it out sooner, and a bolt of lightning can start one.
+- **Eating takes a moment**, and a blow interrupts it (you keep the food).
+- **Brews.** Quickstep at a cauldron, Emberheart at a **Brewer's Stand**, and at a **Moon Cauldron** the Doublesoul Draught, which calls a mirror of you to fight at your side. And a new meal, the Willow Omelet. See *How to play: Eating and brews*.
+- **Two new lands** in worlds you forge from now on: the **Mosswood** (deep green, oaks, moss deer) and the **Willowmere** (reeds, still water, willows, willow hens). Worlds made before keep their land exactly as it was.
+- A frame that goes wrong no longer stops the game.
+- **This version can't play with older ones, so send your friends the new files.**
+
 ## Worlds with a character of their own, the Trials' own kit, parties, a new look
 
 - **No two worlds alike.** Every world you forge now has **three traits** from its seed (one for its land, one for its life, one for its sky: *cragged, feral, twin moons*; *drowned, quiet days, long nights*...). The forge screen shows them, with a **ROLL** button for another seed. See *How to play: No two worlds alike*.

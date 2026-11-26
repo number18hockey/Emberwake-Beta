@@ -31,9 +31,19 @@ After that it opens with a normal double-click. **Cmd+Q** quits, **Ctrl+Cmd+F** 
 
 Double-click **Emberwake.html** to play in your web browser (Chrome, Safari, Edge or Firefox), on Windows, Linux, a Chromebook or a Mac.
 
+It plays in the browser of a phone or a tablet too. Touch controls appear by themselves (see *Controls: On a phone or tablet*).
+
+## Signing in
+
+The game opens on the **ACCOUNTS** board. The first time, choose **+ CREATE ACCOUNT**: type a name and a password (eight characters or more, typed twice), pick a look and a **hat**, and you are in. After that, **SELECT** your account, type its password and choose **LOG IN**.
+
+- **An account lives in this browser** (or in the app). Nothing is sent anywhere, so there is nobody to ask if you forget the password.
+- **Your worlds are yours.** Each account has its own list of worlds. Worlds made before there were accounts go to the first account made.
+- Above the **WORLDS** board you see your account's name and **SIGN OUT**. Click the name to come back to the ACCOUNTS board, where **CHANGE LOOK** lets you choose another look or hat, and **+ CREATE ACCOUNT** makes one for somebody else who plays here.
+
 ## Your saves
 
-Saves stay on the computer you play on. The app and each browser keep their own saves.
+Saves stay on the computer you play on, with the account that made them. The app and each browser keep their own accounts and their own saves.
 
 To take a world from the app to a browser, or to another computer, choose **COPY** next to the world in your world list. On the other side, choose **PASTE A WORLD**.
 
