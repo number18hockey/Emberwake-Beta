@@ -22,6 +22,8 @@ This version joins two that had grown apart. One had the Trials, the four worlds
 - A frame that goes wrong no longer stops the game.
 - **This version can't play with older ones, so send your friends the new files.**
 
+**And new in this one: the echoes think.** They find a real way to where they are going (over walls, across gaps, up to a chest above the ground, round what they cannot climb, never into slag), run to somewhere safe instead of just away, pick the fights they can win, and keep the beat as well as their skill allows. See *The Ashfall Trials: The echoes*.
+
 ## Worlds with a character of their own, the Trials' own kit, parties, a new look
 
 - **No two worlds alike.** Every world you forge now has **three traits** from its seed (one for its land, one for its life, one for its sky: *cragged, feral, twin moons*; *drowned, quiet days, long nights*...). The forge screen shows them, with a **ROLL** button for another seed. See *How to play: No two worlds alike*.

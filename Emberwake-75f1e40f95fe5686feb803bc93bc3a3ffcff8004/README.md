@@ -43,6 +43,7 @@ This version joins two that had grown apart: the uploaded "Emberwake 2" (the hom
 - Story leads, lore, echo stones, a journal, creatures, guardians woken by offerings, and world events
 - Shared multiplayer worlds for up to four players
 - The Ashfall Trials, a survival match for twelve with echoes or friends, with teams, perks, amps, relics, two arenas and parties; and the Cinder Ring for quick duels
+- Echoes (computer players) that find real routes over walls and gaps, choose their fights, and keep the beat as well as their skill allows
 - Accounts kept in the browser: a name and a password, a look and a hat, and each account's own worlds
 - Touch controls for phones and tablets
 - Synthesized pixel graphics and sound with no image or audio downloads

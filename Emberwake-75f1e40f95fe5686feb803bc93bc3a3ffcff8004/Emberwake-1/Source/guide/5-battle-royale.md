@@ -103,6 +103,18 @@ On claude.ai, where everyone with the page open shares a lobby by name, type the
 
 When a match ends you get a **title** for how you played it: **the Reaper** (five takedowns), **the Answer** (blows turned aside), **the Metronome** (crisp blows), **the Keeper of Embers** (teammates rekindled), **the Magpie** (chests), **the Edge** (clean blows), **the Ghost** (a win without a takedown), and more. Your **career** (matches, wins, takedowns, best place) is kept on this computer and shown on the Trials screen.
 
+## The echoes
+
+Echoes are the computer's Wakers, and they think.
+
+- **They find a real way** to where they are going: over a wall, across a gap, up a stair of rope bridges to a chest, round what they cannot climb. They swim only where there is a bank to climb out by, and they never plan a way through slag.
+- **They run to somewhere safe**, out of sight and out of reach, not just the other way. They use a salve only when no foe is near or looking.
+- **They pick their fights:** by their health and weapon against yours, by how many are near, by whether a teammate is close. They go for a foe who is nearly done for, and in a team they help the one who is fighting and take the same foe.
+- **They leave in time** when the closing ash would catch them on the walk out, and they choose the chest they can actually reach.
+- **They keep the beat as well as their skill allows.** A practised echo strikes on the glint, answers the openings you give it, dodges, and spends five embers on a heavy. A clumsy one still rushes some of its blows.
+
+The duelists of the Cinder Ring and the rivals in your world find their way to you by the same means.
+
 ## Other ways to play
 
 - **PLAY WITH ECHOES:** you and eleven echoes, right away. In duos or trios the rest of your team are echoes: they stay near you, fight beside you and rekindle you.

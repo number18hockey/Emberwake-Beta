@@ -38,7 +38,7 @@ The game is plain JavaScript in one page, with no libraries and no image files: 
 | `04-items` | items and recipes, weapons, the later tiers, the benches (and which bench makes what), trinkets and meals, and the brews (in `5-trinkets-and-meals.js`) |
 | `05-physics` | game state, physics bodies, particles, drops, projectiles; mining and building (and eating, which takes a moment); craters; armour; furniture and what it does |
 | `06-combat` | movesets and hits, links (chains and sidearms), weapon styles, learned forms, follow-ups, counters and arts, the new worlds' weapon effects, and `6-tempo.js`: the beat (the glint, rushed blows, tempo, clean hits, clashes, guards, sunder, the answer, warded foes); `7-fire.js` is fire that burns where a flask breaks, and its flames |
-| `07-fighters` | the player and the other fighters (echoes, duelists), and the run a fighter keeps through a blow or a dodge |
+| `07-fighters` | the player and the other fighters (echoes, duelists), and the run a fighter keeps through a blow or a dodge; `2-nav.js` is the pathfinder the echoes, duelists and rivals walk by |
 | `08-creatures` | creatures and spawning, the guardians, world events, the offerings that wake the guardians; `7-weather-creatures.js` is the six creatures that only the weather brings out |
 | `09-story` | people, leads, the journal, lore and echo stones |
 | `10-interface` | menus (the accounts board among them), the HUD, the pack, crafting stations, the map, the recipe book and trinket slots |
