@@ -2,6 +2,12 @@
 
 Newest first.
 
+## Workbench armour and touch controls
+
+- Every armour recipe is available directly at the Workbench, with simpler costs and no tiered-anvil requirement. Existing Armourer's Stands remain safe in old worlds.
+- Touchscreen play now has responsive move controls, jump, dash, use, and attack controls; tap the hotbar to switch items.
+- FPS mode keeps the game side-on but reduces secondary HUD clutter and effects, with an aim crosshair and essential combat information retained.
+
 ## The Ashfall, made again, and the weather
 
 **The battle royale**
@@ -55,7 +61,7 @@ Newest first.
 - **PLAY TOGETHER** shows how each friend is connected and how quick the line is.
 - The world keeps running when someone switches to another window, and their Waker rests safely meanwhile (the Mac app keeps running when hidden too).
 - Fixes: doors no longer shut on a friend standing in them; explosions hurt everyone nearby and hit creatures once; a newly placed campfire or kiln is the same for everyone; chests and fires are used one person at a time, so nothing is doubled or lost; a friend joining while others moved no longer sees a frozen, nameless Waker; closing the window tells friends at once.
-- **FPS mode:** turn off ambient and particle effects in the pause menu for a simpler, smoother picture on slower computers. It does not change gameplay or multiplayer simulation.
+- **FPS mode:** turn off ambient and particle effects and secondary HUD panels in the pause menu for a simpler, smoother picture on slower computers. It keeps the side-on camera and does not change gameplay or multiplayer simulation.
 
 ## Game codes, easier packs and crafting
 

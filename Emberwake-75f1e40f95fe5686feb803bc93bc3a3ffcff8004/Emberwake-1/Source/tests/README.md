@@ -32,10 +32,12 @@ Story, screens, controls, the pack and crafting.
 
 - `accounts.py` Password-required accounts, signing out on restart, guest-save migration and separate profile saves.
 - `benches_and_trinkets.py` The benches (each opens and lists its own work), trinkets made, worn and felt, a meal's boon, storage of three sizes kept through a save, planters, the bed, the ballista and traps, and the guardians' offerings.
+- `building_blocks.py` Every inventory block and wall can be placed with valid support in both survival and free-build modes.
 - `controls_and_settings.py` Simple controls (fists, chains), difficulty, FPS mode, digging by hand, knapping, and the menu settings.
-- `crafting.py` Crafting with the real mouse: a hand recipe from the pack, a plank at the workbench (one click, no mini-game).
+- `crafting.py` Crafting with the real mouse: a hand recipe, armour made directly at the workbench, a plank at the workbench (one click, no mini-game).
 - `inventory.py` Moving things in and out of the pack with the real mouse: drag between slots, drag out to drop.
 - `phone.py` A phone held both ways: the stick, the buttons, a finger on the world and the panels, crafting, a pact. And a computer, where none of that gets in the way.
+- `mobile_controls.py` Touch controls fit narrow screens; dash triggers the desktop dodge input.
 - `screens.py` Screens: echo stones, the journal and other panels.
 - `story.py` The story: discovery scenes, the people of Hearthhold, leads and the journal.
 

@@ -20,9 +20,8 @@ async def main():
       return JSON.stringify(out); })()""" % here))
     res['where things went'] = await h.ev("['lantern', 'glider', 'compass', 'iron_head', 'hide_head', 'moon_lantern', 'rootkey', 'backpack'].map(id => id + ': ' + madeAt(id).join('/')).join(', ')")
     res['iron anvil needs the Warden sigil'] = await h.ev("JSON.stringify(RECIPES.find(r => r.out === 'anvil2').need)")
-    # ---- the armourer's stand wants an anvil of the armour's rank nearby ----
-    res['iron armour: no anvil, then an iron anvil'] = await h.ev("""(() => { %s setTile(tx + 2, ty, ARMOURY); const a = stnList('armr', ARMOURY).find(e => e.r.out === 'iron_head');
-      setTile(tx - 2, ty, ANVIL2); const b = stnList('armr', ARMOURY).find(e => e.r.out === 'iron_head'); setTile(tx - 2, ty, AIR); setTile(tx + 2, ty, AIR); return [a && a.lvlOk, b && b.lvlOk]; })()""" % here)
+    # ---- all armour is now available from a workbench without tiered-anvil requirements ----
+    res['iron armour: workbench, no separate station or anvil'] = await h.ev("""(() => { const a = stnList('bench', BENCH).find(e => e.r.out === 'iron_head'); return [a && a.lvlOk, a && a.r.st, stnList('armr', ARMOURY).some(e => e.r.out === 'iron_head')]; })()""")
     # ---- a trinket: made at the jeweller, worn, felt ----
     await h.ev("""(() => { %s addItem('copper_bar', 2); addItem('glass', 1); setTile(tx + 2, ty, JEWELLER); openStation(tx + 2, ty); })()""" % here); await h.step(2, "")
     xy = await h.ev("stnRowXY('jewel', JEWELLER, e => e.r.out === 'quick_ring')")

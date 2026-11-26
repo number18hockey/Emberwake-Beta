@@ -49,11 +49,15 @@ Touch controls appear by themselves, whichever way you hold it.
 - **PACK** opens the pack and crafting: tap a recipe to make it, slide to scroll, **CLOSE** to go back. **HEAL** is a quick heal, **MENU** the menu.
 - In the battle royale, **MAP** shows the island and **PACT** offers, accepts and (tapped twice) leaves a pact.
 
+## Touchscreen
+
+The left joystick moves; **JUMP** and **DASH** sit beside it. The right aim pad points attacks and tools, while **LIGHT**, **HEAVY** and **USE** trigger the matching desktop actions. Tap a slot in the on-screen hotbar to switch items. The controls resize with the screen and respect device safe areas.
+
 ## The menu (Esc)
 
 - **Controls: SIMPLE** (the default). Only where you aim (up, straight, down) and holding **S** choose your attack, so you never lunge or dash across the screen by surprise. **FULL** brings back the extra forms tied to the movement keys and how far away the cursor is (the forms page, **C**, greys them out in SIMPLE).
 - **Difficulty: EASY** (the default): you take 30% less damage, heal twice as fast and get hungry more slowly. **NORMAL** is the original balance. **HARD**: 25% more damage taken, slower healing, faster hunger.
 - **Crafting: SIMPLE** (the default). At a station you click what you want and it is made after a short bar fills (shift-click makes five). Fires and kilns work whenever they have fuel, and light themselves from your sticks or logs; food never burns. **HANDS-ON** brings back the station games (sawing, the potter's wheel, the bellows, the anvil...), heat and the kiln's damper, and food that chars if you forget it.
-- **FPS MODE: OFF** (the default). Turn it on to stop ambient effects and particle effects for smoother play on slower computers. It changes only decoration; world simulation, gameplay and multiplayer stay the same.
+- **FPS MODE: OFF** (the default). Turn it on to stop ambient and particle effects and hide secondary HUD panels for a cleaner, smoother view. Health, stamina, the hotbar, boss information and a clear aim crosshair remain. It is a performance/readability option for this side-on game, not a first-person camera mode; world simulation, gameplay and multiplayer stay the same.
 
 All four are remembered on this computer.

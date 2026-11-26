@@ -4,7 +4,7 @@
 //    Workbench           woodwork, building parts, the other benches
 //    Carpenter's Table   furniture and things to place
 //    Anvil               metal weapons and tools
-//    Armourer's Stand    every piece of armour
+//    Workbench           every piece of armour
 //    Tinker's Table      gadgets you carry, traps, the ballista
 //    Jeweller's Bench    trinkets you wear
 //    Hearth Oven         hot meals that give a boon
@@ -28,10 +28,10 @@ const jobKind = k => JOB_OF[k] || k;
 // what each bench is for, in the order the recipe book shows them
 const BENCHES = [
   { st: 'hand', n: 'By hand', d: 'Anywhere, from your pack: twine, torches, flint tools and the first workshops.' },
-  { st: 'bench', n: 'Workbench', item: 'bench', d: 'Woodwork: planks, doors, ladders, beams, wooden and bone weapons, and most other benches.' },
+  { st: 'bench', n: 'Workbench', item: 'bench', d: 'Woodwork and armour: planks, doors, ladders, beams, weapons, armour and most other benches.' },
   { st: 'carp', n: "Carpenter's Table", item: 'carpenter', d: 'Furniture and things to place: crates, barrels, beds, tables, planters, signposts, lamps.' },
   { st: 'anvil', n: 'Anvil', item: 'anvil', d: 'Metal weapons and tools. Stone anvil: copper and bronze. Iron anvil: iron and steel. Slagforge: the metals of the other worlds.' },
-  { st: 'armr', n: "Armourer's Stand", item: 'armoury', d: 'Every piece of armour. Metal armour also needs an anvil of the same rank close by.' },
+  { st: 'armr', n: "Armourer's Stand", item: 'armoury', d: 'An optional legacy station. All armour can now be made at the Workbench.' },
   { st: 'tink', n: "Tinker's Table", item: 'tinker', d: 'Gadgets you carry, traps and the ember ballista: lanterns, glider, claws, compass, gauges.' },
   { st: 'jewel', n: "Jeweller's Bench", item: 'jeweller', d: 'Trinkets you wear in your trinket slots: rings, charms and amulets that change how you move and fight.' },
   { st: 'oven', n: 'Hearth Oven', item: 'oven', d: 'Hot meals. A meal fills you up and gives a boon for a few minutes (one at a time).' },
@@ -68,7 +68,7 @@ function buildBenchArt() {
 function benchItems() {
   const st = (id, name, tile, desc) => defI(id, { name, type: 'block', tile, stack: 20, icon: outlined(STN_SPR[tile].img), desc });
   st('carpenter', "Carpenter's Table", CARPENTER, 'Furniture and things to place: crates, barrels, beds, tables, planters, signposts, lamps.');
-  st('armoury', "Armourer's Stand", ARMOURY, 'Every piece of armour is made here. Metal armour also wants an anvil of its rank close by.');
+  st('armoury', "Armourer's Stand", ARMOURY, 'An optional legacy station. All armour can now be made at the Workbench.');
   st('tinker', "Tinker's Table", TINKER, 'Gadgets: lanterns, glider, climbing claws, compass, gauges, traps and the ember ballista.');
   st('jeweller', "Jeweller's Bench", JEWELLER, 'Trinkets you wear: rings, charms and amulets.');
   st('oven', 'Hearth Oven', OVEN, 'Bakes and stews hot meals. A meal gives a boon for a few minutes.');
@@ -83,7 +83,7 @@ function regroupRecipes() {
   const tink = new Set(['lantern', 'emberlamp', 'spyglass', 'compass', 'magnet', 'bucket', 'bucket2', 'toolbelt', 'glider', 'claws', 'shuriken', 'hook']);
   for (const r of RECIPES) {
     if (!r.out || r.regrouped) continue; const it = IT[r.out]; if (!it) continue; r.regrouped = true;
-    if (it.type === 'armor' && r.st !== 'armr') { if (r.st !== 'anvil') delete r.lvl; r.from = r.st; r.st = 'armr'; }
+    if (it.type === 'armor' && r.st !== 'bench' && r.st !== 'armr') { delete r.lvl; r.from = r.st; r.st = 'bench'; }
     else if (tink.has(r.out) && (r.st === 'anvil' || r.st === 'bench')) { delete r.lvl; r.st = 'tink'; }
     else if ((it.type === 'summon' || it.type === 'key') && r.st === 'anvil') { delete r.lvl; r.st = 'altar'; }
     else if ((r.out === 'backpack' || r.out === 'framepack') && r.st === 'bench') r.st = 'loom';

@@ -26,7 +26,7 @@ mobileTextInput.addEventListener('keydown', e => {
 function virtualKey(code, down) { if (down && !keys[code]) pressed[code] = true; keys[code] = down; }
 function clearMobileInput() {
   stickPointer = null; stickX = stickY = 0; moveKnob.style.transform = 'translate(-50%,-50%)'; touchAim = false;
-  for (const k of ['KeyA', 'KeyD', 'ArrowDown', 'Space', 'KeyF']) keys[k] = false;
+  for (const k of ['KeyA', 'KeyD', 'ArrowDown', 'Space', 'KeyF', 'ShiftLeft']) keys[k] = false;
   mouse.l = mouse.r = false;
   document.querySelectorAll('#mobileControls .pressed').forEach(el => el.classList.remove('pressed'));
 }
@@ -72,6 +72,7 @@ const touchPlay = () => G.state === 'play' && !UI.open;
 bindTouchButton('attackLight', () => { if (touchPlay()) { touchAim = true; mouse.l = true; mouse.lp = true; mobileAim(); } }, () => { mouse.l = false; touchAim = false; });
 bindTouchButton('attackHeavy', () => { if (touchPlay()) { touchAim = true; mouse.r = true; mouse.rp = true; mobileAim(); } }, () => { mouse.r = false; touchAim = false; });
 bindTouchButton('mobileJump', () => { if (touchPlay()) virtualKey('Space', true); }, () => virtualKey('Space', false));
+bindTouchButton('mobileDash', () => { if (touchPlay()) virtualKey('ShiftLeft', true); }, () => virtualKey('ShiftLeft', false));
 bindTouchButton('mobileUse', () => { if (touchPlay()) pressed.KeyF = true; });
 for (const [id, code] of [['mobilePack', 'KeyE'], ['mobileMap', 'KeyM'], ['mobileHeal', 'KeyH'], ['mobilePact', 'KeyP'], ['mobileMenu', 'Escape']]) bindTouchButton(id, () => { if (touchPlay()) tapKey(code); });
 bindTouchButton('mobileClose', () => { if (UI.open) { closeUI(); sfx('ui'); } });
