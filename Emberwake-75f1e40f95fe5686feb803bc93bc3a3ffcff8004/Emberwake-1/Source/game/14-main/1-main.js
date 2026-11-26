@@ -238,7 +238,7 @@ function renderView(al) {
   for (const g of G.ghosts) { ctx.globalAlpha = g.life / g.max * .5; ctx.drawImage(g.cv, 0, 0, g.n, g.n, g.x, g.y, g.n, g.n); } ctx.globalAlpha = 1;
   for (const e of G.enemies) if (!e.dead && e.x > cx - 90 && e.x < cx + VS.vw + 90 && e.y > cy - 90 && e.y < cy + VS.vh + 90) drawEnemy(e, al);
   for (const n of G.npcs) if (n.x > cx - 60 && n.x < cx + VS.vw + 60) drawNPC(n, al);
-  for (const f of G.fighters) { if (f === p || (f.onBarge && !WORLD.royale) || f.dead && f.deadT > 60 || f.x < cx - 90 || f.x > cx + VS.vw + 90) continue; if (f.spawnT > 0 && (G.time >> 2) & 1) continue; drawFighter(f, al); }
+  for (const f of G.fighters) { if (f === p || (f.onBarge && !WORLD.royale) || f.dead && f.deadT > 60 || f.x < cx - 90 || f.x > cx + VS.vw + 90 || f.y < cy - 90 || f.y > cy + VS.vh + 90) continue; if (f.spawnT > 0 && (G.time >> 2) & 1) continue; drawFighter(f, al); }
   if (showP) drawFighter(p, al);
   if (WORLD.royale) brActors(ctx, al);
   drawStates(ctx, al);
@@ -289,7 +289,7 @@ function renderView(al) {
     else if (t.kind === 'bolt') drawBolt(f, t, u);
   }
   if (showP) drawWake(f);
-  for (const q of G.parts) { if (!q.glow) continue; f.globalAlpha = min(1, q.life / q.max * 1.6); f.fillStyle = q.col; f.fillRect(floor(q.x), floor(q.y), q.sz, q.sz); } f.globalAlpha = 1;
+  for (const q of G.parts) { if (!q.glow || q.x < cx - 4 || q.x > cx + VS.vw + 4 || q.y < cy - 4 || q.y > cy + VS.vh + 4) continue; f.globalAlpha = min(1, q.life / q.max * 1.6); f.fillStyle = q.col; f.fillRect(floor(q.x), floor(q.y), q.sz, q.sz); } f.globalAlpha = 1;
   if (showP && !p.dead) { const prx = lerp(p.px, p.x, al) + 3, pry = lerp(p.py, p.y, al) + p.h; f.globalAlpha = .55 + .2 * sin(G.time * .1); f.fillStyle = '#ff9a3d'; f.fillRect(round(prx + p.face * .5) - 1, round(pry - 14), 2, 2); f.globalAlpha = 1; }
   for (const e of G.enemies) {
     if (e.dead) continue; const ex = lerp(e.px, e.x, al), ey = lerp(e.py, e.y, al);
@@ -331,7 +331,7 @@ function drawStates(c, al) {
     const by = s.hookBy; if ((s.hook > 0 || s.reel > 0) && by && !by.dead) chainLine(c, lerp(by.px === undefined ? by.x : by.px, by.x, al) + 3 + (by.face || by.dir || 1) * 4, lerp(by.py === undefined ? by.y : by.py, by.y, al) + 8, x + e.w / 2, y + e.h * .4);
   }
   for (const pr of G.projs) if (pr.type === 'hook' && pr.owner) { const o = pr.owner; chainLine(c, o.x + 3 + (o.face || o.dir || 1) * 4, o.y + (o.h > 22 ? 14 : 8), lerp(pr.px, pr.x, al), lerp(pr.py, pr.y, al)); }
-  for (const f of G.fighters) if (f.grap) chainLine(c, f.x + 3, f.y + 8, f.grap.x, f.grap.y);
+  for (const f of G.fighters) if (f.grap && !f.dead) chainLine(c, f.x + 3, f.y + 8, f.grap.x, f.grap.y);
   for (const sm of G.smokes) { const k = sm.life / sm.max, R = sm.r * (.6 + .4 * (1 - k)); c.globalAlpha = .55 * min(1, k * 3); for (let i = 0; i < 9; i++) { const a = i / 9 * TAU + G.time * .004 * (i & 1 ? 1 : -1), rr = R * (.35 + .4 * hh(i, 3, 7)), px = sm.x + cos(a) * rr, py = sm.y + sin(a) * rr * .6; c.fillStyle = i % 3 === 0 ? '#a19baa' : i % 3 === 1 ? '#8d8794' : '#726c7c'; c.beginPath(); c.arc(round(px), round(py), R * (.45 + .2 * hh(i, 5, 9)), 0, TAU); c.fill(); } c.globalAlpha = 1; }
 }
 function chainLine(c, x0, y0, x1, y1) { const d = hypot(x1 - x0, y1 - y0), n = max(1, floor(d / 3)); for (let i = 0; i <= n; i++) { const u = i / n, sag = sin(u * PI) * min(6, d * .05); c.fillStyle = i & 1 ? '#7f8898' : '#e8edf2'; c.fillRect(round(lerp(x0, x1, u)) - .5, round(lerp(y0, y1, u) + sag) - .5, 1.5, 1.5); } }
@@ -449,15 +449,28 @@ function tick() {
 }
 function endTick() { G.shake *= .86; G.flash *= .88; for (const k in pressed) pressed[k] = false; mouse.lp = mouse.rp = mouse.hp = false; }
 let lastT = 0, acc = 0;
-function frame(now) {
+// One bad moment must not end the game: whatever goes wrong in a frame is noted, and the next frame still comes.
+// (The loop used to stop for good at the first error, which looked like the game freezing for no reason.)
+const OOPS = { n: 0, last: '', at: 0 };
+function oops(where, e) {
+  const s = where + ': ' + (e && e.message || e), now = performance.now(); OOPS.n++;
+  // (it is also thrown again on its own, after the frame, so it still shows up as an error wherever errors are watched)
+  if (s !== OOPS.last || now - OOPS.at > 5000) { OOPS.last = s; OOPS.at = now; console.error(s, e && e.stack || ''); setTimeout(() => { throw e instanceof Error ? e : new Error(s); }, 0); }
+  // the same thing failing over and over: let go of whatever is most likely to be the cause
+  if (OOPS.n % 120 === 0) { try { UI.held = null; UI.open = null; UI.job = null; UI.stn = null; G.link = null; G.projs = G.projs.filter(q => isFinite(q.x) && isFinite(q.y)); G.drops = G.drops.filter(d => IT[d.id] && IT[d.id].icon && isFinite(d.x) && isFinite(d.y)); G.enemies = G.enemies.filter(q => isFinite(q.x) && isFinite(q.y)); inv = inv.map(q => q && IT[q.id] ? q : null); G.hitstop = 0; } catch (_) { } }
+  try { ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.globalAlpha = 1; ctx.globalCompositeOperation = 'source-over'; actx.globalCompositeOperation = 'source-over'; actx.globalAlpha = 1; fctx.globalAlpha = 1; rigX.setTransform(1, 0, 0, 1, 0, 0); } catch (_) { }
+}
+function safeTick() { try { tick(); } catch (e) { oops('tick', e); for (const k in pressed) pressed[k] = false; mouse.lp = mouse.rp = mouse.hp = false; } }
+function frame(now) { requestAnimationFrame(frame); try { frameStep(now); } catch (e) { oops('frame', e); } }
+function frameStep(now) {
   // alone, a slow moment just slows the game; with friends here it must keep time, so it catches up
   const shared = netLive() || (BR.on && BR.via !== 'solo'), dt = min(shared ? .5 : .1, (now - lastT) / 1000 || 0); lastT = now; rafT = performance.now(); G.away = false;
   try { sigTick(); if (COOP.role) pingTick(rafT); coopRetryTick(rafT); netKeepAwake(!!(SIG.code || COOP.role || (BR.on && BR.via !== 'solo'))); } catch (e) { console.warn('net', e); }
-  if (G.manual) { requestAnimationFrame(frame); return; }
+  if (G.manual) return;
   if (G.state === 'play' && (UI.open !== 'pause' || WORLD.arena || netLive())) {
     G.tscale += ((G.slowT > 0 ? .3 : 1) - G.tscale) * .25; acc += dt * 60 * G.tscale; let n = 0;
     const most = shared ? 30 : 6;
-    while (acc >= 1 && n < most) { if (G.hitstop > 0) { G.hitstop--; tickParts(); G.shake *= .86; if (WORLD.arena && G.time % 3 === 0) netSend(); } else tick(); acc -= 1; n++; }
+    while (acc >= 1 && n < most) { if (G.hitstop > 0) { G.hitstop--; tickParts(); G.shake *= .86; if (WORLD.arena && G.time % 3 === 0) netSend(); } else safeTick(); acc -= 1; n++; }
     if (n >= most) acc = 0;
   } else {
     G.time++; if (G.state !== 'play') { G.clock = (G.clock + 1 / 20000) % 1; atmoTick(); } updateSun(); tickParts(); const c = G.cam; c.px = c.x; c.py = c.y;
@@ -468,7 +481,6 @@ function frame(now) {
     if (WORLD.arena && G.state === 'play' && G.time % 3 === 0) netSend();
   }
   render(G.hitstop > 0 || G.state !== 'play' ? 1 : clamp(acc, 0, 1));
-  requestAnimationFrame(frame);
 }
 // ---------------- while the window is hidden ----------------
 // With friends here the world must not stop when you switch away: the game keeps
@@ -482,7 +494,7 @@ function bgStep() {
   if (!live || G.manual) { bgLast = now; return; }
   const dt = min(.5, (now - (bgLast || now)) / 1000); bgLast = now; G.away = !WORLD.arena;
   try {
-    if (G.state === 'play') { acc += dt * 60; let n = 0; while (acc >= 1 && n < 40) { if (G.hitstop > 0) G.hitstop--; else tick(); acc -= 1; n++; } if (n >= 40) acc = 0; }
+    if (G.state === 'play') { acc += dt * 60; let n = 0; while (acc >= 1 && n < 40) { if (G.hitstop > 0) G.hitstop--; else safeTick(); acc -= 1; n++; } if (n >= 40) acc = 0; }
     else if (BR.on && G.state === 'brlobby') { brLobbyTick(); openTick(); }
   } catch (e) { console.warn('bg', e); }
 }

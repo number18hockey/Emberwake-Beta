@@ -391,6 +391,19 @@ const RB = 96;
 const [rigCv, rigX] = mk(RB, RB, { willReadFrequently: true });
 const [outCv, outX] = mk(RB, RB);
 const outImg = outX.createImageData(RB, RB), ghostPool = [];
+// The rig's canvas is read back every time it is drawn, so it lives in main memory. Draw one picture into it
+// that lives on the graphics card and the browser moves the whole canvas there, and from then on every read
+// stalls the frame (thirty Wakers on screen cost 68 ms that way). So sprites are copied over pixel by pixel,
+// once each, the first time they are used, and only the copies ever touch the rig. (They are read through a fresh
+// canvas, because the browser warns about reading any one picture twice, and icons have read some of them already.)
+const CPU_IMG = new WeakMap();
+function cpuImg(img) {
+  let c = CPU_IMG.get(img); if (c) return c;
+  if (!img || !img.getContext || !img.width || !img.height) c = img;
+  else { const w = img.width, h = img.height, [, rx] = mk(w, h), [cv2, x2] = mk(w, h, { willReadFrequently: true }); rx.drawImage(img, 0, 0); x2.putImageData(rx.getImageData(0, 0, w, h), 0, 0); c = cv2; }
+  if (img) CPU_IMG.set(img, c); return c;
+}
+{ const raw = rigX.drawImage.bind(rigX); rigX.drawImage = (img, ...a) => raw(cpuImg(img), ...a); }
 let wctx = null; const LIT = [1, 1, 1];
 function pixelize(n, o) {
   const src = rigX.getImageData(0, 0, n, n).data, dst = outImg.data, W4 = RB * 4, n4 = n * 4, fl = o && o.flash, tn = o && o.tint;
