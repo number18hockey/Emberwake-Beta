@@ -402,17 +402,56 @@ function brSee(f, o) {
   for (let k = 1; k < n; k++) { const u = k / n, tx = floor(lerp(x0, x1, u) / T), ty = floor(lerp(y0, y1, u) / T), t = tileAt(tx, ty); if (TP[t].solid && t !== PLATFORM && !TP[t].ghost) return false; }
   return true;
 }
+// the ashfall's walls and the slag's line, for whoever plans a route in a match (see 07-fighters/2-nav.js)
+const BR_NAV = { L: -1e9, R: 1e9, floor: 1e9 };
+function brNav() { const z = BR.storm, ash = !!z && z.dps > 0 && BR.arena !== 1; BR_NAV.L = ash ? z.L : -1e9; BR_NAV.R = ash ? z.R : 1e9; BR_NAV.floor = BR.arena === 1 ? BR.slagY + 3 : 1e9; return BR_NAV; }
+// how well armed someone is (-1: bare hands)
+const brArm = o => { const W = o.isPlayer ? heldOf(o) : IT[o.wid]; return W && W.type === 'weapon' && !W.fist ? brTier(W.id) : -1; };
+// How a fight with this foe looks from here: above 1 the echo fancies its chances. Health and ward, steel against steel,
+// friends at its side, others closing in, and whether the foe is reeling or busy with a salve.
+function brOdds(f, foe) {
+  let mine = (f.hp + (f.ward || 0)) * (1 + .25 * (brArm(f) + 1)), theirs = (foe.hp + (foe.ward || 0)) * (1 + .25 * (brArm(foe) + 1));
+  for (const o of G.fighters) { if (o === f || o === foe || o.dead || o.gone || o.onBarge || abs(o.x - f.x) + abs(o.y - f.y) > 150) continue; if (o.team === f.team) mine += 50; else theirs += o.team === foe.team ? 50 : 25; }
+  if (foe.brUse || foe.hurtT > 6 || (foe.atk && foe.atk.rushed)) theirs *= .6;
+  return mine / max(1, theirs);
+}
+// a quiet moment: every foe is either a long run away, or a fair way off with no line of sight
+function brQuiet(f) { for (const o of foesOf(f)) { if (o.dead || o.onBarge || o.gone) continue; const d = abs(o.x - f.x) + abs(o.y - f.y) * 1.5; if (d < 70 || (d < 190 && brSee(f, o))) return false; } return true; }
+// somewhere safer to run to: on ground the ashfall will leave alone, far from every foe, and out of sight of the one it runs from
+function brRefuge(f, foe) {
+  const z = BR.storm, cx = f.x + 3, away = -(sign(foe.x - f.x) || 1); let bx = clamp(cx + away * 220, z.L + 24, z.R - 24), bs = -1e9;
+  for (let k = -4; k <= 4; k++) {
+    if (!k) continue; const x = clamp(cx + k * 70, z.L + 24, z.R - 24), y = heights[clamp(floor(x / T), 2, WW - 3)] * T; let near = 1e9;
+    for (const o of foesOf(f)) if (!o.dead && !o.onBarge && !o.gone) near = min(near, abs(o.x + 3 - x) + abs(o.y + o.h - y));
+    // (running past the foe to get there, or hardly moving at all, is a poor way to be safer)
+    const s = min(near, 340) + (brSee({ x: x - 3, y: y - 20 }, foe) ? 0 : 130) - abs(x - cx) * .2 - (sign(k) !== away ? 150 : 0) - (abs(x - cx) < 40 ? 200 : 0);
+    if (s > bs) { bs = s; bx = x; }
+  }
+  return bx;
+}
+// which chest to go for: the one that is cheapest to get to by a real route (a chest it cannot get to is left alone).
+// When it is not this echo's turn to look, it guesses from how far off each one is, as it always did.
 function brBotChest(f) {
-  const cx = f.x + 3, fy = f.y + f.h, z = BR.storm; let best = null, bd = 1e9;
+  const cx = f.x + 3, fy = f.y + f.h, z = BR.storm, seen = f.br.saw = navFlood(f, brNav()); let best = null, bd = 1e9;
   for (const c of BR.chests) {
-    if (c.open || c.cave || c.kind === 'bush' || !trLive(c) || trSealed(c) || f.br.skip.has(c.i)) continue; const x = c.x * T + 4, dx = abs(x - cx); if (dx > (c.feast || c.kind === 'drop' ? 1500 : 420)) continue;
-    if (z && (x < z.L + 16 || x > z.R - 16)) continue; const dy = (c.y + 1) * T - fy; if (dy < -7 * T) continue;
+    if (c.open || c.kind === 'bush' || !trLive(c) || trSealed(c) || f.br.skip.has(c.i)) continue; const x = c.x * T + 4, dx = abs(x - cx); if (dx > (c.feast || c.kind === 'drop' ? 1500 : 420)) continue;
+    if (z && (x < z.L + 16 || x > z.R - 16)) continue; const dy = (c.y + 1) * T - fy;
+    // (with the ashfall on the move, or about to be, a chest on ground it is about to take is not worth the walk back out)
+    if (z && (z.moving || z.left < 60 * 30) && (x < z.nL + 16 || x > z.nR - 16)) continue;
+    let d = seen ? navCost(x, (c.y + 1) * T) : -1; if (d === Infinity) continue;
+    if (d < 0) { if (c.cave || dy < -7 * T) continue; d = (dx + abs(dy) * 2) * 1.25 * (seen ? 1.3 : 1); }
     // the feast and the barge's crates are worth crossing the island for
-    const d = (dx + abs(dy) * 2) * (c.feast || c.kind === 'drop' ? .12 : 1); if (d < bd) { bd = d; best = c; }
+    d *= c.feast || c.kind === 'drop' ? .12 : 1; if (d < bd) { bd = d; best = c; }
   }
   return best;
 }
-function brWalk(f, I, gx) {
+// an echo on its way to a place (gy: the height of the ground there; left out, the open ground at gx). It goes by a real
+// route; the old straight-line steering below is only for when there is no route at all
+function brWalk(f, I, gx, gy) {
+  const way = navTo(f, I, gx, gy, brNav()); if (way === 'stuck') brSteer(f, I, gx); else { I.wx = f.x + 3 + I.md * 40; I.wy = f.y + 8; }
+  return way;
+}
+function brSteer(f, I, gx) {
   const B = f.ai, br = f.br, cx = f.x + 3, d = gx - cx;
   I.md = abs(d) < 5 ? 0 : sign(d); I.jumpH = false; I.down = false; I.wx = cx + I.md * 40; I.wy = f.y + 8;
   if (I.md) {
@@ -437,40 +476,76 @@ function brBotThink(f) {
   // how far off it will pick a fight: hardly at all at first, a little more each day, and anything in sight once the feast is on
   // On the first day, after the scramble at the Hearth, echoes leave each other alone (people who come close are fair game).
   const sec = trSec(), late = BR.storm && BR.storm.i >= 3, eng = early || unarmed ? 0 : sec < 45 ? 30 : late ? 240 : sec < TR_CYC ? 0 : sec < TR_FEAST ? 60 : sec < TR_CYC * 2 ? 110 : 230, engP = eng || (early || unarmed ? 0 : 60);
-  const tierOf = o => { const W = o.isPlayer ? heldOf(o) : IT[o.wid]; return W && W.type === 'weapon' && !W.fist ? brTier(W.id) : -1; };
   const z = BR.storm, cx = f.x + 3, out = brOut(f) || (z && (cx < z.L + 6 || cx > z.R - 6));
   let foe = null, fd = 1e9;
-  for (const o of foesOf(f)) { if (o.dead || o.onBarge || o.noHit) continue; const dx = abs(o.x - f.x), dy = abs(o.y - f.y); if (dx > (o.hunter ? max(eng, 120) : o.brBot ? eng : engP) || dy > 80) continue; const dd = dx + dy * 1.5; if (dd < fd && (dd < 60 || brSee(f, o))) { fd = dd; foe = o; } }
+  for (const o of foesOf(f)) {
+    if (o.dead || o.onBarge || o.noHit) continue; const dx = abs(o.x - f.x), dy = abs(o.y - f.y), rng = o.hunter ? max(eng, 120) : o.brBot ? eng : engP;
+    // a foe who is reeling, nearly done for, or busy with a salve is worth going further for, and is taken first
+    const weak = rng > 0 && (!!o.brUse || o.hp < 35 || o.hurtT > 10); if (dx > (weak ? rng * 1.5 + 70 : rng) || dy > 80) continue;
+    const dd = dx + dy * 1.5; if (dd * (weak ? .6 : 1) < fd && (dd < 60 || brSee(f, o))) { fd = dd * (weak ? .6 : 1); foe = o; }
+  }
+  // in a team an echo goes to the help of a mate who is fighting, and they take the same foe
+  if (BR.size > 1 && !unarmed && !early && fd > 40) for (const m of G.fighters) {
+    if (m === f || m.team !== f.team || m.dead || m.gone || !m.brIn || abs(m.x - f.x) > 300 || abs(m.y - f.y) > 120 || !(m.takenT > 0 || m.atk)) continue;
+    const o = m.ai && m.ai.tgt && m.ai.tgt.team !== f.team ? m.ai.tgt : m.takenT > 0 ? m.lastHitBy : null; if (o && !o.dead && !o.gone && !o.onBarge && !o.noHit && o.team !== f.team && abs(o.x - f.x) < 320 && abs(o.y - f.y) < 120) { foe = o; fd = 0; break; }
+  }
+  // it does not start a fight it would likely lose (one that comes to it is another matter)
+  if (foe && !late && fd > 50 && !(f.takenT > 0 && f.lastHitBy === foe) && brOdds(f, foe) < .7) foe = null;
   if (!foe && f.lastHitBy && !f.lastHitBy.dead && f.takenT > 0 && abs(f.lastHitBy.x - f.x) < 300) foe = f.lastHitBy;
   // two bare-handed echoes have better things to do than box each other to death
   if (foe && unarmed && foe.brBot && foe.wid === 'fists' && !foe.hunter) foe = null;
-  // badly hurt with a salve in the pack, or bare-handed against steel: break away first
-  if (foe && !out && z && !late && ((f.hp < 38 && (br.heals > 0 || day < 3)) || (unarmed && tierOf(foe) >= 0) || (day < 3 && !foe.hunter && tierOf(foe) - brTier(f.wid) >= 2))) {
+  // badly hurt with a salve in the pack, bare-handed against steel, or plainly outmatched: break away first. Running away is
+  // a route to somewhere safer, and the salve waits until nobody can see it or get to it quickly. (Nobody outruns a Hollow
+  // One, which needs no sight of its quarry: being outmatched by one is no reason to turn its back on it)
+  // (Once it has turned to run it keeps running for a couple of seconds, though that takes the foe out of its sight or
+  // betters its odds: otherwise it would turn back at once, and run again, and so dither on one spot)
+  if (!foe && br.runF && G.time < br.runT && !br.runF.dead && !br.runF.gone && !br.runF.onBarge) foe = br.runF;
+  const run = !!foe && foe === br.runF && G.time < br.runT;
+  if (foe && !out && z && !late && (run || (f.hp < 38 && (br.heals > 0 || day < 3)) || (unarmed && brArm(foe) >= 0) || (day < 3 && !foe.hunter && brArm(foe) - brTier(f.wid) >= 2) || (!foe.hunter && brOdds(f, foe) < .5))) {
+    if (!run) { br.runF = foe; br.runT = G.time + 150; }
     if (B.atkCd > 0) B.atkCd--; if (B.jumpCd > 0) B.jumpCd--;
-    let gx = cx - (sign(foe.x - f.x) || 1) * 220; if (gx < z.L + 20 || gx > z.R - 20) gx = cx + (sign(foe.x - f.x) || 1) * 220; gx = clamp(gx, z.L + 20, z.R - 20);
-    if (abs(foe.x - f.x) > 150 && f.onGround && f.hp < 70 && br.heals > 0 && f.hurtT <= 0) { brStartUse(f, f.hp < 45 ? 'br_draught' : 'br_salve'); I.md = 0; return I; }
-    brWalk(f, I, gx); if (abs(foe.x - f.x) < 40 && f.dodgeCd <= 0 && f.stam > 30 && Math.random() < .05) { I.dodgeP = true; I.md = -(sign(foe.x - f.x) || 1); } return I;
+    if (f.onGround && f.hp < 70 && br.heals > 0 && f.hurtT <= 0 && brQuiet(f)) { brStartUse(f, f.hp < 45 ? 'br_draught' : 'br_salve'); I.md = 0; return I; }
+    if (br.ref === undefined || G.time >= br.refT || br.refF !== foe) { br.ref = brRefuge(f, foe); br.refT = G.time + 60; br.refF = foe; }
+    if (brWalk(f, I, br.ref) !== 'go') br.refT = 0;
+    if (abs(foe.x - f.x) < 40 && f.dodgeCd <= 0 && f.stam > 30 && Math.random() < .05) { I.dodgeP = true; I.md = -(sign(foe.x - f.x) || 1); } return I;
   }
   if (foe && !(out && z && z.dps >= 4)) { if (B.tgt !== foe) { B.tgt = foe; B.retarget = 40; } return aiThink(f); }
   if (B.atkCd > 0) B.atkCd--; if (B.jumpCd > 0) B.jumpCd--;
-  if (f.onGround && !out && f.hurtT <= 0 && ((f.hp < 70 && br.heals > 0) || ((f.ward || 0) < 50 && br.wards > 0))) { brStartUse(f, f.hp < 70 && br.heals > 0 ? (f.hp < 45 ? 'br_draught' : 'br_salve') : (f.ward < 25 ? 'br_ward' : 'br_shard')); I.md = 0; return I; }
-  let gx = null;
-  if (out || !z) gx = z ? (z.L + z.R) / 2 : cx;
+  let gx = null, gy, what = '';
+  if (f.onGround && !out && f.hurtT <= 0 && ((f.hp < 70 && br.heals > 0) || ((f.ward || 0) < 50 && br.wards > 0))) {
+    if (brQuiet(f)) { brStartUse(f, f.hp < 70 && br.heals > 0 ? (f.hp < 45 ? 'br_draught' : 'br_salve') : (f.ward < 25 ? 'br_ward' : 'br_shard')); I.md = 0; return I; }
+    // someone could be on it before the salve is rubbed in: get out of their sight first
+    if (z && f.hp < 55 && br.heals > 0) { let nf = null, nd = 1e9; for (const o of foesOf(f)) { const d = abs(o.x - f.x) + abs(o.y - f.y); if (!o.dead && !o.onBarge && !o.gone && d < nd) { nd = d; nf = o; } } if (nf) { if (br.ref === undefined || G.time >= br.refT || br.refF !== nf) { br.ref = brRefuge(f, nf); br.refT = G.time + 60; br.refF = nf; } gx = br.ref; } }
+  }
+  if (gx !== null) what = 'hide';
+  else if (out || !z) gx = z ? (z.L + z.R) / 2 : cx;
   else if (trBotRekindle(f, I)) return I;
   else if (early) gx = br.home;
   else {
     if (z.left < 60 * 20 && (cx < z.nL || cx > z.nR)) gx = (z.nL + z.nR) / 2;
-    if (gx === null) { if (!br.chest || br.chest.open || --br.think <= 0) { br.chest = brBotChest(f); br.think = 90; } if (br.chest) gx = br.chest.x * T + 4; }
+    // it leaves for the ground that will last while there is still time to walk there: the way is measured along a real
+    // route (not as the crow flies), against the moment the ashfall's wall will be where it stands
+    else if (z.i < STORM.length && (cx < z.nL + 30 || cx > z.nR - 30)) {
+      const left = cx < z.nL + 30, edge = left ? z.nL + 50 : z.nR - 50;
+      if (br.zn === undefined || G.time % 90 === (f.botI | 0) % 90) { const t = navReach(f, edge, undefined, brNav()); if (t >= 0 || br.zn === undefined) br.zn = t >= 0 && t < Infinity ? t : abs(edge - cx) / 1.45 * 1.6; }
+      const u = clamp(left ? (cx - z.L) / max(1, z.nL - z.L) : (z.R - cx) / max(1, z.R - z.nR), 0, 1), wall = z.moving ? z.left * u : z.left + STORM[z.i][1] * 60 * u;
+      if (wall < br.zn * 1.3 + 150) gx = (z.nL + z.nR) / 2;
+    }
+    if (gx === null) { if (br.chest && br.chest.open) { br.chest = null; br.think = 0; } if (--br.think <= 0) { br.chest = brBotChest(f); br.think = br.saw ? (br.chest ? 90 : 45) : 10; } if (br.chest) { gx = br.chest.x * T + 4; gy = (br.chest.y + 1) * T; what = 'chest'; } }
     // with nothing to open, an echo keeps near its team's first standing member
-    if (gx === null && BR.size > 1) { const lead = G.fighters.find(o => o !== f && o.team === f.team && !o.dead && !o.gone && o.brIn); if (lead && abs(lead.x - f.x) > 110 && lead.x + 3 > z.L + 10 && lead.x + 3 < z.R - 10) gx = lead.x + 3; }
+    if (gx === null && BR.size > 1) { const lead = G.fighters.find(o => o !== f && o.team === f.team && !o.dead && !o.gone && o.brIn); if (lead && abs(lead.x - f.x) > 110 && lead.x + 3 > z.L + 10 && lead.x + 3 < z.R - 10) { gx = lead.x + 3; gy = lead.y + lead.h; } }
     // otherwise it drifts from one named place or camp to another and waits there a while. It keeps off the open Hearth until late
-    if (gx === null) { if (br.roam === null || --br.roamT <= 0) { const Q = BR.pois.filter(q => !q.hearth && q.x * T > z.nL + 30 && q.x * T < z.nR - 30 && abs(q.x * T - cx) < 2200); br.roam = Q.length && sec < TR_CYC * 2 ? fpick(Q).x * T + frand(-50, 50) : lerp(z.nL, z.nR, frand(.2, .8)); br.roamT = 700 + floor(Math.random() * 700); } gx = br.roam; }
+    if (gx === null) { if (br.roam === null || --br.roamT <= 0) { const Q = BR.pois.filter(q => !q.hearth && q.x * T > z.nL + 30 && q.x * T < z.nR - 30 && abs(q.x * T - cx) < 2200); br.roam = Q.length && sec < TR_CYC * 2 ? fpick(Q).x * T + frand(-50, 50) : lerp(z.nL, z.nR, frand(.2, .8)); br.roamT = 700 + floor(Math.random() * 700); } gx = br.roam; what = 'roam'; }
   }
-  brWalk(f, I, gx);
+  // no way there at all: want something else (and leave that chest alone from now on)
+  const way = brWalk(f, I, gx, gy);
+  if (way === 'stuck') { if (what === 'chest' && br.chest) { br.skip.add(br.chest.i); br.chest = null; br.think = 0; } else if (what === 'roam') br.roam = null; else if (what === 'hide') br.refT = 0; }
   const c = br.chest;
   if (c && !c.open && abs(c.x * T + 4 - cx) < 10) {
     const dyc = (c.y + 1) * T - (f.y + f.h);
     if (abs(dyc) < 14 && f.onGround) { brOpenChest(c, f); br.chest = null; br.think = 0; br.wait = 0; }
+    // (on a real route it is on its way up or down to the chest; the rest is for the old steering)
+    else if (way !== 'stuck') br.wait = 0;
     // right under (or over) a chest it cannot reach: try a jump or two, then give that one up
     else if ((br.wait = (br.wait || 0) + 1) > 70) { br.skip.add(c.i); br.chest = null; br.wait = 0; }
     else if (dyc < -10 && f.onGround && B.jumpCd <= 0) { I.jumpP = I.jumpH = true; B.jumpCd = 24; } else if (dyc < -10 && !f.onGround) { I.jumpH = true; if (f.vy > -.4 && !f.dblUsed && canDbl(f)) I.jumpP = true; }

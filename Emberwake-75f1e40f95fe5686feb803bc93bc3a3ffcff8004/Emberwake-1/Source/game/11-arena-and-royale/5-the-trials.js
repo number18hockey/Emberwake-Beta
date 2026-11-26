@@ -193,7 +193,7 @@ function trHunterThink(f) {
   let best = null, bd = 1e9; for (const o of G.fighters) { if (!o.brIn || o.dead || o.onBarge || o.gone) continue; const d = abs(o.x - f.x) + abs(o.y - f.y) * 1.5; if (d > 110 && trHas(o, 'eyes')) continue; if (d < bd) { bd = d; best = o; } }
   if (!best) { I.md = 0; return I; }
   if (bd < 210) { if (B.tgt !== best) { B.tgt = best; B.retarget = 40; } return aiThink(f); }
-  if (B.atkCd > 0) B.atkCd--; if (B.jumpCd > 0) B.jumpCd--; brWalk(f, I, best.x + 3); return I;
+  if (B.atkCd > 0) B.atkCd--; if (B.jumpCd > 0) B.jumpCd--; brWalk(f, I, best.x + 3, best.y + best.h); return I;
 }
 function trEvents() {
   const A = BR.ann;
@@ -245,7 +245,9 @@ function trBotRekindle(f, I) {
   if (BR.size < 2) return false; let t = null, bd = 260;
   for (const o of G.fighters) { if (o === f || o.team !== f.team || !trCanRise(o)) continue; const d = abs(o.rk.x - (f.x + 3)) + abs(o.rk.y - (f.y + f.h)) * 2; if (d < bd) { bd = d; t = o; } }
   if (!t) { f.br.rkT = 0; return false; }
-  if (abs(t.rk.x - (f.x + 3)) > 8) { brWalk(f, I, t.rk.x); f.br.rkT = 0; return true; }
+  // it goes to where the ember lies (up on a roof or down in a hollow, by a real route) and must stand by it
+  const far = abs(t.rk.x - (f.x + 3)) > 8;
+  if ((far || abs(t.rk.y + 4 - (f.y + f.h)) > 24) && (brWalk(f, I, t.rk.x, t.rk.y + 4) !== 'stuck' || far)) { f.br.rkT = 0; return true; }
   I.md = 0; if (++f.br.rkT >= TR_RK_HOLD) { f.br.rkT = 0; trRekindle(t, f); } return true;
 }
 

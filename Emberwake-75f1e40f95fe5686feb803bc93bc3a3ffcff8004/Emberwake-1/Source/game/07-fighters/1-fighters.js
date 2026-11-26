@@ -275,21 +275,28 @@ function aiThink(f) {
   if (f.riposte > 0 && f.state !== 'attack' && adx < pref + 40) { I.lp = true; I.md = 0; return I; }
   if (B.hold > 0) { B.hold--; I.r = B.holdB === 'H'; I.l = B.holdB === 'L'; if (B.hold === 0) I.l = I.r = false; } else I.l = I.r = false;
   if (B.plan && --B.plan.t <= 0) { if (B.plan.b === 'H') I.rp = true; else I.lp = true; I.down = !!B.plan.down; B.plan = null; }
+  // --- a foe who has rushed a blow, or swung at nothing, is open: a practised hand answers at once ---
+  if (ta && ta !== B.punish && (ta.rushed || (ta.phase === 2 && ta.whiff))) { B.punish = ta; if (Math.random() < sk) B.atkCd = 0; }
+  // --- a foe on another level, or behind a wall, is reached by a real route (2-nav.js), not by walking at it ---
+  if (B.route) { const way = navTo(f, I, tcx, t.y + t.h, WORLD.royale ? brNav() : null); if (way !== 'go' || (f.onGround && abs(dy) < 14 && adx < pref + 26)) { B.route = 0; if (way === 'stuck') B.routeT = G.time + 150; } }
   if (--B.think > 0) return I;
   B.think = 3 + floor((1 - sk) * 8 * Math.random()); B.ex = frand(-1, 1) * (1 - sk) * 12; B.ey = frand(-1, 1) * (1 - sk) * 10;
-  // --- movement ---
+  // --- movement: the better the hand, the more surely it keeps the foe at its weapon's reach ---
   let md = 0;
   if (ranged) { if (adx < pref - 45) md = -dir; else if (adx > pref + 45) md = dir; else { if (--B.strafeT <= 0) { B.strafe = Math.random() < .5 ? 1 : -1; B.strafeT = 6; } md = Math.random() < .5 ? B.strafe : 0; } }
-  else if (adx > pref + 6) md = dir; else if (adx < pref - 10 && Math.random() < .5) md = -dir;
+  else if (adx > pref + 6) md = dir; else if (adx < pref - 10 && Math.random() < .25 + sk * .6) md = -dir;
   if (B.home) { const off = fx - B.home.x; if (abs(off) > B.home.r) md = -sign(off); }
-  I.md = md; I.jumpH = false; I.down = false;
-  if (f.onGround && B.jumpCd <= 0 && ((dy < -26 && adx < 140) || (f.hitWall && md) || (ranged && Math.random() < .04))) { I.jumpP = true; I.jumpH = true; B.jumpCd = 22; }
-  else if (!f.onGround && dy < -10 && f.vy > 0 && canDbl(f) && !f.dblUsed && Math.random() < .3) { I.jumpP = true; I.jumpH = true; }
-  if (dy > 26 && f.onGround && adx < 70) I.down = true;
-  // --- choose a form ---
+  if (!B.route && f.onGround && G.time >= (B.routeT || 0) && ((abs(dy) > 26 && !ranged) || (f.hitWall === dir && md === dir)) && !(B.home && abs(tcx - B.home.x) > B.home.r)) B.route = 1;
+  if (!B.route) {
+    I.md = md; I.jumpH = false; I.down = false;
+    if (f.onGround && B.jumpCd <= 0 && ((dy < -26 && adx < 140) || (f.hitWall && md) || (ranged && Math.random() < .04))) { I.jumpP = true; I.jumpH = true; B.jumpCd = 22; }
+    else if (!f.onGround && dy < -10 && f.vy > 0 && canDbl(f) && !f.dblUsed && Math.random() < .3) { I.jumpP = true; I.jumpH = true; }
+    if (dy > 26 && f.onGround && adx < 70) I.down = true;
+  }
+  // --- choose a form: embers are saved for the heavy blow that spends five at once ---
   const inRange = ranged ? adx < 270 && abs(dy) < 130 : adx < pref + 14 && abs(dy) < 34;
   if (inRange && B.atkCd <= 0 && f.hurtT <= 0 && f.state === 'normal') {
-    const r = Math.random(), heavy = f.stam > 35 && Math.random() < (f.tempo >= 3 ? .7 : .22);
+    const r = Math.random(), heavy = f.stam > 35 && Math.random() < (f.tempo >= TEMPO_MAX ? .55 + sk * .45 : f.tempo >= 3 ? .7 - sk * .5 : .22);
     B.atkCd = round(lerp(60, 30, sk) + Math.random() * 20); B.chainN = heavy || ranged ? 0 : Math.random() < .35 + sk * .6 ? 1 + (Math.random() < sk ? 1 : 0) + (Math.random() < sk * .5 ? 1 : 0) : 0; B.chainLag = floor(Math.random() * (1 - sk) * 7); B.chainH = B.chainN > 1 && Math.random() < .4;
     let ax = tcx, ay = tcy;
     if (r < .14 && f.onGround && !ranged) { I.jumpP = I.jumpH = true; B.plan = { b: heavy ? 'H' : 'L', t: 8, down: Math.random() < .3 }; }
