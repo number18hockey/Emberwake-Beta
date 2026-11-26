@@ -34,7 +34,7 @@ function bloomPass(f, src) {
 }
 
 // ---------------- grading: the colour of the air ----------------
-const BIOTINT = { moor: [255, 150, 120, .05], thorn: [120, 220, 150, .05], reach: [150, 220, 255, .08], fen: [110, 200, 160, .07], dunes: [255, 225, 150, .07], scoria: [255, 140, 90, .07], ash: [190, 180, 215, .08], village: [255, 190, 130, .05], ring: [255, 140, 90, .06] };
+const BIOTINT = { moor: [255, 150, 120, .05], mosswood: [120, 215, 140, .05], willowmere: [140, 215, 195, .06], thorn: [120, 220, 150, .05], reach: [150, 220, 255, .08], fen: [110, 200, 160, .07], dunes: [255, 225, 150, .07], scoria: [255, 140, 90, .07], ash: [190, 180, 215, .08], village: [255, 190, 130, .05], ring: [255, 140, 90, .06] };
 const ATM = { r: 255, g: 255, b: 255, a: 0, mist: 0, wake: 0, t: -1 };
 // what the air should look like here and now: [r, g, b, strength]
 function airTarget() {
@@ -53,7 +53,7 @@ function airTarget() {
 // how thick the morning mist is (0 to 1)
 function mistTarget() {
   if (DIM || WORLD.arena || G.state === 'title') return 0; const c = G.clock, dawn = c > .93 ? (c - .93) / .07 : c < .2 ? 1 - c / .2 : 0, up = 1 - (G.underK || 0);
-  return clamp(dawn * ((wt('mist') ? .85 : 0) + (G.biome === 'fen' ? .5 : 0) + (seasonOn() && SEASON().k === 'kindling' ? .2 : 0)), 0, 1) * up;
+  return clamp(dawn * ((wt('mist') ? .85 : 0) + (G.biome === 'fen' ? .5 : G.biome === 'willowmere' ? .35 : 0) + (seasonOn() && SEASON().k === 'kindling' ? .2 : 0)), 0, 1) * up;
 }
 function atmoTick() {
   const A = ATM, t = airTarget(), k = A.t < 0 || G.time - A.t > 30 || G.time < A.t ? 1 : .025; A.t = G.time;
@@ -149,7 +149,7 @@ function treeTopCv(tr) {
 function ambientMore() {
   const b = G.biome, cx = G.cam.x, cy = G.cam.y, p = G.p; if (!p || WORLD.arena || DIM || !FX()) return;
   const surf0 = (G.underK || 0) < .3, night = G.dn < .35;
-  if (surf0 && seasonOn() && (b === 'moor' || b === 'thorn' || b === 'fen' || b === 'village')) {
+  if (surf0 && seasonOn() && (b === 'moor' || b === 'thorn' || b === 'fen' || b === 'village' || b === 'mosswood' || b === 'willowmere')) {
     const k = SEASON().k;
     if (k === 'emberfall' && G.time % 9 === 0) P(cx + frand(-20, VS.vw + 40), cy - 4, frand(-.5, -.15), frand(.25, .5), 420, fpick(['#ff8a3d', '#e2542b', '#ffb347', '#c94a1e']), { g: .0006, fr: .999, sz: Math.random() < .4 ? 2 : 1 });
     else if (k === 'kindling' && G.time % 16 === 0) P(cx + frand(-20, VS.vw + 40), cy - 4, frand(-.35, -.05), frand(.18, .36), 520, fpick(['#ffd9e6', '#ffffff', '#c9ffd8']), { g: .0003, fr: .999 });

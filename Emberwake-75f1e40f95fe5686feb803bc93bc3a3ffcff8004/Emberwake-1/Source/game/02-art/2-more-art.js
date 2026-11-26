@@ -149,6 +149,8 @@ function buildFoliage() {
   const weeds = (seed) => { const R = mulberry32(seed); const [c, x] = mk(12, 11); for (let k = 0; k < 4; k++) { let X = 1 + k * 3, Y = 10; const len = 5 + R() * 5; for (let i = 0; i < len; i++) { x.fillStyle = i > len - 2 ? '#f0b070' : '#a3482e'; x.fillRect(round(X), round(Y), 1, 1); Y--; if (i > len - 3) X += k & 1 ? 1 : -1; } } return outlined(c); };
   const fungi = (seed) => { const R = mulberry32(seed); const [c, x] = mk(12, 9); for (let k = 0; k < 3; k++) { const bx = 1 + k * 4 + (R() * 2 | 0), ht = 2 + (R() * 4 | 0); x.fillStyle = '#6b4a2f'; x.fillRect(bx + 1, 9 - ht, 1, ht); x.fillStyle = '#e2542b'; x.fillRect(bx - 1, 9 - ht - 2, 5, 2); x.fillStyle = '#ffb347'; x.fillRect(bx, 9 - ht - 3, 3, 1); } return outlined(c); };
   FOL.moor = [tuft(1, ['#ffc2a0', '#f06a55', '#c94a4e']), tuft(2, ['#ffc2a0', '#f06a55', '#c94a4e'], 12, 7), fern(3, '#2c575e', '#ffa07c'), fern(4, '#3a6f76', '#f06a55')];
+  FOL.mosswood = [fern(31, '#245a45', '#8bd27b'), fern(32, '#326f4e', '#b2e38a'), tuft(33, ['#d5d37a', '#6ba653', '#2c633d']), fungi(34)];
+  FOL.willowmere = [fern(41, '#477d70', '#b4e6c2'), tuft(42, ['#e0e5ac', '#80b99a', '#477d70'], 14, 8), fern(43, '#477d70', '#d2f2d2'), fungi(44)];
   FOL.reach = [shards(5), shards(6), tuft(7, ['#ffffff', '#dcf7f5', '#b4e6e8'], 12, 5)];
   FOL.scoria = [weeds(8), weeds(9), tuft(10, ['#f0b070', '#d67645', '#a3482e'], 12, 6)];
   FOL.ash = [tuft(11, ['#d6d0dc', '#a19baa', '#726c7c'], 12, 5), weeds(12)];

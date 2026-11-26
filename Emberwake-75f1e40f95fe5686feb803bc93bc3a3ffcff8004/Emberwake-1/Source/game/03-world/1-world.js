@@ -21,7 +21,7 @@ let FORGE_X = 0, FORGE_Y = 0, SKY_X = 0, SKY_Y = 0, MINE_X = 0, MINE_Y = 0, road
 const SIZES = [[600, 260], [900, 320], [1400, 380], [2200, 440]], SIZE_N = ['Small', 'Medium', 'Large', 'Vast'], SHAPE_N = ['Balanced', 'Skylands', 'Hollows'], MODE_N = ['Journey', 'Free Forge'];
 const WORLD = { id: '', name: '', seed: 0, size: 1, shape: 0, mode: 0, arena: false };
 const ARENA_SPAWNS = [[18, 58], [131, 58], [75, 48], [44, 43], [105, 43], [75, 38]];
-const BIOME = { reach: 'STILLGLASS REACH', moor: 'EMBERFELT MOOR', scoria: 'RUSTFALL', ash: 'ASHEN HOLLOW', drift: 'THE DRIFT', under: 'THE UNDERDARK', deep: 'THE DEEP', ring: 'THE CINDER RING', village: 'HEARTHHOLD' };
+const BIOME = { reach: 'STILLGLASS REACH', moor: 'EMBERFELT MOOR', mosswood: 'MOSSWOOD', willowmere: 'WILLOWMERE', scoria: 'RUSTFALL', ash: 'ASHEN HOLLOW', drift: 'THE DRIFT', under: 'THE UNDERDARK', deep: 'THE DEEP', ring: 'THE CINDER RING', village: 'HEARTHHOLD' };
 // visual layers and set pieces, rebuilt from the seed every time a world loads
 const STRUCTS = [], PROPS = [], FGP = [], VENTS = [], SPOTS = {}, LANDMARKS = [], ISLES = [];
 let PROPB = new Map(), FGPB = new Map();
@@ -35,7 +35,7 @@ const segOf = b => { let best = null; for (const s of SEGS) if (s.b === b && (!b
 // a new order of lands for every seed: the village always sits on temperate ground near the middle;
 // there is always a glass range (the Mirror Court), a rust country (the mine) and the ash crater by the village
 function layoutBiomes(small) {
-  const n = WORLD.size === 0 ? 5 : WORLD.size === 1 ? 7 : 9, extra = ['moor', 'fen', 'thorn', 'dunes', 'reach', 'scoria', 'thorn', 'fen', 'dunes', 'moor'];
+  const n = WORLD.size === 0 ? 5 : WORLD.size === 1 ? 7 : 9, extra = hasNewLands() ? ['moor', 'fen', 'thorn', 'dunes', 'reach', 'scoria', 'mosswood', 'willowmere', 'thorn', 'fen', 'dunes', 'moor'] : ['moor', 'fen', 'thorn', 'dunes', 'reach', 'scoria', 'thorn', 'fen', 'dunes', 'moor'];
   CRATER_R = small ? 36 : 44; VIL_W = small ? 38 : 46;
   let seq, mid; for (let tries = 0; tries < 80; tries++) {
     const pool = ['reach', 'scoria']; while (pool.length < n - 1) pool.push(extra[randi(0, extra.length - 1)]);
@@ -114,7 +114,7 @@ function house(x0, gy, w, h, roofH, o = {}) {
   const dl = o.door === -1 || o.door === 2, dr = o.door === 1 || o.door === 2;
   // doorways get real doors: they open as you walk into them
   for (let y = top + 1; y < gy; y++) { tiles[y * WW + x0] = !dl || y < gy - 3 ? GHOST : DOORC; tiles[y * WW + x1] = !dr || y < gy - 3 ? GHOST : DOORC; }
-  if (o.floors === 2) for (let x = x0 + 1; x < x1; x++) tiles[(gy - 4) * WW + x] = PLATFORM;
+  for (let fl = 1; fl < (o.floors || 1); fl++) for (let x = x0 + 1; x < x1; x++) tiles[(gy - 4 * fl) * WW + x] = PLATFORM;
   const S = { kind: 'house', name: o.name || '', x0, x1, y0: top + 1, y1: gy - 1, fac, px, py, a: 1, mode: 'fade', lx: round(x0 + w / 2), ly: top - roofH - 2, win: true };
   STRUCTS.push(S); reserve(x0 - 2, x1 + 2, 2); return S;
 }
@@ -149,6 +149,8 @@ function genWorldLegacy() {
   const peaks = []; for (const sg of SEGS) if (sg.b === 'reach') { let x = sg.x0 + rand(12); while (x < sg.x1 - 4) { peaks.push([x, rand(36, 80), rand(26, 40)]); x += rand(30, 52); } }
   const LF = {
     moor: x => B + (fbm(x * .0065, 21.3, 3) - .5) * 84 - max(0, fbm(x * .028, 4.1, 2) - .56) * 95 + (fbm(x * .06, 8.3, 2) - .5) * 5,
+    mosswood: x => B + (fbm(x * .0065, 26.3, 3) - .5) * 68 - max(0, fbm(x * .028, 14.1, 2) - .58) * 62 + (fbm(x * .06, 18.3, 2) - .5) * 4,
+    willowmere: x => B + 12 + (fbm(x * .012, 61.7, 2) - .5) * 9 + (fbm(x * .05, 3.1, 2) - .5) * 3,
     reach: x => { let m = 0; for (const [px, ph, pw] of peaks) { const t = max(0, 1 - abs(x - px) / pw); m = max(m, ph * (t > .9 ? .95 + (t - .9) * .5 : t * t * (2.2 - 1.2 * t) / 1.08)); } const r2 = max(0, 1 - abs(fbm(x * .03, 2.9, 3) - .5) * 4); return B - 8 - m - pow(r2, 2) * 9 * smooth(m / 20); },
     scoria: x => { const n = (fbm(x * .0062, 31.1, 3) - .22) * 3.8, st = floor(n * 3) / 3, fr = n * 3 - floor(n * 3), lv = st + smooth((fr - .8) * 5) / 3; return B + 14 - max(0, lv) * 40 + (fbm(x * .06, 5.5, 2) - .5) * 2; },
     fen: x => B + 12 + (fbm(x * .012, 61.7, 2) - .5) * 9 + (fbm(x * .05, 3.1, 2) - .5) * 3,
@@ -196,10 +198,10 @@ function genWorldLegacy() {
       if (y >= WH - 3) t = BEDROCK;
       else if (dl) t = abs(fbm(x * .05, y * .05 + 40, 3) - .5) < .018 ? DEEPGLOW : DEEPSTONE;
       else if (d < dd) t = b === 'reach' ? ((high || d < 2) ? (slope > 7 && d < 3 ? STONE : SNOW) : (slope > 8 && d < 3 ? STONE : DIRT)) : b === 'scoria' ? (d < 2 ? SAND : strata ? SANDSTONE : SAND) : b === 'ash' ? ASH
-        : b === 'fen' ? (d < 2 ? MUD : d < 5 ? PEAT : fbm(x * .08, y * .08 + 5, 2) > .55 ? CLAY : DIRT) : b === 'dunes' ? (d < 1 && fbm(x * .05, 9.9, 2) > .62 ? SALT : SAND)
+        : b === 'fen' || b === 'willowmere' ? (d < 2 ? MUD : d < 5 ? PEAT : fbm(x * .08, y * .08 + 5, 2) > .55 ? CLAY : DIRT) : b === 'dunes' ? (d < 1 && fbm(x * .05, 9.9, 2) > .62 ? SALT : SAND)
         : b === 'thorn' ? (fbm(x * .09, y * .09 + 3, 2) > .66 ? GRAVEL : slope > 9 && d < 3 ? STONE : DIRT) : (slope > 9 && d < 3 ? STONE : DIRT);
       else if ((b === 'scoria' || b === 'dunes') && d < dd + 20) t = strata ? SANDSTONE : b === 'dunes' && d < dd + 8 ? SAND : SAND;
-      else if (b === 'fen' && d < dd + 10 && fbm(x * .06, y * .06 + 11, 2) > .5) t = CLAY;
+      else if ((b === 'fen' || b === 'willowmere') && d < dd + 10 && fbm(x * .06, y * .06 + 11, 2) > .5) t = CLAY;
       else t = clay ? SANDSTONE : !deep ? DIRT : fbm(x * .06, y * .06 + 20, 2) > .7 ? DIRT : STONE;
       tiles[i] = t;
     }
@@ -245,7 +247,7 @@ function genWorldLegacy() {
     reserve(cx - w0, cx + w0, 1);
   };
   const free = (x, r) => x - r > 8 && x + r < WW - 8 && !nearFlat(x) && abs(x - SPAWN_X) > VIL_W + r + 16 && !RESV[x] && abs(x - SKY_X) > 40;
-  for (let k = 0, tries = 0, n = max(1, WW / 420 | 0) + (shape === 2 ? 1 : 0); k < n && tries < 80; tries++) { const x = randi(20, WW - 20), b = biomeAt(x); if (b === 'ash' || b === 'scoria' || b === 'dunes' || b === 'fen' || !free(x, 8)) continue; chasm(x, randi(4, 7), randi(30, 52), false); k++; }
+  for (let k = 0, tries = 0, n = max(1, WW / 420 | 0) + (shape === 2 ? 1 : 0); k < n && tries < 80; tries++) { const x = randi(20, WW - 20), b = biomeAt(x); if (b === 'ash' || b === 'scoria' || b === 'dunes' || b === 'fen' || b === 'willowmere' || !free(x, 8)) continue; chasm(x, randi(4, 7), randi(30, 52), false); k++; }
   for (let k = 0, tries = 0, n = small ? 1 : 2; k < n && tries < 120; tries++) { const x = randi(20, WW - 20), b = biomeAt(x); if ((b !== 'scoria' && b !== 'dunes') || !free(x, 10) || abs(x - MINE_X) < 26 || abs(x - GATE_X) < 26) continue; chasm(x, randi(9, 13), randi(26, 38), true); k++; }
   // ---- natural arches ----
   const arch = (ax, A, H, th) => {
@@ -257,7 +259,7 @@ function genWorldLegacy() {
     reserve(ax - A, ax + A, 1);
   };
   for (let k = 0, tries = 0, n = small ? 2 : 3; k < n && tries < 120; tries++) {
-    const x = randi(30, WW - 31), A = randi(8, 13); if (!free(x, A + 2) || biomeAt(x) === 'ash' || biomeAt(x) === 'fen') continue;
+    const x = randi(30, WW - 31), A = randi(8, 13); if (!free(x, A + 2) || biomeAt(x) === 'ash' || biomeAt(x) === 'fen' || biomeAt(x) === 'willowmere') continue;
     if (abs(heights[x - A] - heights[x]) > 3 || abs(heights[x + A] - heights[x]) > 3) continue; arch(x, A, randi(8, 12), randi(3, 4)); k++;
   }
   // ---- lakes: bowls dug into the moor, filled to the lower rim ----
@@ -272,7 +274,7 @@ function genWorldLegacy() {
     reserve(lx - a - 2, lx + a + 2, 1);
   };
   for (let k = 0, tries = 0, n = (small ? 2 : WW > 1200 ? 4 : 3) + SEGS.filter(q => q.b === 'fen').length * 2; k < n && tries < 220; tries++) {
-    const x = randi(20, WW - 20), a = randi(8, 15), b = biomeAt(x); if (!free(x, a + 3) || !(b === 'moor' || b === 'fen' || b === 'thorn')) continue;
+    const x = randi(20, WW - 20), a = randi(8, 15), b = biomeAt(x); if (!free(x, a + 3) || !(b === 'moor' || b === 'mosswood' || b === 'fen' || b === 'willowmere' || b === 'thorn')) continue;
     let lo = 1e9, hi = -1e9; for (let dx = -a - 1; dx <= a + 1; dx++) { lo = min(lo, heights[x + dx]); hi = max(hi, heights[x + dx]); } if (hi - lo > 9) continue;
     lake(x, a, randi(4, 7)); k++;
   }
@@ -283,7 +285,7 @@ function genWorldLegacy() {
   // each land has its own underneath: frost-crystal under the Reach, coal seams under the moor, cinder pockets under the ash,
   // clay and peat under the fen, gravel beds under the thorns, salt pans under the dunes
   for (let k = 0; k < 320 * oreK; k++) {
-    let x = randi(4, WW - 5); const b = biomeAt(x), id = b === 'reach' ? GEODE : b === 'moor' ? COAL : b === 'ash' || b === 'scoria' ? (rng() < .25 ? EMBER : COAL) : b === 'fen' ? (rng() < .5 ? CLAY : PEAT) : b === 'thorn' ? GRAVEL : b === 'dunes' ? SALT : 0; if (!id) continue;
+    let x = randi(4, WW - 5); const b = biomeAt(x), id = b === 'reach' ? GEODE : b === 'moor' || b === 'mosswood' ? COAL : b === 'ash' || b === 'scoria' ? (rng() < .25 ? EMBER : COAL) : b === 'fen' || b === 'willowmere' ? (rng() < .5 ? CLAY : PEAT) : b === 'thorn' ? GRAVEL : b === 'dunes' ? SALT : 0; if (!id) continue;
     let y = heights[x] + randi(b === 'reach' || id === EMBER ? 24 : 8, b === 'reach' ? 90 : 60); if (y > WH - 8) continue;
     for (let n = randi(4, id === GEODE || id === EMBER ? 7 : 13); n > 0; n--) { const t = tileAt(x, y); if (t === STONE || t === DIRT || t === SANDSTONE) tiles[y * WW + x] = id; x += randi(-1, 1); y += randi(-1, 1); if (x < 1 || x >= WW - 1) break; }
   }
@@ -340,9 +342,9 @@ function genWorldLegacy() {
   let lastTree = -9;
   for (let x = 3; x < WW - 3; x++) {
     const h = heights[x], b = biomeAt(x), tp = tileAt(x, h); if (RESV[x] || tileAt(x, h - 1) !== AIR || nearFlat(x) && flatK(x) > .5) continue;
-    const ch = b === 'moor' ? .3 : b === 'thorn' ? .45 : b === 'reach' ? .2 : b === 'ash' ? .1 : b === 'fen' ? .08 : b === 'dunes' ? 0 : .06;
+    const ch = b === 'moor' ? .3 : b === 'mosswood' ? .55 : b === 'thorn' ? .45 : b === 'reach' ? .2 : b === 'ash' ? .1 : b === 'fen' ? .08 : b === 'willowmere' ? .12 : b === 'dunes' ? 0 : .06;
     if (abs(heights[x - 1] - h) <= 1 && abs(heights[x + 1] - h) <= 1 && x - lastTree > 3 && TP[tp].solid && !TP[tp].ghost && rand() < ch) {
-      const kind = b === 'thorn' ? 3 : b === 'moor' || b === 'fen' ? 0 : b === 'reach' ? 1 : 2, th = kind === 0 ? randi(6, 14) : kind === 1 ? randi(5, 10) : kind === 3 ? randi(5, 9) : randi(4, 8); let ok = true;
+      const kind = b === 'thorn' ? 3 : b === 'moor' || b === 'mosswood' || b === 'fen' || b === 'willowmere' ? 0 : b === 'reach' ? 1 : 2, th = kind === 0 ? randi(6, 14) : kind === 1 ? randi(5, 10) : kind === 3 ? randi(5, 9) : randi(4, 8); let ok = true;
       for (let y = 1; y <= th + 4; y++) if (tileAt(x, h - y) !== AIR) ok = false;
       if (ok) { for (let y = 1; y <= th; y++) tiles[(h - y) * WW + x] = [TRUNK, TRUNK2, TRUNK3, TRUNK4][kind]; treeTops.set(x, { y: h - th, kind, v: randi(0, 2), ph: rand(TAU) }); lastTree = x; }
     }

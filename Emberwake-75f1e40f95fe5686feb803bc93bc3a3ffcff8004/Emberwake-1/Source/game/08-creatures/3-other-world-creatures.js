@@ -492,7 +492,7 @@ function eventSpawn() {
   const e = G.ev; if (!e || e.fade < .5 || e.end || DIM) return false; const E = EVENTS[e.id]; if (Math.random() > .6) return false;
   const p = G.p, ptx = floor((p.x + 3) / T), pty = floor((p.y + 10) / T), realm = realmAt(ptx, pty); if (realm !== 'surface') return false;
   if (G.enemies.filter(q => !q.dead && EVMOB.has(q.type)).length >= E.cap) return false;
-  const type = pickMob(E.mobs, true); if (type === 'fogwalker' && !['moor', 'fen', 'thorn', 'reach'].includes(biomeAt(ptx))) return false;
+  const type = pickMob(E.mobs, true); if (type === 'fogwalker' && !['moor', 'fen', 'thorn', 'reach', 'mosswood', 'willowmere'].includes(biomeAt(ptx))) return false;
   return !!placeMob(type, ptx, pty, false, tx => abs(tx - SPAWN_X) < VIL_W + 10);
 }
 function useSummon(it) {

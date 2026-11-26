@@ -245,7 +245,7 @@ function startWorld(data) {
     // a saved world keeps the land it was made with; a new one gets the widest lands. (Saves have long had a
     // 'gen' field that means something else, so the shape of the land is 'land'. Saves from the update that
     // first widened the lands carry 'boons' but no 'land': those were made with land 2.)
-    WORLD.land = data ? (data.land | 0) || (data.boons ? 2 : 1) : 4;
+    WORLD.land = data ? (data.land | 0) || (data.boons ? 2 : 1) : LAND_NEW;
     // (what an old world had already seen is known before the land is laid out, so new places keep off it)
     WORLD.legacy = !data ? {} : (data.gen | 0) >= 2 ? cleanLegacy(data.legacy) : legacyOf(data);
     // the gates past the floors are worked out once and kept; a world from before them puts them past the land it has seen

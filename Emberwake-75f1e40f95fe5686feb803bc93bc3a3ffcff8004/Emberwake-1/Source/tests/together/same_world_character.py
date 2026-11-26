@@ -35,7 +35,7 @@ async def main():
     check('the friend joins', await wait(B, "G.state==='play' && WORLD.guest && COOP.joined", 30000))
     a = json.loads(await A.evaluate(WHAT)); b = json.loads(await B.evaluate(WHAT))
     print('   host :', a['land'], a['traits'], a['moods'], len(a['curios']), 'curios', a['lakes'], 'lakes'); print('   guest:', b['land'], b['traits'], b['moods'], len(b['curios']), 'curios', b['lakes'], 'lakes')
-    check('both know the same three traits', a['traits'] == b['traits'] and len(a['traits']) == 3 and a['land'] == b['land'] == 4)
+    check('both know the same three traits', a['traits'] == b['traits'] and len(a['traits']) == 3 and a['land'] == b['land'] == 5)
     check('the same moods, the same curios, the same lakes and hills', a['moods'] == b['moods'] and a['curios'] == b['curios'] and len(a['curios']) > 5 and a['lakes'] == b['lakes'] and a['surf'] == b['surf'])
     # the year and the weather follow the host
     await A.evaluate("G.days = 7.31; G.wx = { k: 'rain', t: 5000, a: .8 }; 1")

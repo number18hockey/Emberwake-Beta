@@ -111,7 +111,7 @@ function wondersFinish(cx, x0, x1, here) {
     const top = tileAt(x, h), above = tileAt(x, h - 1);
     if (h < BASE_Y - 30 && hh(x, 1730, SEED) < .05 && (top === STONE || top === SNOW || top === DIRT)) { for (let d = 0; d < 2 + floor(hh(x, 1731, SEED) * 3); d++) if (NATURAL.has(tileAt(x, h + d))) tiles[(h + d) * WW + x] = SUNSTONE; if (hh(x, 1732, SEED) < .5 && NATURAL.has(tileAt(x + 1, heights[x + 1]))) tiles[heights[x + 1] * WW + x + 1] = SUNSTONE; continue; }
     if (above !== AIR && !(TP[above].decor && !TP[above].dyn)) continue;
-    if ((b === 'moor' || b === 'fen' || b === 'thorn') && top === GRASS && hh(x, 1733, SEED) < .022) tiles[(h - 1) * WW + x] = SUNBLOOM;
+    if ((b === 'moor' || b === 'fen' || b === 'thorn' || b === 'mosswood') && top === GRASS && hh(x, 1733, SEED) < .022) tiles[(h - 1) * WW + x] = SUNBLOOM;
     else if ((b === 'reach' || h < BASE_Y - 22) && (top === SNOW || top === STONE || top === GRASS || top === DIRT) && hh(x, 1734, SEED) < .024) tiles[(h - 1) * WW + x] = MOONPETAL;
   }
 }

@@ -23,7 +23,7 @@ function stnState(i, t) {
   else furnState(s, t, i);
   STN.set(i, s); return s;
 }
-function wayName(i) { const x = i % WW, b = placeAt(x, (i / WW) | 0); const N = { reach: 'Glassfall', moor: 'Feltmoor', ash: 'Ashrest', scoria: 'Rustgate', fen: 'Mirewatch', thorn: 'Briarhold', dunes: 'Saltway', village: 'Hearth', under: 'Underway', deep: 'Deepway', drift: 'Skyward' }; return (N[b] || 'Waystone') + ' ' + ((i % 89) + 1); }
+function wayName(i) { const x = i % WW, b = placeAt(x, (i / WW) | 0); const N = { reach: 'Glassfall', moor: 'Feltmoor', mosswood: 'Mossgate', willowmere: 'Willowford', ash: 'Ashrest', scoria: 'Rustgate', fen: 'Mirewatch', thorn: 'Briarhold', dunes: 'Saltway', village: 'Hearth', under: 'Underway', deep: 'Deepway', drift: 'Skyward' }; return (N[b] || 'Waystone') + ' ' + ((i % 89) + 1); }
 function stnPlaced(tx, ty, t) {
   const i = ty * WW + tx; STN.delete(i); LOOT.delete(i); const s = stnState(i, t); if (typeof COOP !== 'undefined' && COOP.role && t !== CHARGE) COOP.stns.add(i);
   if (t === BEDROLL || t === BED) { G.respawn = { x: tx, y: ty }; say('You will wake here if you fall.'); }

@@ -57,7 +57,7 @@ function bgLayer(k, col, hiA) {
 }
 function regionMix(x) {
   if (WORLD.arena) return WORLD.royale ? brRegionMix(x) : [['ash', 1]];
-  const BGK = { reach: 'reach', moor: 'moor', fen: 'moor', thorn: 'moor', ash: 'ash', scoria: 'scoria', dunes: 'scoria' }, acc = { reach: 0, moor: 0, ash: 0, scoria: 0 };
+  const BGK = { reach: 'reach', moor: 'moor', mosswood: 'moor', willowmere: 'moor', fen: 'moor', thorn: 'moor', ash: 'ash', scoria: 'scoria', dunes: 'scoria' }, acc = { reach: 0, moor: 0, ash: 0, scoria: 0 };
   let tot = 0;
   if (WORLD.endless) { const [t, h] = climate(x), w = bweights(t, h); for (const b in w) if (w[b] > .001) { acc[BGK[b] || 'moor'] += w[b]; tot += w[b]; } }
   else for (const sg of SEGS) { const w = segW(sg, x, 60); if (w > .001) { acc[BGK[sg.b] || 'moor'] += w; tot += w; } }
@@ -407,7 +407,7 @@ function drawTags(c, cx, cy, al) {
 function ambient() {
   const b = G.biome, cx = G.cam.x, cy = G.cam.y;
   if (b === 'reach' && G.time % 3 === 0) P(cx + frand(-20, VS.vw + 60), cy - 4, frand(-.5, -.15), frand(.3, .7), 340, fpick(['#ffffff', '#dcf7f5', '#b4e6e8']), { g: 0, fr: 1 });
-  else if (b === 'moor' && G.time % 7 === 0) P(cx + frand(VS.vw), cy + VS.vh * frand(.4, 1.1), frand(-.15, .15), frand(-.35, -.12), 260, fpick(['#ffa07c', '#f06a55', '#ffc2a0']), { g: -.0008, fr: .998, glow: G.dn < .5 ? 1 : 0 });
+  else if ((b === 'moor' || b === 'mosswood' || b === 'willowmere') && G.time % 7 === 0) P(cx + frand(VS.vw), cy + VS.vh * frand(.4, 1.1), frand(-.15, .15), frand(-.35, -.12), 260, fpick(b === 'mosswood' ? ['#b2e38a', '#6ba653', '#d5d37a'] : b === 'willowmere' ? ['#c9fff6', '#8fd0d8', '#b4e6c2'] : ['#ffa07c', '#f06a55', '#ffc2a0']), { g: -.0008, fr: .998, glow: G.dn < .5 ? 1 : 0 });
   else if (b === 'scoria' && G.time % 4 === 0) P(cx + VS.vw + 4, cy + frand(VS.vh), frand(-2.2, -1.2), frand(-.1, .2), 260, fpick(['#d67645', '#bd5a36', '#f0b070']), { g: 0, fr: 1 });
   else if ((b === 'ash' || b === 'ring') && G.time % 4 === 0) { if (Math.random() < .5) P(cx + frand(VS.vw), cy + VS.vh * frand(.3, 1), frand(-.2, .2), frand(-.5, -.2), 200, fpick(SPARK), { g: -.002, fr: 1, glow: 1 }); else P(cx + frand(VS.vw + 40), cy - 4, frand(-.4, -.1), frand(.3, .6), 340, '#a19baa', { g: 0, fr: 1 }); }
   else if (b === 'deep' && G.time % 9 === 0) P(cx + frand(VS.vw), cy + frand(VS.vh), frand(-.1, .1), frand(-.1, .1), 200, fpick(['#4fd8c8', '#8ff5e6']), { g: 0, fr: 1, glow: 1 });
@@ -595,7 +595,7 @@ addEventListener('pagehide', e => {
 });
 
 // ---------------- boot ----------------
-buildTiles(); buildTiles2(); buildSprites(); buildSprites2(); buildTiles3(); buildMobSprites(); buildWeatherMobs(); buildDimArt(); buildWonderArt(); buildRealmArt(); buildPlaceArt(); buildCurioArt(); buildBenchArt(); buildFurnArt(); buildDimMobs(); buildRealmMobs(); dimItemsPre(); realmItemsPre(); buildItems(); brItems(); resize(); buildBayer();
+buildTiles(); buildTiles2(); buildSprites(); buildSprites2(); buildTiles3(); buildWilds(); buildMobSprites(); buildWeatherMobs(); buildDimArt(); buildWonderArt(); buildRealmArt(); buildPlaceArt(); buildCurioArt(); buildBenchArt(); buildFurnArt(); buildDimMobs(); buildRealmMobs(); dimItemsPre(); realmItemsPre(); buildItems(); brItems(); resize(); buildBayer();
 SIL = [genSil(31, 0), genSil(77, 1)]; for (let i = 0; i < 4; i++) VEILS.push(genVeil(i * 17));
 SHARDMOON = spr(['.....w.....', '....wWc....', '....WWc....', '...wWWcc...', '...WWWcc...', '..wWWWccc..', '..WWWWccd..', '.wWWWWcccd.', '..WWWccdd..', '..WWWcccd..', '...WWccd...', '...Wcccd...', '....ccd....', '....cd.....', '.....d.....'], { w: '#ffffff', W: '#dcf7f5', c: '#8fd0d8', d: '#62a9bc' });
 accountBoot(); netBoot();

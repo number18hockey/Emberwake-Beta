@@ -65,6 +65,7 @@ function cragY(y) { const st = 10, q = y / st, f = q - floor(q), s = floor(q) + 
 // ---------------- moods: one land, three ways ----------------
 // fol: which tufts stand in front; folSkip: how many of them are missing; tree: how many stalks (x); th: how tall (x); kind: which stalk; berry / flower / grass / reed / bones / bush / pebble: how much of each (x);
 // glow: glowcaps in the open (chance); crystal: glass shoots (x); top: [tile, how much of the topsoil]; mobs: who walks here
+// (the Mosswood and the Willowmere are only in worlds made since they grew: see LAND_NEW in 3-endless.js)
 const MOODS = {
   moor: [{ n: 'EMBERFELT MOOR' },
     { n: 'THE BURNT MOOR', sub: 'a fire went through here, and stayed', fol: 'ash', tree: .5, kind: 2, berry: .25, flower: 0, grass: .3, bush: .09, bones: .03, top: [ASH, .56], mobs: [['husk', 3], ['mote', 3], ['cinderling', 1], ['bat', 1, 1]], tint: [255, 120, 70, .07] },
@@ -78,6 +79,12 @@ const MOODS = {
   fen: [{ n: 'SALLOWMERE' },
     { n: 'THE BLACK FEN', sub: 'peat, rot and small lights', tree: 1.8, kind: 2, reed: .55, glow: .07, berry: .3, top: [PEAT, .85], mobs: [['bat', 3], ['husk', 2], ['mote', 2], ['lurker', 0]], tint: [90, 70, 130, .08] },
     { n: 'THE REEDSEA', sub: 'reeds to the shoulder, water to the knee', tree: .3, reed: 1.7, berry: 2.2, mobs: [['ashhare', 2], ['mote', 3], ['glassfly', 2], ['lurker', 0], ['husk', 1, 1]], tint: [170, 230, 150, .06] }],
+  mosswood: [{ n: 'MOSSWOOD' },
+    { n: 'THE OLD GROVE', sub: 'oaks that were old before the village was', tree: 1.3, th: 1.3, berry: 1.4, grass: 1.2, glow: .03, mobs: [['mossdeer', 5, 0, 1], ['ashhare', 2], ['mote', 2], ['bat', 2, 1], ['husk', 2, 1]], tint: [110, 210, 130, .07] },
+    { n: 'THE DEER LAWNS', sub: 'short grass, and something always watching', tree: .3, flower: 2, grass: 1.3, berry: 1.2, mobs: [['mossdeer', 6, 0, 1], ['ashhare', 3], ['mote', 2], ['husk', 2, 1]], tint: [200, 240, 150, .05] }],
+  willowmere: [{ n: 'WILLOWMERE' },
+    { n: 'THE HEN MEADS', sub: 'wet meadow, and wild hens in it', tree: .5, reed: .6, berry: 1.8, mobs: [['willowhen', 7, 0, 1], ['ashhare', 2], ['mote', 2], ['husk', 1, 1]], tint: [200, 235, 170, .05] },
+    { n: 'THE STILL POOLS', sub: 'willows over quiet water, pale lights at night', tree: 1.6, reed: 1.3, glow: .06, mobs: [['mossdeer', 3, 0, 1], ['willowhen', 3, 0, 1], ['mote', 3], ['glassfly', 1], ['bat', 2, 1], ['husk', 1, 1]], tint: [150, 170, 240, .06] }],
   dunes: [{ n: 'THE SALT DUNES' },
     { n: 'THE BONE FIELDS', sub: 'something very large died here, more than once', bones: 5, bush: 1.6, mobs: [['husk', 3], ['serpent', 1], ['ashhare', 1], ['bat', 2, 1]], tint: [255, 235, 200, .06] },
     { n: 'THE GLASS FLATS', sub: 'salt from here to the edge of sight', fol: 'reach', folSkip: .6, top: [SALT, .86], bones: .3, bush: .4, glint: 1, mobs: [['glassfly', 3], ['ashhare', 2], ['serpent', 1], ['husk', 1, 1]], tint: [220, 250, 255, .08] }],

@@ -15,7 +15,7 @@ const DROPS = {
   mite: [['snow', 1, 1, 3], ['glowcap', .25, 1, 1], ['shard', .06, 1, 1]], bat: [['membrane', .7, 1, 1], ['cinder', .4, 1, 1]],
   skyray: [['skysilk', 1, 1, 2], ['membrane', .3, 1, 1], ['glowcap', .2, 1, 1]], rustback: [['rust_plate', .9, 1, 2], ['copper_ore', .5, 2, 3], ['iron_ore', .4, 1, 3], ['shard', .1, 1, 1]],
   cinderling: [['cinder', 1, 1, 3], ['cinder_gland', .5, 1, 1], ['shard', .25, 1, 1]],
-  ashhare: [['meat', 1, 1, 1], ['hide', .8, 1, 1], ['bone', .3, 1, 1]], thornback: [['meat', 1, 2, 3], ['hide', 1, 1, 2], ['tusk', .7, 1, 2], ['bone', .5, 1, 2]],
+  ashhare: [['meat', 1, 1, 1], ['hide', .8, 1, 1], ['bone', .3, 1, 1]], willowhen: [['egg', .9, 1, 2], ['feather', 1, 1, 3], ['meat', .5, 1, 1]], mossdeer: [['meat', 1, 1, 3], ['hide', .75, 1, 2], ['antler', .65, 1, 1], ['moonseed', .08, 1, 1]], thornback: [['meat', 1, 2, 3], ['hide', 1, 1, 2], ['tusk', .7, 1, 2], ['bone', .5, 1, 2]],
   glassfly: [['glass_wing', .85, 1, 1], ['snow', .3, 1, 1]], lurker: [['lurker_oil', 1, 1, 2], ['hide', .7, 1, 1], ['meat', .8, 1, 2], ['bone', .4, 1, 2]],
   serpent: [['scale', 1, 2, 4], ['venom', .8, 1, 1], ['meat', .7, 2, 3], ['bone', .5, 2, 3]], crawler: [['chitin', .9, 1, 2], ['venom', .45, 1, 1]],
   golem: [['geode_core', 1, 1, 1], ['snow', 1, 3, 5], ['rock', 1, 2, 4], ['shard', .3, 1, 2]]
@@ -25,6 +25,8 @@ function buildMobSprites() {
   const S = (k, rows, pal) => { MOBSPR[k] = spr(rows, pal); };
   const hare = { a: '#e6e0f0', b: '#b8b2c0', c: '#8d8794', e: '#120d1f', p: '#ff9a8a' };
   S('hare0', ['.aa.....', '..a.....', '..bbb...', '.bbebbb.', 'bbbbbbbc', '.cc..cc.'], hare); S('hare1', ['..aa....', '...a....', '..bbbb..', '.bbebbbb', 'cbbbbbb.', 'c.....cc'], hare);
+  S('hen0', ['..aaaa..', '.abbbbc.', 'abbbebbc', '..bddbbc', '.bb..bb.', '.cc..cc.'], { a: '#f0d070', b: '#c98a2b', c: '#5a4030', d: '#c94a4e', e: '#1d131b' });
+  S('deer0', ['...aa....', '..abbaa..', '.abbbba..', 'abbbebbb.', '.bbbbbbbc', '..c..c..c'], { a: '#c98a64', b: '#a87050', c: '#5a4030', e: '#1d131b' });
   const boar = { t: '#c9a0a0', b: '#5a3a3a', B: '#3a2424', e: '#ff6a4a', w: '#f4ead8', c: '#2a1818' };
   S('boar0', ['...t.t.t.....', '..tbtbtbt....', '.bbbbbbbbbb..', 'bbbbbbbbbbbbe', 'BbbbbbbbbbbbbW', '.BBbbbbbbbbw.', '.cc..cc..cc..', '.cc...c...c..'], Object.assign({ W: '#f4ead8' }, boar));
   S('boar1', ['...t.t.t.....', '..tbtbtbt....', '.bbbbbbbbbb..', 'bbbbbbbbbbbbe', 'BbbbbbbbbbbbbW', '.BBbbbbbbbbw.', '..cc..cc..c..', '..c...cc..cc.'], Object.assign({ W: '#f4ead8' }, boar));
@@ -50,6 +52,14 @@ mob('ashhare', { w: 7, h: 5, hp: 10, dmg: 0, contact: false, name: 'Ashhare', ca
   }
   moveBody(e);
 }, (e, x, y, o) => drawEnt(32, 16, 20, c => { c.scale(e.dir, 1); c.drawImage(e.onGround ? MOBSPR.hare0 : MOBSPR.hare1, -4, -6); }, x + e.w / 2, y + e.h, { flash: o.flash, ly: -3 }));
+function grazeAI(e, p, dx, dist, pace, leap, range) {
+  e.vy = min(e.vy + .22, 5); if (!e.onGround) { moveBody(e); return; }
+  e.vx *= .72; const flee = dist < range && !p.dead; if (flee) e.dir = -sign(dx) || 1;
+  if (e.t > (flee ? 8 : e.wait)) { e.t = 0; e.wait = 60 + frand(150); if (flee || Math.random() < .45) { if (e.hitWall) e.dir *= -1; e.vy = flee ? -leap : -leap * .56; e.vx = e.dir * (flee ? pace : pace * .35); } else e.dir = Math.random() < .5 ? 1 : -1; }
+  moveBody(e);
+}
+mob('willowhen', { w: 8, h: 6, hp: 8, dmg: 0, contact: false, name: 'Willow Hen', canStep: true }, (e, p, dx, dy, dist) => grazeAI(e, p, dx, dist, 1.8, 2.2, 55), (e, x, y, o) => drawEnt(24, 16, 18, c => { c.scale(e.dir, 1); c.drawImage(MOBSPR.hen0, -4, -7); }, x + e.w / 2, y + e.h, { flash: o.flash, ly: -3 }));
+mob('mossdeer', { w: 10, h: 9, hp: 18, dmg: 0, contact: false, name: 'Moss Deer', canStep: true }, (e, p, dx, dy, dist) => grazeAI(e, p, dx, dist, 2.1, 2.8, 96), (e, x, y, o) => drawEnt(32, 24, 24, c => { c.scale(e.dir, 1); c.drawImage(MOBSPR.deer0, -5, -9); }, x + e.w / 2, y + e.h, { flash: o.flash, ly: -4 }));
 // ---- thornback ----
 mob('thornback', { w: 13, h: 8, hp: 58, dmg: 13, contact: false, kbRes: .45, name: 'Thornback', canStep: true }, (e, p, dx, dy, dist) => {
   e.vy = min(e.vy + .25, 5);
@@ -158,14 +168,14 @@ function spawnMob(type, tx, ty) {
   if (type === 'serpent') { e.state = 'burrow'; e.noHit = true; }
   wardRoll(e); G.enemies.push(e); return e;
 }
-// surface creatures by biome: [type, weight, night only?]
+// surface creatures by biome: [type, weight, night only?, day only?]
 const BIOME_MOBS = {
-  moor: [['ashhare', 3], ['thornback', 2], ['mote', 3], ['husk', 2, 1]], thorn: [['thornback', 4], ['ashhare', 2], ['husk', 2, 1], ['mote', 1]],
+  moor: [['ashhare', 3], ['thornback', 2], ['mote', 3], ['husk', 2, 1]], mosswood: [['mossdeer', 5, 0, 1], ['ashhare', 2], ['thornback', 1], ['mote', 2], ['husk', 1, 1]], willowmere: [['willowhen', 6, 0, 1], ['mossdeer', 3, 0, 1], ['ashhare', 1], ['mote', 2], ['husk', 1, 1]], thorn: [['thornback', 4], ['ashhare', 2], ['husk', 2, 1], ['mote', 1]],
   reach: [['mite', 4], ['glassfly', 2], ['ashhare', 1], ['husk', 1, 1]], ash: [['mote', 3], ['husk', 3], ['bat', 1, 1]],
   scoria: [['rustback', 4], ['mote', 2], ['husk', 1, 1]], fen: [['lurker', 0], ['mote', 2], ['ashhare', 1], ['bat', 2, 1], ['husk', 1, 1]],
   dunes: [['serpent', 1], ['ashhare', 2], ['glassfly', 1], ['husk', 1, 1], ['mote', 1]]
 };
-function pickMob(list, night) { const L = list.filter(m => m[1] > 0 && (!m[2] || night)); let s = 0; for (const m of L) s += m[1]; let r = Math.random() * s; for (const m of L) { r -= m[1]; if (r <= 0) return m[0]; } return L.length ? L[0][0] : 'mote'; }
+function pickMob(list, night) { const L = list.filter(m => m[1] > 0 && (!m[2] || night) && (!m[3] || !night)); let s = 0; for (const m of L) s += m[1]; let r = Math.random() * s; for (const m of L) { r -= m[1]; if (r <= 0) return m[0]; } return L.length ? L[0][0] : 'mote'; }
 // fen lurkers are placed in water near the player instead of on the ground
 function trySpecialSpawn(realm, b, ptx, pty, night) {
   if (realm === 'surface' && b === 'fen' && Math.random() < .45 && G.enemies.filter(e => e.type === 'lurker').length < 2) {

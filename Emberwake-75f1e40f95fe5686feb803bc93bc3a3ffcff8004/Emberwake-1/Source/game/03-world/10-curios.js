@@ -12,7 +12,7 @@ const CURIO = 94;
 defT(CURIO, { name: 'Curio', dyn: true, hard: Infinity, dust: '#8d8794' });
 const CURIO_AT = new Map(), CURIO_W = 170, CURIO_SPR = {};
 const CURIO_KINDS = {
-  moor: ['mile', 'rest', 'spring', 'stones', 'cache', 'hermit', 'cart', 'mile'], thorn: ['mile', 'cache', 'hermit', 'stones', 'cart', 'rest'], reach: ['mile', 'rest', 'stones', 'spring', 'cache'],
+  moor: ['mile', 'rest', 'spring', 'stones', 'cache', 'hermit', 'cart', 'mile'], thorn: ['mile', 'cache', 'hermit', 'stones', 'cart', 'rest'], mosswood: ['mile', 'rest', 'spring', 'stones', 'cache', 'hermit', 'cart'], willowmere: ['spring', 'hermit', 'cache', 'cart', 'mile', 'rest'], reach: ['mile', 'rest', 'stones', 'spring', 'cache'],
   fen: ['spring', 'hermit', 'cache', 'cart', 'mile'], dunes: ['ribs', 'ribs', 'mile', 'cache', 'rest'], scoria: ['ribs', 'mile', 'cart', 'rest', 'stones'], ash: ['ribs', 'rest', 'cache', 'mile']
 };
 Object.assign(LOOT_T, {
