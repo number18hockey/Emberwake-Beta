@@ -913,7 +913,7 @@ MAT[PLANK].y = [['plank', 1]]; MAT[BRICK].y = [['brick', 1]]; MAT[PLATFORM].y = 
 for (let t = 0; t < TP.length; t++) if (TP[t] && TP[t].part && TP[t].drop && MAT[t] && !MAT[t].y.length) MAT[t].y = [[TP[t].drop, 1]];
 // what plants, litter and urns give when you take them by hand
 const PLUCK = {
-  [TALLGRASS]: [['fiber', 1, 2]], [FLOWER]: [['fiber', 1, 1]], [GLOWCAP]: [['glowcap', 1, 1]], [DEADBUSH]: [['stick', 2, 3], ['fiber', 1, 2]], [VINE]: [['fiber', 1, 1]], [CRYSTAL]: [['snow', 1, 2]],
+  [TALLGRASS]: [['fiber', 1, 2]], [FLOWER]: [['fiber', 1, 1]], [GLOWCAP]: [['glowcap', 1, 1]], [DEADBUSH]: [['stick', 2, 3]], [VINE]: [['fiber', 1, 1]], [CRYSTAL]: [['snow', 1, 2]],
   [REED]: [['reed', 2, 3]], [BERRY]: [['berries', 2, 3], ['stick', 0, 1]], [BUSH]: [['stick', 1, 2]], [PEBBLE]: [['rock', 1, 2], ['flint', 0, 1]], [STICKS]: [['stick', 2, 3]],
   [BONES]: [['bone', 1, 3]], [FUNGUS]: [['fungus', 1, 1]]
 };
@@ -2634,7 +2634,7 @@ function settlePlaced() { for (const i of PLACED) if (chunkReadyAt(i % WW)) SUP.
 function switchDim(d) {
   const p = G.p; DSTASH[DIM] = worldBlob();
   Object.assign(G, { enemies: [], projs: [], drops: [], npcs: [], boss: null, duel: null, fires: [], smokes: [], stuck: [], falling: [], felled: [], rubble: [], autoDoors: [], regrow: [], trails: [], nums: [], ghosts: [], link: null, cine: null, drill: null, dialog: null, spawnT: 300, biome: '', dhaz: [], dev: null, devT: 2400 });
-  for (const f of G.fighters) if (f !== p) f.gone = true; G.fighters = [p]; G.respawn = null;
+  for (const f of G.fighters) if (f !== p) f.gone = true; G.fighters = [p]; G.respawn = null; firesOut();
   if (d) initDim(d); else initEndless();
   const b = DSTASH[d]; delete DSTASH[d]; loadBlob(b);
   if (b && Array.isArray(b.respawn)) G.respawn = { x: clamp(b.respawn[0] | 0, 1, WW - 2), y: clamp(b.respawn[1] | 0, 1, WH - 2) };
@@ -5265,7 +5265,7 @@ const BENCHES = [
   { st: 'tink', n: "Tinker's Table", item: 'tinker', d: 'Gadgets you carry, traps and the ember ballista: lanterns, glider, claws, compass, gauges.' },
   { st: 'jewel', n: "Jeweller's Bench", item: 'jeweller', d: 'Trinkets you wear in your trinket slots: rings, charms and amulets that change how you move and fight.' },
   { st: 'oven', n: 'Hearth Oven', item: 'oven', d: 'Hot meals. A meal fills you up and gives a boon for a few minutes (one at a time).' },
-  { st: 'pot', n: 'Cauldron', item: 'cauldron', d: 'Brews: field tonics at a cauldron, stronger infusions at a brewer\'s stand, and mooncraft at a moon cauldron.' },
+  { st: 'pot', n: 'Cauldron', item: 'cauldron', d: 'Brews: salves, tonics, antidotes, and flasks to throw. A brewer\'s stand and a moon cauldron brew stronger.' },
   { st: 'altar', n: 'Offering Altar', item: 'offering_altar', d: 'Offerings that wake the guardians, the lamps that call the sky, and the keys between worlds.' },
   { st: 'mason', n: "Mason's Bench", item: 'mason', d: 'Cut stone: blocks, walls, statues, fountains, the stone anvil and the oven.' },
   { st: 'loom', n: 'Loom', item: 'loom', d: 'Workshop. Cloth, rugs, banners, bedrolls and bags.' },
@@ -5416,7 +5416,7 @@ function drinkBrew(k) {
 }
 function spawnMirrorClone() {
   const p = G.p, tape = G.cloneTape || [], W = heldOf(p), id = W && W.type === 'weapon' ? W.id : 'fists';
-  const f = newFighter(p.x - p.face * 12, p.y, { name: 'MIRROR WAKER', skin: p.skin, team: p.team || 'p', wid: id, hp: 48, maxhp: 48, dmgMul: .68, ai: newBrain(.5), isClone: true, cloneT: 2400, cloneIdx: max(0, tape.length - 18) });
+  const f = newFighter(p.x - p.face * 12, p.y, { name: 'MIRROR WAKER', skin: p.skin, hat: p.hat, team: p.team || 'p', wid: id, hp: 48, maxhp: 48, dmgMul: .68, ai: newBrain(.5), isClone: true, cloneT: 2400, cloneIdx: max(0, tape.length - 18) });
   f.py = f.y; f.face = p.face; G.fighters.push(f); p.cloneCd = 3600;
   burst(f.x + 3, f.y + 8, 18, ['#e0d2ff', '#8ff5e6', '#ffffff'], 1.8, 36, { glow: 1, g: -.01 });
   numPop(p.x + 3, p.y - 12, 'DOUBLE SOUL', '#e0d2ff', 1.2); say('Your mirror repeats the last few steps, then reads its own fights.'); sfx('reflect', 0);
@@ -7769,8 +7769,10 @@ function armBurst(pr) {
     burst(x, y, 24, ['#ff7a2a', '#ffd35a', '#e2542b', '#fff1a8'], 2.6, 30, { glow: 1, g: .04 }); sfx('boom', 40); if (near(ow)) addShake(2.5);
     G.trails.push({ kind: 'ring', x, y: y + 2, r: 22, life: 10, max: 10 });
     if (!pr.ghost) for (const e of foesOf(ow)) if (!e.dead && !e.noHit && circBox(x, y, 22, e)) { strike(ow, e, pr.dmg, (sign(e.x + e.w / 2 - x) || 1) * 1.4, -1.6, { stop: 3, shake: 1, hx: e.x + e.w / 2, hy: e.y + e.h / 2 }); applyStatus(e, 'burn', ow); }
-    // it burns where it broke: on the wall, the roof or the floor it hit. In mid-air it scatters burning drops instead
-    if (!lightFire(x, y, 19, 270, ow, pr.ghost)) rainFire(x, y, 6, ow, pr.ghost);
+    let gy = floor(y / T); for (let k = 0; k < 7 && !solidAt(floor(x / T), gy + 1); k++) gy++;
+    if (solidAt(floor(x / T), gy + 1) && !liqAt(x, gy * T + 4)) G.fires.push({ x0: x - 18, x1: x + 18, y: (gy + 1) * T, life: 260, max: 260, by: ow, ghost: !!pr.ghost });
+    // one that breaks against a wall or under a roof burns on that face as well; one with no ground below it scatters burning drops
+    if (!lightFire(x, y, 19, 270, ow, pr.ghost, true) && !solidAt(floor(x / T), gy + 1)) rainFire(x, y, 6, ow, pr.ghost);
   } else if (pr.type === 'pellet') {
     for (let i = 0; i < 26; i++) { const a = frand(TAU), v = frand(.4, 1.8); P(x, y, cos(a) * v, sin(a) * v * .7, frand(30, 60) | 0, fpick(['#8d8794', '#a19baa', '#726c7c', '#d6d0dc']), { g: -.01, fr: .9 }); }
     sfx('dodge', 40); G.smokes.push({ x, y: y - 6, r: 38, life: 320, max: 320, by: ow, ghost: !!pr.ghost });
@@ -7779,6 +7781,11 @@ function armBurst(pr) {
   return true;
 }
 function tickArmsWorld() {
+  for (let i = G.fires.length - 1; i >= 0; i--) {
+    const f = G.fires[i]; if (--f.life <= 0) { G.fires.splice(i, 1); continue; }
+    if (G.time % 3 === 0) P(frand(f.x0, f.x1), f.y - 1, frand(-.2, .2), frand(-1.4, -.6), 16, fpick(['#ff7a2a', '#ffd35a', '#e2542b']), { glow: 1, g: -.02 });
+    if (!f.ghost && G.time % 10 === 0) { const by = f.by; for (const e of (by && by.fighter ? foesOf(by) : G.fighters.filter(q => q.team === 'p' && !q.remote))) if (!e.dead && !e.noHit && e.x + e.w > f.x0 && e.x < f.x1 && abs(e.y + e.h - f.y) < 7) applyStatus(e, 'burn', by, { d: 120 }); }
+  }
   tickFires();
   for (let i = G.smokes.length - 1; i >= 0; i--) {
     const s = G.smokes[i]; if (--s.life <= 0) { G.smokes.splice(i, 1); continue; }
@@ -7919,7 +7926,7 @@ function linkHit(k, st) {
   if (fin && !e.dead) { if (ky < -2.5) applyStatus(e, 'launched', f, { d: 70 }); if (e.st) e.st.lk = 10; }
   const fx = st.fx;
   if (fx === 'flare' || fx === 'blaze' || fx === 'forge') { burst(hx, hy, fx === 'flare' ? 10 : 30, ['#ff7a2a', '#ffd35a', '#e2542b', '#fff1a8'], fx === 'flare' ? 1.8 : 3.4, 30, { glow: 1, g: .02 }); if (e.st && e.st.burn) e.st.burn = max(e.st.burn, 120); }
-  if (fin && (fx === 'blaze' || fx === 'forge')) { explode(hx, hy, fx === 'forge' ? 44 : 30, round(W.dmg * (fx === 'forge' ? 1.6 : 1)), f); for (const o of foesOf(f)) if (o !== e && !o.dead && circBox(hx, hy, 40, o)) applyStatus(o, 'burn', f); if (fx === 'forge') stripFire(hx - 30, hx + 30, k.ground, 200, f); }
+  if (fin && (fx === 'blaze' || fx === 'forge')) { explode(hx, hy, fx === 'forge' ? 44 : 30, round(W.dmg * (fx === 'forge' ? 1.6 : 1)), f); for (const o of foesOf(f)) if (o !== e && !o.dead && circBox(hx, hy, 40, o)) applyStatus(o, 'burn', f); if (fx === 'forge') G.fires.push({ x0: hx - 30, x1: hx + 30, y: k.ground, life: 200, max: 200, by: f }); }
   if (fin && fx === 'crack' && !WORLD.arena) { const s = k.face; for (let i = 0; i < 3; i++) { const tx = floor((hx + s * (e.w / 2 + 3 + i * 6)) / T); for (const yy of [hy - 4, hy + 4]) { const ty = floor(yy / T), t = tileAt(tx, ty); if (t && TP[t].solid && TP[t].hard < 60 && !TP[t].ghost && t !== DOORC && t !== DOORO) breakTile(tx, ty, true); } } addShake(8); sfx('brk', 0); }
   if (fx === 'impale') { sparks(hx, hy, 10, k.face, 2.4); }
   if (fin && fx === 'tear') { sparks(hx - k.face * 4, hy, 12, -k.face, 2.6, ['#e8edf2', '#aab3c2', '#fff1a8']); G.stuck.push({ x: hx + k.face * 4, y: hy, a: 0, life: 200 }); }
@@ -8730,11 +8737,15 @@ function drawPoise(c, e, x, y) {
 }
 
 // ============================================================
-//  FIRE. A flask burns where it breaks: flames take root on every
-//  bare face of rock around the point of impact (floor, wall or
-//  ceiling), and one that bursts on a creature in mid-air rains
-//  burning drops. Flames are little animated tongues that lean,
-//  lick and split, each keeping its own rhythm.
+//  FIRE THAT CLINGS. The strips of burning ground (a flask on the
+//  floor, the Hearthkeeper's roar, the Keeper's shock, the forge
+//  link) are G.fires and live in 2-links.js, as they always have.
+//  These are the other flames: the ones that take root on the bare
+//  faces of rock around a point (a flask against a wall or under a
+//  roof, a lightning strike, the Wilds' wildfire), and the burning
+//  drops of a flask that bursts with no ground beneath it. They are
+//  little animated tongues that lean, lick and split, each keeping
+//  its own rhythm, and rain puts them out sooner.
 // ============================================================
 const FLAME_N = 24, FLAME_DIM = [[9, 11], [11, 15], [13, 20]];
 let FLAME = null;
@@ -8779,18 +8790,22 @@ function fireFaces(x, y, R) {
   }
   return out;
 }
+const FACE_FIRES = [];
 function addFire(x, y, pts, life, by, ghost) {
   if (!pts.length) return null; let x0 = 1e9, x1 = -1e9, y0 = 1e9, y1 = -1e9; for (const p of pts) { x0 = min(x0, p.x); x1 = max(x1, p.x); y0 = min(y0, p.y); y1 = max(y1, p.y); }
-  if (G.fires.length > 40) G.fires.shift();
-  const f = { x, y, pts, x0: x0 - 3, x1: x1 + 3, y0: y0 - 4, y1: y1 + 4, life, max: life, by, ghost: !!ghost }; G.fires.push(f); return f;
+  if (FACE_FIRES.length > 40) FACE_FIRES.shift();
+  const f = { x, y, pts, x0: x0 - 3, x1: x1 + 3, y0: y0 - 4, y1: y1 + 4, life, max: life, by, ghost: !!ghost }; FACE_FIRES.push(f); return f;
 }
-// burn the surfaces around (x, y); returns null where there is nothing to cling to
-function lightFire(x, y, R, life, by, ghost) { return addFire(x, y, fireFaces(x, y, R), life, by, ghost); }
-// an old-fashioned strip of burning ground
-function stripFire(x0, x1, y, life, by) { const pts = []; for (let X = x0 + 2; X < x1; X += 4) pts.push({ x: X, y, nx: 0, ny: -1, s: 1 - abs(X - (x0 + x1) / 2) / (x1 - x0) * .9, ph: hh(X | 0, y | 0, 5) }); return addFire((x0 + x1) / 2, y, pts, life, by, false); }
+// burn the surfaces around (x, y); returns null where there is nothing to cling to. A flask asks for walls and roofs only, and only
+// when it broke right against one: the ground beneath it burns as a strip, the old way
+function lightFire(x, y, R, life, by, ghost, wallsOnly) {
+  let pts = fireFaces(x, y, R); if (wallsOnly) { pts = pts.filter(p => p.ny >= 0); if (!pts.some(p => hypot(p.x - x, p.y - y) < 7)) pts = []; }
+  return addFire(x, y, pts, life, by, ghost);
+}
 // burning drops thrown from a burst in mid-air: they fall, and burn where they land
 const FIRE_DROPS = [];
 function rainFire(x, y, n, by, ghost) { for (let i = 0; i < n; i++) FIRE_DROPS.push({ x, y, px: x, py: y, vx: frand(-1.5, 1.5), vy: frand(-1.8, .2), t: 0, by, ghost: !!ghost }); if (FIRE_DROPS.length > 60) FIRE_DROPS.splice(0, FIRE_DROPS.length - 60); }
+function firesOut() { FACE_FIRES.length = 0; FIRE_DROPS.length = 0; }
 function tickFires() {
   for (let i = FIRE_DROPS.length - 1; i >= 0; i--) {
     const d = FIRE_DROPS[i]; d.px = d.x; d.py = d.y; d.vy = min(d.vy + .16, 5); d.x += d.vx; d.y += d.vy;
@@ -8798,30 +8813,30 @@ function tickFires() {
     const tx = floor(d.x / T), ty = floor(d.y / T); if (liqAt(d.x, d.y) === 1 || ++d.t > 240) { FIRE_DROPS.splice(i, 1); continue; }
     if (solidAt(tx, ty) || platAt(tx, ty) && d.vy > 0) { FIRE_DROPS.splice(i, 1); lightFire(d.px, d.py, 8, 150, d.by, d.ghost); }
   }
-  for (let i = G.fires.length - 1; i >= 0; i--) {
-    const f = G.fires[i]; f.life -= wxWetAt(f.x, f.y) ? 3 : 1; if (f.life <= 0) { G.fires.splice(i, 1); continue; }
+  for (let i = FACE_FIRES.length - 1; i >= 0; i--) {
+    const f = FACE_FIRES[i]; f.life -= wxWetAt(f.x, f.y) ? 3 : 1; if (f.life <= 0) { FACE_FIRES.splice(i, 1); continue; }
     // a flame whose rock has been dug away goes out
-    if ((G.time + i) % 20 === 0) { f.pts = f.pts.filter(p => p.keep || solidAt(floor((p.x - p.nx * 2) / T), floor((p.y - p.ny * 2) / T)) || platAt(floor(p.x / T), floor((p.y + 2) / T))); if (!f.pts.length) { G.fires.splice(i, 1); continue; } }
+    if ((G.time + i) % 20 === 0) { f.pts = f.pts.filter(p => p.keep || solidAt(floor((p.x - p.nx * 2) / T), floor((p.y - p.ny * 2) / T)) || platAt(floor(p.x / T), floor((p.y + 2) / T))); if (!f.pts.length) { FACE_FIRES.splice(i, 1); continue; } }
     if (near(f)) {
       if (G.time % 3 === 0) { const p = fpick(f.pts); P(p.x + frand(-2, 2) + p.nx * 2, p.y + (p.ny > 0 ? 3 : -frand(2, 7)), frand(-.25, .25) + p.nx * .2, frand(-1.1, -.5), frand(16, 34) | 0, fpick(['#ff7a2a', '#ffd35a', '#e2542b', '#fff1a8']), { glow: 1, g: -.014, fr: .97 }); }
       if (G.time % 14 === 0) { const p = fpick(f.pts); P(p.x, p.y - 12, frand(-.15, .15), -.45, 70, fpick(['#4a4450', '#5f5a69']), { g: -.004, fr: .99 }); }
       if (G.time % 50 === 0) sfx('fire', 300);
     }
     if (!f.ghost && G.time % 10 === 0) {
-      const by = f.by, foes = by && by.fighter ? foesOf(by) : G.fighters.filter(q => q.team === 'p' && !q.remote);
+      const by = f.by, foes = by && by.fighter ? foesOf(by) : G.fighters.filter(q => (q.team === 'p' || wildOn() && q.brIn) && !q.remote);
       for (const e of foes) if (!e.dead && !e.noHit && e.x + e.w > f.x0 - 3 && e.x < f.x1 + 3 && e.y + e.h > f.y0 - 8 && e.y < f.y1 + 3 && f.pts.some(p => p.x > e.x - 4 && p.x < e.x + e.w + 4 && p.y > e.y - 3 && p.y < e.y + e.h + 5)) applyStatus(e, 'burn', by, { d: 120 });
     }
   }
 }
 function fireLights(cx, cy) {
-  for (const f of G.fires) { if (f.x1 < cx - 60 || f.x0 > cx + VS.vw + 60 || f.y1 < cy - 60 || f.y0 > cy + VS.vh + 60) continue; const k = min(1, f.life / 50) * (.86 + .14 * sin(G.time * .23 + f.x)); for (let i = 0; i < f.pts.length; i += 4) { const p = f.pts[i]; addLight(p.x + p.nx * 4, p.y + p.ny * 4, .95 * k, .5 * k, .16 * k); } }
+  for (const f of FACE_FIRES) { if (f.x1 < cx - 60 || f.x0 > cx + VS.vw + 60 || f.y1 < cy - 60 || f.y0 > cy + VS.vh + 60) continue; const k = min(1, f.life / 50) * (.86 + .14 * sin(G.time * .23 + f.x)); for (let i = 0; i < f.pts.length; i += 4) { const p = f.pts[i]; addLight(p.x + p.nx * 4, p.y + p.ny * 4, .95 * k, .5 * k, .16 * k); } }
   for (const d of FIRE_DROPS) addLight(d.x, d.y, .7, .35, .1);
 }
 // c is in world units; glow draws the soft light around the flames instead of the flames themselves
 function drawFires(c, cx, cy, glow) {
-  if (!G.fires.length && !FIRE_DROPS.length) return; if (!FLAME) buildFlames();
+  if (!FACE_FIRES.length && !FIRE_DROPS.length) return; if (!FLAME) buildFlames();
   const t = G.time;
-  for (const f of G.fires) {
+  for (const f of FACE_FIRES) {
     if (f.x1 < cx - 20 || f.x0 > cx + VS.vw + 20 || f.y1 < cy - 24 || f.y0 > cy + VS.vh + 24) continue;
     const up = min(1, (f.max - f.life) / 14 + .15), dn = min(1, f.life / 55);
     if (glow) { c.fillStyle = '#ff7a2a'; for (const p of f.pts) { const g = 5 + 3 * p.s; c.globalAlpha = .07 * dn * up; c.fillRect(round(p.x + p.nx * 3 - g), round(p.y + p.ny * 4 - g), round(g * 2), round(g * 2)); } c.globalAlpha = 1; continue; }
@@ -9904,7 +9919,7 @@ function spawnKeeper() {
   G.boss = k; G.enemies = G.enemies.filter(e => e.type === 'keeper'); G.enemies.push(k); G.flags.keeperMet = true;
 }
 function keeperHit(k, x0, x1, y0, y1, dmg, kx, ky) { const p = G.p; if (!p.dead && p.x + p.w > x0 && p.x < x1 && p.y + p.h > y0 && p.y < y1) { if (hurtFighter(p, dmg, k.x + k.w / 2, { kx, ky, stagger: 1 })) { addShake(6); return true; } } return false; }
-function keeperShock(k, n) { const cx = k.x + k.w / 2, fy = k.y + k.h; for (const s of [-1, 1]) spawnProj({ type: 'shock', x: cx + s * 12, y: fy - 4, vx: s * (k.phase === 2 ? 3.5 : 2.8), vy: 0, r: 5, dmg: 13, life: n, pierce: true }); stripFire(cx - 24, cx + 24, fy, 150, null); }
+function keeperShock(k, n) { const cx = k.x + k.w / 2, fy = k.y + k.h; for (const s of [-1, 1]) spawnProj({ type: 'shock', x: cx + s * 12, y: fy - 4, vx: s * (k.phase === 2 ? 3.5 : 2.8), vy: 0, r: 5, dmg: 13, life: n, pierce: true }); G.fires.push({ x0: cx - 24, x1: cx + 24, y: fy, life: 150, max: 150, by: null }); }
 function tickKeeper(k) {
   k.t++; const p = G.p, P2 = k.phase === 2, cx = k.x + k.w / 2, pcx = p.x + 3, dx = pcx - cx, adx = abs(dx), blind = k.st && k.st.blind > 0, F = SPOTS.forge;
   k.foes = p.dead ? [] : [p]; k.face = k.dir; k.core = max(0, k.core - .03);
@@ -9934,7 +9949,7 @@ function tickKeeper(k) {
       if (k.t > 22 && p.st && (p.st.reel > 0 || p.st.hook > 0)) { k.state = 'slam'; k.t = 14; k.last = 'slam'; } else if (k.t > 48) next(); break;
     case 'tired': k.vx *= .8; k.vuln = 1.5; if (k.t % 12 === 0) P(cx + frand(-6, 6), k.y + 6, 0, -.5, 30, '#b9bdd0', { g: -.01 }); if (k.t > (P2 ? 100 : 140)) { k.vuln = 1; k.state = 'idle'; k.t = 0; k.cd = 30; k.atkN = 0; } break;
     case 'stagger': k.vx *= .7; k.vuln = 1.35; if (k.t > 80) { k.vuln = 1; k.state = 'idle'; k.t = 0; k.cd = 20; } break;
-    case 'roar': k.vx = 0; addShake(4); if (k.t === 1) { sfx('roar', 0); for (const o of tileObjs.values()) if (o.id === HEARTH) stripFire(o.x * T - 30, o.x * T + 38, (o.y + 1) * T, 240, null); }
+    case 'roar': k.vx = 0; addShake(4); if (k.t === 1) { sfx('roar', 0); for (const o of tileObjs.values()) if (o.id === HEARTH) G.fires.push({ x0: o.x * T - 30, x1: o.x * T + 38, y: (o.y + 1) * T, life: 240, max: 240, by: null }); }
       if (k.t % 3 === 0) { const an = frand(TAU); P(cx, k.y + 10, cos(an) * 3, sin(an) * 3, 24, fpick(SPARK), { glow: 1, g: 0 }); }
       if (k.t > 90) { k.state = 'idle'; k.t = 0; k.cd = 20; k.invuln = false; for (const s of [-1, 1]) { const e = mkEnemy('cinderling', cx + s * 70, k.y); G.enemies.push(e); } } break;
     case 'dying': k.invuln = true; k.vx = 0; if (k.t % 6 === 0) { const ex = cx + frand(-10, 10), ey = k.y + frand(0, 34); burst(ex, ey, 10, SPARK, 2.6, 26, { glow: 1 }); sfx('hit2', 0); addShake(3); }
@@ -12204,7 +12219,7 @@ function drawWorlds(c) {
   for (let i = 0; i < vis; i++) {
     const m = SAVE.list[i + UI.scroll]; if (!m) break; const ry = y + 16 + i * rowH, hv = inR(x + 4, ry, w - 8, rowH - 3);
     c.fillStyle = hv ? '#2b2740' : '#221e30'; c.fillRect(x + 4, ry, w - 8, rowH - 3);
-    c.drawImage(SK[clamp(m.skin | 0, 0, 3)].head, x + 8, ry + 6, 14, 14); if (!m.mode) for (let k = 0; k < 3; k++) { c.fillStyle = k < (m.e | 0) ? ['#ffd35a', '#8ff5e6', '#ff9a3d'][k] : '#3a3450'; c.fillRect(x + 9 + k * 4, ry + 23, 3, 2); }
+    c.drawImage(SK[clamp(m.skin | 0, 0, SKINS.length - 1)].head, x + 8, ry + 6, 14, 14); if (!m.mode) for (let k = 0; k < 3; k++) { c.fillStyle = k < (m.e | 0) ? ['#ffd35a', '#8ff5e6', '#ff9a3d'][k] : '#3a3450'; c.fillRect(x + 9 + k * 4, ry + 23, 3, 2); }
     drawText(c, String(m.name || 'World').slice(0, 24), x + 28, ry + 3, '#fff');
     const prog = m.mode ? 'free forge' : m.v < 3 ? 'old world (will regrow)' : (m.e | 0) + ' of 3 embers';
     { const room = w - 160, fit = t => { while (t.length > 4 && textW(t) > room) t = t.slice(0, -1); return t; }, tr = (m.land | 0) >= 4 && m.endless;
@@ -12292,7 +12307,7 @@ function drawAccounts(c) {
       const ry = start + i * rowH, active = me && me.id === p.id;
       c.fillStyle = active ? '#3d3320' : inR(x + 6, ry, w - 12, rowH - 4) ? '#2b2740' : '#221e30';
       c.fillRect(x + 6, ry, w - 12, rowH - 3);
-      c.drawImage(SK[clamp(p.skin | 0, 0, 3)].head, x + 10, ry + 3, 14, 14);
+      c.drawImage(SK[clamp(p.skin | 0, 0, SKINS.length - 1)].head, x + 10, ry + 3, 14, 14);
       drawText(c, p.name, x + 30, ry + 6, active ? '#ffd35a' : '#fff');
       button(c, x + w - 82, ry + 3, 74, 14, active ? 'ACTIVE' : ACCOUNT.loginId === p.id ? 'SELECTED' : 'SELECT', () => {
         ACCOUNT.loginId = p.id; FORM.accountPassword = ''; FORM.accountConfirm = ''; UI.focus = 'accountPassword'; ACCOUNT.note = '';
@@ -13256,7 +13271,7 @@ function netPeers(list) {
     here.add(pe.peer);
     let f = NET.peers.get(pe.peer);
     if (!f) {
-      f = newFighter(num(s.x, 600), num(s.y, 300), { remote: true, peer: pe.peer, team: 'r:' + pe.peer, snaps: [], spawnT: 40, name: cleanName(s.n) || 'WAKER', skin: clamp(num(s.sk) | 0, 0, 3), guest: !!pe.guest });
+      f = newFighter(num(s.x, 600), num(s.y, 300), { remote: true, peer: pe.peer, team: 'r:' + pe.peer, snaps: [], spawnT: 40, name: cleanName(s.n) || 'WAKER', skin: clamp(num(s.sk) | 0, 0, SKINS.length - 1), guest: !!pe.guest });
       NET.peers.set(pe.peer, f); G.fighters.push(f); G.kfeed.unshift({ a: '', b: f.name, txt: 'entered the ring', t: 0 }); sfx('quest', 0);
     }
     if (pe.presence !== f.lastPres) { f.lastPres = pe.presence; netApply(f, s); }
@@ -13266,7 +13281,7 @@ function netPeers(list) {
 }
 function netApply(f, s) {
   const now = performance.now();
-  f.name = cleanName(s.n) || 'WAKER'; f.skin = clamp(num(s.sk) | 0, 0, 3); f.wid = WORLD.royale ? (IT[s.w] && IT[s.w].type === 'weapon' ? s.w : 'fists') : RING_WEAPONS.includes(s.w) ? s.w : 'sword';
+  f.name = cleanName(s.n) || 'WAKER'; f.skin = clamp(num(s.sk) | 0, 0, SKINS.length - 1); f.wid = WORLD.royale ? (IT[s.w] && IT[s.w].type === 'weapon' ? s.w : 'fists') : RING_WEAPONS.includes(s.w) ? s.w : 'sword';
   const snap = {
     t: now, x: clamp(num(s.x, f.x), 0, WW * T), y: clamp(num(s.y, f.y), 0, WH * T), vx: clamp(num(s.vx), -9, 9), vy: clamp(num(s.vy), -9, 9), face: s.f < 0 ? -1 : 1, g: !!s.g, st: num(s.st) | 0, dd: s.dd < 0 ? -1 : 1,
     m: typeof s.m === 'string' ? s.m : '', an: num(s.an) | 0, mp: clamp(num(s.mp) | 0, 0, 2), mt: clamp(num(s.mt), 0, 200), ma: clamp(num(s.ma), -3.2, 3.2), md: clamp(num(s.md, 40), 0, 900), mc: clamp(num(s.mc) | 0, 0, 60), mf: s.mf < 0 ? -1 : 1, rp: !!s.rp, sp: !!s.sp
@@ -14085,7 +14100,7 @@ function brPeers(list) { if (BR.wild) return wBrPeers(list);
     here.add(pe.peer);
     let q = BR.people.get(pe.peer); if (!q) { q = { id: pe.peer, sq: -1 }; BR.people.set(pe.peer, q); }
     if (q.sq === s.sq && q.pres) continue; q.sq = s.sq; q.pres = s; q.at = performance.now();
-    q.n = cleanName(s.n) || 'WAKER'; q.sk = clamp(num(s.sk) | 0, 0, 3); q.ph = s.ph === 'M' ? 'M' : 'L'; q.mi = typeof s.mi === 'string' ? s.mi.slice(0, 24) : ''; q.ld = s.ld && typeof s.ld === 'object' ? s.ld : null; q.guest = !!pe.guest;
+    q.n = cleanName(s.n) || 'WAKER'; q.sk = clamp(num(s.sk) | 0, 0, SKINS.length - 1); q.ph = s.ph === 'M' ? 'M' : 'L'; q.mi = typeof s.mi === 'string' ? s.mi.slice(0, 24) : ''; q.ld = s.ld && typeof s.ld === 'object' ? s.ld : null; q.guest = !!pe.guest;
     q.tw = clamp(num(s.tw) | 0, 0, 6); q.pt = typeof s.pt === 'string' ? s.pt.toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 8) : '';
     if (q.ld && q.ld.st === 'L') { BR.lastCd = num(q.ld.cd); if (!BR.lead) { BR.sizeWant = clamp(num(q.ld.tm) | 0, 1, 3) || 1; BR.arenaWant = clamp(num(q.ld.aw, 2) | 0, 0, 2); } }
     brSaw(pe.peer, q, s);
@@ -14226,7 +14241,7 @@ function ringRtcEnd() {
 // the host lets a friend into the lobby
 function brRtcWelcome(P, m) { if (BR.wild) return wBrRtcWelcome(P, m);
   if ([...COOP.peers.values()].filter(Q => Q.ok).length >= brMaxG()) { sendTo(P, { t: 'kick' }); return; }
-  P.name = cleanName(m.n) || P.name || 'WAKER'; P.skin = clamp(m.sk | 0, 0, 3); P.ok = true; P.pres = null;
+  P.name = cleanName(m.n) || P.name || 'WAKER'; P.skin = clamp(m.sk | 0, 0, SKINS.length - 1); P.ok = true; P.pres = null;
   sendTo(P, { t: 'brw', v: NETV, id: P.id, host: coopName(), code: COOP.ring ? NET.code : BR.code, mode: COOP.ring ? 'ring' : 'br', pt: BR.party || COOP.gcode || '' }); COOP.note = ''; sfx('quest', 0); BR.rtcDirty = true;
   if (COOP.ring) G.kfeed.unshift({ a: '', b: P.name, txt: 'is on the way in', t: 0 });
 }
@@ -15174,6 +15189,8 @@ const BR_WARN = 40 * 60, BR_MOVE = 105 * 60, BR_RESTLESS = 5 * 60 * 60;
 const BR_TITLES = ['TRIBUTE', 'FORAGER', 'TRAPPER', 'SCAVENGER', 'RANGER', 'CAREER', 'VICTOR'];
 // (the match state BR is the one object shared with the Trials: see 2-royale.js; BR.wild is true while this arena is in play)
 const wBrOn = () => WORLD.royale && BR.on;
+// on the island a dead bush gives fibre as well as sticks (twine is short there); in every other place it gives what it always gave
+{ const dry = PLUCK[DEADBUSH], wild = [...dry, ['fiber', 1, 2]]; Object.defineProperty(PLUCK, DEADBUSH, { get: () => wildOn() ? wild : dry, enumerable: true }); }
 const wBrTag = f => !f ? '' : f === G.p ? (NET.me || 'me') : f.botTag || f.peer || '';
 const brSay = (s, t = 150) => { BR.note = s; BR.noteT = t; };
 
@@ -15393,7 +15410,8 @@ function wBrDropPile(x, y, items) { items = items.slice(0, 14); items.forEach(([
 // ---------------- starting a match ----------------
 // everyone runs this with the same seed, so everyone stands on the same island
 function wBrEnterMatch(mi, seed, roster, nb) {
-  const nick = G.nick, skin = G.skin, hat = G.hat; BR.wild = true;
+  // a Trials match on Ember Peak leaves its slag line behind: without this the echoes here could not route below it
+  const nick = G.nick, skin = G.skin, hat = G.hat; BR.wild = true; BR.arena = 0; BR.slagY = 1e9;
   wGenRoyale(seed); freshSession(); WORLD.mode = 0; G.nick = nick; G.skin = skin; G.hat = hat; G.clock = .08; updateSun();
   const ro = roster.slice(0, WBR_MAX);
   Object.assign(BR, { mapHide: false, mi, seed, t: 0, ro, nb: clamp(nb | 0, 0, WBR_MAX - ro.length), rewarded: false, rewardText: '', phase: 'drop', mine: new Set(), bots: new Map(), bk: [], bkSeq: 0, bkSeen: new Map(), dlSeen: new Set(), dl: null, place: 0, spec: null, specT: 0, overT: 0, winner: '', winMe: false, chan: null, note: '', noteT: 0, inStorm: false, poiNow: '', mapOpen: false, lastAlive: 0, lastTeams: 0, ring: { n: 0, at: 0 }, lastFall: 0, pactWith: '', pactFrom: '', pactFromT: 0, teammate: '', pactSeen: false, leaveT: 0, dropsOut: [], dropSeq: 0, dropSeen: new Map(), tookOut: [], tookSeq: 0, tookSeen: new Map(), tileOut: new Map(), applying: false, fallen: [], fallenT: 0, show: null, gifts: [], giftAt: 60 * 60, feast: 0, hazard: null, hounds: 0, bounty: null, mobT: 600, botMobT: 1200 });
@@ -15673,7 +15691,7 @@ function wBrPeers(list) {
     here.add(pe.peer);
     let q = BR.people.get(pe.peer); if (!q) { q = { id: pe.peer, sq: -1 }; BR.people.set(pe.peer, q); }
     if (q.sq === s.sq && q.pres) continue; q.sq = s.sq; q.pres = s; q.at = performance.now();
-    q.n = cleanName(s.n) || 'WAKER'; q.sk = clamp(num(s.sk) | 0, 0, 3); q.ph = s.ph === 'M' ? 'M' : 'L'; q.mi = typeof s.mi === 'string' ? s.mi.slice(0, 24) : ''; q.ld = s.ld && typeof s.ld === 'object' ? s.ld : null; q.guest = !!pe.guest;
+    q.n = cleanName(s.n) || 'WAKER'; q.sk = clamp(num(s.sk) | 0, 0, SKINS.length - 1); q.ph = s.ph === 'M' ? 'M' : 'L'; q.mi = typeof s.mi === 'string' ? s.mi.slice(0, 24) : ''; q.ld = s.ld && typeof s.ld === 'object' ? s.ld : null; q.guest = !!pe.guest;
     if (q.ld && q.ld.st === 'L') BR.lastCd = num(q.ld.cd);
     wBrSaw(pe.peer, q, s);
   }
@@ -15829,7 +15847,7 @@ function wBrRtcTick() {
 // the host lets a friend into the lobby
 function wBrRtcWelcome(P, m) {
   if ([...COOP.peers.values()].filter(Q => Q.ok).length >= WBR_PARTY - 1) { sendTo(P, { t: 'kick' }); return; }
-  P.name = cleanName(m.n) || P.name || 'WAKER'; P.skin = clamp(m.sk | 0, 0, 3); P.ok = true; P.pres = null;
+  P.name = cleanName(m.n) || P.name || 'WAKER'; P.skin = clamp(m.sk | 0, 0, SKINS.length - 1); P.ok = true; P.pres = null;
   sendTo(P, { t: 'wbrw', v: NETV, id: P.id, host: coopName(), code: BR.code, mode: BR.matchType }); COOP.note = ''; sfx('quest', 0); BR.rtcDirty = true;
 }
 function wBrRtcJoin(m) {
@@ -16792,7 +16810,7 @@ function brHazardTick() {
   if (!h.said && BR.t > h.at - 600) { h.said = 1; brSay(h.kind === 'fire' ? 'WILDFIRE IS COMING DOWN  ·  SEE THE STRIP' : 'A POISON FOG IS RISING  ·  SEE THE STRIP', 200); sfx('roar', 0); }
   if (BR.t < h.at) return; const inside = f => f.x + 3 > h.L && f.x + 3 < h.R;
   if (h.kind === 'fire') { if (!p.dead && BR.t % 22 === 0 && inside(p)) { const x = clamp(p.x + 3 + frand(-170, 170), h.L, h.R); G.dhaz.push({ kind: 'bomb', x, y: G.cam.y - 24, vx: frand(-.8, .8), vy: 1.6, g: .06, light: [.9, .4, .1] }); if (Math.random() < .25) { const gx = clamp(p.x + 3 + frand(-190, 190), h.L, h.R), gy = heights[clamp(floor(gx / T), 0, WBRW - 1)] * T; lightFire(gx, gy - 2, 12, 220, null); } } }
-  if (BR.t % 40 === 0) for (const f of G.fighters) if (f.brIn && !f.remote && !f.dead && !f.noHit && inside(f) && (h.kind === 'gas' ? floor(f.y / T) < heights[clamp(floor(f.x / T), 0, WBRW - 1)] + 6 : f !== p && f.shel === false && Math.random() < .5)) { const d = h.kind === 'gas' ? 3 : 4; f.hp -= d; f.flash = 4; f.regenT = 0; if (f === p) { numPop(f.x + 3, f.y - 4, d, '#9adf6f'); sfx('hurt', 60); } if (f.hp <= 0) { f.hp = 0; f.cause = h.kind === 'gas' ? 'choked in the fog' : 'burned in the wildfire'; killFighter(f, null); } }
+  if (BR.t % 40 === 0) for (const f of G.fighters) if (f.brIn && !f.remote && !f.dead && !f.noHit && inside(f) && (h.kind === 'gas' ? floor(f.y / T) < heights[clamp(floor(f.x / T), 0, WBRW - 1)] + 6 : f !== p && !wxCovered(f.x + 3, f.y) && Math.random() < .5)) { const d = h.kind === 'gas' ? 3 : 4; f.hp -= d; f.flash = 4; f.regenT = 0; if (f === p) { numPop(f.x + 3, f.y - 4, d, '#9adf6f'); sfx('hurt', 60); } if (f.hp <= 0) { f.hp = 0; f.cause = h.kind === 'gas' ? 'choked in the fog' : 'burned in the wildfire'; killFighter(f, null); } }
 }
 function brGames() {
   const p = G.p; brSpawnTick(); brTickGifts(); brHazardTick(); if (G.dhaz && G.dhaz.length) tickHazards(); if (BR.phase !== 'fight') return;
@@ -16966,7 +16984,7 @@ function onMsg(P, m, raw) {
   if (!H && COOP.entering && m.t !== 'bye' && m.t !== 'kick') { COOP.backlog.push([P, m, raw]); return; }
   if ((COOP.br || m.t === 'brw' || m.t === 'wbrw') && brRtcMsg(P, m)) return;
   switch (m.t) {
-    case 'hello': if (H && !P.ok && COOP.br) { brRtcWelcome(P, m); return; } if (!H || P.ok) return; P.name = cleanName(m.n) || P.name || 'WAKER'; P.skin = clamp(m.sk | 0, 0, 3); P.hat = clamp(m.ht | 0, 0, 3); hostWelcome(P); return;
+    case 'hello': if (H && !P.ok && COOP.br) { brRtcWelcome(P, m); return; } if (!H || P.ok) return; P.name = cleanName(m.n) || P.name || 'WAKER'; P.skin = clamp(m.sk | 0, 0, SKINS.length - 1); P.hat = clamp(m.ht | 0, 0, 3); hostWelcome(P); return;
     case 'welcome': if (H || COOP.joined) return; guestEnter(m); return;
     case 'me': {
       const id = H ? P.id : m.id; if (!id || id === COOP.me) return; const Q = H ? P : COOP.peers.get(id) || peerFor(id, m);
@@ -17081,7 +17099,7 @@ function fighterState(f, me) {
   o.ts = round(performance.now()); return o;
 }
 function makeRemote(Q, s) {
-  const f = newFighter(num(s.x, G.p ? G.p.x : 0), num(s.y, G.p ? G.p.y : 0), { remote: true, coop: true, peer: Q.id, team: 'p', name: cleanName(s.n) || Q.name || 'WAKER', skin: clamp(s.sk | 0, 0, 3), hat: clamp(s.ht | 0, 0, 3), snaps: [], spawnT: 30 });
+  const f = newFighter(num(s.x, G.p ? G.p.x : 0), num(s.y, G.p ? G.p.y : 0), { remote: true, coop: true, peer: Q.id, team: 'p', name: cleanName(s.n) || Q.name || 'WAKER', skin: clamp(s.sk | 0, 0, SKINS.length - 1), hat: clamp(s.ht | 0, 0, 3), snaps: [], spawnT: 30 });
   f.wid = ''; Q.f = f; G.fighters.push(f); return f;
 }
 function pushSnap(f, s) {
@@ -17095,7 +17113,7 @@ function pushSnap(f, s) {
     for (const q of S) if (isFinite(q.ts)) q.t = q.ts + f.toff; s.t = s.ts + f.toff; f.delay = clamp((f.gap || 50) + 1.5 * f.jit + 35, 85, 650);
   } else s.t = now;
   S.push(s); if (S.length > 30) S.shift(); f.away = !!s.aw;
-  if (s.n && !f.hollow) f.name = cleanName(s.n) || f.name; if (s.sk !== undefined) f.skin = clamp(s.sk | 0, 0, f.hollow ? 11 : 3); if (s.ht !== undefined) f.hat = clamp(s.ht | 0, 0, 3);
+  if (s.n && !f.hollow) f.name = cleanName(s.n) || f.name; if (s.sk !== undefined) f.skin = clamp(s.sk | 0, 0, f.hollow ? 11 : SKINS.length - 1); if (s.ht !== undefined) f.hat = clamp(s.ht | 0, 0, 3);
   f.hp = num(s.hp, f.hp); f.maxhp = num(s.mhp, f.maxhp || 100); f.inDim = s.d;
   if (s.gr !== undefined && s.gr !== f.grKey) { f.grKey = s.gr; const ids = String(s.gr).split(','); f.gearObj = {}; GEAR_SLOTS.forEach((k, i) => { if (IT[ids[i]] && IT[ids[i]].type === 'armor') f.gearObj[k] = { id: ids[i], n: 1 }; }); f.gskin = null; }
 }
@@ -18086,8 +18104,10 @@ function migrateGuestWorlds() {
   if (!Array.isArray(worlds)) return;
   SAVE.list = worlds.filter(m => m && typeof m.id === 'string');
   for (const m of SAVE.list) {
-    const raw = LS.get(profilePath('guest', 'w.' + m.id)) || LS.get('ew2.w.' + m.id);
-    if (raw !== null && LS.get(profilePath(accountId(), 'w.' + m.id)) === null) LS.set(profilePath(accountId(), 'w.' + m.id), raw);
+    const mine = profilePath(accountId(), 'w.' + m.id), from = LS.get(profilePath('guest', 'w.' + m.id)) ? profilePath('guest', 'w.' + m.id) : 'ew2.w.' + m.id, raw = LS.get(from);
+    // a copy that does not fit in the browser's store beside the old one is moved across instead (and put back if even that fails:
+    // loadWorldData still finds a world under its old key)
+    if (raw !== null && LS.get(mine) === null && !LS.set(mine, raw)) { LS.del(from); if (!LS.set(mine, raw)) LS.set(from, raw); }
   }
   writeLocalIndex(); sortWorlds();
 }
@@ -18101,7 +18121,7 @@ async function accountCreate(name, password, confirm, skin, hat) {
   try {
     const salt = accountSalt(), hash = await accountPasswordHash(password, salt);
     const firstAccount = !ACCOUNT.profiles.some(p => p.id !== 'guest');
-    const p = { id: Date.now().toString(36) + ((Math.random() * 46656) | 0).toString(36), name, skin: clamp(skin | 0, 0, 3), hat: clamp(hat | 0, 0, 3), salt, hash };
+    const p = { id: Date.now().toString(36) + ((Math.random() * 46656) | 0).toString(36), name, skin: clamp(skin | 0, 0, SKINS.length - 1), hat: clamp(hat | 0, 0, 3), salt, hash };
     ACCOUNT.profiles.push(p);
     if (!writeAccountProfiles()) { ACCOUNT.profiles.pop(); ACCOUNT.note = 'Could not save this account in this browser.'; return false; }
     accountSwitch(p.id);
@@ -18116,7 +18136,7 @@ async function accountCreate(name, password, confirm, skin, hat) {
 }
 function accountSwitch(id) {
   const p = ACCOUNT.profiles.find(v => v.id === id); if (!p) return false;
-  ACCOUNT.active = p; LS.del('ew2.active'); G.nick = p.name; G.skin = clamp(p.skin | 0, 0, 3); G.hat = clamp(p.hat | 0, 0, 3);
+  ACCOUNT.active = p; LS.del('ew2.active'); G.nick = p.name; G.skin = clamp(p.skin | 0, 0, SKINS.length - 1); G.hat = clamp(p.hat | 0, 0, 3);
   // (the name shown to other Wakers follows the game's own rule for names: capitals, twelve letters)
   FORM.nick = cleanName(p.name); FORM.skin = G.skin; FORM.hat = G.hat;
   SAVE.list = readLocalIndex(); sortWorlds(); ACCOUNT.note = 'Logged in as ' + p.name + '.';
@@ -18231,7 +18251,8 @@ async function loadWorldData(id) {
   let local = null;
   try {
     const own = LS.get(profileKey('w.' + id));
-    const raw = own !== null ? own : (accountId() === 'guest' ? LS.get('ew2.w.' + id) : null);
+    // (a world from before accounts whose copy never reached this account is still under its old key)
+    const raw = own !== null ? own : LS.get('ew2.w.' + id);
     local = JSON.parse(raw || 'null');
   } catch (e) { }
   let remote = null;
@@ -18273,7 +18294,7 @@ async function openWorld(meta) {
   const data = await loadWorldData(meta.id);
   if (!data) { SAVE.list = SAVE.list.filter(l => l.id !== meta.id); writeLocalIndex(); G.state = 'worlds'; G.menuNote = 'That world could not be found.'; return; }
   Object.assign(WORLD, { id: data.id, name: data.name, seed: data.seed | 0, size: clamp(data.size | 0, 0, 2), shape: clamp(data.shape | 0, 0, 2), mode: data.mode ? 1 : 0, arena: false });
-  G.skin = clamp(data.skin | 0, 0, 3); accountSaveProfile(); startWorld(data);
+  G.skin = clamp(data.skin | 0, 0, SKINS.length - 1); accountSaveProfile(); startWorld(data);
 }
 function startWorld(data) {
   G.state = 'loading'; G.loadMsg = data ? 'Rebuilding ' + WORLD.name + '...' : 'Forging ' + WORLD.name + '...';
@@ -18564,6 +18585,7 @@ function renderView(al) {
     else if (o.id === GATE) addLight(o.x * T + 4, o.y * T - 4, .6 + (F.vesperDone ? .25 : 0), .2, .08);
   }
   RFRAME++; const kx0 = floor(cx / 256) - 1, kx1 = floor((cx + VS.vw) / 256) + 1;
+  for (const fi of G.fires) if (fi.x1 > cx - 60 && fi.x0 < cx + VS.vw + 60) for (let X = fi.x0; X < fi.x1; X += 12) addLight(X, fi.y - 4, .8, .4, .12);
   fireLights(cx, cy);
   for (const e of G.enemies) if (e.type === 'cinderling' && !e.dead && e.x > cx - 60 && e.x < cx + VS.vw + 60) addLight(e.x + 4, e.y + 4, .7, .32, .1);
   for (let k = kx0; k <= kx1; k++) { const bk = PROPB.get(k); if (bk) for (const q of bk) if (q.light && q.x > cx - 120 && q.x < cx + VS.vw + 120 && q.y > cy - 120 && q.y < cy + VS.vh + 120) { const fl = .93 + .07 * sin(G.time * .21 + q.x); addLight(q.x + (q.img.width >> 1), q.y + (q.lyo !== undefined ? q.lyo : q.img.height * .6), q.light[0] * fl, q.light[1] * fl, q.light[2] * fl); } }
@@ -18650,6 +18672,7 @@ function renderView(al) {
     else if (o.id === SHRINE2) { f.globalAlpha = mirrorOn ? .55 : .2; f.fillStyle = '#8ff5e6'; f.fillRect(px - 2, py - 6, 12, 9); f.globalAlpha = 1; if ((G.time >> 3) % 7 === 0) { f.fillStyle = '#ffffff'; f.fillRect(px + (G.time >> 3) % 8 - 1, py - 5 + ((G.time >> 5) % 4), 1, 1); } }
     else if (o.id === GATE) { const k = .45 + .25 * sin(G.time * .05); f.globalAlpha = k; f.fillStyle = '#e2542b'; f.fillRect(px - 1, py - 5, 8, 6); f.globalAlpha = 1; if (F.vesperDone) { f.fillStyle = '#ffd35a'; f.fillRect(px - 5, py - 9, 2, 2); f.fillStyle = '#8ff5e6'; f.fillRect(px + 9, py - 9, 2, 2); } }
   }
+  for (const fi of G.fires) { const a = min(1, fi.life / 40); for (let X = fi.x0; X < fi.x1; X += 2) { const hg = 2 + ((hh(X | 0, fi.y, G.time >> 2) * 7) | 0) * a - abs(X - (fi.x0 + fi.x1) / 2) / 8; if (hg <= 0) continue; f.globalAlpha = .75 * a; f.fillStyle = (X >> 1) & 1 ? '#ffd35a' : '#ff7a2a'; f.fillRect(round(X), round(fi.y - hg), 2, round(hg)); } f.globalAlpha = .18 * a; f.fillStyle = '#ff7a2a'; f.fillRect(round(fi.x0), round(fi.y - 8), round(fi.x1 - fi.x0), 8); } f.globalAlpha = 1;
   drawFires(f, cx, cy, true);
   for (const v of VENTS) { if (v.cx < cx - 30 || v.cx > cx + VS.vw + 30) continue; for (let k = 0; k < 7; k++) { const span = (v.gy - v.top) * T, yy = v.gy * T - ((G.time * (1.6 + k * .2) + k * 53) % span), xx = v.cx + sin(G.time * .04 + k * 2.1) * 7; if (yy < cy - 10 || yy > cy + VS.vh + 10) continue; f.globalAlpha = .22 * min(1, (v.gy * T - yy) / 40); f.fillStyle = '#dcf7f5'; f.fillRect(round(xx), round(yy), 1, 6); } } f.globalAlpha = 1;
   curioGlow(f, vx0, vx1, vy0, vy1);
@@ -18906,7 +18929,7 @@ function freshSession() {
     leads: new Set(), pin: null, found: new Set(), linksKnown: new Set(), fam: {}, arts: new Set(), artk: {}, respawn: null, fires: [], smokes: [], stuck: [], link: null, zoom: 1, zoomT: 1, armT: 0, linkBanner: null, leadDone: null, cine: null, bars: 0,
     falling: [], felled: [], rubble: [], autoDoors: [], regrow: [], lairs: new Set(), bless: null, blessUsed: {}, ev: null, dev: null, devT: 2400, evClock: undefined, dhaz: [], echoes: new Set(), beasts: {}, gear: { head: null, body: null, legs: null, feet: null, off: null }, trink: [], meal: null, brew: null, cloneTape: [], rest: 0, nearWarm: false, nearFount: false, mast: {}, pairsKnown: new Set(), drill: null, days: yearStart(), wx: null, wxT: undefined, curios: {}, sing: null, way: null, mood: 0, biomeN: '', biomeS: '', food: 100, worn: new Set(), spy: false, lampOff: false, quality: {}, reqs: null, seen: null, hintT: -999
   });
-  for (const k in YACC) delete YACC[k]; INV_N = packCap(); mapReset(); FIRE_DROPS.length = 0; G.proxy = null; G.proxyHits.length = 0;
+  for (const k in YACC) delete YACC[k]; INV_N = packCap(); mapReset(); firesOut(); G.proxy = null; G.proxyHits.length = 0;
   UI.open = null; UI.held = null; UI.scroll = 0; acc = 0;
 }
 function beginPlay(fresh) {
