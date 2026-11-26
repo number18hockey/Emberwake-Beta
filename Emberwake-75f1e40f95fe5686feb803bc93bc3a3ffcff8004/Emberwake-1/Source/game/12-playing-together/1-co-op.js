@@ -598,7 +598,7 @@ function drawCoopHud(c) {
   for (const l of COOP.chat) l.t++; COOP.chat = COOP.chat.filter(l => l.t < 900 || COOP.chatOpen);
   const hb = hotbarLayout(), y0 = hb.y - 14 - COOP.chat.length * 10;
   COOP.chat.forEach((l, i) => { c.globalAlpha = COOP.chatOpen ? 1 : clamp((900 - l.t) / 120, 0, 1); const y = y0 + i * 10; if (l.n) { textS(c, l.n + ':', 4, y, '#ffd35a'); textS(c, l.s, 8 + textW(l.n + ':'), y, l.col); } else textS(c, l.s, 4, y, l.col); c.globalAlpha = 1; });
-  if (!COOP.chatOpen && !UI.open) textS(c, '[ENTER] chat', 4, hb.y - 10, '#6a6485');
+  if (!COOP.chatOpen && !UI.open && !mobileDevice) textS(c, '[ENTER] chat', 4, hb.y - 10, '#6a6485');
   if (!UI.open && !G.cine) drawFriendArrows(c);
   // who is here (the ring keeps its own scoreboard)
   if (COOP.ring || COOP.br) return;

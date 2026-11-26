@@ -45,7 +45,7 @@ The game is plain JavaScript in one page, with no libraries and no image files: 
 | `11-arena-and-royale` | the Cinder Ring arena, and the Ashfall Trials (island, ashfall, loot, echoes, online play, screens; `5-the-trials.js` holds teams, hunger, favor, nights, drops, the feast and rekindling; `6-perks-amps-relics.js` the Trials' own kit; `7-parties.js` parties and the board of open matches) |
 | `12-playing-together` | co-op (sharing a world), game codes, the relay |
 | `13-saving` | worlds: create, list, load, save |
-| `14-main` | the sky, drawing, the game loop, input, start-up; `2-atmosphere.js` is the look of the air (glow, grading, mist, each world's stars, the ember wake, timed trails) |
+| `14-main` | the sky, drawing, the game loop, input, start-up; `2-atmosphere.js` is the look of the air (glow, grading, mist, each world's stars, the ember wake, timed trails); `3-touch.js` is the touch controls of a phone or tablet (their buttons are in the page in `build.py`) |
 
 **Old worlds must not change.** The land is worked out from the seed, so any change to how it is made would move every hill in every saved world. Each world remembers which version of the land it was made with (`WORLD.land`); new rules apply only from the next version up (traits, moods and curios are land 4), and `tests/world/world_character.py` checks that older lands still come out tile for tile.
 

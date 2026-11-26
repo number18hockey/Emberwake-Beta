@@ -34,6 +34,8 @@ const rgb = c => `rgb(${c[0] | 0},${c[1] | 0},${c[2] | 0})`;
 // ---------------- input ----------------
 const keys = {}, pressed = {};
 const mouse = { x: 0, y: 0, l: false, r: false, lp: false, rp: false, wx: 0, wy: 0, ux: 0, uy: 0 };
+// a phone or a tablet: fingers and no mouse (its stick and buttons are in 14-main/3-touch.js)
+const mobileDevice = matchMedia('(pointer:coarse)').matches;
 
 // ---------------- audio (all synthesized) ----------------
 let AC = null, master = null, noiseBuf = null, muted = false, sfxHush = false;

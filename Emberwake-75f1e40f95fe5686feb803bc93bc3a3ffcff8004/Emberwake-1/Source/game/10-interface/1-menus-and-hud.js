@@ -11,18 +11,18 @@ const hit = (x, y, w, h, fn, slot) => HITS_NEXT.push({ x, y, w, h, fn, slot: !!s
 function panel(c, x, y, w, h, title) {
   c.fillStyle = INK; c.fillRect(x - 1, y - 1, w + 2, h + 2); c.fillStyle = '#1d1a29'; c.fillRect(x, y, w, h);
   c.fillStyle = '#4a4460'; c.fillRect(x, y, w, 1); c.fillRect(x, y, 1, h); c.fillStyle = '#2b2740'; c.fillRect(x, y + h - 1, w, 1); c.fillRect(x + w - 1, y, 1, h);
-  if (title) { c.fillStyle = '#2b2740'; c.fillRect(x + 1, y + 1, w - 2, 11); textS(c, title, x + 5, y + 3, '#ffd35a'); }
+  if (title) { c.fillStyle = '#2b2740'; c.fillRect(x + 1, y + 1, w - 2, 11); textS(c, title, x + 5, y + 3, '#ffd35a', touchFit(title, w - 10)); }
 }
 function button(c, x, y, w, h, label, fn, o = {}) {
   const hv = !o.off && inR(x, y, w, h), on = o.on;
   c.fillStyle = o.off ? '#2b2740' : hv || on ? '#ffd35a' : '#4a4460'; c.fillRect(x, y, w, h);
   c.fillStyle = hv ? '#3a3350' : on ? '#3d3320' : '#262234'; c.fillRect(x + 1, y + 1, w - 2, h - 2);
-  textC(c, label, x + w / 2, y + round(h / 2) - 4, o.off ? '#6a6485' : hv || on ? '#ffd35a' : (o.col || '#fff'), 1, drawText);
+  const sc = touchFit(label, w - 8); textC(c, label, x + w / 2, y + round((h - 8 * sc) / 2), o.off ? '#6a6485' : hv || on ? '#ffd35a' : (o.col || '#fff'), sc, drawText);
   if (!o.off) hit(x, y, w, h, fn);
 }
 function field(c, x, y, w, key, ph) {
-  // (a password shows as stars, and no more of them than the box holds)
-  const f = UI.focus === key, v = key === 'accountPassword' || key === 'accountConfirm' ? '*'.repeat(min(FORM[key].length, floor((w - 8) / 6))) : FORM[key];
+  // (a password shows as stars, and no more of them than the box holds; on a phone a long entry shows its end)
+  const f = UI.focus === key, v = key === 'accountPassword' || key === 'accountConfirm' ? '*'.repeat(min(FORM[key].length, floor((w - 8) / 6))) : touchTail(FORM[key], w - 10);
   c.fillStyle = f ? '#ffd35a' : inR(x, y, w, 14) ? '#8c86a8' : '#4a4460'; c.fillRect(x, y, w, 14); c.fillStyle = INK; c.fillRect(x + 1, y + 1, w - 2, 12);
   if (v) drawText(c, v, x + 4, y + 4, '#fff'); else drawText(c, ph, x + 4, y + 4, '#6a6485');
   if (f && (performance.now() / 400 | 0) & 1) { c.fillStyle = '#ffd35a'; c.fillRect(x + 5 + (v ? textW(v) : -1), y + 3, 1, 8); }
@@ -190,7 +190,7 @@ function drawTitle(c) {
     for (const r of [...alone, ...friends, ...arenas]) { button(c, bx, by, bw, 16, r[0], r[2], r[4] || {}); if (inR(bx, by, bw, 16)) TITLE.hint = r[3]; by += 19; }
     button(c, bx, by, bw, 14, 'HOW TO PLAY', () => { G.state = 'howto'; sfx('ui'); });
   }
-  { let h = TITLE.hint || 'mouse + keyboard'; while (h.length > 3 && textW(h) > uw - 12) h = h.slice(0, -1); textC(c, h, uw / 2, uh - 15, TITLE.hint ? '#d8d4e6' : '#8b8fa3', 1, textO); }
+  { let h = TITLE.hint || (mobileDevice ? 'touch to move and fight' : 'mouse + keyboard'); while (h.length > 3 && textW(h) > uw - 12) h = h.slice(0, -1); textC(c, h, uw / 2, uh - 15, TITLE.hint ? '#d8d4e6' : '#8b8fa3', 1, textO); }
   const vs = 'version ' + GAME_VERSION; textS(c, vs, uw - textW(vs) - 4, uh - 10, '#6a6485');
 }
 function drawHowTo(c) {
@@ -370,7 +370,7 @@ function drawHUD(c) {
   if (!A && WORLD.mode !== 1) { const f = G.food / 100; bar(c, 15, 20, 72, 2, f, f < .25 && (G.time >> 4) & 1 ? '#ff9a8a' : '#e0a050', '#7a4a1a'); if (f < .3) textO(c, f <= 0 ? 'STARVING' : 'HUNGRY', 91, 16, '#e0a050'); }
   if (p.riposte > 0 && (G.time >> 2) & 1) textO(c, 'RIPOSTE READY', 15, 22, '#8ff5e6');
   else if (!UI.open && WORLD.royale) { }
-  else if (!UI.open) textS(c, A ? '[TAB] scores  [C] forms  [P] menu  1-6 weapons  [R] sidearm [T] swap' : '[E] pack  [K] knap  [F] use  [J] journal  [P] menu', 4, 25, '#8b8fa3');
+  else if (!UI.open && !mobileDevice) textS(c, A ? '[TAB] scores  [C] forms  [P] menu  1-6 weapons  [R] sidearm [T] swap' : '[E] pack  [K] knap  [F] use  [J] journal  [P] menu', 4, 25, '#8b8fa3');
   if (!A && G.jNew && (G.time >> 4) & 1) textS(c, 'NEW JOURNAL ENTRY [J]', 4, 32, '#ffd35a');
   drawBless(c); drawMealHud(c); drawGadgetHud(c); drawCoopHud(c);
   if (G.savedNote) { const t = G.savedNote.t; c.globalAlpha = clamp((120 - t) / 30, 0, 1); textS(c, G.savedNote.ok ? (SAVE.db ? 'saved to your account' : 'saved') : 'could not save', 4, A ? 32 : 42, '#7ddc6f'); c.globalAlpha = 1; }

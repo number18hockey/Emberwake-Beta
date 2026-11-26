@@ -39,6 +39,7 @@ Story, screens, controls, the pack and crafting.
 - `story.py` The story: discovery scenes, the people of Hearthhold, leads and the journal.
 - `accounts.py` Password-required accounts, signing out on restart, guest-save migration and separate profile saves.
 - `atmosphere.py` The look of the air: glow, the colour of each land and season, mist, each world's own sky, the ember wake, timed trails and the jolt of a hit. Checks that none of it throws anywhere (other worlds, the title, the arenas, a resized window).
+- `phone.py` A phone held both ways: typing a world's name, the stick, the buttons, a finger on the world and the panels, crafting, and a match of the Ashfall Trials. And a computer, where none of that shows or gets in the way.
 
 ### world
 

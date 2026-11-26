@@ -27,9 +27,13 @@ function genSil(seed, kind) {
 }
 function genVeil(seed) { const w = 90, h = 6; const [c, x] = mk(w, h); const R = mulberry32(seed + 3); for (let y = 0; y < h; y++) { let X = R() * 20 | 0; while (X < w) { const L = 8 + (R() * 30 | 0); x.globalAlpha = .35 + R() * .65; x.fillStyle = y < 2 ? '#ffffff' : '#eadff2'; x.fillRect(X, y, L, 1); X += L + 4 + (R() * 22 | 0); } } return c; }
 function resize() {
-  const W = max(320, innerWidth), H = max(240, innerHeight); cv.width = W; cv.height = H;
+  // a phone is too small for the menus (too short held sideways, too narrow held upright), so there the picture is drawn as for a bigger window and shown smaller
+  const z = mobileDevice ? clamp(max(660 / innerHeight, 720 / innerWidth), 1, 2) : 1, W = max(320, round(innerWidth * z)), H = max(240, round(innerHeight * z)); cv.width = W; cv.height = H;
   // the world is drawn at a whole-pixel scale that shows about 40 to 55 tiles from top to bottom; menus keep their own size
-  VS.W = W; VS.H = H; VS.s = clamp(floor(H / 300), 2, 6); VS.vw = W / VS.s; VS.vh = H / VS.s; VS.ui = clamp(round(H / 250), 2, 6) >= 4 ? 3 : 2; VS.uw = W / VS.ui; VS.uh = H / VS.ui;
+  VS.W = W; VS.H = H; VS.s = clamp(floor(H / 300), 2, 6); VS.ui = clamp(round(H / 250), 2, 6) >= 4 ? 3 : 2;
+  // (held upright, a phone's picture is tall and narrow: by its height alone everything would be drawn too big for its width)
+  if (mobileDevice) { VS.s = min(VS.s, max(2, floor(W / 190))); if (W < 1080) VS.ui = 2; }
+  VS.vw = W / VS.s; VS.vh = H / VS.s; VS.uw = W / VS.ui; VS.uh = H / VS.ui;
   ctx.imageSmoothingEnabled = false;
   const bw = ceil(VS.vw) + 2, bh = ceil(VS.vh) + 2;[acv, actx] = mk(bw, bh);[lcv, lctx] = mk(bw, bh);[fcv, fctx] = mk(bw, bh);[gcv, gctx] = mk(bw, bh);[glcv, glctx] = mk(bw, bh); wctx = ctx;
   const mkV = (r, g, b, k) => { const [c, vx] = mk(64, 36); const d = vx.createImageData(64, 36); for (let Y = 0; Y < 36; Y++) for (let X = 0; X < 64; X++) { const q = hypot((X - 31.5) / 32, (Y - 17.5) / 18), i = (Y * 64 + X) * 4; d.data[i] = r; d.data[i + 1] = g; d.data[i + 2] = b; d.data[i + 3] = 255 * clamp((q - .62) * k, 0, 1); } vx.putImageData(d, 0, 0); return c; };
@@ -481,7 +485,7 @@ function frameStep(now) {
     G.shake *= .86; G.flash *= .88; acc = 1;
     if (WORLD.arena && G.state === 'play' && G.time % 3 === 0) netSend();
   }
-  render(G.hitstop > 0 || G.state !== 'play' ? 1 : clamp(acc, 0, 1));
+  syncMobileControls(); render(G.hitstop > 0 || G.state !== 'play' ? 1 : clamp(acc, 0, 1));
 }
 // ---------------- while the window is hidden ----------------
 // With friends here the world must not stop when you switch away: the game keeps
@@ -532,6 +536,7 @@ function quitToTitle() {
 // ---------------- input ----------------
 function setMouse(e) { const r = cv.getBoundingClientRect(); mouse.x = (e.clientX - r.left) * (cv.width / r.width); mouse.y = (e.clientY - r.top) * (cv.height / r.height); mouse.ux = mouse.x / VS.ui; mouse.uy = mouse.y / VS.ui; }
 addEventListener('keydown', e => {
+  if (e.target === mobileTextInput) return;
   const k = e.code;
   if (UI.focus && G.state !== 'play') {
     if (!e.metaKey && !e.ctrlKey) e.preventDefault();
