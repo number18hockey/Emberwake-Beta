@@ -1,9 +1,13 @@
 // ============================================================
-//  FIRE. A flask burns where it breaks: flames take root on every
-//  bare face of rock around the point of impact (floor, wall or
-//  ceiling), and one that bursts on a creature in mid-air rains
-//  burning drops. Flames are little animated tongues that lean,
-//  lick and split, each keeping its own rhythm.
+//  FIRE THAT CLINGS. The strips of burning ground (a flask on the
+//  floor, the Hearthkeeper's roar, the Keeper's shock, the forge
+//  link) are G.fires and live in 2-links.js, as they always have.
+//  These are the other flames: the ones that take root on the bare
+//  faces of rock around a point (a flask against a wall or under a
+//  roof, a lightning strike, the Wilds' wildfire), and the burning
+//  drops of a flask that bursts with no ground beneath it. They are
+//  little animated tongues that lean, lick and split, each keeping
+//  its own rhythm, and rain puts them out sooner.
 // ============================================================
 const FLAME_N = 24, FLAME_DIM = [[9, 11], [11, 15], [13, 20]];
 let FLAME = null;
@@ -48,18 +52,22 @@ function fireFaces(x, y, R) {
   }
   return out;
 }
+const FACE_FIRES = [];
 function addFire(x, y, pts, life, by, ghost) {
   if (!pts.length) return null; let x0 = 1e9, x1 = -1e9, y0 = 1e9, y1 = -1e9; for (const p of pts) { x0 = min(x0, p.x); x1 = max(x1, p.x); y0 = min(y0, p.y); y1 = max(y1, p.y); }
-  if (G.fires.length > 40) G.fires.shift();
-  const f = { x, y, pts, x0: x0 - 3, x1: x1 + 3, y0: y0 - 4, y1: y1 + 4, life, max: life, by, ghost: !!ghost }; G.fires.push(f); return f;
+  if (FACE_FIRES.length > 40) FACE_FIRES.shift();
+  const f = { x, y, pts, x0: x0 - 3, x1: x1 + 3, y0: y0 - 4, y1: y1 + 4, life, max: life, by, ghost: !!ghost }; FACE_FIRES.push(f); return f;
 }
-// burn the surfaces around (x, y); returns null where there is nothing to cling to
-function lightFire(x, y, R, life, by, ghost) { return addFire(x, y, fireFaces(x, y, R), life, by, ghost); }
-// an old-fashioned strip of burning ground
-function stripFire(x0, x1, y, life, by) { const pts = []; for (let X = x0 + 2; X < x1; X += 4) pts.push({ x: X, y, nx: 0, ny: -1, s: 1 - abs(X - (x0 + x1) / 2) / (x1 - x0) * .9, ph: hh(X | 0, y | 0, 5) }); return addFire((x0 + x1) / 2, y, pts, life, by, false); }
+// burn the surfaces around (x, y); returns null where there is nothing to cling to. A flask asks for walls and roofs only, and only
+// when it broke right against one: the ground beneath it burns as a strip, the old way
+function lightFire(x, y, R, life, by, ghost, wallsOnly) {
+  let pts = fireFaces(x, y, R); if (wallsOnly) { pts = pts.filter(p => p.ny >= 0); if (!pts.some(p => hypot(p.x - x, p.y - y) < 7)) pts = []; }
+  return addFire(x, y, pts, life, by, ghost);
+}
 // burning drops thrown from a burst in mid-air: they fall, and burn where they land
 const FIRE_DROPS = [];
 function rainFire(x, y, n, by, ghost) { for (let i = 0; i < n; i++) FIRE_DROPS.push({ x, y, px: x, py: y, vx: frand(-1.5, 1.5), vy: frand(-1.8, .2), t: 0, by, ghost: !!ghost }); if (FIRE_DROPS.length > 60) FIRE_DROPS.splice(0, FIRE_DROPS.length - 60); }
+function firesOut() { FACE_FIRES.length = 0; FIRE_DROPS.length = 0; }
 function tickFires() {
   for (let i = FIRE_DROPS.length - 1; i >= 0; i--) {
     const d = FIRE_DROPS[i]; d.px = d.x; d.py = d.y; d.vy = min(d.vy + .16, 5); d.x += d.vx; d.y += d.vy;
@@ -67,30 +75,30 @@ function tickFires() {
     const tx = floor(d.x / T), ty = floor(d.y / T); if (liqAt(d.x, d.y) === 1 || ++d.t > 240) { FIRE_DROPS.splice(i, 1); continue; }
     if (solidAt(tx, ty) || platAt(tx, ty) && d.vy > 0) { FIRE_DROPS.splice(i, 1); lightFire(d.px, d.py, 8, 150, d.by, d.ghost); }
   }
-  for (let i = G.fires.length - 1; i >= 0; i--) {
-    const f = G.fires[i]; f.life -= wxWetAt(f.x, f.y) ? 3 : 1; if (f.life <= 0) { G.fires.splice(i, 1); continue; }
+  for (let i = FACE_FIRES.length - 1; i >= 0; i--) {
+    const f = FACE_FIRES[i]; f.life -= wxWetAt(f.x, f.y) ? 3 : 1; if (f.life <= 0) { FACE_FIRES.splice(i, 1); continue; }
     // a flame whose rock has been dug away goes out
-    if ((G.time + i) % 20 === 0) { f.pts = f.pts.filter(p => p.keep || solidAt(floor((p.x - p.nx * 2) / T), floor((p.y - p.ny * 2) / T)) || platAt(floor(p.x / T), floor((p.y + 2) / T))); if (!f.pts.length) { G.fires.splice(i, 1); continue; } }
+    if ((G.time + i) % 20 === 0) { f.pts = f.pts.filter(p => p.keep || solidAt(floor((p.x - p.nx * 2) / T), floor((p.y - p.ny * 2) / T)) || platAt(floor(p.x / T), floor((p.y + 2) / T))); if (!f.pts.length) { FACE_FIRES.splice(i, 1); continue; } }
     if (near(f)) {
       if (G.time % 3 === 0) { const p = fpick(f.pts); P(p.x + frand(-2, 2) + p.nx * 2, p.y + (p.ny > 0 ? 3 : -frand(2, 7)), frand(-.25, .25) + p.nx * .2, frand(-1.1, -.5), frand(16, 34) | 0, fpick(['#ff7a2a', '#ffd35a', '#e2542b', '#fff1a8']), { glow: 1, g: -.014, fr: .97 }); }
       if (G.time % 14 === 0) { const p = fpick(f.pts); P(p.x, p.y - 12, frand(-.15, .15), -.45, 70, fpick(['#4a4450', '#5f5a69']), { g: -.004, fr: .99 }); }
       if (G.time % 50 === 0) sfx('fire', 300);
     }
     if (!f.ghost && G.time % 10 === 0) {
-      const by = f.by, foes = by && by.fighter ? foesOf(by) : G.fighters.filter(q => q.team === 'p' && !q.remote);
+      const by = f.by, foes = by && by.fighter ? foesOf(by) : G.fighters.filter(q => (q.team === 'p' || wildOn() && q.brIn) && !q.remote);
       for (const e of foes) if (!e.dead && !e.noHit && e.x + e.w > f.x0 - 3 && e.x < f.x1 + 3 && e.y + e.h > f.y0 - 8 && e.y < f.y1 + 3 && f.pts.some(p => p.x > e.x - 4 && p.x < e.x + e.w + 4 && p.y > e.y - 3 && p.y < e.y + e.h + 5)) applyStatus(e, 'burn', by, { d: 120 });
     }
   }
 }
 function fireLights(cx, cy) {
-  for (const f of G.fires) { if (f.x1 < cx - 60 || f.x0 > cx + VS.vw + 60 || f.y1 < cy - 60 || f.y0 > cy + VS.vh + 60) continue; const k = min(1, f.life / 50) * (.86 + .14 * sin(G.time * .23 + f.x)); for (let i = 0; i < f.pts.length; i += 4) { const p = f.pts[i]; addLight(p.x + p.nx * 4, p.y + p.ny * 4, .95 * k, .5 * k, .16 * k); } }
+  for (const f of FACE_FIRES) { if (f.x1 < cx - 60 || f.x0 > cx + VS.vw + 60 || f.y1 < cy - 60 || f.y0 > cy + VS.vh + 60) continue; const k = min(1, f.life / 50) * (.86 + .14 * sin(G.time * .23 + f.x)); for (let i = 0; i < f.pts.length; i += 4) { const p = f.pts[i]; addLight(p.x + p.nx * 4, p.y + p.ny * 4, .95 * k, .5 * k, .16 * k); } }
   for (const d of FIRE_DROPS) addLight(d.x, d.y, .7, .35, .1);
 }
 // c is in world units; glow draws the soft light around the flames instead of the flames themselves
 function drawFires(c, cx, cy, glow) {
-  if (!G.fires.length && !FIRE_DROPS.length) return; if (!FLAME) buildFlames();
+  if (!FACE_FIRES.length && !FIRE_DROPS.length) return; if (!FLAME) buildFlames();
   const t = G.time;
-  for (const f of G.fires) {
+  for (const f of FACE_FIRES) {
     if (f.x1 < cx - 20 || f.x0 > cx + VS.vw + 20 || f.y1 < cy - 24 || f.y0 > cy + VS.vh + 24) continue;
     const up = min(1, (f.max - f.life) / 14 + .15), dn = min(1, f.life / 55);
     if (glow) { c.fillStyle = '#ff7a2a'; for (const p of f.pts) { const g = 5 + 3 * p.s; c.globalAlpha = .07 * dn * up; c.fillRect(round(p.x + p.nx * 3 - g), round(p.y + p.ny * 4 - g), round(g * 2), round(g * 2)); } c.globalAlpha = 1; continue; }

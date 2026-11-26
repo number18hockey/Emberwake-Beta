@@ -337,7 +337,7 @@ function settlePlaced() { for (const i of PLACED) if (chunkReadyAt(i % WW)) SUP.
 function switchDim(d) {
   const p = G.p; DSTASH[DIM] = worldBlob();
   Object.assign(G, { enemies: [], projs: [], drops: [], npcs: [], boss: null, duel: null, fires: [], smokes: [], stuck: [], falling: [], felled: [], rubble: [], autoDoors: [], regrow: [], trails: [], nums: [], ghosts: [], link: null, cine: null, drill: null, dialog: null, spawnT: 300, biome: '', dhaz: [], dev: null, devT: 2400 });
-  for (const f of G.fighters) if (f !== p) f.gone = true; G.fighters = [p]; G.respawn = null;
+  for (const f of G.fighters) if (f !== p) f.gone = true; G.fighters = [p]; G.respawn = null; firesOut();
   if (d) initDim(d); else initEndless();
   const b = DSTASH[d]; delete DSTASH[d]; loadBlob(b);
   if (b && Array.isArray(b.respawn)) G.respawn = { x: clamp(b.respawn[0] | 0, 1, WW - 2), y: clamp(b.respawn[1] | 0, 1, WH - 2) };

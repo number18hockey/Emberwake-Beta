@@ -35,7 +35,7 @@ const BENCHES = [
   { st: 'tink', n: "Tinker's Table", item: 'tinker', d: 'Gadgets you carry, traps and the ember ballista: lanterns, glider, claws, compass, gauges.' },
   { st: 'jewel', n: "Jeweller's Bench", item: 'jeweller', d: 'Trinkets you wear in your trinket slots: rings, charms and amulets that change how you move and fight.' },
   { st: 'oven', n: 'Hearth Oven', item: 'oven', d: 'Hot meals. A meal fills you up and gives a boon for a few minutes (one at a time).' },
-  { st: 'pot', n: 'Cauldron', item: 'cauldron', d: 'Brews: field tonics at a cauldron, stronger infusions at a brewer\'s stand, and mooncraft at a moon cauldron.' },
+  { st: 'pot', n: 'Cauldron', item: 'cauldron', d: 'Brews: salves, tonics, antidotes, and flasks to throw. A brewer\'s stand and a moon cauldron brew stronger.' },
   { st: 'altar', n: 'Offering Altar', item: 'offering_altar', d: 'Offerings that wake the guardians, the lamps that call the sky, and the keys between worlds.' },
   { st: 'mason', n: "Mason's Bench", item: 'mason', d: 'Cut stone: blocks, walls, statues, fountains, the stone anvil and the oven.' },
   { st: 'loom', n: 'Loom', item: 'loom', d: 'Workshop. Cloth, rugs, banners, bedrolls and bags.' },

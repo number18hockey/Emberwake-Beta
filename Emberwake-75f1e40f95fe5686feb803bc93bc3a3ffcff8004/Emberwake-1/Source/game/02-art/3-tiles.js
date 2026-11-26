@@ -88,7 +88,7 @@ MAT[PLANK].y = [['plank', 1]]; MAT[BRICK].y = [['brick', 1]]; MAT[PLATFORM].y = 
 for (let t = 0; t < TP.length; t++) if (TP[t] && TP[t].part && TP[t].drop && MAT[t] && !MAT[t].y.length) MAT[t].y = [[TP[t].drop, 1]];
 // what plants, litter and urns give when you take them by hand
 const PLUCK = {
-  [TALLGRASS]: [['fiber', 1, 2]], [FLOWER]: [['fiber', 1, 1]], [GLOWCAP]: [['glowcap', 1, 1]], [DEADBUSH]: [['stick', 2, 3], ['fiber', 1, 2]], [VINE]: [['fiber', 1, 1]], [CRYSTAL]: [['snow', 1, 2]],
+  [TALLGRASS]: [['fiber', 1, 2]], [FLOWER]: [['fiber', 1, 1]], [GLOWCAP]: [['glowcap', 1, 1]], [DEADBUSH]: [['stick', 2, 3]], [VINE]: [['fiber', 1, 1]], [CRYSTAL]: [['snow', 1, 2]],
   [REED]: [['reed', 2, 3]], [BERRY]: [['berries', 2, 3], ['stick', 0, 1]], [BUSH]: [['stick', 1, 2]], [PEBBLE]: [['rock', 1, 2], ['flint', 0, 1]], [STICKS]: [['stick', 2, 3]],
   [BONES]: [['bone', 1, 3]], [FUNGUS]: [['fungus', 1, 1]]
 };

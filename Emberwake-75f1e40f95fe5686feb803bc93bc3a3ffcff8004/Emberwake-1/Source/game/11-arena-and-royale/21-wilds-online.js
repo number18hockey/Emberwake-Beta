@@ -113,7 +113,7 @@ function wBrPeers(list) {
     here.add(pe.peer);
     let q = BR.people.get(pe.peer); if (!q) { q = { id: pe.peer, sq: -1 }; BR.people.set(pe.peer, q); }
     if (q.sq === s.sq && q.pres) continue; q.sq = s.sq; q.pres = s; q.at = performance.now();
-    q.n = cleanName(s.n) || 'WAKER'; q.sk = clamp(num(s.sk) | 0, 0, 3); q.ph = s.ph === 'M' ? 'M' : 'L'; q.mi = typeof s.mi === 'string' ? s.mi.slice(0, 24) : ''; q.ld = s.ld && typeof s.ld === 'object' ? s.ld : null; q.guest = !!pe.guest;
+    q.n = cleanName(s.n) || 'WAKER'; q.sk = clamp(num(s.sk) | 0, 0, SKINS.length - 1); q.ph = s.ph === 'M' ? 'M' : 'L'; q.mi = typeof s.mi === 'string' ? s.mi.slice(0, 24) : ''; q.ld = s.ld && typeof s.ld === 'object' ? s.ld : null; q.guest = !!pe.guest;
     if (q.ld && q.ld.st === 'L') BR.lastCd = num(q.ld.cd);
     wBrSaw(pe.peer, q, s);
   }
@@ -269,7 +269,7 @@ function wBrRtcTick() {
 // the host lets a friend into the lobby
 function wBrRtcWelcome(P, m) {
   if ([...COOP.peers.values()].filter(Q => Q.ok).length >= WBR_PARTY - 1) { sendTo(P, { t: 'kick' }); return; }
-  P.name = cleanName(m.n) || P.name || 'WAKER'; P.skin = clamp(m.sk | 0, 0, 3); P.ok = true; P.pres = null;
+  P.name = cleanName(m.n) || P.name || 'WAKER'; P.skin = clamp(m.sk | 0, 0, SKINS.length - 1); P.ok = true; P.pres = null;
   sendTo(P, { t: 'wbrw', v: NETV, id: P.id, host: coopName(), code: BR.code, mode: BR.matchType }); COOP.note = ''; sfx('quest', 0); BR.rtcDirty = true;
 }
 function wBrRtcJoin(m) {

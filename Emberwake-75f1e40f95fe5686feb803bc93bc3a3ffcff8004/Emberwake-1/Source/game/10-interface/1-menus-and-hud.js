@@ -212,7 +212,7 @@ function drawWorlds(c) {
   for (let i = 0; i < vis; i++) {
     const m = SAVE.list[i + UI.scroll]; if (!m) break; const ry = y + 16 + i * rowH, hv = inR(x + 4, ry, w - 8, rowH - 3);
     c.fillStyle = hv ? '#2b2740' : '#221e30'; c.fillRect(x + 4, ry, w - 8, rowH - 3);
-    c.drawImage(SK[clamp(m.skin | 0, 0, 3)].head, x + 8, ry + 6, 14, 14); if (!m.mode) for (let k = 0; k < 3; k++) { c.fillStyle = k < (m.e | 0) ? ['#ffd35a', '#8ff5e6', '#ff9a3d'][k] : '#3a3450'; c.fillRect(x + 9 + k * 4, ry + 23, 3, 2); }
+    c.drawImage(SK[clamp(m.skin | 0, 0, SKINS.length - 1)].head, x + 8, ry + 6, 14, 14); if (!m.mode) for (let k = 0; k < 3; k++) { c.fillStyle = k < (m.e | 0) ? ['#ffd35a', '#8ff5e6', '#ff9a3d'][k] : '#3a3450'; c.fillRect(x + 9 + k * 4, ry + 23, 3, 2); }
     drawText(c, String(m.name || 'World').slice(0, 24), x + 28, ry + 3, '#fff');
     const prog = m.mode ? 'free forge' : m.v < 3 ? 'old world (will regrow)' : (m.e | 0) + ' of 3 embers';
     { const room = w - 160, fit = t => { while (t.length > 4 && textW(t) > room) t = t.slice(0, -1); return t; }, tr = (m.land | 0) >= 4 && m.endless;
@@ -300,7 +300,7 @@ function drawAccounts(c) {
       const ry = start + i * rowH, active = me && me.id === p.id;
       c.fillStyle = active ? '#3d3320' : inR(x + 6, ry, w - 12, rowH - 4) ? '#2b2740' : '#221e30';
       c.fillRect(x + 6, ry, w - 12, rowH - 3);
-      c.drawImage(SK[clamp(p.skin | 0, 0, 3)].head, x + 10, ry + 3, 14, 14);
+      c.drawImage(SK[clamp(p.skin | 0, 0, SKINS.length - 1)].head, x + 10, ry + 3, 14, 14);
       drawText(c, p.name, x + 30, ry + 6, active ? '#ffd35a' : '#fff');
       button(c, x + w - 82, ry + 3, 74, 14, active ? 'ACTIVE' : ACCOUNT.loginId === p.id ? 'SELECTED' : 'SELECT', () => {
         ACCOUNT.loginId = p.id; FORM.accountPassword = ''; FORM.accountConfirm = ''; UI.focus = 'accountPassword'; ACCOUNT.note = '';

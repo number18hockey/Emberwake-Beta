@@ -112,7 +112,7 @@ function brPeers(list) { if (BR.wild) return wBrPeers(list);
     here.add(pe.peer);
     let q = BR.people.get(pe.peer); if (!q) { q = { id: pe.peer, sq: -1 }; BR.people.set(pe.peer, q); }
     if (q.sq === s.sq && q.pres) continue; q.sq = s.sq; q.pres = s; q.at = performance.now();
-    q.n = cleanName(s.n) || 'WAKER'; q.sk = clamp(num(s.sk) | 0, 0, 3); q.ph = s.ph === 'M' ? 'M' : 'L'; q.mi = typeof s.mi === 'string' ? s.mi.slice(0, 24) : ''; q.ld = s.ld && typeof s.ld === 'object' ? s.ld : null; q.guest = !!pe.guest;
+    q.n = cleanName(s.n) || 'WAKER'; q.sk = clamp(num(s.sk) | 0, 0, SKINS.length - 1); q.ph = s.ph === 'M' ? 'M' : 'L'; q.mi = typeof s.mi === 'string' ? s.mi.slice(0, 24) : ''; q.ld = s.ld && typeof s.ld === 'object' ? s.ld : null; q.guest = !!pe.guest;
     q.tw = clamp(num(s.tw) | 0, 0, 6); q.pt = typeof s.pt === 'string' ? s.pt.toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 8) : '';
     if (q.ld && q.ld.st === 'L') { BR.lastCd = num(q.ld.cd); if (!BR.lead) { BR.sizeWant = clamp(num(q.ld.tm) | 0, 1, 3) || 1; BR.arenaWant = clamp(num(q.ld.aw, 2) | 0, 0, 2); } }
     brSaw(pe.peer, q, s);
@@ -253,7 +253,7 @@ function ringRtcEnd() {
 // the host lets a friend into the lobby
 function brRtcWelcome(P, m) { if (BR.wild) return wBrRtcWelcome(P, m);
   if ([...COOP.peers.values()].filter(Q => Q.ok).length >= brMaxG()) { sendTo(P, { t: 'kick' }); return; }
-  P.name = cleanName(m.n) || P.name || 'WAKER'; P.skin = clamp(m.sk | 0, 0, 3); P.ok = true; P.pres = null;
+  P.name = cleanName(m.n) || P.name || 'WAKER'; P.skin = clamp(m.sk | 0, 0, SKINS.length - 1); P.ok = true; P.pres = null;
   sendTo(P, { t: 'brw', v: NETV, id: P.id, host: coopName(), code: COOP.ring ? NET.code : BR.code, mode: COOP.ring ? 'ring' : 'br', pt: BR.party || COOP.gcode || '' }); COOP.note = ''; sfx('quest', 0); BR.rtcDirty = true;
   if (COOP.ring) G.kfeed.unshift({ a: '', b: P.name, txt: 'is on the way in', t: 0 });
 }

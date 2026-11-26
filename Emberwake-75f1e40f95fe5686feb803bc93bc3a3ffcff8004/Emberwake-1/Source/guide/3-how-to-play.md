@@ -208,7 +208,7 @@ Every world you forge from now on has a character of its own, worked out from it
 
 | Weather | Out in it |
 | --- | --- |
-| **Rain** | you go a little slower and the ground is slick; creatures see a little less far; fires die quickly, and the rain washes the flames off anyone who is burning |
+| **Rain** | you go a little slower and the ground is slick; creatures see a little less far; small clinging flames die quickly (a flask's strip of burning ground burns its full time), and the rain washes the flames off anyone who is burning |
 | **A thunderstorm** | all that rain does, and a bolt **sets fire** to what it strikes (a lightning rod takes the bolt to earth instead) |
 | **Snow** | you go slower, the ground is slick, and your breath comes back more slowly |
 | **Ashfall** | a little slower, and short of breath |
@@ -227,7 +227,7 @@ Every world you forge from now on has a character of its own, worked out from it
 | **Rimefang** | snow | circles, crouches and pounces; it leaves you stiff with cold |
 | **Dustmaw** | ashfall | swims through the ground and leaps |
 
-**Fire.** An Ember Flask burns **where it breaks**: flames take hold on the floor, up a wall or under a roof, on every bare face the fire can reach through open air. It does not pass through a wall. One that bursts on a creature in the air rains burning drops. Rain puts a fire out about three times sooner.
+**Fire.** An Ember Flask that breaks on the ground, or a little way above it, lays the strip of burning ground it always has. Broken right against a **wall** or under a **roof**, it also takes hold there, in small flames that cling to the bare faces around; they do not pass through a wall. One that bursts high in the air, with no ground close beneath it, rains burning drops that land as flames. Rain puts the small flames out about three times sooner; the strip of burning ground burns its full time.
 
 ![Curios on the road: a Waker's Rest, the Singing Stones, the Ribs, an ember spring](pictures/curios.jpg)
 

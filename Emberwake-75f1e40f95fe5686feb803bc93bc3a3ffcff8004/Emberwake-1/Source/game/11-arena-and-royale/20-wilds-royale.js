@@ -28,6 +28,8 @@ const BR_WARN = 40 * 60, BR_MOVE = 105 * 60, BR_RESTLESS = 5 * 60 * 60;
 const BR_TITLES = ['TRIBUTE', 'FORAGER', 'TRAPPER', 'SCAVENGER', 'RANGER', 'CAREER', 'VICTOR'];
 // (the match state BR is the one object shared with the Trials: see 2-royale.js; BR.wild is true while this arena is in play)
 const wBrOn = () => WORLD.royale && BR.on;
+// on the island a dead bush gives fibre as well as sticks (twine is short there); in every other place it gives what it always gave
+{ const dry = PLUCK[DEADBUSH], wild = [...dry, ['fiber', 1, 2]]; Object.defineProperty(PLUCK, DEADBUSH, { get: () => wildOn() ? wild : dry, enumerable: true }); }
 const wBrTag = f => !f ? '' : f === G.p ? (NET.me || 'me') : f.botTag || f.peer || '';
 const brSay = (s, t = 150) => { BR.note = s; BR.noteT = t; };
 
@@ -247,7 +249,8 @@ function wBrDropPile(x, y, items) { items = items.slice(0, 14); items.forEach(([
 // ---------------- starting a match ----------------
 // everyone runs this with the same seed, so everyone stands on the same island
 function wBrEnterMatch(mi, seed, roster, nb) {
-  const nick = G.nick, skin = G.skin, hat = G.hat; BR.wild = true;
+  // a Trials match on Ember Peak leaves its slag line behind: without this the echoes here could not route below it
+  const nick = G.nick, skin = G.skin, hat = G.hat; BR.wild = true; BR.arena = 0; BR.slagY = 1e9;
   wGenRoyale(seed); freshSession(); WORLD.mode = 0; G.nick = nick; G.skin = skin; G.hat = hat; G.clock = .08; updateSun();
   const ro = roster.slice(0, WBR_MAX);
   Object.assign(BR, { mapHide: false, mi, seed, t: 0, ro, nb: clamp(nb | 0, 0, WBR_MAX - ro.length), rewarded: false, rewardText: '', phase: 'drop', mine: new Set(), bots: new Map(), bk: [], bkSeq: 0, bkSeen: new Map(), dlSeen: new Set(), dl: null, place: 0, spec: null, specT: 0, overT: 0, winner: '', winMe: false, chan: null, note: '', noteT: 0, inStorm: false, poiNow: '', mapOpen: false, lastAlive: 0, lastTeams: 0, ring: { n: 0, at: 0 }, lastFall: 0, pactWith: '', pactFrom: '', pactFromT: 0, teammate: '', pactSeen: false, leaveT: 0, dropsOut: [], dropSeq: 0, dropSeen: new Map(), tookOut: [], tookSeq: 0, tookSeen: new Map(), tileOut: new Map(), applying: false, fallen: [], fallenT: 0, show: null, gifts: [], giftAt: 60 * 60, feast: 0, hazard: null, hounds: 0, bounty: null, mobT: 600, botMobT: 1200 });

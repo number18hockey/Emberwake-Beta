@@ -150,7 +150,7 @@ function onMsg(P, m, raw) {
   if (!H && COOP.entering && m.t !== 'bye' && m.t !== 'kick') { COOP.backlog.push([P, m, raw]); return; }
   if ((COOP.br || m.t === 'brw' || m.t === 'wbrw') && brRtcMsg(P, m)) return;
   switch (m.t) {
-    case 'hello': if (H && !P.ok && COOP.br) { brRtcWelcome(P, m); return; } if (!H || P.ok) return; P.name = cleanName(m.n) || P.name || 'WAKER'; P.skin = clamp(m.sk | 0, 0, 3); P.hat = clamp(m.ht | 0, 0, 3); hostWelcome(P); return;
+    case 'hello': if (H && !P.ok && COOP.br) { brRtcWelcome(P, m); return; } if (!H || P.ok) return; P.name = cleanName(m.n) || P.name || 'WAKER'; P.skin = clamp(m.sk | 0, 0, SKINS.length - 1); P.hat = clamp(m.ht | 0, 0, 3); hostWelcome(P); return;
     case 'welcome': if (H || COOP.joined) return; guestEnter(m); return;
     case 'me': {
       const id = H ? P.id : m.id; if (!id || id === COOP.me) return; const Q = H ? P : COOP.peers.get(id) || peerFor(id, m);
@@ -265,7 +265,7 @@ function fighterState(f, me) {
   o.ts = round(performance.now()); return o;
 }
 function makeRemote(Q, s) {
-  const f = newFighter(num(s.x, G.p ? G.p.x : 0), num(s.y, G.p ? G.p.y : 0), { remote: true, coop: true, peer: Q.id, team: 'p', name: cleanName(s.n) || Q.name || 'WAKER', skin: clamp(s.sk | 0, 0, 3), hat: clamp(s.ht | 0, 0, 3), snaps: [], spawnT: 30 });
+  const f = newFighter(num(s.x, G.p ? G.p.x : 0), num(s.y, G.p ? G.p.y : 0), { remote: true, coop: true, peer: Q.id, team: 'p', name: cleanName(s.n) || Q.name || 'WAKER', skin: clamp(s.sk | 0, 0, SKINS.length - 1), hat: clamp(s.ht | 0, 0, 3), snaps: [], spawnT: 30 });
   f.wid = ''; Q.f = f; G.fighters.push(f); return f;
 }
 function pushSnap(f, s) {
@@ -279,7 +279,7 @@ function pushSnap(f, s) {
     for (const q of S) if (isFinite(q.ts)) q.t = q.ts + f.toff; s.t = s.ts + f.toff; f.delay = clamp((f.gap || 50) + 1.5 * f.jit + 35, 85, 650);
   } else s.t = now;
   S.push(s); if (S.length > 30) S.shift(); f.away = !!s.aw;
-  if (s.n && !f.hollow) f.name = cleanName(s.n) || f.name; if (s.sk !== undefined) f.skin = clamp(s.sk | 0, 0, f.hollow ? 11 : 3); if (s.ht !== undefined) f.hat = clamp(s.ht | 0, 0, 3);
+  if (s.n && !f.hollow) f.name = cleanName(s.n) || f.name; if (s.sk !== undefined) f.skin = clamp(s.sk | 0, 0, f.hollow ? 11 : SKINS.length - 1); if (s.ht !== undefined) f.hat = clamp(s.ht | 0, 0, 3);
   f.hp = num(s.hp, f.hp); f.maxhp = num(s.mhp, f.maxhp || 100); f.inDim = s.d;
   if (s.gr !== undefined && s.gr !== f.grKey) { f.grKey = s.gr; const ids = String(s.gr).split(','); f.gearObj = {}; GEAR_SLOTS.forEach((k, i) => { if (IT[ids[i]] && IT[ids[i]].type === 'armor') f.gearObj[k] = { id: ids[i], n: 1 }; }); f.gskin = null; }
 }

@@ -1,6 +1,7 @@
 # Fighting: a blow or a dash never stops you dead. Held keys keep you running through a swing, a dash flows into a run,
 # hands off the keys you glide to a stop, and striking behind you while you back away doesn't turn you round.
-# Also: a fire flask burns where it breaks (wall, roof or floor), and the flames are many small moving ones.
+# Also: a fire flask that breaks against a wall or under a roof burns on that face with many small moving flames; on the floor
+# it lays the strip of burning ground it always did; with no ground beneath it, it rains burning drops.
 import asyncio, os, sys
 sys.path.insert(0, os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), 'helpers'))
 from harness import H
@@ -39,16 +40,20 @@ async def main():
 
         # fire where it breaks
         fire = await h.ev("""(() => { const p = G.p, tx = floor(p.x / T), gy = heights[tx], out = {}; flat(); for (let y = gy - 14; y < gy; y++) for (let x = tx + 12; x < tx + 16; x++) setTile(x, y, STONE); for (let x = tx - 12; x < tx + 12; x++) setTile(x, gy - 14, STONE);
-          const burst = (x, y) => { G.fires.length = 0; FIRE_DROPS.length = 0; armBurst({ type: 'flask', owner: p, x, y, vx: 0, vy: 0 }); return G.fires[0]; };
-          const wall = burst((tx + 12) * T - 2, (gy - 8) * T); out.wall = wall ? { onWall: wall.pts.filter(q => q.nx < 0).length, lowest: Math.round(gy * T - Math.max(...wall.pts.map(q => q.y))), n: wall.pts.length } : null;
+          // (FACE_FIRES are the flames that cling to a face; G.fires are the strips of burning ground)
+          const burst = (x, y) => { G.fires.length = 0; firesOut(); armBurst({ type: 'flask', owner: p, x, y, vx: 0, vy: 0 }); return FACE_FIRES[0]; };
+          const wall = burst((tx + 12) * T - 2, (gy - 8) * T); out.wall = wall ? { onWall: wall.pts.filter(q => q.nx < 0).length, onFloor: wall.pts.filter(q => q.ny < 0).length, lowest: Math.round(gy * T - Math.max(...wall.pts.map(q => q.y))), n: wall.pts.length } : null;
           const roof = burst(tx * T, (gy - 13) * T + 2); out.roof = roof ? roof.pts.filter(q => q.ny > 0).length : 0;
-          const floor1 = burst(tx * T, gy * T - 2); out.floor = floor1 ? floor1.pts.filter(q => q.ny < 0).length : 0;
-          burst(tx * T, (gy - 7) * T); out.midair = { fires: G.fires.length, drops: FIRE_DROPS.length }; for (let i = 0; i < 120; i++) tickFires(); out.landed = G.fires.length;
-          buildFlames(); const c = FLAME[1][3], px = k => { const d = FLAME[1][k].getContext('2d').getImageData(0, 0, c.width, c.height).data; let s = ''; for (let i = 3; i < d.length; i += 4) s += d[i] ? 1 : 0; return s; }; out.shapes = new Set([...Array(FLAME_N).keys()].map(px)).size; out.frames = FLAME_N; G.fires.length = 0; return out; })()""")
+          burst(tx * T, gy * T - 2); out.floor = { clinging: FACE_FIRES.length, drops: FIRE_DROPS.length, strips: G.fires.map(f => [f.x0 - tx * T, f.x1 - tx * T, f.y - gy * T, f.life]) };
+          burst(tx * T, (gy - 6) * T); out.above = { clinging: FACE_FIRES.length, drops: FIRE_DROPS.length, strips: G.fires.map(f => [f.x0 - tx * T, f.x1 - tx * T, f.y - gy * T, f.life]) };
+          burst(tx * T, (gy - 10) * T); out.midair = { strips: G.fires.length, drops: FIRE_DROPS.length }; for (let i = 0; i < 120; i++) tickFires(); out.landed = FACE_FIRES.length;
+          buildFlames(); const c = FLAME[1][3], px = k => { const d = FLAME[1][k].getContext('2d').getImageData(0, 0, c.width, c.height).data; let s = ''; for (let i = 3; i < d.length; i += 4) s += d[i] ? 1 : 0; return s; }; out.shapes = new Set([...Array(FLAME_N).keys()].map(px)).size; out.frames = FLAME_N; G.fires.length = 0; firesOut(); return out; })()""")
         print('fire:', fire)
-        assert fire['wall'] and fire['wall']['onWall'] >= 4 and fire['wall']['lowest'] > 24, 'a flask on a wall should burn on the wall, not the ground below'
-        assert fire['roof'] >= 2 and fire['floor'] >= 4, 'and on a roof, and on the floor'
-        assert fire['midair']['drops'] > 0 and fire['landed'] > 0, 'one that bursts in mid-air rains burning drops'
+        assert fire['wall'] and fire['wall']['onWall'] >= 4 and fire['wall']['onFloor'] == 0 and fire['wall']['lowest'] > 24, 'a flask on a wall should burn on the wall, not the ground below'
+        assert fire['roof'] >= 2, 'and on a roof'
+        strip = {'clinging': 0, 'drops': 0, 'strips': [[-18, 18, 0, 260]]}
+        assert fire['floor'] == strip and fire['above'] == strip, 'on the floor, or in the air with ground close below, it lays the old strip of burning ground and nothing else'
+        assert fire['midair'] == {'strips': 0, 'drops': 6} and fire['landed'] > 0, 'one that bursts with no ground beneath it rains burning drops'
         assert fire['shapes'] == fire['frames'], 'every frame of a flame should differ from the last'
         print('errors:', h.errs[:5] or 'none')
         assert not h.errs, 'browser reported an error'

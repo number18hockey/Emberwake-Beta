@@ -50,8 +50,10 @@ function migrateGuestWorlds() {
   if (!Array.isArray(worlds)) return;
   SAVE.list = worlds.filter(m => m && typeof m.id === 'string');
   for (const m of SAVE.list) {
-    const raw = LS.get(profilePath('guest', 'w.' + m.id)) || LS.get('ew2.w.' + m.id);
-    if (raw !== null && LS.get(profilePath(accountId(), 'w.' + m.id)) === null) LS.set(profilePath(accountId(), 'w.' + m.id), raw);
+    const mine = profilePath(accountId(), 'w.' + m.id), from = LS.get(profilePath('guest', 'w.' + m.id)) ? profilePath('guest', 'w.' + m.id) : 'ew2.w.' + m.id, raw = LS.get(from);
+    // a copy that does not fit in the browser's store beside the old one is moved across instead (and put back if even that fails:
+    // loadWorldData still finds a world under its old key)
+    if (raw !== null && LS.get(mine) === null && !LS.set(mine, raw)) { LS.del(from); if (!LS.set(mine, raw)) LS.set(from, raw); }
   }
   writeLocalIndex(); sortWorlds();
 }
@@ -65,7 +67,7 @@ async function accountCreate(name, password, confirm, skin, hat) {
   try {
     const salt = accountSalt(), hash = await accountPasswordHash(password, salt);
     const firstAccount = !ACCOUNT.profiles.some(p => p.id !== 'guest');
-    const p = { id: Date.now().toString(36) + ((Math.random() * 46656) | 0).toString(36), name, skin: clamp(skin | 0, 0, 3), hat: clamp(hat | 0, 0, 3), salt, hash };
+    const p = { id: Date.now().toString(36) + ((Math.random() * 46656) | 0).toString(36), name, skin: clamp(skin | 0, 0, SKINS.length - 1), hat: clamp(hat | 0, 0, 3), salt, hash };
     ACCOUNT.profiles.push(p);
     if (!writeAccountProfiles()) { ACCOUNT.profiles.pop(); ACCOUNT.note = 'Could not save this account in this browser.'; return false; }
     accountSwitch(p.id);
@@ -80,7 +82,7 @@ async function accountCreate(name, password, confirm, skin, hat) {
 }
 function accountSwitch(id) {
   const p = ACCOUNT.profiles.find(v => v.id === id); if (!p) return false;
-  ACCOUNT.active = p; LS.del('ew2.active'); G.nick = p.name; G.skin = clamp(p.skin | 0, 0, 3); G.hat = clamp(p.hat | 0, 0, 3);
+  ACCOUNT.active = p; LS.del('ew2.active'); G.nick = p.name; G.skin = clamp(p.skin | 0, 0, SKINS.length - 1); G.hat = clamp(p.hat | 0, 0, 3);
   // (the name shown to other Wakers follows the game's own rule for names: capitals, twelve letters)
   FORM.nick = cleanName(p.name); FORM.skin = G.skin; FORM.hat = G.hat;
   SAVE.list = readLocalIndex(); sortWorlds(); ACCOUNT.note = 'Logged in as ' + p.name + '.';
@@ -195,7 +197,8 @@ async function loadWorldData(id) {
   let local = null;
   try {
     const own = LS.get(profileKey('w.' + id));
-    const raw = own !== null ? own : (accountId() === 'guest' ? LS.get('ew2.w.' + id) : null);
+    // (a world from before accounts whose copy never reached this account is still under its old key)
+    const raw = own !== null ? own : LS.get('ew2.w.' + id);
     local = JSON.parse(raw || 'null');
   } catch (e) { }
   let remote = null;
@@ -237,7 +240,7 @@ async function openWorld(meta) {
   const data = await loadWorldData(meta.id);
   if (!data) { SAVE.list = SAVE.list.filter(l => l.id !== meta.id); writeLocalIndex(); G.state = 'worlds'; G.menuNote = 'That world could not be found.'; return; }
   Object.assign(WORLD, { id: data.id, name: data.name, seed: data.seed | 0, size: clamp(data.size | 0, 0, 2), shape: clamp(data.shape | 0, 0, 2), mode: data.mode ? 1 : 0, arena: false });
-  G.skin = clamp(data.skin | 0, 0, 3); accountSaveProfile(); startWorld(data);
+  G.skin = clamp(data.skin | 0, 0, SKINS.length - 1); accountSaveProfile(); startWorld(data);
 }
 function startWorld(data) {
   G.state = 'loading'; G.loadMsg = data ? 'Rebuilding ' + WORLD.name + '...' : 'Forging ' + WORLD.name + '...';

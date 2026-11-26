@@ -88,7 +88,7 @@ function drinkBrew(k) {
 }
 function spawnMirrorClone() {
   const p = G.p, tape = G.cloneTape || [], W = heldOf(p), id = W && W.type === 'weapon' ? W.id : 'fists';
-  const f = newFighter(p.x - p.face * 12, p.y, { name: 'MIRROR WAKER', skin: p.skin, team: p.team || 'p', wid: id, hp: 48, maxhp: 48, dmgMul: .68, ai: newBrain(.5), isClone: true, cloneT: 2400, cloneIdx: max(0, tape.length - 18) });
+  const f = newFighter(p.x - p.face * 12, p.y, { name: 'MIRROR WAKER', skin: p.skin, hat: p.hat, team: p.team || 'p', wid: id, hp: 48, maxhp: 48, dmgMul: .68, ai: newBrain(.5), isClone: true, cloneT: 2400, cloneIdx: max(0, tape.length - 18) });
   f.py = f.y; f.face = p.face; G.fighters.push(f); p.cloneCd = 3600;
   burst(f.x + 3, f.y + 8, 18, ['#e0d2ff', '#8ff5e6', '#ffffff'], 1.8, 36, { glow: 1, g: -.01 });
   numPop(p.x + 3, p.y - 12, 'DOUBLE SOUL', '#e0d2ff', 1.2); say('Your mirror repeats the last few steps, then reads its own fights.'); sfx('reflect', 0);

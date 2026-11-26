@@ -50,7 +50,7 @@ function netPeers(list) {
     here.add(pe.peer);
     let f = NET.peers.get(pe.peer);
     if (!f) {
-      f = newFighter(num(s.x, 600), num(s.y, 300), { remote: true, peer: pe.peer, team: 'r:' + pe.peer, snaps: [], spawnT: 40, name: cleanName(s.n) || 'WAKER', skin: clamp(num(s.sk) | 0, 0, 3), guest: !!pe.guest });
+      f = newFighter(num(s.x, 600), num(s.y, 300), { remote: true, peer: pe.peer, team: 'r:' + pe.peer, snaps: [], spawnT: 40, name: cleanName(s.n) || 'WAKER', skin: clamp(num(s.sk) | 0, 0, SKINS.length - 1), guest: !!pe.guest });
       NET.peers.set(pe.peer, f); G.fighters.push(f); G.kfeed.unshift({ a: '', b: f.name, txt: 'entered the ring', t: 0 }); sfx('quest', 0);
     }
     if (pe.presence !== f.lastPres) { f.lastPres = pe.presence; netApply(f, s); }
@@ -60,7 +60,7 @@ function netPeers(list) {
 }
 function netApply(f, s) {
   const now = performance.now();
-  f.name = cleanName(s.n) || 'WAKER'; f.skin = clamp(num(s.sk) | 0, 0, 3); f.wid = WORLD.royale ? (IT[s.w] && IT[s.w].type === 'weapon' ? s.w : 'fists') : RING_WEAPONS.includes(s.w) ? s.w : 'sword';
+  f.name = cleanName(s.n) || 'WAKER'; f.skin = clamp(num(s.sk) | 0, 0, SKINS.length - 1); f.wid = WORLD.royale ? (IT[s.w] && IT[s.w].type === 'weapon' ? s.w : 'fists') : RING_WEAPONS.includes(s.w) ? s.w : 'sword';
   const snap = {
     t: now, x: clamp(num(s.x, f.x), 0, WW * T), y: clamp(num(s.y, f.y), 0, WH * T), vx: clamp(num(s.vx), -9, 9), vy: clamp(num(s.vy), -9, 9), face: s.f < 0 ? -1 : 1, g: !!s.g, st: num(s.st) | 0, dd: s.dd < 0 ? -1 : 1,
     m: typeof s.m === 'string' ? s.m : '', an: num(s.an) | 0, mp: clamp(num(s.mp) | 0, 0, 2), mt: clamp(num(s.mt), 0, 200), ma: clamp(num(s.ma), -3.2, 3.2), md: clamp(num(s.md, 40), 0, 900), mc: clamp(num(s.mc) | 0, 0, 60), mf: s.mf < 0 ? -1 : 1, rp: !!s.rp, sp: !!s.sp

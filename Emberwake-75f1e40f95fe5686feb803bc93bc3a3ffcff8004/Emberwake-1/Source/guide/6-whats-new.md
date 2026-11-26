@@ -15,7 +15,7 @@ This version joins two that had grown apart. One had the Trials, the four worlds
 - **You keep your run.** Hold a direction through a blow or a dodge and you keep most of your pace instead of stopping dead. Hands off, you glide to a stop. A blow thrown from standing is exactly as it was.
 - **Weather is felt.** Rain and snow slow you in the open and make the ground slick, snow and ash steal your breath, and creatures see less far in rain and fog. A roof, a ledge or a cave shelters you from all of it.
 - **Six creatures of the weather:** the puddling, the stormcaller, the galewisp, the mistwraith, the rimefang and the dustmaw. Each comes out only in its own weather and goes when it does.
-- **Fire burns where it breaks:** on a floor, up a wall, under a roof, in many small moving flames. Rain puts it out sooner, and a bolt of lightning can start one.
+- **Fire clings:** a flask broken against a wall or under a roof also burns there, in small moving flames, and one that bursts high in the air rains burning drops. Rain puts these small flames out sooner, and a bolt of lightning can start one. A flask's strip of burning ground is just as it was.
 - **Eating takes a moment**, and a blow interrupts it (you keep the food).
 - **Brews.** Quickstep at a cauldron, Emberheart at a **Brewer's Stand**, and at a **Moon Cauldron** the Doublesoul Draught, which calls a mirror of you to fight at your side. And a new meal, the Willow Omelet. See *How to play: Eating and brews*.
 - **Two new lands** in worlds you forge from now on: the **Mosswood** (deep green, oaks, moss deer) and the **Willowmere** (reeds, still water, willows, willow hens). Worlds made before keep their land exactly as it was.

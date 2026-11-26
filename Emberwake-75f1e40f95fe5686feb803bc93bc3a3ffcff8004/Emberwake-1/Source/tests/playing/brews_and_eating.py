@@ -3,7 +3,8 @@
 # wears off; the Emberheart brew makes a blow land harder and wears off; the Doublesoul Draught calls a mirror of you that
 # goes home again; the Brewer's Stand and the Moon Cauldron are placed, open as cauldrons of their own rank and keep their
 # own tile numbers through a save (and a Blessing Stone is still a Blessing Stone); the new recipes come after all the
-# old ones; a dead bush gives fibre too. Screenshots: drinking, the mirror beside you, the three cauldrons, the stand's work.
+# old ones; a dead bush gives fibre too in the Wilds (and only sticks anywhere else, as it always did). Screenshots:
+# drinking, the mirror beside you, the three cauldrons, the stand's work.
 import asyncio, sys, os, json
 sys.path.insert(0, os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), 'helpers'))
 from where import shot
@@ -125,11 +126,12 @@ async def main():
     # ---- the recipe list: the new work comes after all the old, and what goes into it exists ----
     r = await h.ev("""(() => { const ids = ['brewstand', 'moon_cauldron', 'swiftbrew', 'mightbrew', 'mirrordraught', 'egg_scramble'], at = ids.map(id => RECIPES.findIndex(r => r.out === id));
       return { 'recipes in all': RECIPES.length, 'the new ones are numbers': at, 'missing things': RECIPES.filter(r => ids.includes(r.out)).flatMap(r => Object.keys(r.need)).filter(k => !IT[k]),
-        materials: ['egg', 'feather', 'antler', 'moonseed'].map(id => IT[id] ? IT[id].name : 'MISSING'), 'a dead bush gives': PLUCK[DEADBUSH].map(d => d[0]) }; })()""")
+        materials: ['egg', 'feather', 'antler', 'moonseed'].map(id => IT[id] ? IT[id].name : 'MISSING'), 'a dead bush gives': PLUCK[DEADBUSH].map(d => d[0]),
+        'and in the Wilds': (() => { const a = WORLD.royale, b = BR.wild; WORLD.royale = true; BR.wild = true; const L = PLUCK[DEADBUSH].map(d => d[0]); WORLD.royale = a; BR.wild = b; return L; })() }; })()""")
     res['the recipe list'] = r
     # (a save knows a recipe by its number: the 549 recipes the game had before these must keep theirs)
     must(min(r['the new ones are numbers']) >= 549, 'the new recipes should come after the 549 old ones')
-    must(not r['missing things'] and 'MISSING' not in r['materials'] and r['a dead bush gives'] == ['stick', 'fiber'], 'the new materials should exist')
+    must(not r['missing things'] and 'MISSING' not in r['materials'] and r['a dead bush gives'] == ['stick'] and r['and in the Wilds'] == ['stick', 'fiber'], 'the new materials should exist')
 
     sheet(ims, 3, shot('brews_and_eating.png'), labels, 1)
     for k, v in res.items(): print(k, '=>', v)

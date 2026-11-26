@@ -1,5 +1,6 @@
 # What the weather does: rain, snow, a thunderstorm, the long fog and ashfall each slow you, make the ground slick,
-# take your breath or hide you; a roof or the underground keeps all of it off; rain puts fire out and lightning starts one;
+# take your breath or hide you; a roof or the underground keeps all of it off; rain puts fire out (the flames that cling to rock: a strip of burning ground
+# keeps its time) and lightning starts one;
 # and each kind brings its own rare creatures, which leave when it ends. Under a clear sky nothing changes at all.
 # Saves a picture of the six creatures.
 import asyncio, os, sys
@@ -59,19 +60,23 @@ async def main():
 
         # ---- rain against fire ----
         fire = await h.ev("""(() => { const p = G.p, gy = flat(), tx = floor(p.x / T), out = {}; p.x = p.px = (tx - 20) * T;
-          const burn = (k, x) => { sky(k, 2); G.fires.length = 0; lightFire(x, gy * T - 2, 13, 170, null); let n = 0; while (G.fires.length && n < 400) { calm(); G.enemies.length = 0; tick(); n++; } return n; };
+          const burn = (k, x) => { sky(k, 2); firesOut(); lightFire(x, gy * T - 2, 13, 170, null); let n = 0; while (FACE_FIRES.length && n < 400) { calm(); G.enemies.length = 0; tick(); n++; } return n; };
+          // (a strip of burning ground, as a flask on the floor or a guardian lays, is not shortened by rain)
+          const strip = (k, x) => { sky(k, 2); G.fires.length = 0; G.fires.push({ x0: x - 18, x1: x + 18, y: gy * T, life: 150, max: 150, by: null }); let n = 0; while (G.fires.length && n < 400) { calm(); G.enemies.length = 0; tick(); n++; } return n; };
+          out.stripClear = strip('clear', tx * T); out.stripRain = strip('rain', tx * T);
           out.clear = burn('clear', tx * T); out.rain = burn('rain', tx * T); for (let x = tx - 4; x <= tx + 4; x++) setTile(x, gy - 6, STONE); out.rainRoofed = burn('rain', tx * T); for (let x = tx - 4; x <= tx + 4; x++) setTile(x, gy - 6, AIR);
           const doused = k => { sky(k, 20); stOf(p).burn = 200; let n = 0; while (p.st.burn > 0 && n < 400) { calm(); tick(); n++; } return n; }; out.onYouClear = doused('clear'); out.onYouRain = doused('rain'); p.st.burn = 0; return out; })()""")
-        print('ticks a fire lasts on open ground, in the rain, and in the rain under a roof; and on you:', fire)
+        print('ticks a fire lasts on open ground, in the rain, and in the rain under a roof; a strip of burning ground; and on you:', fire)
+        assert fire['stripRain'] == fire['stripClear'] == 150, 'a strip of burning ground should last as long in the rain as out of it'
         assert fire['rain'] < fire['clear'] * .5 and fire['rainRoofed'] == fire['clear'], 'rain should put out a fire in the open and not one under a roof'
         assert fire['onYouRain'] < fire['onYouClear'] * .5, 'rain should put you out too'
 
         # ---- lightning ----
         bolt = await h.ev("""(() => { const p = G.p, gy = flat(), tx = floor(p.x / T), out = {}, x = (tx + 12) * T + 4;
-          const strike = (k, o) => { sky(k, 2); G.fires.length = 0; G.dhaz.length = 0; strikeAt(x, gy * T, false, Object.assign({ warn: 3 }, o)); for (let i = 0; i < 6; i++) { calm(); tick(); } return G.fires.length; };
+          const strike = (k, o) => { sky(k, 2); firesOut(); G.dhaz.length = 0; strikeAt(x, gy * T, false, Object.assign({ warn: 3 }, o)); for (let i = 0; i < 6; i++) { calm(); tick(); } return FACE_FIRES.length; };
           out.storm = strike('thunder'); out.rod = strike('thunder', { rod: 1 }); out.clear = strike('clear'); G.drops.length = 0;
           // and left to itself a thunderstorm finds something to set light to
-          setSky('thunder'); G.fires.length = 0; G.thunT = 30; let lit = 0; for (let i = 0; i < 1500 && !lit; i++) { calm(1); G.thunT = Math.min(G.thunT, 60); G.enemies.length = 0; tick(); lit = G.fires.length; } out.byItself = lit > 0; G.fires.length = 0; G.dhaz.length = 0; return out; })()""")
+          setSky('thunder'); firesOut(); G.thunT = 30; let lit = 0; for (let i = 0; i < 1500 && !lit; i++) { calm(1); G.thunT = Math.min(G.thunT, 60); G.enemies.length = 0; tick(); lit = FACE_FIRES.length; } out.byItself = lit > 0; firesOut(); G.dhaz.length = 0; return out; })()""")
         print('fires lit by a bolt in a thunderstorm, on a lightning rod, and by a bolt out of a clear sky:', bolt)
         assert bolt['storm'] == 1 and bolt['rod'] == 0 and bolt['clear'] == 0 and bolt['byItself'], 'a thunderstorm bolt should start a fire, a rod should take it to earth'
 
