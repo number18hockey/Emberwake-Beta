@@ -33,7 +33,8 @@ async def main():
 
     # ---- scavenging: a bush, a chest, hunger ----
     await h.ev(SAFE)
-    b = await h.ev("(() => { const c = BR.chests.find(c => c.kind === 'bush' && !c.open); return [c.i, c.x, c.y]; })()")
+    # (a bush no echo is standing by: they go for what they can reach now, and one may strip the nearest bush first)
+    b = await h.ev("(() => { const free = c => c.kind === 'bush' && !c.open, far = c => !G.fighters.some(f => f !== G.p && !f.dead && Math.abs(f.x - c.x * T) < 200); const c = BR.chests.find(c => free(c) && far(c)) || BR.chests.find(free); return [c.i, c.x, c.y]; })()")
     await h.ev(PUT % (b[1], b[2])); await h.step(10, SAFE); await h.step(1, SAFE + "pressed.KeyF = true;"); await h.step(80, SAFE)
     berries = await h.ev("countItem('br_berries')")
     ok.append(('a bush gives berries', berries >= 2 and await h.ev("BR.chests[%d].open" % b[0])))
