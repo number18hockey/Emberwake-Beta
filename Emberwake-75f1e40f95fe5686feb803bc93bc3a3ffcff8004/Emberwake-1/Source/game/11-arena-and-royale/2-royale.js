@@ -25,9 +25,13 @@ const BR = {
   on: false, via: 'solo', code: 'open', phase: '', mi: '', seed: 0, t: 0, ro: [], nb: 0, lead: true, leaderId: '', people: new Map(),
   cd: 0, cdAt: 0, cdMax: 0, chests: [], open: new Set(), mine: new Set(), zones: [], storm: null, bots: new Map(), bk: [], bkSeq: 0, bkSeen: new Map(),
   dlSeen: new Set(), dl: null, place: 0, spec: null, specT: 0, overT: 0, winner: '', winMe: false, pois: [], segs: BR_BIOMES.slice(), segW: BRW / 5, mapCv: null,
-  note: '', noteT: 0, chan: null, inStorm: false, poiNow: '', mapOpen: false, total: 0, lastAlive: 0, lobbyT: 0, err: ''
+  note: '', noteT: 0, chan: null, inStorm: false, poiNow: '', mapOpen: false, total: 0, lastAlive: 0, lobbyT: 0, err: '',
+  // the Wilds (the third arena: 20-wilds-royale.js and on) keeps its own extra state here
+  wild: false, wildLand: false, matchType: 'unranked', rewarded: false, ring: { n: 0, at: 0 }, lastFall: 0, caves: [], nests: [], lakes: [], segX: [], bio: null, lastTeams: 0, pactWith: '', pactFrom: '', pactFromT: 0, teammate: '', pactSeen: false, leaveT: 0, dropsOut: [], dropSeq: 0, dropSeen: new Map(), tookOut: [], tookSeq: 0, tookSeen: new Map(), tileOut: new Map(), applying: false, fallen: [], fallenT: 0, show: null, gifts: [], giftAt: 0, feast: 0, hazard: null, hounds: 0, bounty: null, mobT: 0, botMobT: 0, menuTab: 'queue', menuScroll: 0, menuRows: 1, menuMsg: ''
 };
 const brOn = () => WORLD.royale && BR.on;
+// true only inside a match of the Wilds (the third arena): everything the Wilds changes in the shared game asks this first
+function wildOn() { return WORLD.royale && BR.wild; }
 const brTag = f => !f ? '' : f === G.p ? (NET.me || 'me') : f.botTag || f.peer || '';
 
 // ---------------- loot ----------------
@@ -40,7 +44,7 @@ function brItems() {
   defI('br_draught', { name: 'Heartroot Draught', type: 'brheal', heal: 60, cap: 100, use: 150, stack: 3, icon: icon('jug', v('#ffb0b0', '#e2483b', '#8f2233', '#4a1018', '#ffd0d0')), desc: 'Heals 60. Drink it somewhere safe.' });
   defI('br_shard', { name: 'Ward Shard', type: 'brheal', ward: 25, cap: 50, use: 80, stack: 6, icon: icon('stone', v('#e0f4ff', '#8fd0ff', '#4a8adf', '#22406a', '#ffffff')), desc: '+25 ward, up to 50. Ward takes blows before your health does.' });
   defI('br_ward', { name: 'Greatward Flask', type: 'brheal', ward: 50, cap: 100, use: 160, stack: 3, icon: icon('vial', v('#e0f4ff', '#5aa8ff', '#2a62c0', '#14305a', '#ffffff')), desc: '+50 ward, up to 100.' });
-  trItems(); trKitItems();
+  trItems(); trKitItems(); wBrItems();
 }
 function brRollTier(rare) { const r = Math.random(); return rare ? (r < .3 ? 2 : r < .78 ? 3 : 4) : (r < .4 ? 0 : r < .7 ? 1 : r < .89 ? 2 : r < .975 ? 3 : 4); }
 function brLoot(rare) {
@@ -55,8 +59,8 @@ function brLoot(rare) {
 }
 
 // ---------------- the island ----------------
-const brBio = x => BR.segs[clamp(floor(x / BR.segW), 0, BR.segs.length - 1)] || 'moor';
-function brRegionMix(x) {
+const brBio = x => BR.wild ? wBrBio(x) : BR.segs[clamp(floor(x / BR.segW), 0, BR.segs.length - 1)] || 'moor';
+function brRegionMix(x) { if (BR.wild) return wBrRegionMix(x);
   const BG = { moor: 'moor', thorn: 'moor', dunes: 'scoria', reach: 'reach', ash: 'ash' }, acc = { reach: 0, moor: 0, ash: 0, scoria: 0 }; let tot = 0;
   BR.segs.forEach((b, i) => { const c = (i + .5) * BR.segW, w = smooth(1 - (abs(x - c) - BR.segW * .3) / (BR.segW * .45)); if (w > .001) { acc[BG[b]] += w; tot += w; } });
   if (!tot) { acc.moor = 1; tot = 1; } for (const k in acc) acc[k] /= tot; return Object.entries(acc).filter(e => e[1] > .02);
@@ -84,7 +88,7 @@ function brTree(x, gy, b) {
   treeTops.set(x, { y: gy - th, kind, v: randi(0, 2), ph: rand(TAU) });
 }
 function genRoyale(seed) {
-  trRelics(); SEED = seed >>> 0; rng = mulberry32(SEED); DIM = 0; resetWorld(BRW, BRH); WORLD.arena = true; WORLD.royale = true; WORLD.endless = 0;
+  trRelics(); SEED = seed >>> 0; rng = mulberry32(SEED); DIM = 0; resetWorld(BRW, BRH); WORLD.arena = true; WORLD.royale = true; WORLD.endless = 0; BR.wildLand = false;
   SPAWN_X = BRW >> 1; SHRINE_X = SHRINE2_X = MINE_X = FORGE_X = GATE_X = SKY_X = BLADE_X = SPIRE_X = REACH_X = RUST_X = -100000; SHRINE_Y = SHRINE2_Y = GATE_Y = MINE_Y = FORGE_Y = SKY_Y = 0;
   BASE_Y = 74; DEEP_Y = 9999; DRIFT_Y = -99; VIL_Y = -999;
   const order = BR_BIOMES.slice(); for (let i = order.length - 1; i > 0; i--) { const j = randi(0, i); const q = order[i]; order[i] = order[j]; order[j] = q; }
@@ -301,7 +305,7 @@ function brNewBot(i, skill) {
 function brSkill() { const d = SETTINGS.diff; return d === 'hard' ? frand(.58, .82) : d === 'normal' ? frand(.42, .66) : frand(.3, .52); }
 // everyone runs this with the same seed, so everyone stands on the same island
 function brEnterMatch(mi, seed, roster, nb, size, tms, arena) {
-  const nick = G.nick, skin = G.skin; BR.arena = arena === 1 ? 1 : 0;
+  const nick = G.nick, skin = G.skin; BR.arena = arena === 1 ? 1 : 0; BR.wild = false;
   genRoyale(seed); freshSession(); G.nick = nick; G.skin = skin; G.clock = .08; updateSun(); BR.seed = seed; trSetTeams(roster, nb, size || 1, tms); trReset();
   Object.assign(BR, { mapHide: false, mi, seed, t: 0, ro: roster.slice(), nb, phase: 'drop', open: new Set(), mine: new Set(), bots: new Map(), bk: [], bkSeq: 0, bkSeen: new Map(), dlSeen: new Set(), dl: null, place: 0, spec: null, specT: 0, overT: 0, winner: '', winMe: false, chan: null, note: '', noteT: 0, inStorm: false, poiNow: '', mapOpen: false, lastAlive: 0 });
   BR.zones = brZones(seed); BR.storm = brStormAt(0); NET.deathN = 0; NET.kb = ['', 0]; NET.hits = []; NET.shots = []; NET.seen.clear();
@@ -320,7 +324,7 @@ function brSolo(size) {
 }
 
 // ---------------- the match, every tick ----------------
-function brTick() {
+function brTick() { if (BR.wild) return wBrTick();
   if (!BR.on) return;
   if (BR.phase === 'drop' || BR.phase === 'fight') BR.t++;
   BR.storm = brStormAt(max(0, BR.t - BR_DROP)); trSlag();
@@ -352,7 +356,7 @@ function brOver(w) {
   if (w && w !== G.p && G.p.dead) BR.spec = w;
 }
 // someone fell (called for every death this computer is in charge of)
-function brDeath(f, by) {
+function brDeath(f, by) { if (BR.wild) return wBrDeath(f, by);
   const ka = by ? by.name : '';
   // a Hollow One burning away at dawn is nobody's kill
   if (f.hunter && !by) return;
@@ -362,7 +366,7 @@ function brDeath(f, by) {
     BR.place = f.rk ? 0 : trTeamsAlive().size + 1; const items = brSpill(f); BR.dl = [NET.deathN, round(f.x + 3), round(f.y + 10), items]; brDropPile(f.x + 3, f.y + 10, items);
     G.kfeed.unshift({ a: ka, b: f.name, t: 0, me: 2, txt: by ? '' : trHazTxt() }); BR.spec = by && !by.dead && by !== f ? by : null; BR.specT = 0; f.brUse = null;
   } else if (f.brBot && !f.remote) {
-    if (by === G.p) { G.p.kills++; G.banner = { text: f.hunter ? 'PUT DOWN' : 'TAKEN DOWN', sub: f.name, t: 120 }; comboHit(true); sfx('newmove', 0); brFavor(f.hunter ? 20 : 35); } else if (by && by.brBot && !by.remote) by.kills++;
+    if (by === G.p) { G.p.kills++; brRewardKill(); G.banner = { text: f.hunter ? 'PUT DOWN' : 'TAKEN DOWN', sub: f.name, t: 120 }; comboHit(true); sfx('newmove', 0); brFavor(f.hunter ? 20 : 35); } else if (by && by.brBot && !by.remote) by.kills++;
     if (by && !f.hunter) trTookDown(by, f);
     const items = f.hunter ? [['br_ration', 1], ['br_salve', 1], ['br_scrap', 1]] : brSpill(f); brDropPile(f.x + 3, f.y + 10, items); f.brUse = null;
     BR.bk.push([f.botTag, brTag(by), ++BR.bkSeq, round(f.x + 3), round(f.y + 10), items]); if (BR.bk.length > 8) BR.bk.shift();
@@ -373,7 +377,7 @@ function brDeath(f, by) {
 
 // ---------------- your Waker in a match ----------------
 // runs before the usual fighter tick; returns false while you ride the barge
-function brInput(p, I) {
+function brInput(p, I) { if (BR.wild) return wBrInput(p, I);
   if (p.onBarge) { brRide(p); return false; }
   if (p.dead) return true;
   if (p.glide) { I.lp = I.rp = I.l = I.r = I.dodgeP = I.armP = I.jumpP = false; }
@@ -388,9 +392,9 @@ function brInput(p, I) {
   }
   return true;
 }
-function brAfter(p, I) { brGlide(p, I); brTickUse(p); }
+function brAfter(p, I) { if (BR.wild) return wBrAfter(p, I); brGlide(p, I); brTickUse(p); }
 // the camera follows whoever you are watching
-function brCamTarget() {
+function brCamTarget() { if (BR.wild) return wBrCamTarget();
   const p = G.p; if (!brOn()) return null;
   // on the barge: keep it near the top of the screen and show as much of the island below as fits
   if (!p.dead) return null; const s = BR.spec; return s && !s.gone ? s : null;
@@ -464,7 +468,7 @@ function brSteer(f, I, gx) {
   const below = tileAt(floor(cx / T), floor((f.y + f.h + 1) / T)); if (below === PLATFORM && br.chest && (br.chest.y + 1) * T > f.y + f.h + 12) I.down = true;
   if (G.time % 30 === (f.botI | 0) % 30) { if (I.md && abs(cx - br.lx) < 3) { if (++br.stuck >= 3) { if (br.chest) br.skip.add(br.chest.i); br.chest = null; br.roam = null; br.stuck = 0; } } else br.stuck = 0; br.lx = cx; }
 }
-function brBotThink(f) {
+function brBotThink(f) { if (BR.wild) return wBrBotThink(f);
   const B = f.ai, I = B.I, br = f.br;
   I.lp = I.rp = I.jumpP = I.dodgeP = I.armP = false; I.l = I.r = false;
   if (f.hunter) return trHunterThink(f);
@@ -554,4 +558,4 @@ function brBotThink(f) {
 }
 // echoes riding the barge leap when it passes the spot they chose
 function brBotRide(f) { if (BR.phase !== 'drop') brLeap(f); else brRide(f); }
-function brBotAfter(f) { brGlide(f, f.ai.I); brTickUse(f); }
+function brBotAfter(f) { if (BR.wild) return wBrBotAfter(f); brGlide(f, f.ai.I); brTickUse(f); }

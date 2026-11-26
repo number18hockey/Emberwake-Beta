@@ -104,7 +104,7 @@ function gearStats() {
   g.prot = round(g.prot); g.dr = g.prot / (g.prot + 60);
   return GEAR_C = g;
 }
-const gearOn = () => !WORLD.arena && !!G.p;
+const gearOn = () => (!WORLD.arena || wildOn()) && !!G.p;
 function gearMul(kind) {
   if (!gearOn()) return blessMul(kind); const g = gearStats(); let v = (g.cls[kind] !== undefined ? g.cls[kind] : 1) * blessMul(kind);
   if (kind === 'mine') v *= g.mine;

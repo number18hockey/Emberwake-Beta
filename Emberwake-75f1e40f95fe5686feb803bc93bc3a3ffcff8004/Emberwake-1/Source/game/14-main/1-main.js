@@ -77,7 +77,8 @@ function drawSky(c, cx, cy) {
   if (DIM) { drawDimSky(c, cx, cy); return; }
   const W = VS.W, H = VS.H, S = VS.s, dn = G.dn, t = WORLD.arena && !WORLD.royale ? .44 : G.clock;
   const ctx0 = clamp(floor((cx + VS.vw / 2) / T), 0, WW - 1), cty = (cy + VS.vh / 2) / T;
-  const under = WORLD.arena ? 0 : smooth((cty - SKYL[ctx0] - 6) / 22), deep = WORLD.arena ? 0 : smooth((cty - DEEP_Y + 10) / 16), high = WORLD.arena ? 0 : smooth((DRIFT_Y + 18 - cty) / 26);
+  // (the Wilds has caves under it, and a hot floor where the open world has its deep)
+  const wild = wildOn(), under = WORLD.arena && !wild ? 0 : smooth((cty - SKYL[ctx0] - 6) / 22), deep = wild ? smooth((cty - BR_HOT + 26) / 30) : WORLD.arena ? 0 : smooth((cty - DEEP_Y + 10) / 16), high = WORLD.arena ? 0 : smooth((DRIFT_Y + 18 - cty) / 26);
   const top = dn > .5 ? mixc(SKYC.duskT, SKYC.dayT, (dn - .5) * 2) : mixc(SKYC.nightT, SKYC.duskT, dn * 2), bot = dn > .5 ? mixc(SKYC.duskB, SKYC.dayB, (dn - .5) * 2) : mixc(SKYC.nightB, SKYC.duskB, dn * 2);
   G.underK = under; G.deepK = deep; skyTone(top, bot, dn);   // (the season, the weather and the world's own sky bend the colours)
   if (under < 1) {
@@ -111,7 +112,7 @@ function drawSky(c, cx, cy) {
     c.globalAlpha = under; c.fillStyle = rgb(mixc([22, 18, 36], [36, 14, 22], deep)); c.fillRect(0, 0, W, H); c.globalAlpha = 1;
     const ref = SKYL[ctx0] * T + 400, mid = cy + VS.vh / 2;
     if (deep < .99) { drawLayer(c, 'cave_far', BGTONE.cave[0], 0, .08, (ref - mid) * .08 * S, under * (1 - deep), cx, false, true); drawLayer(c, 'cave_mid', BGTONE.cave[1], 0, .2, (ref - mid) * .2 * S, under * (1 - deep) * .9, cx, false, true); }
-    if (deep > .01) drawLayer(c, 'deep_far', BGTONE.deep[0], 0, .1, ((DEEP_Y + 30) * T - mid) * .1 * S, deep, cx, false, true);
+    if (deep > .01) drawLayer(c, 'deep_far', BGTONE.deep[0], 0, .1, (((wild ? BR_HOT : DEEP_Y) + 30) * T - mid) * .1 * S, deep, cx, false, true);
   }
 }
 function arcTrail(f, cx, cy, face, a0, a1, r0, r1, alpha, hot, cold, sty) {
@@ -179,7 +180,7 @@ function renderView(al) {
   fireLights(cx, cy);
   for (const e of G.enemies) if (e.type === 'cinderling' && !e.dead && e.x > cx - 60 && e.x < cx + VS.vw + 60) addLight(e.x + 4, e.y + 4, .7, .32, .1);
   for (let k = kx0; k <= kx1; k++) { const bk = PROPB.get(k); if (bk) for (const q of bk) if (q.light && q.x > cx - 120 && q.x < cx + VS.vw + 120 && q.y > cy - 120 && q.y < cy + VS.vh + 120) { const fl = .93 + .07 * sin(G.time * .21 + q.x); addLight(q.x + (q.img.width >> 1), q.y + (q.lyo !== undefined ? q.lyo : q.img.height * .6), q.light[0] * fl, q.light[1] * fl, q.light[2] * fl); } }
-  if (!WORLD.arena) { stationLights(); curioLights(vx0, vx1); }
+  if (!WORLD.arena) { stationLights(); curioLights(vx0, vx1); } else if (wildOn()) stationLights();
   for (const o of tileObjs.values()) if (o.id === PEDESTAL && pedItem(o) && o.x > vx0 - 20 && o.x < vx1 + 20) addLight(o.x * T + 4, o.y * T - 6, .5, .45, .3);
   const pods = [];
   for (const [tx, tr] of treeTops) {
@@ -189,7 +190,7 @@ function renderView(al) {
   for (const pr of G.projs) { if (pr.type === 'wave') addLight(pr.x, pr.y, 1, .65, .3); else if (pr.type === 'bolt') addLight(pr.x, pr.y, .8, .35, .1); else if (pr.type === 'shock' || pr.type === 'bomb') addLight(pr.x, pr.y, .8, .45, .15); else if (pr.type === 'arrow') addLight(pr.x, pr.y, .45, .35, .12); }
   for (const f of G.fighters) {
     if (f.dead || f.x < cx - 60 || f.x > cx + VS.vw + 60) continue; const it = f === G.p && heldItem() || heldOf(f);
-    if (f === G.p) { if (!showP) continue; const pl = DIM === 7 && !G.flags.dawnLit && !(it && (it.id === 'torch' || it.glow)) && !gearHas('lastlight') ? .4 : 1; addLight(f.x + 3, f.y + 8, .66 * pl, .5 * pl, .32 * pl); if (it && it.id === 'torch') addLight(f.x + 3, f.y + 6, 1, .8, .46); if (WORLD.royale && BR.perks.includes('eyes')) { addLight(f.x + 3, f.y + 8, .7, .8, .9); addLight(f.x + 3 + f.face * 26, f.y + 6, .5, .6, .7); } }
+    if (f === G.p) { if (!showP) continue; const pl = DIM === 7 && !G.flags.dawnLit && !(it && (it.id === 'torch' || it.glow)) && !gearHas('lastlight') ? .4 : 1; if (wildOn()) addLight(f.x + 3, f.y + 8, .92, .74, .5); else addLight(f.x + 3, f.y + 8, .66 * pl, .5 * pl, .32 * pl); if (it && it.id === 'torch') addLight(f.x + 3, f.y + 6, 1, .8, .46); if (WORLD.royale && !BR.wild && BR.perks.includes('eyes')) { addLight(f.x + 3, f.y + 8, .7, .8, .9); addLight(f.x + 3 + f.face * 26, f.y + 6, .5, .6, .7); } }
     if (it && it.glow) addLight(f.x + 3, f.y + 8, .75, .45, .18); else if (it && it.cold || f.skin === 4) addLight(f.x + 3, f.y + 8, .2, .5, .55);
   }
   for (const n of G.npcs) addLight(n.x + 3 + n.face * 3, n.y + 3, 1, .72, .36);
@@ -211,7 +212,7 @@ function renderView(al) {
   for (const o of tileObjs.values()) if (o.id === PEDESTAL && o.x >= vx0 - 2 && o.x <= vx1 + 2 && o.y >= vy0 - 2 && o.y <= vy1 + 2) { w.drawImage(SPR.pedestal, o.x * T - 1, o.y * T - 4); const it = pedItem(o); if (it) { const ic = IT[it].icon; w.drawImage(ic, o.x * T + 4 - (ic.width >> 1), o.y * T - 14 + round(sin(G.time * .06) * 1.5)); } }
   for (let k = kx0; k <= kx1; k++) { const bk = PROPB.get(k); if (bk) for (const q of bk) if (q.rf !== RFRAME && q.x < cx + VS.vw && q.x + q.img.width > cx && q.y < cy + VS.vh && q.y + q.img.height > cy) { q.rf = RFRAME; w.drawImage(q.img, q.x, q.y); } }
   for (const [tx, tr] of treeTops) { if (tx < vx0 - 6 || tx > vx1 + 6) continue; const sw = round(sin(G.time * .02 + tr.ph) * 1.3); w.drawImage(treeTopCv(tr), tx * T + 4 - 23 + sw, tr.y * T + 1 - 31); }
-  if (!WORLD.arena) { drawPhys(w, al); drawStationsWorld(w); }
+  if (!WORLD.arena || wildOn()) { drawPhys(w, al); drawStationsWorld(w); }
   for (const d of G.drops) { const ic = IT[d.id].icon, x = lerp(d.px, d.x, al) + 3, y = lerp(d.py, d.y, al) + 3 + sin(d.t * .1), k = ic.width > 12 ? .7 : 1; w.drawImage(ic, round(x - ic.width * k / 2), round(y - ic.height * k / 2), round(ic.width * k), round(ic.height * k)); }
   if (WORLD.royale) brWorld(w, al, cx, cy);
   for (const q of G.parts) { if (q.glow) continue; w.fillStyle = q.col; if (q.rain) { const X = floor(q.x), Y = floor(q.y); w.globalAlpha = .6; w.fillRect(X, Y, 1, 3); w.fillRect(X + 1, Y - 3, 1, 3); continue; } w.globalAlpha = min(1, q.life / q.max * 2); w.fillRect(floor(q.x), floor(q.y), q.sz, q.sz); } w.globalAlpha = 1;
@@ -397,7 +398,7 @@ function drawTags(c, cx, cy, al) {
   for (const f of G.fighters) {
     if (f === G.p || f.dead || f.yielded || (f.onBarge && !WORLD.royale)) continue; const x = lerp(f.px, f.x, al) + 3, y = lerp(f.py, f.y, al) - 8;
     if (x < cx - 20 || x > cx + VS.vw + 20) continue;
-    const col = (WORLD.royale && trTagCol(f)) || (f.remote ? '#8ff5e6' : f.echoBot ? '#d8d4e6' : f.skin === 4 ? '#c9fff6' : '#fff'), X = ux(x), Y = uy(y) - 10;
+    const col = (WORLD.royale && !BR.wild && trTagCol(f)) || (f.remote ? '#8ff5e6' : f.echoBot ? '#d8d4e6' : f.skin === 4 ? '#c9fff6' : '#fff'), X = ux(x), Y = uy(y) - 10;
     if (!f.isBoss) { textC(c, f.name, X, Y, col, 1, textO); if (f.away) textC(c, 'away', X, Y - 8, '#8b8fa3', 1, textO); c.fillStyle = INK; c.fillRect(X - 9, Y + 9, 18, 3); c.fillStyle = f.remote ? '#4fd8c8' : '#e2483b'; c.fillRect(X - 8, Y + 10, round(16 * clamp(f.hp / f.maxhp, 0, 1)), 1); }
   }
   const o = !G.dialog && !UI.open && nearestInteract();
@@ -426,11 +427,11 @@ function tickCam() {
   G.zoom += ((G.link ? G.zoomT : 1) - G.zoom) * .12; if (abs(G.zoom - 1) < .004) G.zoom = 1;
 }
 function refreshFoes() {
-  const fs = G.fighters;
+  const fs = G.fighters, wild = wildOn();
   for (const f of fs) {
     const arr = f.foes; arr.length = 0; if (f.remote) continue;
     for (const o of fs) if (o !== f && !o.dead && !o.noHit && o.team !== f.team) arr.push(o);
-    if (f.team === 'p') for (const e of G.enemies) if (!e.dead) arr.push(e);
+    if (f.team === 'p' || wild && (f === G.p || f.brBot)) for (const e of G.enemies) if (!e.dead) arr.push(e);
   }
 }
 function tick() {
@@ -439,10 +440,12 @@ function tick() {
   if (G.dialog && !WORLD.arena && !netLive()) { tickParts(); tickStory(); tickCam(); endTick(); return; }
   coopTick();
   refreshFoes(); tickPlayer();
-  for (const f of G.fighters) { if (f === G.p) continue; if (f.remote) { if (f.coop || f.ghostH) coopReplay(f); else tickRemote(f); } else if (f.ai) { if (f.onBarge) brBotRide(f); else { tickFighter(f, f.brBot ? brBotThink(f) : f.isClone ? cloneThink(f) : aiThink(f)); if (f.brBot) brBotAfter(f); } } }
+  for (const f of G.fighters) { if (f === G.p) continue; if (f.remote) { if (f.coop || f.ghostH) coopReplay(f); else tickRemote(f); } else if (f.ai) { if (f.onBarge) brBotRide(f); else if (f.brBot && BR.wild && BR.t < BR_HOLD && BR.phase === 'drop') brHover(f); else { tickFighter(f, f.brBot ? brBotThink(f) : f.isClone ? cloneThink(f) : aiThink(f)); if (f.brBot) brBotAfter(f); } } }
   if (G.duel) tickDuel();
-  tickEnemies(); spawnTick(); tickDrops(); tickProjs(); tickParts(); tickStory(); tickStructs(); if (!netGuest()) tickLiquids(); tickCam(); ambient(); ambientMore(); wxParticles(); tickWeatherWays(); atmoTick();
+  tickEnemies(); spawnTick(); tickDrops(); tickProjs(); tickParts(); tickStory(); tickStructs(); if (!netGuest() || wildOn()) tickLiquids(); tickCam(); ambient(); ambientMore(); wxParticles(); tickWeatherWays(); atmoTick();
   if (!WORLD.arena) { tickFalling(); tickFelled(); tickRubble(); tickDoors(); tickDrill(); tickStations(); if (!G.away) tickHunger(); tickBrews(); if (!netGuest()) tickRegrow(); tickDims(); tickLairs(); tickBless(); tickFurniture(); tickMeal(); if (G.time % 20 === 0) { mapReveal(); G.magR = hasUtil('magnet') ? 76 : 36; } }
+  // the Wilds is a whole land: what falls, burns, opens and is made there goes on as in the open world
+  if (wildOn()) { tickFalling(); tickFelled(); tickRubble(); tickDoors(); tickDrill(); tickStations(); tickHunger(); tickBrews(); }
   if (WORLD.arena) arenaTick();
   if (G.combo.t > 0 && --G.combo.t <= 0) { G.combo.n = 0; G.combo.pts = 0; }
   if (G.slowT > 0) G.slowT--; if (G.selT > 0) G.selT--;
@@ -465,7 +468,7 @@ function oops(where, e) {
   if (OOPS.n % 120 === 0) { try { UI.held = null; UI.open = null; UI.job = null; UI.stn = null; G.link = null; G.projs = G.projs.filter(q => isFinite(q.x) && isFinite(q.y)); G.drops = G.drops.filter(d => IT[d.id] && IT[d.id].icon && isFinite(d.x) && isFinite(d.y)); G.enemies = G.enemies.filter(q => isFinite(q.x) && isFinite(q.y)); inv = inv.map(q => q && IT[q.id] ? q : null); G.hitstop = 0; } catch (_) { } }
   try { ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.globalAlpha = 1; ctx.globalCompositeOperation = 'source-over'; actx.globalCompositeOperation = 'source-over'; actx.globalAlpha = 1; fctx.globalAlpha = 1; rigX.setTransform(1, 0, 0, 1, 0, 0); } catch (_) { }
 }
-function safeTick() { try { tick(); } catch (e) { oops('tick', e); for (const k in pressed) pressed[k] = false; mouse.lp = mouse.rp = mouse.hp = false; } }
+function safeTick() { try { tick(); } catch (e) { oops('tick', e); for (const k in pressed) pressed[k] = false; mouse.lp = mouse.rp = mouse.hp = false; if (G.proxy) { G.p = G.proxy; G.proxy = null; G.proxyHits.length = 0; sfxHush = false; } } }
 function frame(now) { requestAnimationFrame(frame); try { frameStep(now); } catch (e) { oops('frame', e); } }
 function frameStep(now) {
   // alone, a slow moment just slows the game; with friends here it must keep time, so it catches up
@@ -481,6 +484,7 @@ function frameStep(now) {
     G.time++; if (G.state !== 'play') { G.clock = (G.clock + 1 / 20000) % 1; atmoTick(); } updateSun(); tickParts(); const c = G.cam; c.px = c.x; c.py = c.y;
     if (G.state !== 'play' && G.state !== 'intro') { c.x += .3; if (WORLD.endless) { streamTo(c.x + VS.vw / 2); if (c.x > (SPAWN_X + 600) * T) c.x = c.px = (SPAWN_X - 200) * T; } else if (c.x > WW * T - VS.vw - 2) c.x = c.px = 0; const hx = clamp(floor((c.x + VS.vw / 2) / T), 0, WW - 1); c.y += (camY(heights[hx] * T - VS.vh * .62) - c.y) * .02; c.x = camX(c.x); }
     if (G.state === 'intro') G.introT++;
+    if (G.state === 'title') BR.wild = false;   // the Wilds is left behind with its screens: from the home page everything is the Trials' and the Ring's again
     if (BR.on && G.state === 'brlobby') brLobbyTick(); openTick();
     G.shake *= .86; G.flash *= .88; acc = 1;
     if (WORLD.arena && G.state === 'play' && G.time % 3 === 0) netSend();
@@ -515,7 +519,7 @@ function freshSession() {
     leads: new Set(), pin: null, found: new Set(), linksKnown: new Set(), fam: {}, arts: new Set(), artk: {}, respawn: null, fires: [], smokes: [], stuck: [], link: null, zoom: 1, zoomT: 1, armT: 0, linkBanner: null, leadDone: null, cine: null, bars: 0,
     falling: [], felled: [], rubble: [], autoDoors: [], regrow: [], lairs: new Set(), bless: null, blessUsed: {}, ev: null, dev: null, devT: 2400, evClock: undefined, dhaz: [], echoes: new Set(), beasts: {}, gear: { head: null, body: null, legs: null, feet: null, off: null }, trink: [], meal: null, brew: null, cloneTape: [], rest: 0, nearWarm: false, nearFount: false, mast: {}, pairsKnown: new Set(), drill: null, days: yearStart(), wx: null, wxT: undefined, curios: {}, sing: null, way: null, mood: 0, biomeN: '', biomeS: '', food: 100, worn: new Set(), spy: false, lampOff: false, quality: {}, reqs: null, seen: null, hintT: -999
   });
-  for (const k in YACC) delete YACC[k]; INV_N = packCap(); mapReset(); FIRE_DROPS.length = 0;
+  for (const k in YACC) delete YACC[k]; INV_N = packCap(); mapReset(); FIRE_DROPS.length = 0; G.proxy = null; G.proxyHits.length = 0;
   UI.open = null; UI.held = null; UI.scroll = 0; acc = 0;
 }
 function beginPlay(fresh) {
@@ -551,7 +555,7 @@ addEventListener('keydown', e => {
   if (G.state === 'brlobby') { if (k === 'Escape') { brLeave(); sfx('ui'); } return; }
   if (G.state !== 'play') { if (k === 'Escape') { if (G.state === 'accounts') { if (!ACCOUNT.active) return; ACCOUNT.form = 'list'; ACCOUNT.loginId = null; } G.state = ['create', 'wcopy', 'wpaste'].includes(G.state) ? 'worlds' : 'title'; if (G.state === 'title' && COOP.role) coopLeave(); sfx('ui'); } return; }
   if (G.dialog) { if (k === 'KeyF' || k === 'Space' || k === 'Enter' || k === 'KeyE') { dialogAdvance(); pressed[k] = false; } return; }
-  if (k === 'Escape' || k === 'KeyP') { if (UI.open) { closeUI(); sfx('ui'); } else toggleUI('pause'); return; }
+  if (k === 'Escape' || k === 'KeyP' && !wildOn()) { if (UI.open) { closeUI(); sfx('ui'); } else toggleUI('pause'); return; }
   if ((k === 'Enter' || k === 'NumpadEnter') && chatKey()) return;
   if (k === 'KeyM' && WORLD.royale) { if (G.p && G.p.onBarge) BR.mapHide = !BR.mapHide; else BR.mapOpen = !BR.mapOpen; sfx('ui'); return; }
   if (k === 'KeyO' || k === 'KeyM' && (WORLD.arena || !hasUtil('fieldmap'))) { muted = !muted; G.banner = { text: muted ? 'SOUND OFF' : 'SOUND ON', sub: '[O] toggles sound', t: 0 }; return; }
@@ -560,6 +564,9 @@ addEventListener('keydown', e => {
   if (k === 'KeyG' && !UI.open) { dropSelected(e.shiftKey); return; }
   if (k.startsWith('Digit')) { const n = +k[5], i = n === 0 ? 9 : n - 1; if (i < hotN()) { G.sel = i; G.selT = 120; if (G.p.atk && G.p.atk.phase < 2) endAttack(G.p); } return; }
   if (WORLD.royale && k === 'KeyE') { toggleUI('inv'); return; }
+  // (handled here, not in the match tick, so the key that opens a panel also closes it)
+  if (wildOn() && k === 'KeyB') { toggleUI('book'); return; }
+  if (wildOn() && k === 'KeyK') { if (UI.open === 'knap' || hasItem('rock') || hasItem('flint')) toggleUI('knap'); else { brSay('PICK UP A PEBBLE OR FLINT TO KNAP', 110); sfx('deny'); } return; }
   if (WORLD.arena) return;
   if (k === 'KeyE' || k === 'Tab') toggleUI('inv'); else if (k === 'KeyJ') toggleUI('journal');
   else if (k === 'KeyK' && (hasItem('rock') || hasItem('flint'))) toggleUI('knap');
@@ -580,6 +587,7 @@ cv.addEventListener('contextmenu', e => e.preventDefault());
 cv.addEventListener('wheel', e => {
   e.preventDefault(); const d = sign(e.deltaY);
   if (G.state === 'worlds' || G.state === 'accounts') { UI.scroll = max(0, UI.scroll + d); return; }
+  if (G.state === 'brform' && BR.wild && BR.menuTab !== 'queue') { BR.menuScroll = clamp(BR.menuScroll + d, 0, max(0, BR_LOOKS.length - BR.menuRows)); return; }
   if (G.state !== 'play') return;
   if (UI.open === 'map') mapZoom(d);
   else if (UI.open) UI.scroll = max(0, UI.scroll + d * (UI.open === 'inv' ? 1 : 2));

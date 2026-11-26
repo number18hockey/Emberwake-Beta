@@ -88,18 +88,18 @@ bindTouchButton('attackHeavy', () => { if (touchPlay()) { touchAim = true; mouse
 bindTouchButton('mobileJump', () => { if (touchPlay()) virtualKey('Space', true); }, () => virtualKey('Space', false));
 // USE is the F key, and it can be held: rekindling a fallen teammate in the Trials takes a held F
 bindTouchButton('mobileUse', () => { if (touchPlay()) virtualKey('KeyF', true); }, () => virtualKey('KeyF', false));
-for (const [id, code] of [['mobilePack', 'KeyE'], ['mobileMap', 'KeyM'], ['mobileHeal', 'KeyH'], ['mobileMenu', 'Escape']]) bindTouchButton(id, () => { if (touchPlay()) tapKey(code); });
+for (const [id, code] of [['mobilePack', 'KeyE'], ['mobileMap', 'KeyM'], ['mobileHeal', 'KeyH'], ['mobilePact', 'KeyP'], ['mobileMenu', 'Escape']]) bindTouchButton(id, () => { if (touchPlay()) tapKey(code); });
 bindTouchButton('mobileClose', () => { if (UI.open) { closeUI(); sfx('ui'); } });
 // CHAT is the ENTER key of a world shared with friends: it opens the line to type on, under the finger's own press so that the phone's keyboard comes up with it
 bindTouchButton('mobileChat', () => { if (touchPlay() && !COOP.chatOpen && chatKey()) drawChatBox(ctx); });
-// (PACT is in the page too, and stays unseen until the Wilds bring pacts)
-const touchMapBtn = document.getElementById('mobileMap'), touchPackBtn = document.getElementById('mobilePack'), touchChatBtn = document.getElementById('mobileChat');
+// (PACT is the P key of a match in the Wilds, and is seen only there)
+const touchPactBtn = document.getElementById('mobilePact'), touchMapBtn = document.getElementById('mobileMap'), touchPackBtn = document.getElementById('mobilePack'), touchChatBtn = document.getElementById('mobileChat');
 function syncMobileControls() {
   if (!mobileDevice) return; // (a mouse's clicks and keys are its own business)
   const play = G.state === 'play' && !G.dialog && !G.cine, visible = play && !UI.open;
   mobileControls.classList.toggle('visible', visible); mobileControls.classList.toggle('panel', play && !!UI.open); mobileControls.setAttribute('aria-hidden', String(!play));
   // no button for what would do nothing: there is no pack in the Cinder Ring, no map there or before you have drawn one, and nobody to talk to alone
-  if (visible) { const ring = WORLD.arena && !WORLD.royale; touchPackBtn.classList.toggle('off', ring); touchMapBtn.classList.toggle('off', ring || (!WORLD.royale && !hasUtil('fieldmap'))); touchChatBtn.classList.toggle('off', !COOP.role); }
+  if (visible) { const ring = WORLD.arena && !WORLD.royale; touchPackBtn.classList.toggle('off', ring); touchMapBtn.classList.toggle('off', ring || (!WORLD.royale && !hasUtil('fieldmap'))); touchChatBtn.classList.toggle('off', !COOP.role); touchPactBtn.classList.toggle('off', !wildOn()); }
   if (!visible && (stickPointer !== null || mouse.l || mouse.r)) clearMobileInput();
   if (visible && touchAim) mobileAim();
 }

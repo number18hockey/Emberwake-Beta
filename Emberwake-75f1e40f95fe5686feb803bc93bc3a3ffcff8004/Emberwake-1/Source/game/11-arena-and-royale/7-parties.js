@@ -22,7 +22,7 @@
 const OPENB = { on: false, conns: [], list: new Map(), sayT: 0, goneSaid: true, retryT: 0 };
 const BR_HUMANS = 6;
 const openTopic = () => 'emberwake/v3/trials-open/' + NETV;
-const brMaxG = () => COOP.br && !COOP.ring ? BR_HUMANS - 1 : MAXG;
+const brMaxG = () => COOP.br && !COOP.ring ? (BR.wild ? WBR_PARTY : BR_HUMANS) - 1 : MAXG;
 const openUsable = () => !(NET.room && !window.EW_BROKERS) && netOK();
 function openStart() {
   if (OPENB.on || !openUsable()) return; OPENB.on = true; OPENB.list.clear();
@@ -42,7 +42,7 @@ function openSay(gone) {
 }
 // every frame while the Trials' menus are up
 function openTick() {
-  const want = BR.on || G.state === 'brform' || G.state === 'bropen'; if (!want) { if (OPENB.on) { if (!OPENB.goneSaid) { openSay(true); OPENB.goneSaid = true; } openStop(); } return; }
+  const want = !BR.wild && (BR.on || G.state === 'brform' || G.state === 'bropen'); if (!want) { if (OPENB.on) { if (!OPENB.goneSaid) { openSay(true); OPENB.goneSaid = true; } openStop(); } return; }
   if (!OPENB.on) { if (G.state === 'brlobby' || G.state === 'bropen' || G.state === 'brform') openStart(); return; }
   const now = performance.now(); for (const C of OPENB.conns) if (C.tick) C.tick(now);
   if (now - OPENB.retryT > 6000) { OPENB.retryT = now; const L = sigBrokers().slice(0, 4); OPENB.conns.forEach((C, i) => { if (C.closed) OPENB.conns[i] = mqttOpen(L[i], i, { topics: [openTopic()], on: openIn }); }); }

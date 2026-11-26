@@ -47,7 +47,8 @@ const TR_RELICS = { sword: ['EMBERTONGUE', ['sear', 'kindle']], spear: ['LONGWAT
 Object.assign(BR, { perks: [], offer: null, echoes: [], st: {}, windUsed: false });
 
 // ---------------- perks ----------------
-const trHas = (f, k) => !!f && (f === G.p ? BR.perks.includes(k) : !!(f.perks && f.perks.includes(k)));
+// (perks, amps and the crowd's favor belong to the Trials: in the Wilds nobody has any)
+const trHas = (f, k) => !BR.wild && !!f && (f === G.p ? BR.perks.includes(k) : !!(f.perks && f.perks.includes(k)));
 function trApplyPerks(f) {
   f.spd = trHas(f, 'fleet') ? 1.1 : 1; f.bb = trHas(f, 'steady') ? 3 : 0; f.noRushCost = trHas(f, 'steady'); f.dodgeCost = trHas(f, 'quick') ? .5 : 1;
 }
@@ -105,7 +106,7 @@ const trRelicIds = () => Object.keys(TR_RELICS).map(s => 'rel_' + s).filter(id =
 const trSockets = f => trHas(f, 'tinker') ? 3 : 2;
 // every amp on the weapon a fighter is using
 function trAmps(f, W) {
-  if (!WORLD.royale || !W) return null; const own = f === G.p ? (inv[G.sel] && inv[G.sel].id === W.id ? inv[G.sel].amps : null) : f.amps;
+  if (!WORLD.royale || BR.wild || !W) return null; const own = f === G.p ? (inv[G.sel] && inv[G.sel].id === W.id ? inv[G.sel].amps : null) : f.amps;
   const a = [...(W.amps0 || []), ...(own || [])]; return a.length ? a : null;
 }
 // what the amps change before the blow is thrown
@@ -117,6 +118,7 @@ function trAmpStart(a) {
 }
 // and what they do when it lands
 function trAmpHit(a, e, edge, dmg, hx, hy) {
+  if (BR.wild) return;
   const f = a.f, A = a.amps, first = !a.ampHit; if (f === G.p && first) { const S = BR.st; S.dealt = (S.dealt | 0) + dmg; if (a.beat === 2) S.crisp = (S.crisp | 0) + 1; if (edge > 0) S.clean = (S.clean | 0) + 1; }
   a.ampHit = true; if (!A || !first || e.dead) return;
   if (A.includes('sear') && a.beat > 0) applyStatus(e, 'burn', f, { d: 96 });
@@ -176,6 +178,6 @@ function trTitle() {
 }
 function trCareer() { try { return Object.assign({ n: 0, w: 0, k: 0, best: 0 }, JSON.parse(localStorage.getItem('ew_trials') || '{}')); } catch (e) { return { n: 0, w: 0, k: 0, best: 0 }; } }
 function trCareerSave() {
-  if (BR.st.saved) return; BR.st.saved = true; const C = trCareer(); C.n++; if (BR.winMe) C.w++; C.k += G.p.kills | 0; const pl = BR.place || 1; if (!C.best || pl < C.best) C.best = pl;
+  if (BR.st.saved) return; BR.st.saved = true; BR.rewarded = false; brRewardMatch(); const C = trCareer(); C.n++; if (BR.winMe) C.w++; C.k += G.p.kills | 0; const pl = BR.place || 1; if (!C.best || pl < C.best) C.best = pl;
   try { localStorage.setItem('ew_trials', JSON.stringify(C)); } catch (e) { }
 }

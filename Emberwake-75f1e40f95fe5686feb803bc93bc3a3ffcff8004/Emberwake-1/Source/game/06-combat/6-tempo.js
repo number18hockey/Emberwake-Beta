@@ -143,7 +143,7 @@ function tryClash(f, dmg, fromX, o) {
   sparks(hx, hy, 14, a.face, 3.2, ['#ffffff', '#fff1a8', '#8ff5e6']); G.trails.push({ kind: 'ring', x: hx, y: hy, r: 16, life: 8, max: 8 }, { kind: 'hit', x: hx, y: hy, life: 7, max: 7, a: 0, big: true });
   numPop(fx, f.y - 12, 'CLASH', '#8ff5e6'); fsx(f, 'clash', 0);
   if (f === G.p || by === G.p) { G.hitstop = max(G.hitstop, 6); addShake(3.5); }
-  if (WORLD.royale) { if (f === G.p) BR.st.clash = (BR.st.clash | 0) + 1; if (by && !by.dead && (trAmps(f, a.W) || []).includes('thorn')) strike(f, by, 10, a.face * 2, -1, { stop: 2 }); }
+  if (WORLD.royale && !BR.wild) { if (f === G.p) BR.st.clash = (BR.st.clash | 0) + 1; if (by && !by.dead && (trAmps(f, a.W) || []).includes('thorn')) strike(f, by, 10, a.face * 2, -1, { stop: 2 }); }
   if (f === G.p) { comboHit(true); if (WORLD.royale) brFavor(6); tempoHint('clash', 'CLASH. Your blow met theirs and turned it aside. Time a swing into an attack and it cannot hurt you.'); if (G.drill) drillNote('clash'); }
   return true;
 }

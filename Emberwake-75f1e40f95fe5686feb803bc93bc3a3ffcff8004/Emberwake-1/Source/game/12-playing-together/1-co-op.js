@@ -146,7 +146,7 @@ function onMsg(P, m, raw) {
   const H = netHost();
   // the world is still being built from the host's welcome (or a rift crossing): keep what arrives, in order, for a moment
   if (!H && COOP.entering && m.t !== 'bye' && m.t !== 'kick') { COOP.backlog.push([P, m, raw]); return; }
-  if ((COOP.br || m.t === 'brw') && brRtcMsg(P, m)) return;
+  if ((COOP.br || m.t === 'brw' || m.t === 'wbrw') && brRtcMsg(P, m)) return;
   switch (m.t) {
     case 'hello': if (H && !P.ok && COOP.br) { brRtcWelcome(P, m); return; } if (!H || P.ok) return; P.name = cleanName(m.n) || P.name || 'WAKER'; P.skin = clamp(m.sk | 0, 0, 3); P.hat = clamp(m.ht | 0, 0, 3); hostWelcome(P); return;
     case 'welcome': if (H || COOP.joined) return; guestEnter(m); return;
@@ -511,10 +511,10 @@ function netGhostShot(m) {
   spawnProj({ type: m.k, owner: null, ghost: true, net: true, x: num(m.x), y: num(m.y), vx: clamp(num(m.vx), -16, 16), vy: clamp(num(m.vy), -16, 16), g: clamp(num(m.g), 0, .5), r: clamp(num(m.r, 3), 1, 14), life: clamp(num(m.l, 120), 1, 400), boom: m.b | 0, dmg: 0 });
 }
 // things you throw down for a friend: they are there for everyone, until someone picks them up
-function netDropOut(d) { if (!COOP.role || COOP.applying || !d) return; d.uid = COOP.me + ':' + (++COOP.uid); sendAll({ t: 'drop', u: d.uid, id: d.id, n: d.n, x: r1(d.x), y: r1(d.y), vx: r2(d.vx), vy: r2(d.vy) }); }
+function netDropOut(d) { if (wildOn() || !COOP.role || COOP.applying || !d) return; d.uid = COOP.me + ':' + (++COOP.uid); sendAll({ t: 'drop', u: d.uid, id: d.id, n: d.n, x: r1(d.x), y: r1(d.y), vx: r2(d.vx), vy: r2(d.vy) }); }
 function netDropIn(m) { if (!IT[m.id] || !(m.n > 0) || typeof m.u !== 'string' || G.drops.some(d => d.uid === m.u)) return; const x = num(m.x), y = num(m.y); G.drops.push({ id: m.id, n: clamp(m.n | 0, 1, IT[m.id].stack), x, y, px: x, py: y, w: 6, h: 6, vx: num(m.vx), vy: num(m.vy), t: 0, delay: 40, onGround: false, uid: m.u }); }
 function netTakeIn(m) { for (let i = G.drops.length - 1; i >= 0; i--) if (G.drops[i].uid === m.u) G.drops.splice(i, 1); }
-function netTook(d) { if (COOP.role && d.uid) sendAll({ t: 'take', u: d.uid }); }
+function netTook(d) { if (wildOn()) { brTook(d); return; } if (COOP.role && d.uid) sendAll({ t: 'take', u: d.uid }); }
 
 // ---------------- the sky and the clock follow the host ----------------
 function worldState() { return { t: 'world', c: r2(G.clock * 1e4) / 1e4, ev: G.ev || null, dev: G.dev || null, devT: G.devT | 0, d: r2(worldDays()), wx: G.wx ? [G.wx.k, G.wx.t | 0, r2(G.wx.a)] : 0 }; }

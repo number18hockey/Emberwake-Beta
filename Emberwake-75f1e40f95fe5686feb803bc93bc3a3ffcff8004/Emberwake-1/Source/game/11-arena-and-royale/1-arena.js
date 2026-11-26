@@ -84,7 +84,7 @@ function netApply(f, s) {
 }
 // someone else's blow landed on my Waker, on their screen
 function netTakeHit(from, h) {
-  const p = G.p; if (p.dead || NET.roundOver || p.onBarge) return;
+  const p = G.p; if (p.dead || NET.roundOver || p.onBarge || wildOn() && p.noHit) return;   // (in the Wilds nobody can be struck while still in the sky)
   if (typeof h[7] === 'string' && WORLD.royale) from = BR.bots.get(h[7]) || from;
   if (WORLD.royale && from && from.team === p.team) return;   // no blows between teammates
   const x = Array.isArray(h[6]) ? h[6] : null;

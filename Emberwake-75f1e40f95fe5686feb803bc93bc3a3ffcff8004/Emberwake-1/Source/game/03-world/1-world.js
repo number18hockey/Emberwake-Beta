@@ -72,6 +72,7 @@ const liqAt = (px, py) => { const x = floor(px / T), y = floor(py / T); return i
 function setTile(x, y, id) {
   if (!inW(x, y)) return; const i = y * WW + x, old = tiles[i]; if (old === id) return;
   tiles[i] = id; if (MODS_ON) { MODS.set(i, id); netTile(i); } if (CHIP.size) CHIP.delete(i);
+  if (wildOn()) brTileChanged(i);
   if (TP[old].dyn) tileObjs.delete(i); if (TP[id].dyn) tileObjs.set(i, { x, y, id });
   for (const [dx, dy] of [[0, 0], [1, 0], [-1, 0], [0, 1], [0, -1]]) { const c = chunks.get(floor((y + dy) / CH) * 8192 + floor((x + dx) / CH)); if (c) c.dirty = true; }
   if (MODS_ON && !TP[id].liquid) wakeLiquid(x, y);
@@ -599,7 +600,7 @@ function computeLight(x0, y0, w, h, sun) {
       if (ty < 0) { r = s0; g = s1; b = s2; }
       else if (tx >= 0 && tx < WW && ty < WH) {
         const k = ty * WW + tx, p = TP[tiles[k]];
-        if (p.full) d = .72; else { if (p.liquid === 1) d = .8; if ((!walls[k] || WSKY[walls[k]]) && ty < SKYL[tx]) { r = s0; g = s1; b = s2; } else if (ty >= DEEP_Y) { r = .17; g = .07; b = .06; } }
+        if (p.full) d = .72; else { if (p.liquid === 1) d = .8; if ((!walls[k] || WSKY[walls[k]]) && ty < SKYL[tx]) { r = s0; g = s1; b = s2; } else if (ty >= DEEP_Y) { r = .17; g = .07; b = .06; } else if (wildOn()) { if (ty > BR_HOT - 24) { r = .32; g = .11; b = .05; } else { r = .135; g = .14; b = .19; } } }
         if (p.light) { const L = p.light; if (L[0] > r) r = L[0]; if (L[1] > g) g = L[1]; if (L[2] > b) b = L[2]; }
       } else d = .5;
       lr[i] = r; lg[i] = g; lb[i] = b; ld[i] = d;

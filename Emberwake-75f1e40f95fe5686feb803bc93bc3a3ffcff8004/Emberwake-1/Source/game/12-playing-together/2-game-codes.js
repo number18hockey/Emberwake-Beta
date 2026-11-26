@@ -212,7 +212,7 @@ function sigGuestMsg(m) {
   if (m.t === 'host') {
     if (m.b) P.bm = m.b | 0; P.rz = !!m.z; if (COOP.joined) return;
     if ((m.v | 0) !== NETV) { sigGuestFail(versionClash(m.gv)); return; }
-    if (!SIG.host) { SIG.host = m; P.name = cleanName(m.n) || 'HOST'; COOP.hostName = P.name; COOP.joinBR = m.mode === 'br'; COOP.joinWorld = String(m.w || '').slice(0, 30); SIG.stage = 'found'; COOP.note = 'Found ' + P.name + (COOP.joinBR ? "'s battle royale lobby" : "'s world" + (COOP.joinWorld ? ', ' + COOP.joinWorld : '')) + '. Connecting...'; SIG.offerT = 0; }
+    if (!SIG.host) { SIG.host = m; P.name = cleanName(m.n) || 'HOST'; COOP.hostName = P.name; COOP.joinBR = m.mode === 'br' || m.mode === 'wilds'; COOP.joinWorld = String(m.w || '').slice(0, 30); SIG.stage = 'found'; COOP.note = 'Found ' + P.name + (m.mode === 'wilds' ? "'s lobby for THE WILDS" : COOP.joinBR ? "'s battle royale lobby" : "'s world" + (COOP.joinWorld ? ', ' + COOP.joinWorld : '')) + '. Connecting...'; SIG.offerT = 0; }
   } else if (m.g === SIG.myId) {
     if (m.t === 'answer' && !SIG.answered && typeof m.sdp === 'string') {
       SIG.answered = true; SIG.stage = 'link'; P.connT = performance.now(); if (m.b) P.bm = m.b | 0; P.rz = !!m.z;
@@ -233,7 +233,7 @@ function sigTick() {
   if (COOP.peers.size) rlyTick(now);
   if (SIG.room && SIG.roomDirty && now - (SIG.roomT || 0) > RLY_ROOM.ms) sigRoomPush();
   if (SIG.role === 'host') {
-    if (now - SIG.sayT > 2000) { SIG.sayT = now; const n = [...COOP.peers.values()].filter(P => P.ok).length; sigSend({ t: 'host', n: coopName(), mode: SIG.mode || 'world', w: SIG.mode === 'br' ? '' : WORLD.name, v: NETV, gv: GAME_VERSION, full: n >= brMaxG() ? 1 : 0 }); }
+    if (now - SIG.sayT > 2000) { SIG.sayT = now; const n = [...COOP.peers.values()].filter(P => P.ok).length; sigSend({ t: 'host', n: coopName(), mode: SIG.mode || 'world', w: SIG.mode === 'br' || SIG.mode === 'wilds' ? '' : WORLD.name, v: NETV, gv: GAME_VERSION, full: n >= brMaxG() ? 1 : 0 }); }
     for (const [g, P] of SIG.guests) if (COOP.peers.get(P.id) !== P && !P.ok && now - P.connT > 30000) SIG.guests.delete(g);
     if (!SIG.viaRoom && NET.room && !window.EW_BROKERS && !COOP.peers.size) { const c = SIG.code, md = SIG.mode; sigStart(c, 'host', sigHostMsg); SIG.mode = md; }
     return;

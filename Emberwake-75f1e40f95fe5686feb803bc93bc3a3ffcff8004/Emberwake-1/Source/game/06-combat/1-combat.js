@@ -236,7 +236,7 @@ function foeAtCursor(loose) {
     return de < 3 || (de < 18 && (ex * dx0 + ey * dy0) / (de * d0) > .5);
   };
   for (const e of G.enemies) if (!e.dead && !e.noHit && at(e)) return true;
-  for (const f of G.fighters) if (f !== p && f.hollow && !f.dead && at(f)) return true;
+  for (const f of G.fighters) if (f !== p && (f.hollow || wildOn() && f.brIn && f.team !== p.team && !f.noHit) && !f.dead && at(f)) return true;
   return false;
 }
 const heldOf = f => {
@@ -245,7 +245,7 @@ const heldOf = f => {
   if (it && !carried(it)) return foeAtCursor(false) ? IT.fists : it;
   return foeAtCursor(true) || fistOK() ? IT.fists : it;
 };
-const fistOK = () => WORLD.arena || !G.p || !impactRay(G.p, HAND);
+const fistOK = () => WORLD.arena && !wildOn() || !G.p || !impactRay(G.p, HAND);
 
 function atkContext(f, I) {
   const cx = f.x + f.w / 2, cy = f.y + 7, dx = I.wx - cx, dy = I.wy - cy;
@@ -368,7 +368,10 @@ function activeTick(a) {
 }
 function fireArrows(a, count) {
   const f = a.f, m = a.m, A = m.arrows, fc = a.face, sx = f.x + 3 + fc * 5, sy = f.y + (A.low ? 16 : 7);
-  if (a.W.ammo && f.isPlayer && !(WORLD.arena && !WORLD.royale) && WORLD.mode !== 1) { count = min(count, countItem('arrow')); if (count <= 0) { sfx('deny'); if (G.time - (G.hintT || -999) > 240) { G.hintT = G.time; say('No arrows. Bind flint to sticks with fiber.'); } return; } removeItem('arrow', count); }
+  const wild = wildOn();
+  if ((a.W.ammo || wild) && f.isPlayer && !(WORLD.arena && !WORLD.royale) && WORLD.mode !== 1) { count = min(count, countItem('arrow')); if (count <= 0) { sfx('deny'); if (G.time - (G.hintT || -999) > 240) { G.hintT = G.time; say('No arrows. Bind flint to sticks with fiber.'); if (wild) brSay('NO ARROWS  ·  2 STICKS + FLINT + FIBER MAKES FOUR'); } return; } removeItem('arrow', count); }
+  // every bow in the Wilds eats arrows, for echoes too
+  if (wild && f.br) { count = min(count, f.br.arrows | 0); if (count <= 0) { f.br.dry = true; return; } f.br.arrows -= count; }
   for (let k = 0; k < count; k++, a.shotI++) {
     let vx, vy, g = A.g === undefined ? .05 : A.g;
     if (A.rain) { const tx = a.tx + (A.n > 1 ? (a.shotI - (A.n - 1) / 2) * 10 : 0) + frand(-3, 3), Tf = A.tf || 46; g = .16; vx = clamp((tx - sx) / Tf, -7, 7); vy = (a.ty - sy - .5 * g * Tf * Tf) / Tf; }
@@ -464,7 +467,7 @@ function applyHit(a, e, hx, hy) {
 function landShock(a, S, cx) {
   const f = a.f, m = a.m, fy = f.y + f.h; if (!S) return;
   if (near(f)) { addShake(m.shake); sfx('boom'); } if (f === G.p) G.hitstop = max(G.hitstop, 4);
-  for (const e of foesOf(f)) { if (e.dead || e.noHit) continue; const dx = e.x + e.w / 2 - cx; if (abs(dx) < S.r + e.w / 2 && e.y < fy + 8 && e.y + e.h > fy - 26) strike(f, e, round(a.W.dmg * S.dmg * a.stale), (sign(dx) || 1) * S.kb[0], S.kb[1], { stop: 3, shake: 0, launch: 1, hx: e.x + e.w / 2, hy: e.y + e.h }); }
+  for (const e of foesOf(f)) { if (e.dead || e.noHit) continue; const dx = e.x + e.w / 2 - cx; if (abs(dx) < S.r + e.w / 2 && e.y < fy + 8 && e.y + e.h > fy - 26) strike(f, e, round(a.W.dmg * S.dmg * a.stale * (wildOn() ? brWeaponMul(f) : 1)), (sign(dx) || 1) * S.kb[0], S.kb[1], { stop: 3, shake: 0, launch: 1, hx: e.x + e.w / 2, hy: e.y + e.h }); }
   for (let i = 0; i < 22; i++) P(cx, fy - 1, (i - 10.5) * .42, frand(-1.6, -.2), frand(18, 34) | 0, i % 3 ? '#b9bdd0' : '#8b8fa3', { g: .03, fr: .94 });
   sparks(cx, fy - 2, 14, 0, 3); G.trails.push({ kind: 'ring', x: cx, y: fy, r: S.r, life: 12, max: 12 });
   if (f === G.p) { for (let dx = -S.r; dx <= S.r; dx += 4) { const tx = floor((cx + dx) / T), ty = floor((fy - 2) / T), t = tileAt(tx, ty); if (t && TP[t].decor) breakTile(tx, ty); } terrainSlam(a, cx, fy); }

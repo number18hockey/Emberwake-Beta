@@ -2,11 +2,11 @@
 //  Game state, physics bodies, particles, drops, projectiles
 // ============================================================
 const G = {
-  state: 'title', time: 0, clock: .1, fires: [], smokes: [], stuck: [], linksKnown: new Set(), link: null, zoom: 1, zoomT: 1, armT: 0, linkBanner: null, hitstop: 0, shake: 0, tscale: 1, slowT: 0, p: null, enemies: [], fighters: [], npcs: [], drops: [], projs: [], nums: [], parts: [], trails: [], ghosts: [],
+  state: 'title', time: 0, clock: .1, proxy: null, proxyHits: [], fires: [], smokes: [], stuck: [], linksKnown: new Set(), link: null, zoom: 1, zoomT: 1, armT: 0, linkBanner: null, hitstop: 0, shake: 0, tscale: 1, slowT: 0, p: null, enemies: [], fighters: [], npcs: [], drops: [], projs: [], nums: [], parts: [], trails: [], ghosts: [],
   flags: {}, combo: { n: 0, t: 0, pts: 0 }, feed: [], picks: [], cam: { x: 0, y: 0, px: 0, py: 0 }, boss: null, duel: null, flash: 0, flashCol: '255,255,255', sun: [1, 1, 1], dn: 1, spawnT: 0, biome: '', biomeT: 0,
   sel: 0, selT: 0, known: new Set(), movesUsed: new Set(), journal: [], jNew: false, q: 0, qFlash: 0, says: [], sayCur: null, note: null, banner: null, dialog: null, kfeed: [], skin: 0, hat: 0, nick: '', dirty: false, played: 0, introI: 0, introT: 0
 };
-const addShake = v => { G.shake = max(G.shake, v * .6); };
+const addShake = v => { if (!sfxHush) G.shake = max(G.shake, v * .6); };
 {
   let cur = null; const Q = [];
   Object.defineProperty(G, 'banner', { configurable: true, enumerable: true, get: () => cur, set: v => {
@@ -56,7 +56,7 @@ function moveBody(e) {
 }
 
 // ---------------- particles ----------------
-function P(x, y, vx, vy, life, col, o) { if (G.parts.length > 1400) return; const p = { x, y, vx, vy, life, max: life, col, sz: 1, g: .12, fr: .985, glow: 0, hit: 0 }; if (o) Object.assign(p, o); G.parts.push(p); }
+function P(x, y, vx, vy, life, col, o) { if (G.parts.length > 1400 || wildOn() && wOffScreen(x, y)) return; const p = { x, y, vx, vy, life, max: life, col, sz: 1, g: .12, fr: .985, glow: 0, hit: 0 }; if (o) Object.assign(p, o); G.parts.push(p); }
 function burst(x, y, n, cols, sp, life, o) { for (let i = 0; i < n; i++) { const a = frand(TAU), v = frand(.2, 1) * sp; P(x, y, cos(a) * v, sin(a) * v, max(4, life * frand(.5, 1) | 0), fpick(cols), o); } }
 function tickParts() {
   const a = G.parts;
@@ -76,17 +76,17 @@ function sparks(x, y, n, dirx = 0, sp = 2.4, cols = SPARK) { for (let i = 0; i <
 function dust(x, y, n, col = '#b9bdd0', sp = .8) { for (let i = 0; i < n; i++) P(x + frand(-3, 3), y, frand(-1, 1) * sp, frand(-.7, -.1), frand(14, 28) | 0, col, { g: -.005, fr: .93 }); }
 
 // ---------------- drops ----------------
-function spawnDrop(id, n, x, y, vx, vy, amps) { if (!IT[id] || n <= 0 || COOP.applying) return; if (amps && amps.length) { G.drops.push({ id, n: 1, amps, x: x - 3, y: y - 3, px: x - 3, py: y - 3, w: 6, h: 6, vx: vx === undefined ? frand(-1, 1) : vx, vy: vy === undefined ? frand(-2, -.8) : vy, t: 0, delay: 26, onGround: false }); return; } for (const d of G.drops) if (d.id === id && !d.amps && d.t < 40 && abs(d.x + 3 - x) < 8 && abs(d.y + 3 - y) < 8 && d.n + n <= IT[id].stack) { d.n += n; return; } G.drops.push({ id, n, x: x - 3, y: y - 3, px: x - 3, py: y - 3, w: 6, h: 6, vx: vx === undefined ? frand(-1, 1) : vx, vy: vy === undefined ? frand(-2, -.8) : vy, t: 0, delay: 26, onGround: false }); }
+function spawnDrop(id, n, x, y, vx, vy, amps) { if (wildOn()) return wSpawnDrop(id, n, x, y, vx, vy, amps); if (!IT[id] || n <= 0 || COOP.applying) return; if (amps && amps.length) { G.drops.push({ id, n: 1, amps, x: x - 3, y: y - 3, px: x - 3, py: y - 3, w: 6, h: 6, vx: vx === undefined ? frand(-1, 1) : vx, vy: vy === undefined ? frand(-2, -.8) : vy, t: 0, delay: 26, onGround: false }); return; } for (const d of G.drops) if (d.id === id && !d.amps && d.t < 40 && abs(d.x + 3 - x) < 8 && abs(d.y + 3 - y) < 8 && d.n + n <= IT[id].stack) { d.n += n; return; } G.drops.push({ id, n, x: x - 3, y: y - 3, px: x - 3, py: y - 3, w: 6, h: 6, vx: vx === undefined ? frand(-1, 1) : vx, vy: vy === undefined ? frand(-2, -.8) : vy, t: 0, delay: 26, onGround: false }); }
 function tickDrops() {
-  const p = G.p, a = G.drops;
+  const p = G.p, a = G.drops, wild = wildOn();
   for (let i = a.length - 1; i >= 0; i--) {
     const d = a[i]; d.px = d.x; d.py = d.y; d.t++; if (d.delay > 0) d.delay--;
     const dx = p.x + 3 - (d.x + 3), dy = p.y + 10 - (d.y + 3), dist = hypot(dx, dy) || 1;
-    if (!p.dead && d.delay <= 0 && dist < (WORLD.arena ? 36 : G.magR || 36) && hasRoom(d.id)) {
+    if (!p.dead && !(wild && p.glide) && d.delay <= 0 && dist < (WORLD.arena ? 36 : G.magR || 36) && hasRoom(d.id)) {
       d.vx = lerp(d.vx, dx / dist * 3.4, .25); d.vy = lerp(d.vy, dy / dist * 3.4, .25); d.x += d.vx; d.y += d.vy;
       if (dist < 8) { const left = d.amps ? (trTakeAmped(d) ? 0 : d.n) : addItem(d.id, d.n); if (left < d.n) { sfx('pickup'); toastItem(d.id, d.n - left); onPickup(d.id); } if (left) { d.n = left; d.delay = 90; } else { netTook(d); a.splice(i, 1); continue; } }
-    } else { d.vy = min(d.vy + .2, 5); d.vx *= d.onGround ? .8 : .985; moveBody(d); }
-    if (d.t > 18000) a.splice(i, 1);
+    } else if (!(wild && wDropAsleep(d))) { d.vy = min(d.vy + .2, 5); d.vx *= d.onGround ? .8 : .985; moveBody(d); if (wild && wDropMoved(d)) { a.splice(i, 1); continue; } }
+    if (d.t > (wild ? 14400 : 18000)) a.splice(i, 1);
   }
 }
 
@@ -131,7 +131,7 @@ function tickProjs() {
             if (!pr.pierce) { dead = true; break; }
           }
         }
-      } else for (const f of G.fighters) if (f.team === 'p' && !f.dead && (!f.remote || (f.coop && netHost())) && circBox(pr.x, pr.y, pr.r, f)) { const hit = hurtFighter(f, pr.dmg, pr.x - pr.vx * 6, pr.shock || pr.frost ? { shock: pr.shock, cold: pr.frost } : undefined); if (hit && pr.frost) applyStatus(f, 'frost', null, { d: 90 }); if (hit && pr.burn) applyStatus(f, 'burn', null, { d: 120 }); if (hit && pr.poison) applyStatus(f, 'poison', null, { d: 150 }); if ((hit || f.clashAt === G.time) && !pr.pierce) dead = true; }
+      } else for (const f of G.fighters) if ((f.team === 'p' || wildOn() && f.brIn && !f.noHit) && !f.dead && (!f.remote || (f.coop && netHost())) && circBox(pr.x, pr.y, pr.r, f)) { const hit = hurtFighter(f, pr.dmg, pr.x - pr.vx * 6, pr.shock || pr.frost ? { shock: pr.shock, cold: pr.frost } : undefined); if (hit && pr.frost) applyStatus(f, 'frost', null, { d: 90 }); if (hit && pr.burn) applyStatus(f, 'burn', null, { d: 120 }); if (hit && pr.poison) applyStatus(f, 'poison', null, { d: 150 }); if ((hit || f.clashAt === G.time) && !pr.pierce) dead = true; }
     }
     if (dead) a.splice(i, 1);
   }

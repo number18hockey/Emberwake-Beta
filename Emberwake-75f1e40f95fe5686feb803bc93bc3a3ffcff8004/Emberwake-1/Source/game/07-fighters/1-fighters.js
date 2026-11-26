@@ -49,19 +49,21 @@ function perfectDodge(f) {
   if (f === G.p) { if (slowOK()) G.slowT = 26; G.flash = max(G.flash, .25); G.flashCol = '143,245,230'; sfx('perfect', 0); comboHit(true); G.flags.perfect = true; }
   else fsx(f, 'reflect', 0);
 }
+// (in the Wilds a beast is sometimes run against someone other than you: what it does to them is kept, and applied once you are yourself again)
 function hurtFighter(f, dmg, fromX, o = {}) {
+  if (G.proxy && f === G.p) { G.proxyHits.push([f, dmg, fromX, o]); return !(f.dead || f.iDodge > 0 || f.inv > 0); }
   if (f.remote && f.coop) return netHurtPeer(f, dmg, fromX, o || {}); if (f.ghostH) return netHitHollow(f, dmg, fromX, o || {});
   if (f.dead || G.state !== 'play' || f.remote) return false;
   if (f.iDodge > 0 && !o.link) { if (!f.perfected && (f.state === 'dodge' || f.dodgeGrace > 0)) perfectDodge(f); return false; }
   if (f.inv > (o.net ? 30 : o.link ? 999 : 0)) return false;
   if (f.state === 'link' && !o.link) return false;
   if (tryClash(f, dmg, fromX, o)) return false;
-  const pvp = !!o.pvp, armored = f.atk && f.atk.m.armor && f.atk.phase < 2, caught = caughtOpen(f, o), soft = pvp && o.bite === false;
+  const wild = wildOn(), pvp = !!o.pvp, armored = f.atk && f.atk.m.armor && f.atk.phase < 2, caught = caughtOpen(f, o), soft = pvp && o.bite === false;
   if (caught) dmg *= 1.25;
   const gp = f === G.p && gearOn(); if (gp) { dmg = gearDamage(dmg, o); if ((gearHas('kindled') || gearHas('molten')) && o.by && o.by !== f && !o.by.dead && o.by.hp !== undefined && !o.by.fighter) applyStatus(o.by, 'burn', f, { d: 90 }); }
   // a guardian's fight hits harder than the open road
   const vsGuardian = f === G.p && !o.env && !WORLD.arena && G.boss && !G.boss.dead ? 1.2 : 1;
-  dmg = max(1, round(dmg * vsGuardian * (pvp && WORLD.royale ? .55 : pvp && WORLD.arena ? .8 : 1) * (armored ? .65 : 1) * (f.dmgTaken || 1) * (f === G.p && !WORLD.arena && !o.net ? DIFF().taken * blessTaken() : 1)));
+  dmg = max(1, round(dmg * vsGuardian * (pvp && WORLD.royale && !wild ? .55 : pvp && WORLD.arena ? .8 : 1) * (armored ? .65 : 1) * (f.dmgTaken || 1) * (f === G.p && !WORLD.arena && !o.net ? DIFF().taken * blessTaken() : 1) * (wild ? wBrHurtMul(f, o, pvp) : 1)));
   let warded = 0; if (WORLD.royale && f.ward > 0) { warded = min(f.ward, dmg); f.ward -= warded; dmg -= warded; if (warded) sparks(f.x + 3, f.y + 8, 5, 0, 1.6, ['#8fd0ff', '#ffffff']); }
   f.hp -= dmg; f.regenT = 0; f.flash = 6; if (o.by) f.lastHitBy = o.by;
   if (gp && boonHas('thorn') && !o.net && !pvp) { const by = o.by && !o.by.fighter && !o.by.dead ? o.by : G.enemies.find(e => !e.dead && !e.noHit && e.type !== 'dummy' && abs(e.x + e.w / 2 - (f.x + 3)) < 22 && abs(e.y + e.h / 2 - (f.y + 10)) < 24); if (by && by.hp !== undefined) damageEnemy(by, max(1, round(dmg * .25)), 0, 0, { thorn: 1 }); }
@@ -113,7 +115,7 @@ function tickFighter(f, I) {
   if (I.armP && f.hurtT <= 0) throwArm(f, I.wx, I.wy);
   if (I.jumpP) f.jbuf = 7; else if (f.jbuf > 0) f.jbuf--;
   if (f.onGround) { f.coyote = 6; f.airDash = airDashMax(f); f.updraft = true; f.dblUsed = false; } else if (f.coyote > 0) f.coyote--;
-  if (f.stamDelay > 0) f.stamDelay--; else f.stam = min(f.maxstam, f.stam + .6 * (f.isPlayer && !WORLD.arena ? (f.tonic > 0 ? 1.8 : 1) * (WORLD.mode !== 1 && G.food <= 0 ? .5 : 1) * gearMul('st') : 1) * wxBreath(f));
+  if (f.stamDelay > 0) f.stamDelay--; else f.stam = min(f.maxstam, f.stam + .6 * (f.isPlayer && (!WORLD.arena || wildOn()) ? (f.tonic > 0 ? 1.8 : 1) * (WORLD.mode !== 1 && G.food <= 0 ? .5 : 1) * gearMul('st') : 1) * wxBreath(f));
   f.regenT++;
   if (WORLD.arena && !WORLD.royale) { if (f.regenT > 240 && f.hp < f.maxhp && G.time % 4 === 0) f.hp++; }
   else if (f.isPlayer && f.regenT > 420 / DIFF().regen && G.time % max(1, round((WORLD.mode === 1 || G.food > 70 ? 40 : G.food > 30 ? 80 : 1e9) / DIFF().regen / blessRegen())) === 0 && f.hp < f.maxhp) f.hp++;
@@ -145,7 +147,7 @@ function tickFighter(f, I) {
       const acc = (f.onGround ? .24 : .15) * (a ? max(ctrl, .6) : ctrl);
       f.vx = along && abs(f.vx) > abs(tgt) ? approach(f.vx, tgt, abs(f.vx) > maxV ? .07 : .03) : approach(f.vx, tgt, acc);
       // walking into a shut door pushes it open
-      if (f === G.p && !WORLD.arena && f.state === 'normal') { const tx = floor((f.x + (md > 0 ? f.w + 1.5 : -1.5)) / T); for (let y = floor(f.y / T); y <= floor((f.y + f.h - 1) / T); y++) if (tileAt(tx, y) === DOORC) { if (toggleDoor(tx, y)) G.autoDoors.push({ tx, ty: y, t: 150 }); break; } }
+      if ((f === G.p && !WORLD.arena || wildOn() && !f.remote) && f.state === 'normal') { const tx = floor((f.x + (md > 0 ? f.w + 1.5 : -1.5)) / T); for (let y = floor(f.y / T); y <= floor((f.y + f.h - 1) / T); y++) if (tileAt(tx, y) === DOORC) { if (toggleDoor(tx, y)) G.autoDoors.push({ tx, ty: y, t: 150 }); break; } }
     }
     // hands off the keys you come to a stop (a little later out of a dodge); and anyone but you in the open world
     // is braked while reeling from a blow, key or no key, so a hit throws them exactly as far as it always did
@@ -206,12 +208,13 @@ function tickPlayer() {
   tickFighter(p, I);
   if (WORLD.royale) brAfter(p, I);
   if (p.dead) { if (!WORLD.royale && p.deadT > (WORLD.arena ? 150 : 190)) respawnPlayer(); return; }
-  if (WORLD.arena) return;
-  // ---- tools, blocks, consumables ----
+  const wild = wildOn(); if (WORLD.arena && !wild) return;
+  // ---- tools, blocks, consumables (in the Wilds you dig, build and throw as anywhere, but its own keys heal and open things) ----
   toolTick(p, I);
   const hi = heldItem(); if (hi && hi.type === 'weapon') G.lastWeapon = G.sel;
-  if (pressed.KeyH && !G.dialog) useHeal(countItem('salve') ? 'salve' : 'glowcap');
   if (pressed.KeyT && !G.dialog && !UI.open) cycleArm(p);
+  if (wild) return;
+  if (pressed.KeyH && !G.dialog) useHeal(countItem('salve') ? 'salve' : 'glowcap');
   if (!UI.open && !G.dialog && !G.cine) { if (pressed.KeyV) tryStyle(p, I); if (pressed.KeyX) swapOff(p, I); }
   tickStyles(p, I);
   if (pressed.KeyF && !UI.open) interact();

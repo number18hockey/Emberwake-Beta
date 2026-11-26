@@ -25,14 +25,14 @@ function brJoinRoom(code) {
 }
 // ---------------- the lobby ----------------
 function brLobbyEnter(via, code) {
-  BR.on = true; BR.via = via; BR.code = code || 'open'; BR.phase = 'lobby'; BR.mi = ''; BR.lead = false; BR.leaderId = ''; BR.cdEnd = 0; BR.lastCd = 0; BR.startNow = false; BR.err = ''; BR.sq = 0;
+  BR.wild = false; BR.on = true; BR.via = via; BR.code = code || 'open'; BR.phase = 'lobby'; BR.mi = ''; BR.lead = false; BR.leaderId = ''; BR.cdEnd = 0; BR.lastCd = 0; BR.startNow = false; BR.err = ''; BR.sq = 0;
   BR.people.clear(); NET.peers.clear();
-  if (!WORLD.royale) { genRoyale((Math.random() * 4294967296) >>> 0); freshSession(); G.p = newPlayer(); G.fighters = [G.p]; G.clock = .32; updateSun(); G.cam.x = G.cam.px = 40 * T; }
+  if (!WORLD.royale || BR.wildLand) { genRoyale((Math.random() * 4294967296) >>> 0); freshSession(); G.p = newPlayer(); G.fighters = [G.p]; G.clock = .32; updateSun(); G.cam.x = G.cam.px = 40 * T; }
   G.state = 'brlobby'; UI.open = null; UI.focus = null;
   if (via === 'room') brJoinRoom(BR.code);
   else if (via === 'rtc') { NET.code = BR.code; NET.status = 'online'; if (!COOP.role) { COOP.role = 'host'; COOP.me = 'h'; COOP.hostName = coopName(); } COOP.br = true; NET.me = netGuest() ? COOP.me : '0h'; NET.R = brRtcRoom(); NET.unsubs.push(NET.R.onPeers(ch => netPeers(ch.peers))); }
 }
-function brLobbyTick() {
+function brLobbyTick() { if (BR.wild) return wBrLobbyTick();
   if (!BR.on || G.state !== 'brlobby') return;
   const now = performance.now(), me = brMe(); partyTick();
   if (BR.via === 'rtc') brRtcTick();
@@ -62,12 +62,12 @@ function brJoinMatch(ld) {
   brEnterMatch(ld.mi, ld.s >>> 0, ld.ro.filter(x => typeof x === 'string').slice(0, BR_MAX), clamp(num(ld.nb) | 0, 0, BR_MAX), clamp(num(ld.tm) | 0, 1, 3), Array.isArray(ld.tms) ? ld.tms : null, ld.ar | 0);
   BR.t = clamp(num(ld.t) | 0, 0, 60 * 60 * 20); brSend();
 }
-function brBackToLobby() {
+function brBackToLobby() { if (BR.wild) return wBrBackToLobby();
   BR.lastMi = BR.mi; BR.mi = ''; BR.phase = 'lobby'; BR.cdEnd = 0; BR.startNow = false; BR.lead = false;
   for (const f of NET.peers.values()) f.gone = true; NET.peers.clear(); G.fighters = G.fighters.filter(f => !f.remote && !f.brBot);
   NET.hits = []; NET.shots = []; NET.kb = ['', 0]; G.state = 'brlobby'; UI.open = null; brSend();
 }
-function brLeave() {
+function brLeave() { if (BR.wild) return wBrLeave();
   if (BR.via === 'room') netLeave(); else if (BR.via === 'rtc') { for (const u of NET.unsubs) try { u(); } catch (e) { } NET.unsubs = []; NET.R = null; coopLeave(); COOP.br = false; }
   BR.on = false; BR.phase = ''; BR.mi = ''; BR.people.clear(); NET.me = ''; NET.status = 'off'; BR.open = false; BR.showOpen = false; if (!BR.following) BR.party = '';
   for (const f of NET.peers.values()) f.gone = true; NET.peers.clear(); G.fighters = G.fighters.filter(f => !f.gone);
@@ -75,7 +75,7 @@ function brLeave() {
 }
 
 // ---------------- what this computer says about itself ----------------
-function brSend() {
+function brSend() { if (BR.wild) return wBrSend();
   const R = NET.R; if (!R || !R.connected()) return; BR.sentAt = performance.now();
   const o = { v: 3, br: 1, ring: BR.code, n: G.nick, sk: G.skin | 0, sq: ++BR.sq, ph: BR.phase === 'lobby' ? 'L' : 'M', mi: BR.phase === 'lobby' ? '' : BR.mi, ld: 0, tw: BR.wish | 0, pt: BR.party || '' };
   if (BR.phase !== 'lobby' && G.p) {
@@ -103,7 +103,7 @@ function brBotSer(f) {
 }
 
 // ---------------- what everyone else says ----------------
-function brPeers(list) {
+function brPeers(list) { if (BR.wild) return wBrPeers(list);
   const here = new Set();
   for (const pe of list) {
     if (pe.isMe && pe.sameTab) { NET.me = pe.peer; continue; }
@@ -150,7 +150,7 @@ function brFromLeader(id, ld) {
     if (!Array.isArray(e) || typeof e[0] !== 'string') continue; const sq = num(e[2]), last = BR.bkSeen.get(id) || 0; if (sq <= last) continue; BR.bkSeen.set(id, sq);
     const v = BR.bots.get(e[0]), k = e[1] === brMe() ? G.p : NET.peers.get(e[1]) || BR.bots.get(e[1]) || null;
     if (v && !v.dead) { v.dead = true; v.deadT = 0; v.hp = 0; } if (v) trSeenDown(v);
-    if (k === G.p) { G.p.kills++; G.banner = { text: v && v.hunter ? 'PUT DOWN' : 'TAKEN DOWN', sub: v ? v.name : '', t: 120 }; comboHit(true); sfx('newmove', 0); brFavor(v && v.hunter ? 20 : 35); if (v && !v.hunter) trTookDown(G.p, v); }
+    if (k === G.p) { G.p.kills++; brRewardKill(); G.banner = { text: v && v.hunter ? 'PUT DOWN' : 'TAKEN DOWN', sub: v ? v.name : '', t: 120 }; comboHit(true); sfx('newmove', 0); brFavor(v && v.hunter ? 20 : 35); if (v && !v.hunter) trTookDown(G.p, v); }
     G.kfeed.unshift({ a: k ? k.name : '', b: v ? v.name : 'AN ECHO', t: 0, me: k === G.p ? 1 : 0, txt: k ? '' : trHazTxt() }); if (G.kfeed.length > 6) G.kfeed.length = 6;
     brDropPile(num(e[3]), num(e[4]), brItemsOk(e[5]));
   }
@@ -168,7 +168,7 @@ function brGhostBot(a) {
   if (f.snaps.length > 40) f.snaps.shift();
 }
 // a blow someone landed on one of my echoes (I lead)
-function brBotHit(from, h) {
+function brBotHit(from, h) { if (BR.wild) return wBrBotHit(from, h);
   const b = BR.bots.get(h[0]); if (!b || b.dead || b.remote || b.onBarge || (from && from.team === b.team)) return;
   const x = Array.isArray(h[6]) ? h[6] : null;
   if (x) { const k = x[0], d = clamp(num(x[1]) | 0, 0, 400), side = clamp(num(x[2]) | 0, -1, 1); if (['pin', 'hook', 'burn', 'blind', 'launched', 'frost', 'poison', 'bleed'].includes(k)) applyStatus(b, k, from, { d: d || undefined, side, floor: !side }); }
@@ -176,10 +176,10 @@ function brBotHit(from, h) {
   hurtFighter(b, clamp(num(h[2]), 1, 90), from.x + 3, { kx: clamp(num(h[3]), -8, 8), ky: clamp(num(h[4]), -8, 8), by: from, pvp: true, net: true, crit: !!h[5], stop: 3 });
 }
 // someone else's Waker fell; their computer says who did it
-function brDeathSeen(victim, tag) {
+function brDeathSeen(victim, tag) { if (BR.wild) return wBrDeathSeen(victim, tag);
   const k = tag === brMe() ? G.p : NET.peers.get(tag) || BR.bots.get(tag) || null;
   if (!victim.dead) { victim.dead = true; victim.deadT = 0; victim.hp = 0; } trSeenDown(victim);
-  if (k === G.p) { G.p.kills++; G.banner = { text: 'TAKEN DOWN', sub: victim.name, t: 120 }; comboHit(true); sfx('newmove', 0); brFavor(35); trTookDown(G.p, victim); }
+  if (k === G.p) { G.p.kills++; brRewardKill(); G.banner = { text: 'TAKEN DOWN', sub: victim.name, t: 120 }; comboHit(true); sfx('newmove', 0); brFavor(35); trTookDown(G.p, victim); }
   else if (k && k.brBot && !k.remote) k.kills++;
   G.kfeed.unshift({ a: k ? k.name : '', b: victim.name, t: 0, me: k === G.p ? 1 : 0, txt: k ? '' : trHazTxt() }); if (G.kfeed.length > 6) G.kfeed.length = 6;
   burst(victim.x + 3, victim.y + 10, 30, SPARK, 3, 50, { glow: 1, g: .02 });
@@ -251,7 +251,7 @@ function ringRtcEnd() {
   WORLD.arena = false; WORLD.id = ''; G.boss = null; G.duel = null;
 }
 // the host lets a friend into the lobby
-function brRtcWelcome(P, m) {
+function brRtcWelcome(P, m) { if (BR.wild) return wBrRtcWelcome(P, m);
   if ([...COOP.peers.values()].filter(Q => Q.ok).length >= brMaxG()) { sendTo(P, { t: 'kick' }); return; }
   P.name = cleanName(m.n) || P.name || 'WAKER'; P.skin = clamp(m.sk | 0, 0, 3); P.ok = true; P.pres = null;
   sendTo(P, { t: 'brw', v: NETV, id: P.id, host: coopName(), code: COOP.ring ? NET.code : BR.code, mode: COOP.ring ? 'ring' : 'br', pt: BR.party || COOP.gcode || '' }); COOP.note = ''; sfx('quest', 0); BR.rtcDirty = true;
@@ -266,7 +266,8 @@ function brRtcJoin(m) {
   if (BR.joinOpen) BR.joinOpen = false; else BR.party = typeof m.pt === 'string' ? m.pt.toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 8) : '';
   brLobbyEnter('rtc', typeof m.code === 'string' ? m.code.slice(0, 12) : 'friends'); NET.me = COOP.me; sfx('quest', 0);
 }
-function brRtcMsg(P, m) {
+// (a friend's lobby says which kind it is when it lets you in: 'brw' the Trials or the Ring, 'wbrw' the Wilds)
+function brRtcMsg(P, m) { if (m.t === 'wbrw' || m.t !== 'brw' && BR.wild) return wBrRtcMsg(P, m);
   const H = netHost();
   if (m.t === 'bp' && H) { if (m.p && typeof m.p === 'object') { P.pres = m.p; BR.rtcDirty = true; } return true; }
   if (m.t === 'bl' && !H) { const R = NET.R; if (!R || !R.ls || !Array.isArray(m.l)) return true; const me = brMe(); const l = m.l.filter(e => e && typeof e.peer === 'string').map(e => ({ peer: e.peer, presence: e.presence, isMe: e.peer === me, sameTab: e.peer === me, kind: 'viewer' })); for (const fn of R.ls) fn({ peers: l }); return true; }
@@ -275,7 +276,7 @@ function brRtcMsg(P, m) {
   return false;
 }
 // someone's line dropped
-function brRtcLost(P) {
+function brRtcLost(P) { if (BR.wild) return wBrRtcLost(P);
   if (netGuest() && COOP.ring) { ringRtcEnd(); COOP.err = 'The host closed the ring.'; G.state = 'join'; return; }
   if (netGuest()) { coopReset(); COOP.br = false; brLeave(); COOP.err = 'The host closed the match.'; G.state = 'join'; return; }
   if (COOP.ring && P.f) { P.f.gone = true; }

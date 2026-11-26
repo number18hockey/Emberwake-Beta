@@ -118,3 +118,9 @@ The Ashfall: alone, with friends, online, over the relay.
 - `teams.py` The Trials as a team: two friends in DUOS share a team, cannot hurt each other, rekindle each other and win together.
 - `kit.py` The Trials' own kit: perks (picked on the plinth and at dawn), amps fitted to weapons, relics, the match title and the career record.
 - `parties.py` Parties: two friends make a party, find a lobby another player opened on the public board, walk in together, and are put on one team.
+- `wilds_way_in.py` The way in to the Wilds (the third arena) and out again: the WILDS button on the Trials' form, its own form, BACK, the home page; a Trials match after a Wilds match; the souls and coins a Trials match pays.
+- `wilds_rules.py` The rules of the Wilds: the fall from the sky, empty hands, gathering and crafting, digging, the lava, sparse chests, a border that answers to the fallen, pacts, doors, beasts.
+- `wilds_solo.py` The Wilds alone with the echoes: the fall, gathering and crafting by echoes, the border, the fights, to the end.
+- `wilds_rewards.py` What a match in the Wilds pays: a soul for every kill, coins for a win, looks from the wheel and the shop; nothing owned is carried into a match.
+- `wilds_balance.py` The Wilds: weapons of a kind against each other, by evenly matched echoes (slow; give it a number of rounds).
+- `wilds_with_friends.py` `wilds_over_the_relay.py` `wilds_online_on_claude.py` `wilds_leader_asleep.py` The Wilds with friends by game code, over the relay, in the claude.ai room, and while the leader's game sleeps.

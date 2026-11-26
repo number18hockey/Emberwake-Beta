@@ -2,7 +2,7 @@
 //  The Ashfall on screen: the menu, the lobby, the barge, chests,
 //  the storm, the match HUD, the map, and the end of a match.
 // ============================================================
-function drawBrForm(c) {
+function drawBrForm(c) { if (BR.wild) return wDrawBrForm(c);
   const uw = VS.uw, uh = VS.uh, w = min(360, uw - 16), h = 326, x = round((uw - w) / 2), y = max(2, round((uh - h) / 2));
   c.fillStyle = 'rgba(18,13,31,.55)'; c.fillRect(0, 0, uw, uh); panel(c, x, y, w, h, 'THE ASHFALL TRIALS');
   const fx = x + 10, fw = w - 20;
@@ -17,6 +17,8 @@ function drawBrForm(c) {
   drawText(c, 'TEAMS', fx, by + 4, '#b9bdd0'); for (let k = 1; k <= 3; k++) button(c, fx + 46 + (k - 1) * 82, by, 78, 14, TR_SIZE_N[k], () => { FORM.brsize = k; BR.sizeWant = k; sfx('ui'); }, { on: FORM.brsize === k });
   by += 18; if (BR.arenaWant === undefined) BR.arenaWant = 2;
   drawText(c, 'ARENA', fx, by + 4, '#b9bdd0'); for (let k = 0; k < 3; k++) button(c, fx + 46 + k * 82, by, 78, 14, TR_ARENA_PICK[k], () => { BR.arenaWant = k; sfx('ui'); }, { on: BR.arenaWant === k });
+  // the third arena is a different game with its own form (its matches, its lobbies, its shop): this is the one way in
+  button(c, fx + 292, by, fw - 292, 14, 'WILDS', () => { BR.wild = true; BR.menuTab = 'queue'; BR.menuScroll = 0; BR.menuMsg = ''; FORM.skin = G.skin | 0; FORM.hat = G.hat | 0; UI.focus = null; sfx('ui'); });
   drawText(c, BR.arenaWant === 1 ? 'one mountain; a sea of slag rises. High ground buys time.' : BR.arenaWant === 0 ? 'rolling hills; the ashfall closes from both ends.' : TR_SIZE_D[FORM.brsize] + (FORM.brsize > 1 ? ': a fallen teammate can be rekindled' : ''), fx + 46, by + 17, '#8b8fa3'); by += 30;
   if (NET.room) { button(c, fx, by, fw, 17, 'PLAY ONLINE', () => go(() => { BR.sizeWant = FORM.brsize; brLobbyEnter('room', cleanCode(FORM.brcode) || 'open'); })); drawText(c, 'Everyone with this page open on claude.ai who picks the same match meets here.', fx, by + 20, '#8b8fa3'); by += 34; }
   else { drawText(c, 'Online lobby: only on claude.ai (open this page there to find others).', fx, by + 4, '#ffb347'); by += 16; }
@@ -26,7 +28,7 @@ function drawBrForm(c) {
   { const C = trCareer(); if (C.n) drawText(c, 'your record: ' + C.n + ' trials, ' + C.w + ' won, ' + C.k + ' taken down', fx, y + h - 17, '#8b8fa3'); }
   button(c, x + w - 70, y + h - 22, 60, 15, 'BACK', () => { G.state = 'title'; UI.focus = null; sfx('ui'); });
 }
-function drawBrLobby(c) {
+function drawBrLobby(c) { if (BR.wild) return wDrawBrLobby(c);
   const uw = VS.uw, uh = VS.uh, host = BR.via === 'rtc' && netHost(), w = min(404, uw - 12), h = host ? 296 : BR.via === 'room' ? 216 : 196, x = round((uw - w) / 2), y = max(4, round((uh - h) / 2)), fx = x + 10, fw = w - 20;
   c.fillStyle = 'rgba(18,13,31,.5)'; c.fillRect(0, 0, uw, uh); panel(c, x, y, w, h, 'THE ASHFALL TRIALS : LOBBY' + (BR.via === 'room' ? '  (' + BR.code.toUpperCase() + ')' : ''));
   const me = brMe(), list = [{ id: me, n: G.nick, me: true, pt: BR.party || '', tw: BR.wish | 0 }]; for (const [id, q] of BR.people) list.push({ id, n: q.n, ph: q.ph, pt: q.pt || '', tw: q.tw | 0 });
@@ -90,7 +92,7 @@ function brDrawBarge(w, b, al) {
   w.fillStyle = '#8f2a1e'; for (let k = -24; k <= 24; k += 12) w.fillRect(X + k, Y - 37, 1, 22);
   const fl = 4 + ((t >> 2) & 3); w.fillStyle = '#ffd35a'; w.fillRect(X - d * 32 - (d > 0 ? fl : 0), Y + 9, fl, 3); w.fillStyle = '#ff7a2a'; w.fillRect(X - d * 32 - (d > 0 ? fl + 2 : -fl), Y + 10, 2, 2);
 }
-function brWorld(w, al, cx, cy) {
+function brWorld(w, al, cx, cy) { if (BR.wild) return wBrWorld(w, al, cx, cy);
   if (!brOn()) return; const q = STN_SPR[CHEST], vx0 = cx - 20, vx1 = cx + VS.vw + 20;
   for (const ch of BR.chests) {
     const px = ch.x * T, py = ch.y * T; if (px < vx0 || px > vx1 || py < cy - 20 || py > cy + VS.vh + 20) continue;
@@ -105,9 +107,9 @@ function brGlider(ctx, f, al) {
   ctx.fillStyle = INK; ctx.fillRect(x - 10, y - 1, 20, 4); ctx.fillStyle = '#ff7a3d'; ctx.fillRect(x - 9, y, 18, 2); ctx.fillStyle = '#ffd35a'; ctx.fillRect(x - 9, y, 6, 1); ctx.fillRect(x + 3, y, 6, 1);
   ctx.fillStyle = '#c94a2e'; ctx.fillRect(x - 10, y + 2 + k, 2, 1); ctx.fillRect(x + 8, y + 2 + k, 2, 1); ctx.fillStyle = '#d8d4e6'; ctx.fillRect(x - 6, y + 2, 1, 8); ctx.fillRect(x + 5, y + 2, 1, 8);
 }
-function brActors(ctx, al) { if (!brOn()) return; for (const f of G.fighters) if (f.glide && !f.dead && !f.onBarge && (f !== G.p || !G.p.dead)) brGlider(ctx, f, al); }
+function brActors(ctx, al) { if (BR.wild) return wBrActors(ctx, al); if (!brOn()) return; for (const f of G.fighters) if (f.glide && !f.dead && !f.onBarge && (f !== G.p || !G.p.dead)) brGlider(ctx, f, al); }
 // unlit, in the world: the storm curtains, chest prompts, wards over heads
-function brOverlay(ctx, al, cx, cy) {
+function brOverlay(ctx, al, cx, cy) { if (BR.wild) return wBrOverlay(ctx, al, cx, cy);
   if (!brOn() || !BR.storm) return; const z = BR.storm, vh = VS.vh, top = cy - 4, x0 = cx - 4, x1 = cx + VS.vw + 4;
   if (BR.arena === 1) trSlagDraw(ctx, cx, cy);
   else if (z.dps > 0 || z.moving) {
@@ -121,7 +123,7 @@ function brOverlay(ctx, al, cx, cy) {
   const p = G.p; trOverlay(ctx, al, cx, cy);
   for (const f of G.fighters) { if (f === p || f.dead || f.onBarge || !f.brIn || (f.ward || 0) <= 0 || f.x < x0 || f.x > x1) continue; const X = round(lerp(f.px, f.x, al)) - 3, Y = round(lerp(f.py, f.y, al)) - 4; ctx.fillStyle = INK; ctx.fillRect(X - 1, Y - 1, 14, 3); ctx.fillStyle = '#5aa8ff'; ctx.fillRect(X, Y, round(12 * f.ward / 100), 1); }
 }
-function brScreen(ctx, W, H) {
+function brScreen(ctx, W, H) { if (BR.wild) return wBrScreen(ctx, W, H);
   if (!brOn()) return;
   if (BR.inStorm) { ctx.fillStyle = BR.arena === 1 ? `rgba(255,90,30,${.16 + .06 * sin(G.time * .1)})` : `rgba(120,40,150,${.14 + .06 * sin(G.time * .1)})`; ctx.fillRect(0, 0, W, H); }
 }
@@ -141,7 +143,7 @@ function brStrip(c, x, y, w, h) {
   const p = G.p; for (const f of G.fighters) if (trMate(f) && !f.dead && !f.gone) { c.fillStyle = '#7ddc6f'; c.fillRect(x + round((f.x + 3) * k), y - 1, 1, h + 2); }
   c.fillStyle = '#ffd35a'; c.fillRect(x + round((p.x + 3) * k) - 1, y - 2, 3, h + 4);
 }
-function brHud(c) {
+function brHud(c) { if (BR.wild) return wBrHud(c);
   const p = G.p, uw = VS.uw, uh = VS.uh, z = BR.storm, alive = BR.lastAlive;
   if ((p.ward || 0) > 0) { bar(c, 15, 20, 72, 3, p.ward / 100, '#8fd0ff', '#2a62c0'); textO(c, round(p.ward), 91, 17, '#8fd0ff'); }
   // the storm strip and its clock

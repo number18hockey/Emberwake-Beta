@@ -149,7 +149,7 @@ function trHunger(p) {
 
 // ---------------- favor: the crowd, and what its sponsors send ----------------
 function brFavor(n) {
-  if (!WORLD.royale || !BR.on || !G.p || G.p.dead || BR.phase !== 'fight' || !(n > 0)) return;
+  if (!WORLD.royale || BR.wild || !BR.on || !G.p || G.p.dead || BR.phase !== 'fight' || !(n > 0)) return;
   BR.favor = (BR.favor || 0) + n * (trHas(G.p, 'crowd') ? 1.5 : 1); BR.favorT = 90; if (BR.favor >= 100) { BR.favor -= 100; trGift(); }
 }
 function trGift() {

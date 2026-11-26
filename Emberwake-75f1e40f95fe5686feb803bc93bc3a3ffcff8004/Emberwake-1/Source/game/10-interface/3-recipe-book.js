@@ -47,7 +47,7 @@ function drawBook(c) {
   const br = B.item && RECIPES.find(r => r.out === B.item);
   if (br) { const s = 'Build one at the ' + benchName(br.st) + ': ' + Object.keys(br.need).map(k => br.need[k] + ' ' + IT[k].name.toLowerCase()).join(', ') + '.'; for (const l of wrapText(s, rw)) { drawText(c, l, rx, ry, '#8ff5e6'); ry += 9; } }
   ry += 3;
-  const list = RECIPES.map((r, i) => ({ r, i })).filter(e => e.r.st === B.st && (e.r.lvl !== 3 || G.flags.seen1 || WORLD.mode === 1)).map(e => ({ r: e.r, can: canCraft(e.r) })).sort((a, b) => b.can - a.can);
+  const list = RECIPES.map((r, i) => ({ r, i })).filter(e => e.r.st === B.st && recipeHere(e.r) && (e.r.lvl !== 3 || G.flags.seen1 || WORLD.mode === 1)).map(e => ({ r: e.r, can: canCraft(e.r) })).sort((a, b) => b.can - a.can);
   const rows = max(1, floor((y + h - 12 - ry) / 19)); UI.scroll = clamp(UI.scroll, 0, max(0, list.length - rows));
   for (let k = 0; k < rows; k++) {
     const e = list[k + UI.scroll]; if (!e) break; const r = e.r, yy = ry + k * 19, hov = inR(rx, yy, rw, 18), outId = r.out || Object.keys(r.need)[0];

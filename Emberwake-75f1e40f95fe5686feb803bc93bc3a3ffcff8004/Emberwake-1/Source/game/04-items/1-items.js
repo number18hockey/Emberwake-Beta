@@ -305,6 +305,8 @@ const TOOL_D = {
 // ---------------- recipes ----------------
 const RECIPES = [];
 function R(st, out, n, need, o) { const r = Object.assign({ st, out, n, need }, o); RECIPES.push(r); return r; }
+// (a recipe marked wild belongs to the Wilds arena alone: nowhere else is it listed)
+const recipeHere = r => !r.wild || wildOn();
 const KNAP = [
   { out: 'knifeblade', mat: ['flint', 'rock'], pat: '....#...##..##..##...#....' },
   { out: 'axehead', mat: ['flint', 'rock'], pat: '###..####.########.###...' },
@@ -400,7 +402,7 @@ const ST_NAME2 = { hand: 'by hand', bench: 'Workbench', fire: 'Campfire', wheel:
 const USES = {};
 function buildUses() {
   const add = (id, s) => { (USES[id] = USES[id] || []); if (!USES[id].includes(s)) USES[id].push(s); };
-  for (const r of RECIPES) { const name = r.out ? IT[r.out].name : 'sifting'; for (const k in r.need) add(k, name); for (const k of r.keep || []) add(k, name); if (r.fuel) for (const f of ['charcoal', 'coal', 'peat']) add(f, 'bloomery fuel'); }
+  for (const r of RECIPES) { if (r.wild) continue; const name = r.out ? IT[r.out].name : 'sifting'; for (const k in r.need) add(k, name); for (const k of r.keep || []) add(k, name); if (r.fuel) for (const f of ['charcoal', 'coal', 'peat']) add(f, 'bloomery fuel'); }
   for (const k of KNAP) for (const m of k.mat) add(m, 'knapping a ' + IT[k.out].name.toLowerCase());
   for (const id in IT) { const it = IT[id]; if (it.fuel) add(id, 'fuel'); if (it.type === 'food' || it.type === 'heal') add(id, 'eating'); if (it.type === 'block' || it.type === 'wall') add(id, 'building'); }
   add('stick', 'campfire fuel'); add('log', 'campfire fuel'); add('bark', 'campfire fuel'); add('meat', 'bait'); add('jug', 'carrying water');
@@ -409,7 +411,7 @@ function buildUses() {
 const PACK0 = 20, PACK_MAX = 50;
 let INV_N = PACK0;
 let inv = [];
-const packCap = () => WORLD.arena ? 10 : WORLD.mode === 1 ? PACK_MAX : min(PACK_MAX, PACK0 + (G.worn ? G.worn.size : 0) * 10);
+const packCap = () => WORLD.arena && !wildOn() ? 10 : WORLD.mode === 1 ? PACK_MAX : min(PACK_MAX, PACK0 + (G.worn ? G.worn.size : 0) * 10);
 function fitPack() { const n = packCap(); if (inv.length < PACK_MAX) for (let i = inv.length; i < PACK_MAX; i++) inv[i] = null; const over = []; for (let i = n; i < PACK_MAX; i++) if (inv[i]) { over.push(inv[i]); inv[i] = null; } INV_N = n; for (const s of over) { const l = addItem(s.id, s.n); if (l && G.p) spawnDrop(s.id, l, G.p.x + 3, G.p.y + 4); } }
 function addItem(id, n = 1) {
   const it = IT[id]; if (!it) return 0; const st = it.stack;

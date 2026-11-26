@@ -69,7 +69,7 @@ const boonMul = k => boons().mul[k] || 1, boonAdd = k => boons().add[k] || 0, bo
 const brewActive = k => !!(G.brew && G.brew.k === k && G.brew.t > 0);
 const brewMul = k => k === 'swift' && brewActive(k) ? 1.28 : 1;
 // what a brew adds to a blow: exactly 1 unless the Emberheart brew is burning in you
-const combatDmgMul = f => f === G.p && brewActive('might') ? 1.22 : 1;
+const combatDmgMul = f => (f === G.p && brewActive('might') ? 1.22 : 1) * (wildOn() ? brWeaponMul(f) : 1);
 // A save knows a recipe by its number, so the brews, their two stations and the omelet are written into the list last of all
 // (buildItems calls this after every other recipe is in).
 function brewRecipes() {

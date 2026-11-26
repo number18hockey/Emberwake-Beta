@@ -111,6 +111,7 @@ function hollowDrops(f) { const x = f.x + 3, y = f.y + 8, r = Math.random(); if 
 // with friends here, each creature goes after whichever of you is nearest
 function coopTarget(e) { let best = G.p, bd = 1e9; const ex = e.x + e.w / 2, ey = e.y + e.h / 2; for (const f of netPlayers()) { if (f.dead || f.noHit) continue; const d = abs(f.x + 3 - ex) + abs(f.y + 10 - ey) * 1.4 - (f === e.tgtF ? 40 : 0); if (d < bd) { bd = d; best = f; } } e.tgtF = best; return best; }
 function tickEnemies() {
+  if (wildOn()) { brTickMobs(); return; }
   if (netGuest()) return; const arr = G.enemies, keep = G.p, co = netHost() && COOP.peers.size > 0;
   for (let i = arr.length - 1; i >= 0; i--) { const e = arr[i]; if (co && !e.dead) G.p = coopTarget(e); try { tickEnemy(e, i, arr, G.p); } finally { G.p = keep; } }
 }

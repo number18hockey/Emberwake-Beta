@@ -43,7 +43,7 @@ function airTarget() {
   if (DIM || (WORLD.arena && !WORLD.royale)) { add([255, 160, 110, .04]); return [r / a, g / a, b / a, a]; }
   const tx = p ? floor((p.x + 3) / T) : X0, bio = WORLD.royale ? brBio(tx) : G.biome;
   if (BIOTINT[bio]) add(BIOTINT[bio], up);
-  if (WORLD.royale) add(BR.arena === 1 ? [255, 104, 64, .09] : [205, 190, 230, .06]);   // the Trials: each arena has its own air
+  if (WORLD.royale && !BR.wild) add(BR.arena === 1 ? [255, 104, 64, .09] : [205, 190, 230, .06]);   // the Trials: each arena has its own air
   if (!WORLD.arena) { const M = MOODS[bio] ? moodOf(tx, bio) : MOOD0; if (M.tint) add(M.tint, up * 1.3); if (seasonOn()) { const k = seasonBlend(); add(SEASON().tint, up * (1 - k)); add(SEASONS[(seasonI() + 1) % 4].tint, up * k); } }
   add([110, 140, 195, .11], wxA('rain') * up); add([205, 225, 255, .08], wxA('snow') * up);
   add([70, 95, 200, .1], dk * up * (wt('twomoons') ? 1.3 : 1)); add(wt('embersky') ? [255, 80, 40, .15] : [255, 150, 90, .07], edge * up);
