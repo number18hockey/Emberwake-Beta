@@ -279,6 +279,11 @@ function startAttack(f, btn, I, force) {
   f.hist.push(id); if (f.hist.length > 8) f.hist.shift();
   f.face = c.side; f.state = 'attack'; f.chainT = 0; f.mineP = 0;
   const a = f.atk = { f, id, m, W, set, setName: W.set, btn, phase: 0, pt: 0, face: c.side, aimA: c.elev, hits: new Map(), charge: 0, charged: false, hit: false, air: c.air, fresh, stale: fresh ? 1.1 : ([1, .86, .72, .6, .5][rep] || .5), act: m.act, dashT: 0, dashN: 0, prevAng: 0, aimOff: 0, th: 0, crit: !!m.crit, dist: c.dist, tx: I.wx, ty: I.wy, shots: 0, shotI: 0, beat: force ? 1 : f.beatIn | 0, forced: !!force };
+  // the cadence: a heavy blow costs steps (begun in DRUMFIRE or just after it, it is the CRASH and takes the stokes with it);
+  // the blow keeps the cadence it was begun at, and the light blows of DRUMFIRE keep their stokes
+  a.pre = force ? 0 : f.preIn | 0;   // (a blow that a HASTY press queued remembers the early presses before it)
+  if (!force && btn === 'H') { const cr = f.rollT > 0 ? f.stoke | 0 : f.rollOut > 0 && f.crashS >= 0 ? f.crashS : -1; quickStep(f, -QK.LOSE_HEAVY); if (cr >= 0) { a.crash = cr; f.crashS = -1; } }
+  a.q = f.quick | 0; f.quickT = 0; if (f.rollT > 0 && btn === 'L') a.stk = f.stoke | 0; if (c.riposte) a.rip = true;
   // what you wear and how well you know the weapon change how each kind of blow comes out
   if (f === G.p && gearOn()) { const air = c.air, sh = m.kind === 'shot', spd = (sh ? gearMul('bow') : a.btn === 'L' ? gearMul('light') : 1) * (air ? (gearMul('air') + 1) / 2 : 1) * styleSpeed(W, id); a.tm = (W.wsp || 1) / spd; a.gm = (a.btn === 'H' ? gearMul('heavy') : 1) * (air ? (gearMul('air') + 1) / 2 : 1) * styleDmg(W, id); a.dk = gearMul('dash') * (air ? gearMul('air') : 1); a.critB = (gearHas('crit') ? .06 : 0) + (gearHas('keen') ? .08 : 0); }
   if (!force && f === G.p && btn === 'H' && id === set.map.h) { const art = artFor(W); if (art) a.artCharge = { min: 26, max: 96, into: art }; }
@@ -303,17 +308,17 @@ function thrustExt(a, pt) {
   if (m.pump) { const w = clamp(pt / a.act, 0, .999) * m.pump, fr = w - floor(w); return .35 + .65 * sin(min(1, fr * 2.2) * PI / 2); }
   return .4 + .6 * ease.out3(clamp(pt / min(a.act, 4), 0, 1));
 }
-function endAttack(f) { const a = f.atk; if (a) { if (a.rushed) { f.lastMove = null; f.chainT = 0; f.glintT = 0; } else { f.lastMove = a.id; f.chainT = BEAT().late + (f.bb || 0); } } f.atk = null; if (f.state === 'attack') f.state = 'normal'; }
+function endAttack(f) { const a = f.atk; if (a) { if (a.rushed) { f.lastMove = null; f.chainT = 0; f.glintT = 0; } else { f.lastMove = a.id; f.chainT = BEAT().late + (f.bb || 0); f.nearAt = G.time + beatOpen(a) + perfQ(a) + nearW() - a.pt; } } f.atk = null; if (f.state === 'attack') f.state = 'normal'; }
 
 function tickAttack(f, I) {
   const a = f.atk; let m = a.m; a.pt++;
   if (a.phase === 0) {
     if (m.kind === 'plunge' && !m.leap) { f.vy = min(f.vy, -.7); f.vx *= .8; }
     if (m.float && f.vy > .5) f.vy = .5;
-    if (a.pt >= round(m.wind * (a.tm || a.W.wsp || 1))) {
+    if (a.pt >= atkWind(a)) {
       const held = a.btn === 'H' ? I.r : I.l, ch = a.artCharge || m.charge;
       if (ch && held && a.charge < ch.max) {
-        a.charge++; a.pt = round(m.wind * (a.tm || a.W.wsp || 1));
+        a.charge++; a.pt = atkWind(a);
         if (a.charge === 7) fsx(f, 'charge');
         if (a.charge === ch.min) { a.charged = true; fsx(f, 'charged'); if (f === G.p) G.flash = max(G.flash, a.artCharge ? .3 : .18); sparks(f.x + 3, f.y + 6, a.artCharge ? 22 : 14, 0, 3, a.artCharge ? ['#8ff5e6', '#ffffff', '#ffd35a'] : SPARK); }
         if (a.charge > 6 && G.time % 2 === 0) { const an = frand(TAU), r = frand(14, 26); P(f.x + 3 + cos(an) * r, f.y + 8 + sin(an) * r, -cos(an) * 1.6, -sin(an) * 1.6, 12, fpick(SPARK), { glow: 1, g: 0, fr: 1 }); }
@@ -332,10 +337,16 @@ function tickAttack(f, I) {
       a.phase = 2; a.pt = 0; fadeTrail(a); if (m.dash) f.vx *= .5; tempoWhiff(a);
       if (m.quake && f.onGround) { for (const s of m.quake2 ? [1, -1] : [1]) spawnProj({ type: 'shock', owner: f, x: f.x + 3 + a.face * s * 14, y: f.y + f.h - 4, vx: a.face * s * 3.3, vy: 0, r: 6, dmg: round(a.W.dmg * m.quake * combatDmgMul(f)), life: m.quake2 ? 40 : 28, pierce: true, kb: [1.5, -3.2] }); if (near(f)) { addShake(m.shake); sfx('boom'); } dust(f.x + 3 + a.face * 14, f.y + f.h, 8, '#b9bdd0', 2); if (m.quake2) landShock(a, { r: 44, dmg: 1.5, kb: [3.4, -4] }, f.x + 3 + a.face * 12); }
     }
-  } else { if (a.pt === beatOpen(a) && !a.rushed) beatGlint(a); if (a.pt >= atkRec(a)) endAttack(f); }
+  } else {
+    const open = beatOpen(a); if (a.pt === open && !a.rushed) beatGlint(a);
+    if (a.go && a.pt >= open) f.buf = { b: a.go, t: 2, beat: 1 };   // a press in DRUMFIRE: the next blow comes as soon as it may
+    // a HASTY press is kept: the next blow starts when this one is done, out of time
+    if (a.pt >= atkRec(a)) { const hb = a.hasty; endAttack(f); if (hb) f.buf = { b: hb, t: 2, beat: 0, hasty: 1, pre: a.pre }; }
+  }
 }
 function beginActive(a) {
   const f = a.f, m = a.m, fc = a.face; tempoSpend(a);
+  if (a.crash !== undefined && f === G.p) { numPop(f.x + 3, f.y - 30, 'CRASH', '#ff8a3d', 2); addShake(2); }   // (high, clear of the CRESCENDO it often is)
   // a planted blow adds no speed past a run, but it keeps the run you had
   if (m.plant) { if (f.vx * fc > 1.45) f.vx = fc * max(1.45, f.vx * fc * .9); else stepIn(f, fc, m.step || 0); }
   else if (m.step) stepIn(f, fc, m.step);
@@ -427,14 +438,14 @@ function hitFx(hx, hy, top, dmg, o, kx, involved) {
   numPop(hx, top - 4, dmg, o.crit ? '#ffd35a' : '#ffffff', o.crit ? 2 : 1); sparks(hx, hy, o.crit ? 12 : 6, sign(kx), 2.4, o.cold ? FROST : SPARK); if (o.blunt) dust(hx, hy, 4);
   G.trails.push({ kind: 'hit', x: hx, y: hy, life: 5, max: 5, a: frand(TAU), big: o.crit || o.stop >= 5 });
   if (involved || near({ x: hx, y: hy })) sfx(o.crit ? 'crit' : (o.stop >= 5 ? 'hit2' : 'hit'), 20);
-  if (involved) { G.hitstop = max(G.hitstop, (o.stop || 2) + (o.crit ? 2 : 0)); if (o.shake) addShake(o.shake + (o.crit ? 1.5 : 0)); addKick((sign(kx) || 1) * min(3.2, .5 + (o.stop || 2) * .28 + (o.crit ? .9 : 0)), 0); }
+  if (involved) { G.hitstop = max(G.hitstop, max(0, (o.stop || 2) - (o.hsCut | 0)) + (o.crit ? 2 : 0)); if (o.shake) addShake(o.shake + (o.crit ? 1.5 : 0)); addKick((sign(kx) || 1) * min(3.2, .5 + (o.stop || 2) * .28 + (o.crit ? .9 : 0)), 0); }
 }
 // every hit in the game goes through here: monsters, AI duelists, other people online
 function strike(by, e, dmg, kx, ky, o) {
   if (!e.fighter) { const r = damageEnemy(e, dmg, kx, ky, o) > 0; if (r && o.launch && !e.dead && !o.link) applyStatus(e, 'launched', by); return r; }
   const hx = o.hx === undefined ? e.x + 3 : o.hx, hy = o.hy === undefined ? e.y + 10 : o.hy;
-  if (e.remote) { if (e.dead || e.spawnT > 0 || e.noHit) return false; netHit(e, dmg, kx, ky, o.crit, 0, by); e.flash = 6; hitFx(hx, hy, e.y, max(1, round(dmg * .8)), o, kx, by === G.p); return true; }
-  const r = hurtFighter(e, dmg, by ? by.x + 3 : hx - kx, { kx, ky, by, pvp: !!(by && by.fighter), stop: o.stop, shake: o.shake, crit: o.crit, stagger: o.stagger, blunt: o.blunt, launch: o.launch, cold: o.cold, hx, hy, link: o.link, bite: o.bite });
+  if (e.remote) { if (e.dead || e.spawnT > 0 || e.noHit) return false; netHit(e, dmg, kx, ky, (o.crit ? 1 : 0) | (o.bite === false ? 2 : 0), 0, by); e.flash = 6; hitFx(hx, hy, e.y, max(1, round(dmg * .8)), o, kx, by === G.p); return true; }
+  const r = hurtFighter(e, dmg, by ? by.x + 3 : hx - kx, { kx, ky, by, pvp: !!(by && by.fighter), stop: o.stop, shake: o.shake, crit: o.crit, stagger: o.stagger, blunt: o.blunt, launch: o.launch, cold: o.cold, hx, hy, link: o.link, bite: o.bite, hsCut: o.hsCut });
   if (r && o.launch && !e.dead && !o.link) applyStatus(e, 'launched', by); return r;
 }
 function applyHit(a, e, hx, hy) {
@@ -445,10 +456,11 @@ function applyHit(a, e, hx, hy) {
   let dmg = a.W.dmg * m.dmg * a.stale * (P0 ? 1 + rankI() * .02 + qBonus(a.W.id) + (sharp ? .2 : 0) : 1) * (crit && !a.crit ? 1.6 : 1) * (f.dmgMul || 1) * combatDmgMul(f) * (a.gm || 1) * (P0 ? (a.btn === 'H' ? boonMul('hdmg') : 1) * (m.counter ? boonMul('counter') : 1) : 1);
   const lk = P0 ? flowPay(a, e) : null; if (lk) dmg *= lk.mul * (lk.tag ? boonMul('flow') : 1);
   const edge = edgeOf(a, e, hx, hy), TH = tempoHit(a, e, edge, crit); dmg *= TH.k * (WORLD.royale ? trHitMul(a, f, e) : 1);
-  const root0 = e.root || e, sunder = !e.fighter && root0.stagT > 0 && a.btn === 'H' && !root0.sundered; if (sunder) { dmg *= 1.5; root0.sundered = true; }
+  const root0 = e.root || e, sunder = !e.fighter && root0.stagT > 0 && a.btn === 'H' && !root0.sundered, whole = !e.fighter && !(root0.stagT > 0); if (sunder) { dmg *= 1.5; root0.sundered = true; }
   dmg = max(1, round(dmg * frand(.93, 1.07)));
   let kx = m.kb[0] * a.face; if (m.kind === 'spin') kx = m.kb[0] * (sign((e.x + e.w / 2) - (f.x + 3)) || a.face); kx *= a.kbm || 1;
-  if (!strike(f, e, dmg, kx, m.kb[1], { stagger: m.flow === 'down' ? max(m.stagger || 0, 45) : m.stagger, launch: TH.bite && m.launch, crit, stop: (m.stop || 0) + (lk && lk.tag ? 2 : 0) + (a.cresc ? 3 : 0), shake: m.shake, blunt: m.blunt, cold: a.W.cold, hx, hy, bite: TH.bite, pz: TH.pz * (a.pzm || 1), gb: a.btn === 'H' || edge > 0 || !!crit || sunder || !!m.big || !!a.perfect })) return;
+  if (!strike(f, e, dmg, kx, m.kb[1], { stagger: m.flow === 'down' ? max(m.stagger || 0, 45) : m.stagger, launch: TH.bite && m.launch, crit, stop: (m.stop || 0) + (lk && lk.tag ? 2 : 0) + (a.cresc ? 3 : 0), shake: m.shake, blunt: m.blunt, cold: a.W.cold, hx, hy, bite: TH.bite, pz: TH.pz * (a.pzm || 1), gb: a.btn === 'H' || edge > 0 || !!crit || sunder || !!m.big || !!a.perfect, hsCut: a.btn === 'L' ? (a.q | 0) >> 1 : 0 })) return;
+  if (whole && root0.stagT > 0) quickStep(f, QK.UP_BREAK);   // this blow broke its guard
   tempoLanded(a, e, edge, dmg, hx, hy); if (sunder) tempoSunder(a, e, hx, hy); if (WORLD.royale) trAmpHit(a, e, edge, dmg, hx, hy);
   if (P0) { flowSet(a, e, lk, hx, hy); famGain(a.setName, ((a.fresh ? 1 : .4) + (lk && lk.tag ? 1 : 0)) * (e.type === 'dummy' ? .5 : 1)); if (e.type !== 'dummy') artGain(a.W); }
   if (a.W.burn && !e.dead) applyStatus(e, 'burn', f, { d: 110 });

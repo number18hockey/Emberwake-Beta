@@ -9,8 +9,9 @@
 // ============================================================
 const COOP = { role: null, me: '', seq: 1, pid: 0, peers: new Map(), pend: null, out: [], tiles: new Set(), stns: new Set(), applying: false, ghostFx: false, nid: 1, ghosts: new Map(), hghosts: new Map(), chat: [], note: '', t: 0, saveT: 0, uid: 0, takenU: new Set(), tookU: new Map(), hostName: '', busy: false, code: '', reply: '', err: '', chatOpen: false };
 // (NETV says which games can play together: only those with the same number. It went up to 7 when hats, the Wilds and the two
-// new lands came in: a game without them could not read what this one sends, so the two are told to share the newest files)
-const NETV = 7, MAXG = 3;
+// new lands came in: a game without them could not read what this one sends, so the two are told to share the newest files.
+// It went up to 8 with the quickening of the fighting: old and new games strike by different numbers)
+const NETV = 8, MAXG = 3;
 const netOn = () => !!COOP.role, netHost = () => COOP.role === 'host', netGuest = () => COOP.role === 'guest';
 // someone is actually here with you (the world should not stop for menus then)
 const netLive = () => netGuest() ? !!COOP.joined : netHost() && [...COOP.peers.values()].some(P => P.ok);
@@ -304,7 +305,7 @@ function coopReplay(f) {
   if (m) {
     if (!f.atk || f.atk.id !== a.m || f.atkN !== a.an) { f.atkN = a.an; f.atk = { f, id: a.m, m, W, set, setName: W.set, btn: m.btn, phase: 0, pt: 0, face: a.mf, aimA: num(a.ma), dist: num(a.md, 40), charge: 0, hits: new Map(), act: m.act, aimOff: 0, th: 0, dashT: 0, lastPhase: 0 }; setAim(f.atk); }
     const at = f.atk, adv = (rt - a.t) / 16.67; at.phase = a.mp | 0; at.charge = a.mc | 0; at.face = a.mf;
-    at.pt = clamp(num(a.mt) + adv, 0, at.phase === 0 ? m.wind + (a.mc ? 0 : 1) : at.phase === 1 ? at.act : m.rec);
+    at.pt = clamp(num(a.mt) + adv, 0, replayCap(at, a.mc));
     if (at.phase === 1 && at.lastPhase === 0) fsx(f, m.kind === 'thrust' ? 'thrust' : m.big ? 'heavy' : 'swing', 0);
     if (at.phase === 2 && at.lastPhase === 1) fadeTrail(at); at.lastPhase = at.phase;
   } else { if (f.atk && f.atk.phase === 1) fadeTrail(f.atk); f.atk = null; }
@@ -469,12 +470,12 @@ function hostHit(P, m) {
 }
 function hostFHit(P, m) {
   const h = G.fighters.find(f => f.nid === m.id && f.hollow && !f.remote && !f.dead); if (!h) return;
-  hurtFighter(h, clamp(num(m.dmg), 0, 999), num(m.fx, h.x), { kx: clamp(num(m.kx), -9, 9), ky: clamp(num(m.ky), -9, 9), by: P.f, crit: !!m.crit, stagger: m.stagger | 0 });
+  hurtFighter(h, clamp(num(m.dmg), 0, 999), num(m.fx, h.x), { kx: clamp(num(m.kx), -9, 9), ky: clamp(num(m.ky), -9, 9), by: P.f, pvp: true, crit: !!m.crit, stagger: m.stagger | 0, bite: m.b === 0 ? false : undefined });   // (a blow from a person, as the host's own are)
 }
 function hostStatus(P, m) { const e = foeById(m.id); if (e && typeof m.k === 'string') applyStatus(e, m.k, P.f, m.o && typeof m.o === 'object' ? flatObj(m.o) : {}); }
 // a guest strikes a hollow: same idea
 function netHitHollow(f, dmg, fromX, o) {
-  if (f.dead) return false; sendAll({ t: 'fhit', id: f.nid, dmg: round(dmg * 10) / 10, fx: round(fromX || f.x), kx: r2(o.kx || 0), ky: r2(o.ky || 0), crit: !!o.crit, stagger: o.stagger | 0 });
+  if (f.dead) return false; sendAll({ t: 'fhit', id: f.nid, dmg: round(dmg * 10) / 10, fx: round(fromX || f.x), kx: r2(o.kx || 0), ky: r2(o.ky || 0), crit: !!o.crit, stagger: o.stagger | 0, b: o.bite === false ? 0 : 1 });
   f.flash = 6; numPop(f.x + 3, f.y - 2, max(1, round(dmg)), o.crit ? '#ffd35a' : '#ffffff'); return true;
 }
 // the host's creature catches a guest: the guest's own game decides (so a perfect dodge still dodges)

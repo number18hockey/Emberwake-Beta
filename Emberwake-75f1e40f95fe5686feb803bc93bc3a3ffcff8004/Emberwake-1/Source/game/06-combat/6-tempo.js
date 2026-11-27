@@ -21,6 +21,27 @@
 //              when it breaks they reel and take more.
 // ============================================================
 const TEMPO_MAX = 5, TEMPO_HOLD = 210;
+// ---------------- THE QUICKENING: every knob of the cadence, in one table, so it can be tuned without hunting ----------------
+// Each blow struck on the glint (and landed) is a step of CADENCE: the next light blow winds up a little sooner and every
+// follow-through is shorter, so a chain speeds up like a drum roll. Five steps start DRUMFIRE: a second when timing lets go
+// and quick hands STOKE each blow. A slip costs a step; only real hammering is RUSHED.
+const QK = {
+  MAX: 5,                                     // steps of cadence; reaching it starts DRUMFIRE
+  WIND: .05, REC: .09,                        // per step: a light wind-up this much shorter, every follow-through this much shorter (tuned from .1)
+  FLOOR: 7,                                   // no blow (wind-up + swing + the wait for the glint) is ever shorter than this (tuned from 6:
+                                              //  daggers and fists at the floor out-ran every other weapon)
+  NEARW: { easy: 5, normal: 4, hard: 3 },     // ticks after the bright glint that still hold the cadence (NEAR)
+  ROLL_T: { easy: 90, normal: 75, hard: 60 }, // how long DRUMFIRE lasts (tuned from 75/60/50: shorter, CRASHes came round so often they out-paid the beat)
+  ROLL_OUT: 20, ROLL_FALL: 2,                 // the grace after it (early presses are not held against you) and the step it falls to
+  STOKE_GAP: 9, STOKE_MAX: 4,                 // in DRUMFIRE a press within this many ticks of the last adds a stoke, up to this many
+  STOKE_DMG: .03, STOKE_PZ: .08,              // what each stoke adds to a blow's damage and to its weight on a guard (the CRASH takes them too; damage tuned from .04)
+  DECAY: 20, DODGE_HOLD: 12,                  // out of the chain a step fades every DECAY ticks; a dodge holds them this long
+  UP_CLASH: 2, UP_BREAK: 2, UP_RIPOSTE: 2,    // other roads up: winning a clash, breaking a guard, a riposte that lands
+  LOSE_HURT: 2, LOSE_SOFT: 1, LOSE_CAUGHT: 5, LOSE_CLASHED: 2, LOSE_WHIFF: 1, LOSE_HASTY: 1, LOSE_LATE: 1, LOSE_HEAVY: 2, LOSE_JUMP: 1,
+  RUSH_AT: 3,                                 // early presses in a row (counted on through HASTY blows) that RUSH a blow
+  SHAKE_N: 4, SHAKE_GAP: 6, SHAKE_OFF: 2,     // SHAKE-OFF: presses counted in one reel, ticks between them, ticks each takes off
+  BOT_CAP: 6.2, BOT_DRUM: [13, 7]             // a computer fighter climbs to floor(skill x BOT_CAP) steps; in DRUMFIRE it presses every lerp(13, 7, skill) ticks
+};
 // how wide the glint is, by difficulty: perfect ticks, ticks after the follow-through ends, and how early a press is forgiven
 const BEATS = { easy: { perf: 6, late: 15, early: 4 }, normal: { perf: 5, late: 11, early: 3 }, hard: { perf: 4, late: 8, early: 2 } };
 const BEAT = () => (WORLD.arena ? BEATS.normal : BEATS[SETTINGS.diff] || BEATS.easy);
@@ -31,11 +52,23 @@ const TELL = new Set(['tele', 'wind', 'windup', 'aim', 'crouch', 'raise', 'curl'
 // what each family of weapons gets from keeping the beat (the forms page says so too)
 const FAM_TEMPO_T = { sword: 'heavy blows spend embers best', spear: 'a clean point lights two embers', fangs: 'embers fade slowly', maul: 'a heavy that lands keeps two embers', bow: 'a head shot lights two embers', chuks: 'the glint lasts longer', brawl: 'a wider moment to clash' };
 const atkSpd = a => a.tm || a.W.wsp || 1;
-function atkRec(a) { return round(a.m.rec * atkSpd(a) * (a.rushed ? 1.7 : 1)) + (a.whiff ? 4 : 0); }
-function beatOpen(a) { return max(2, floor(a.m.rec * atkSpd(a) * .5)); }
+// the lengths of a blow: a.q is the cadence it was begun at (none for a blow replayed from someone else's game)
+const atkBB = a => (a.f && a.f.bb || 0) + (a.setName === 'chuks' ? 2 : 0);
+function atkWind(a) { const w = a.m.wind * atkSpd(a), q = a.q | 0; return a.btn === 'L' && q ? max(min(1, round(w)), round(w * (1 - QK.WIND * q))) : round(w); }
+function atkRec(a) { return round(a.m.rec * atkSpd(a) * (1 - QK.REC * (a.q | 0)) * (a.rushed ? 1.7 : 1)) + (a.whiff ? 4 : 0); }
+function beatOpen(a) { return max(2, QK.FLOOR - atkWind(a) - a.act, floor(a.m.rec * atkSpd(a) * (1 - QK.REC * (a.q | 0)) * .5)); }
+// how many ticks the glint stays bright: it narrows as the cadence climbs
+function perfQ(a) { return max(2, BEAT().perf + atkBB(a) - ((a.q | 0) >> 1)); }
+const nearW = () => QK.NEARW[WORLD.arena ? 'normal' : SETTINGS.diff] || QK.NEARW.easy, rollT = () => QK.ROLL_T[WORLD.arena ? 'normal' : SETTINGS.diff] || QK.ROLL_T.easy;
+const qCap = f => f.ai ? min(QK.MAX, floor(f.ai.skill * QK.BOT_CAP)) : QK.MAX;
 function beatNote(k, crisp) { if (!AC || muted) return; try { const f = NOTE[clamp(k | 0, 0, 5)]; tone('triangle', f, f, .16, .1); if (crisp) tone('sine', f * 2, f * 2, .22, .05, .01); } catch (e) { } }
 Object.assign(SFX, {
-  beat() { tone('triangle', 1760, 1760, .03, .035); },
+  beat() { const fr = 1760 * pow(2, (G.p && G.p.quick | 0) / 6); tone('triangle', fr, fr, .03, .035); },   // a whole tone higher for each step of cadence
+  tok() { tone('sine', 150, 105, .07, .1); },
+  drumfire() { for (let k = 0; k < 5; k++) noise(.05, .2, 3200, 1800, 1.4, 'highpass', k * .035); tone('triangle', 1318.5, 1318.5, .25, .07, .17); },
+  rim() { tone('square', 2400, 2100, .015, .035); noise(.02, .08, 5000, 4000, 3, 'highpass'); },
+  hiss() { noise(.35, .14, 5000, 600, 1.2, 'highpass'); },
+  shakeoff() { const fr = 520 * pow(2, (G.p && G.p.shN | 0) / 6); tone('triangle', fr, fr * 1.06, .04, .06); },
   rush() { tone('square', 150, 90, .12, .08); noise(.08, .1, 500, 200, 1, 'lowpass'); },
   clash() { tone('triangle', 1250, 1180, .28, .2); tone('sine', 1880, 1760, .34, .12, .01); noise(.07, .25, 5000, 2500, 2, 'highpass'); },
   broken() { tone('sine', 220, 70, .32, .25); noise(.2, .22, 1800, 300, 1.2); tone('triangle', 880, 440, .18, .12, .03); },
@@ -53,29 +86,71 @@ function tempoAdd(f, n) {
 function tickTempo(f) {
   if (f.tempo > 0 && !(WORLD.royale && trKeepTempo(f)) && --f.tempoT <= 0) { f.tempo--; f.tempoT = 50; }
   if (f.glintT > 0) f.glintT--; if (f.answerT > 0) f.answerT--;
+  // the cadence: DRUMFIRE burns out to a lower step with a moment of grace; out of the chain the steps fade one by one
+  if (f.rollT > 0) { if (--f.rollT <= 0) { f.quick = min(f.quick | 0, QK.ROLL_FALL); rollEnd(f); } }
+  else if (f.rollOut > 0) f.rollOut--;
+  if (f.quick > 0 && !(f.rollT > 0) && !(f.rollOut > 0) && f.state === 'normal' && !(f.chainT > 0) && --f.quickT <= 0) { f.quick--; f.quickT = QK.DECAY; }
+}
+// a step of cadence won or lost (n < 0). Five starts DRUMFIRE; any loss during it puts it out
+function quickStep(f, n) {
+  if (!n || !f.fighter) return; const q0 = f.quick | 0; f.quick = clamp(q0 + n, 0, qCap(f));
+  if (n < 0 && f.rollT > 0) { f.rollT = 0; rollEnd(f); }
+  else if (f.quick >= QK.MAX && q0 < QK.MAX && !(f.rollT > 0)) {
+    f.rollT = rollT(); f.stoke = 0; f.crashS = -1;
+    if (f === G.p) { numPop(f.x + 3, f.y - 16, 'DRUMFIRE', '#ffd35a', 2); sfx('drumfire', 0); G.flash = max(G.flash, .12); G.flashCol = '255,211,90'; try { if (mobileDevice && navigator.vibrate) navigator.vibrate(10); } catch (e) { } tempoHint('drumfire', 'DRUMFIRE: five blows in time. For a moment timing lets go: hammer the button and every blow is stoked harder. End it with a heavy blow, a CRASH.'); }
+    else fsx(f, 'drumfire', 0);
+  }
+  if (f === G.p && f.quick < q0) sfx('tok', 30);
+}
+// DRUMFIRE is over: the stokes are kept through the grace, for a heavy CRASH
+function rollEnd(f) { f.rollOut = QK.ROLL_OUT; f.crashS = f.stoke | 0; f.stoke = 0; if (f === G.p) sfx('hiss', 0); }
+// SHAKE-OFF: pressing while you reel gets you back on your feet sooner (a few presses, not a flurry of them)
+function shakeOff(f) {
+  if (!(f.hurtT > 0) || (f.shN | 0) >= QK.SHAKE_N || G.time - (f.shLast === undefined ? -99 : f.shLast) < QK.SHAKE_GAP) return;
+  f.shN = (f.shN | 0) + 1; f.shLast = G.time; f.hurtT = max(1, f.hurtT - QK.SHAKE_OFF); if (f === G.p) tempoHint('shake', 'SHAKE-OFF: pressing while you reel gets you back on your feet sooner. A few presses do it; a flurry does no more.');
+  if (near(f)) sparks(f.x + 3, f.y + 6, 5, 0, 1.6, ['#ffffff', '#fff1a8']); if (f === G.p) sfx('shakeoff', 0);
 }
 // a press of an attack button: on the glint it carries the chain on; before it, the blow in hand is rushed
+// (the bands: CRISP on the bright glint, a step up if the blow in hand landed; NEAR just off it, the cadence holds;
+//  LATE after that, still in the chain but a step down; before the glint a first press is HASTY, a third is RUSHED)
 function beatPress(f, b) {
-  const a = f.atk, B = BEAT();
+  const a = f.atk, B = BEAT(), gap = G.time - (f.tapAt === undefined ? -99 : f.tapAt); f.tapAt = G.time;
   if (f.state === 'attack' && a) {
     if (a.rushed) return;
-    if (a.phase === 2) { const open = beatOpen(a), bb = (f.bb || 0) + (a.setName === 'chuks' ? 2 : 0); if (a.pt >= open - B.early - bb) { f.buf = { b, t: B.early + bb + 4, beat: a.pt >= open && a.pt < open + B.perf + bb ? 2 : 1 }; return; } }
     // a held wind-up (charging a heavy) is a hold, not a second press
     if (a.phase === 0 && a.charge > 0 && b === a.btn) return;
-    rushBlow(f, a); return;
+    // DRUMFIRE: no press is wrong, and quick ones stoke the next blow
+    if (f.rollT > 0 && a.btn === 'L') { const s0 = f.stoke | 0; f.stoke = clamp(s0 + (gap <= QK.STOKE_GAP ? 1 : -1), 0, QK.STOKE_MAX); if (f.stoke > s0) { if (f === G.p) sfx('rim', 0); if (near(f)) sparks(f.x + 3 + f.face * 7, f.y + 7, 1 + f.stoke, 0, 1.4, ['#ffd35a', '#ffffff']); }   // (a stoke is seen and heard)
+      // (once the opening has come the next blow starts at once; a heavy pressed as a light is on its way still comes: heavy wins, as in one tick)
+      a.go = a.go === 'H' ? 'H' : b; if (a.phase === 2 && a.pt >= beatOpen(a)) f.buf = { b: a.go, t: 2, beat: 1 }; else if (f.buf) f.buf.b = a.go; return; }
+    const bb = atkBB(a), open = beatOpen(a), d = a.phase === 2 ? a.pt - open : -99;
+    if (d >= -(B.early + bb)) {
+      if (a.hasty) return;
+      const P = perfQ(a), band = d < 0 ? 1 : d < P ? 2 : d < P + nearW() ? 1 : 0;
+      f.buf = { b, t: B.early + bb + 4, beat: band === 2 ? 2 : 1, step: band === 2 && a.hit ? 1 : band === 0 ? -QK.LOSE_LATE : 0 }; return;
+    }
+    if (f.rollOut > 0) return;   // the grace after DRUMFIRE: an early press is let go
+    // (early presses are counted on through the blows that HASTY presses queue: hammering goes HASTY, HASTY, RUSHED)
+    a.pre = (a.pre | 0) + 1;
+    if (a.pre < QK.RUSH_AT && !a.hasty) { a.hasty = b; quickStep(f, -QK.LOSE_HASTY); if (f === G.p) { numPop(f.x + 3, f.y - 10, 'HASTY', '#8a8794'); tempoHint('hasty', 'HASTY: pressed before the glint. The next blow waits for this one to finish, comes out of time, and your blows slow a step. Keep pressing early and you are RUSHED.'); } }
+    else if (a.pre >= QK.RUSH_AT) { a.hasty = null; rushBlow(f, a); }
+    return;
   }
-  f.buf = { b, t: 8, beat: f.state === 'normal' && (f.chainT > 0 || (f === G.p && !WORLD.arena && blessOn('cadence'))) ? 1 : 0 };   // (the Singing Stones' blessing: every chain begins in time)
+  // (a HASTY blow's own next blow is already on its way, out of time: one more press in the same moment cannot put it back in time)
+  if (f.buf && f.buf.hasty) return;
+  // out of a blow: still in the chain the next blow keeps the beat; once the NEAR moment of the last blow is past it costs a step
+  f.buf = { b, t: 8, beat: f.state === 'normal' && (f.chainT > 0 || (f === G.p && !WORLD.arena && blessOn('cadence'))) ? 1 : 0, step: f.state === 'normal' && f.chainT > 0 && G.time >= (f.nearAt | 0) ? -QK.LOSE_LATE : 0 };   // (the Singing Stones' blessing: every chain begins in time)
 }
 function rushBlow(f, a) {
-  a.rushed = true; a.beat = 0; f.buf = null; if (!f.noRushCost) tempoAdd(f, -2); f.rushN = (f.rushN | 0) + 1; f.stam = max(0, f.stam - 8); f.stamDelay = max(f.stamDelay | 0, 34);
-  if (f === G.p) { numPop(f.x + 3, f.y - 10, 'RUSHED', '#8a8794'); sfx('rush', 60); tempoHint('rush', 'RUSHED. Hammering the button makes weak, slow blows. Strike again when your weapon glints, not before.'); if (G.drill) drillNote('rush'); }
+  a.rushed = true; a.beat = 0; f.buf = null; if (!f.noRushCost) tempoAdd(f, -2); f.rushN = (f.rushN | 0) + 1; f.stam = max(0, f.stam - 8); f.stamDelay = max(f.stamDelay | 0, 34); quickStep(f, -QK.MAX);
+  if (f === G.p) { numPop(f.x + 3, f.y - 10, 'RUSHED', '#8a8794'); sfx('rush', 60); tempoHint('rush', 'RUSHED. Hammering before the glint makes weak blows that are slow to recover from. Wait for the glint: only in DRUMFIRE does hammering pay.'); if (G.drill) drillNote('rush'); }
 }
 // the follow-through reaches its opening: the weapon glints
 function beatGlint(a) {
   const f = a.f, B = BEAT(), m = a.m, L = (ARM + a.W.len) * m.reach; let ox = a.face * 9, oy = 8;
   if (m.kind === 'swing') { const th = swingAng(a, a.act); ox = a.face * (1 + cos(th) * L * .6); oy = 6 + sin(th) * L * .6; }
   else if (m.kind === 'thrust') { ox = a.face * (1 + cos(a.th) * L * .7); oy = 6 + sin(a.th) * L * .7; }
-  f.glOx = ox; f.glOy = oy; f.glintMax = f.glintT = atkRec(a) - a.pt + B.late; f.glintP = B.perf + (f.bb || 0) + (a.setName === 'chuks' ? 2 : 0);
+  f.glOx = ox; f.glOy = oy; f.glintMax = f.glintT = atkRec(a) - a.pt + B.late; f.glintP = perfQ(a);
   if (f === G.p) sfx('beat', 0);
 }
 // when the blow leaves the hand: a heavy one takes every ember with it
@@ -101,9 +176,10 @@ function tempoHit(a, e, edge, crit) {
   let k = a.spent ? 1 + .2 * a.spent + (a.cresc ? .3 : 0) : 1 + .06 * t;
   const lean = FAM_LEAN[a.setName]; if (a.spent && lean && lean.rhythm) k *= 1 + (lean.rhythm - 1) * a.spent / TEMPO_MAX;
   if (a.beat === 2) k *= 1.1; if (a.rushed) k *= .7; if (edge > 0) k *= 1.15; else if (edge < 0) k *= .7;
+  const stk = a.crash !== undefined ? a.crash : a.stk | 0; if (stk) k *= 1 + QK.STOKE_DMG * stk;   // a stoked blow in DRUMFIRE, or the heavy CRASH that ends it
   if (a.perfect) k *= 1.2; if (f.answerT > 0) k *= 1.25;
   const bite = !a.rushed && edge >= 0 && (a.beat > 0 || f.answerT > 0 || !!a.perfect || a.btn === 'H' || !!m.big || !!m.stagger || !!m.launch || edge > 0 || !!crit || !!m.dash || !!m.style || !!m.pair || m.kind === 'plunge' || !!a.forced);
-  let pz = (a.btn === 'H' ? 2 : 1) * (a.beat ? 1.4 : 1) * (edge > 0 ? 1.5 : 1) * (1 + .12 * t) * (a.spent ? 1 + .3 * a.spent : 1) * (m.blunt || a.setName === 'maul' ? 1.3 : 1) * (a.rushed ? .4 : 1);
+  let pz = (a.btn === 'H' ? 2 : 1) * (a.beat ? 1.4 : 1) * (edge > 0 ? 1.5 : 1) * (1 + .12 * t) * (a.spent ? 1 + .3 * a.spent : 1) * (m.blunt || a.setName === 'maul' ? 1.3 : 1) * (a.rushed ? .4 : 1) * (1 + QK.STOKE_PZ * stk);
   return { k, bite, pz };
 }
 // after a blow lands: tempo, the note, the words
@@ -112,9 +188,10 @@ function tempoLanded(a, e, edge, dmg, hx, hy) {
   if (edge > 0 && first) { G.trails.push({ kind: 'hit', x: hx, y: hy, life: 7, max: 7, a: PI / 4, big: true }); sparks(hx, hy, 6, 0, 2.6, ['#fff1a8', '#ffffff']); if (P0) { tempoHint('clean', 'CLEAN. Where a weapon lands matters: with this one, ' + (EDGE_HINT[a.setName] || 'the far edge of your reach') + ' hits harder and breaks guards faster.'); a.lastEdge = 1; } }
   else if (edge < 0 && first && P0) numPop(hx, hy - 10, 'JAMMED', '#8a8794');
   if (f.answerT > 0 && first) { f.answerT = 0; if (P0) numPop(hx, hy - 14, 'ANSWER', '#8ff5e6'); }
+  if (a.rip && first) quickStep(f, QK.UP_RIPOSTE);
   if (a.spent && first && a.setName === 'maul') { f.tempo = max(f.tempo | 0, min(2, a.spent)); f.tempoT = TEMPO_HOLD; }
   if (first && a.beat > 0) {
-    tempoAdd(f, 1 + (a.setName === 'spear' && edge > 0 ? 1 : 0)); if (P0) { beatNote(f.tempo, a.beat === 2); if (a.beat === 2) { if (G.time - (f.wordT || -99) > 50) { f.wordT = G.time; numPop(f.x + 3, f.y - 10, 'CRISP', '#fff1a8'); } sparks(f.x + 3 + (f.glOx || 0), f.y + (f.glOy || 6), 5, 0, 1.8, ['#ffffff', '#fff1a8']); f.stam = min(f.maxstam, f.stam + 4); tempoHint('crisp', 'CRISP: struck right on the glint. Blows in time bite, and each one lights an ember. Embers make every blow hit harder.'); } }
+    tempoAdd(f, 1 + (a.setName === 'spear' && edge > 0 ? 1 : 0)); if (P0) { beatNote(f.tempo, a.beat === 2); if (a.beat === 2) { if (G.time - (f.wordT || -99) > 50) { f.wordT = G.time; numPop(f.x + 3, f.y - 10, 'CRISP', '#fff1a8'); } sparks(f.x + 3 + (f.glOx || 0), f.y + (f.glOy || 6), 5, 0, 1.8, ['#ffffff', '#fff1a8']); f.stam = min(f.maxstam, f.stam + 4); tempoHint('crisp', 'CRISP: struck right on the glint. Blows in time bite and light embers, and a crisp blow after a hit QUICKENS the next. The thin bar under your embers shows how fast you are.'); } }
   }
   if (a.cresc && first) { numPop(hx, hy - 16, 'CRESCENDO', '#ffd35a', 2); addShake(7); G.trails.push({ kind: 'ring', x: hx, y: hy, r: 46, life: 14, max: 14 }); burst(hx, hy, 34, ['#ffd35a', '#fff1a8', '#ff8a3d', '#ffffff'], 3.6, 34, { glow: 1, g: .02 }); if (P0) G.hitstop = max(G.hitstop, 9); }
   else if (a.spent && first && P0) numPop(hx, hy - 14, 'x' + (1 + .2 * a.spent).toFixed(1), '#ffd35a');
@@ -124,18 +201,18 @@ function tempoLanded(a, e, edge, dmg, hx, hy) {
 // the blow is over without touching anything: a wasted swing costs an ember and a moment
 function tempoWhiff(a) {
   const f = a.f; if (a.hit || a.dug || a.clashed || a.m.kind === 'shot' || a.m.style) return;
-  a.whiff = true; if (f.tempo > 0 && !a.spent) tempoAdd(f, -1); f.stam = max(0, f.stam - 4);
+  a.whiff = true; if (f.tempo > 0 && !a.spent) tempoAdd(f, -1); f.stam = max(0, f.stam - 4); quickStep(f, -QK.LOSE_WHIFF);
 }
 
 // ---------------- CLASH: your blow meets theirs ----------------
 function tryClash(f, dmg, fromX, o) {
   const a = f.atk; if (!a || a.rushed || o.env || o.link || o.dot || o.noClash || a.m.kind === 'shot' || f.clashAt === G.time) return false;
-  const wind = round(a.m.wind * atkSpd(a));
+  const wind = atkWind(a);
   if (!(a.phase === 1 ? true : a.phase === 0 && a.pt >= wind - (a.setName === 'brawl' ? 5 : 2) && !a.charge)) return false;
   const fx = f.x + 3; if (fromX !== undefined && abs(fromX - fx) > 4 && sign(fromX - fx) !== a.face && a.m.kind !== 'spin' && a.m.kind !== 'flip') return false;
-  a.clashed = true; f.clashAt = G.time; f.inv = max(f.inv, 16); f.answerT = 60; tempoAdd(f, 1); f.stam = min(f.maxstam, f.stam + 12);
+  a.clashed = true; f.clashAt = G.time; f.inv = max(f.inv, 16); f.answerT = 60; tempoAdd(f, 1); f.stam = min(f.maxstam, f.stam + 12); quickStep(f, QK.UP_CLASH);
   const by = o.by, hx = fx + a.face * 9, hy = f.y + 8;
-  if (by && by.fighter) { by.atk = null; by.state = 'normal'; by.buf = null; by.hurtT = max(by.hurtT, 16); by.vx = a.face * 2.6; by.vy = min(by.vy, -1); if (by.tempo > 0) tempoAdd(by, -1); }
+  if (by && by.fighter) { by.atk = null; by.state = 'normal'; by.buf = null; by.hurtT = max(by.hurtT, 16); by.vx = a.face * 2.6; by.vy = min(by.vy, -1); by.shN = QK.SHAKE_N; if (by.tempo > 0) tempoAdd(by, -1); quickStep(by, -QK.LOSE_CLASHED); }   // (a clash's stun cannot be shaken off)
   else if (by && by.hp !== undefined && !by.dead) {
     const root = by.root || by; if (!root.noKb && !root.boss) { by.vx = a.face * 2.4 * (1 - (by.kbRes || 0)); by.stun = max(by.stun || 0, 18); if (TELL.has(by.state) || by.state === 'swing' || by.state === 'lunge' || by.state === 'pounce' || by.state === 'leap' || by.state === 'swoop') { by.state = by.fly ? 'idle' : 'chase'; by.t = 0; } }
     poiseHit(root, (root.mpz || max(10, root.maxhp * .55)) * .5, {});
@@ -225,6 +302,10 @@ function drawTempoHud(c, p, x, y) {
   const n = p.tempo | 0, full = n >= TEMPO_MAX;
   for (let k = 0; k < TEMPO_MAX; k++) { const on = k < n, px = x + k * 6; c.fillStyle = INK; c.fillRect(px, y, 5, 5); c.fillStyle = on ? (full ? ((G.time >> 2) & 1 ? '#ffffff' : '#fff1a8') : '#ff8a3d') : '#2a2438'; c.fillRect(px + 1, y + 1, 3, 3); if (on && !full) { c.fillStyle = '#ffd35a'; c.fillRect(px + 2, y + 1, 1, 1); } }
   if (full && (G.time >> 3) & 1) textS(c, 'RMB: CRESCENDO', x - textW('RMB: CRESCENDO') - 4, y - 1, '#ffd35a');
+  // the cadence: a thin bar under the pips, a step to a pip (nothing at all at rest). In DRUMFIRE it flickers and burns down
+  const q = p.quick | 0; if (q <= 0) return;
+  const roll = p.rollT > 0, w = roll ? max(1, round(TEMPO_MAX * 6 * p.rollT / rollT()) - 1) : q * 6 - 1;
+  c.fillStyle = INK; c.fillRect(x - 1, y + 5, w + 2, 3); c.fillStyle = roll ? ((G.time >> 1) & 1 ? '#ffffff' : '#ffd35a') : p.rollOut > 0 ? '#ff8a3d' : '#e0a020'; c.fillRect(x, y + 6, w, 1);
 }
 // a foe winding up shows it; a foe's guard shows under its health once it has been tested
 function drawTell(c, e, x, y) {

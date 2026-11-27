@@ -6,9 +6,10 @@ from harness import H, sheet
 from where import shot
 
 SETUP = """(() => { G.enemies.length = 0; const p = G.p; if (!window.GX) { window.GX = floor((p.x + 3) / T); window.GY = heights[GX]; for (let x = GX - 8; x <= GX + 30; x++) { for (let y = GY - 12; y < GY; y++) setTile(x, y, 0); for (let y = GY; y < GY + 3; y++) setTile(x, y, CUTSTONE); heights[x] = GY; } }
-  const e = spawnMob('husk', GX + 3, GY); e.warded = false; e.hp = e.maxhp = %s; e.mpz = %s; e.pz = e.mpz; e.x0 = e.x; window.FOE = e; p.hp = p.maxhp; p.tempo = 0; p.atk = null; p.state = 'normal'; p.hist = []; p.lastMove = null; p.chainT = 0; p.buf = null; p.st = null; p.stam = 100; p.answerT = 0; G.combo.n = G.combo.pts = 0; G.hitstop = 0; G.fam = {}; G.mast = {}; return 1; })()"""
+  const e = spawnMob('husk', GX + 3, GY); e.warded = false; e.hp = e.maxhp = %s; e.mpz = %s; e.pz = e.mpz; e.x0 = e.x; window.FOE = e; p.hp = p.maxhp; p.tempo = 0; p.atk = null; p.state = 'normal'; p.hist = []; p.lastMove = null; p.chainT = 0; p.buf = null; p.quick = 0; p.quickT = 0; p.rollT = 0; p.rollOut = 0; p.stoke = 0; p.st = null; p.stam = 100; p.answerT = 0; G.combo.n = G.combo.pts = 0; G.hitstop = 0; G.fam = {}; G.mast = {}; return 1; })()"""
 KEEP = "G.p.inv = 5; G.p.stam = max(G.p.stam, 60); FOE.state = 'chase'; FOE.t = 0; FOE.x = FOE.px = FOE.x0; FOE.vx = 0; FOE.stun = 0; G.hitstop = 0; (() => { const p = G.p, e = FOE; p.x = p.px = e.x - GAP; p.y = p.py = e.y + e.h - p.h; p.vx = p.vy = 0; p.face = 1; p.onGround = true; mouse.wx = e.x + 3; mouse.wy = e.y + 8; })();"
-MIX = "(() => { const p = G.p, a = p.atk; if (!a && p.state === 'normal' && !(p.chainT > 0)) mouse.lp = true; else if (a && a.phase === 2 && a.pt === beatOpen(a) + 1) { if (p.tempo >= 4) mouse.rp = true; else mouse.lp = true; } })();"
+# (just after the glint; a quickened follow-through can end the tick after it opens, so then on its last tick)
+MIX = "(() => { const p = G.p, a = p.atk; if (!a && p.state === 'normal' && !(p.chainT > 0)) mouse.lp = true; else if (a && a.phase === 2 && a.pt === min(beatOpen(a) + 1, atkRec(a) - 1)) { if (p.tempo >= 4) mouse.rp = true; else mouse.lp = true; } })();"
 CLEAR = "mouse.lp = false; mouse.rp = false; mouse.l = false; mouse.r = false;"
 BIG = '1e7', '1e12'
 
@@ -43,7 +44,9 @@ async def run():
         v, info = await dps(h, wid); res[wid] = v; print('  %-18s %-6s dmg %-3d reach %-3d  on the beat: %.1f a second for each point of metal' % (wid, info[0], info[1], info[2], v))
     lo, hi = min(res.values()), max(res.values())
     print('  spread %.2f (lowest %s, highest %s)' % (hi / lo, min(res, key=res.get), max(res, key=res.get)))
-    ok.append(('no kind of weapon out-damages another by more than half', hi / lo <= 1.5))
+    # (the quickening speeds slow weapons more than quick ones, which already sit near the 6-tick floor: the band may widen by
+    #  15% over the 1.44 it was before, and no more)
+    ok.append(('no kind of weapon out-damages another by more than two thirds (%.2f)' % (hi / lo), hi / lo <= 1.65))
     ok.append(('the slowest weapons hit hardest, the longest least', res['steel_greataxe'] > res['iron_sword'] > res['iron_spear']))
 
     # 3. tools: half a sword on a tap, at every tier (they used to overtake swords in the late worlds)

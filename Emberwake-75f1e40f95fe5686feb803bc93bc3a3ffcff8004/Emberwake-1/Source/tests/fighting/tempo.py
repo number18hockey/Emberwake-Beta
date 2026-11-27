@@ -6,7 +6,7 @@ from where import shot
 
 # a tough husk that fights back, standing in front of the Waker
 FOE = """(() => { G.enemies.length = 0; const p = G.p; if (!window.GX) { window.GX = floor((p.x + 3) / T); window.GY = heights[GX]; for (let x = GX - 8; x <= GX + 12; x++) { for (let y = GY - 9; y < GY; y++) setTile(x, y, 0); for (let y = GY; y < GY + 3; y++) setTile(x, y, CUTSTONE); heights[x] = GY; } }
-  const x = GX + 3, e = spawnMob('husk', x, GY); e.hp = e.maxhp = %d; e.x0 = e.x; window.FOE = e; p.face = 1; p.hp = p.maxhp; p.tempo = 0; p.atk = null; p.state = 'normal'; p.rushN = 0; p.inv = 0; p.hurtT = 0; p.hist = []; p.lastMove = null; p.chainT = 0; p.rhythm = 0; p.buf = null; p.st = null; G.combo.n = G.combo.pts = 0; G.hitstop = 0; G.slowT = 0; return e.hp; })()"""
+  const x = GX + 3, e = spawnMob('husk', x, GY); e.hp = e.maxhp = %d; e.x0 = e.x; window.FOE = e; p.face = 1; p.hp = p.maxhp; p.tempo = 0; p.atk = null; p.state = 'normal'; p.rushN = 0; p.inv = 0; p.hurtT = 0; p.hist = []; p.lastMove = null; p.chainT = 0; p.rhythm = 0; p.buf = null; p.quick = 0; p.quickT = 0; p.rollT = 0; p.rollOut = 0; p.stoke = 0; p.st = null; G.combo.n = G.combo.pts = 0; G.hitstop = 0; G.slowT = 0; return e.hp; })()"""
 AIM = "(() => { const e = FOE; mouse.wx = e.x + 3; mouse.wy = e.y + 8; mouse.x = (mouse.wx - G.rcx) * VS.s; mouse.y = (mouse.wy - G.rcy) * VS.s; })();"
 # stand at the edge of reach, facing the foe
 SAFE = "G.p.inv = 5; FOE.state = 'chase'; FOE.t = 0; FOE.x = FOE.px = FOE.x0; FOE.vx = 0;"   # the husk never gets a blow in
@@ -49,9 +49,10 @@ async def run():
     ok.append(('only timed blows build tempo', res['beat']['tempo peak'] >= 4 and res['mash']['tempo peak'] <= 1 and res['slow']['tempo peak'] <= 1))
     ok.append(('slow single blows are weakest of all', res['slow']['dealt'] < res['beat']['dealt'] * .5))
 
-    # ---- a rushed press: weak, slow, chain lost ----
+    # ---- a rushed blow: weak, slow, chain lost ----
+    # (since the quickening one press before the glint is only HASTY: hammering, three presses before it, is what rushes)
     await h.ev(FOE % 4000); await h.ev(PLACE % 20); await h.step(2, AIM)
-    await h.step(1, AIM + SAFE + "mouse.lp = true;"); await h.step(2, AIM + SAFE + "mouse.lp = false;"); await h.step(1, AIM + SAFE + "mouse.lp = true;")
+    await h.step(1, AIM + SAFE + "mouse.lp = true;"); await h.step(3, AIM + SAFE + "mouse.lp = true;")
     r = await h.ev("({ rushed: !!(G.p.atk && G.p.atk.rushed), rec: atkRec(G.p.atk), plain: round(G.p.atk.m.rec * (G.p.atk.tm || 1)) })")
     ok.append(('a press before the glint rushes the blow and stretches its recovery', r['rushed'] and r['rec'] > r['plain'] * 1.5))
     await h.step(60, AIM + SAFE + "mouse.lp = false;")

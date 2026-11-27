@@ -86,6 +86,7 @@ Links, armour, weapon styles, creatures and guardians.
 - `links.py` Links: a thrown star pins a post to the wall, and every link on the practice post.
 - `weapon_styles.py` Weapon styles: locked until learned, learning them, the codex and the HUD.
 - `tempo.py` The beat: mashing must lose to timing; rushed blows, tempo, clean hits, clashes, guards, being caught; a rival that fights in time.
+- `quickening.py` The quickening: blows on the glint quicken the cadence, five start DRUMFIRE (stokes, the CRASH), one press too soon is HASTY and hammering is RUSHED, pressing while hit shakes it off. Then RUNS, ten seconds of scripted players on a husk that cannot die (on the glint, with noise, mashers, DRUMFIRE and a CRASH; every kind of weapon), and BOTS, a hundred seeded duels each against computer fighters of four skills. Its bounds are the targets the cadence was tuned to.
 - `balance.py` Balance: metal tiers climb steadily, kinds of weapon stay in one band when used well, tools hit half as hard as a sword of their metal; and the newer rules: sunder, perfect release, the answer, stamina for mashing, warded foes.
 - `ring_with_friends.py` The Cinder Ring with friends by game code, from the plain HTML file.
 - `carried_momentum.py` A blow or a dash never stops you dead: held keys keep you running through a swing, a dash flows into a run, and hands off the keys you glide to a stop.

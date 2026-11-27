@@ -480,7 +480,8 @@ function frameStep(now) {
   if (G.state === 'play' && (UI.open !== 'pause' || WORLD.arena || netLive())) {
     G.tscale += ((G.slowT > 0 ? .3 : 1) - G.tscale) * .25; acc += dt * 60 * G.tscale; let n = 0;
     const most = shared ? 30 : 6;
-    while (acc >= 1 && n < most) { if (G.hitstop > 0) { G.hitstop--; tickParts(); G.shake *= .86; if (WORLD.arena && G.time % 3 === 0) netSend(); } else safeTick(); acc -= 1; n++; }
+    // (the clock stands still in a hit-stop, so the arena's sends keep their own count through one)
+    while (acc >= 1 && n < most) { if (G.hitstop > 0) { G.hitstop--; tickParts(); G.shake *= .86; if (WORLD.arena && (G.hsN = (G.hsN | 0) + 1) % 3 === 0) netSend(); } else safeTick(); acc -= 1; n++; }
     if (n >= most) acc = 0;
   } else {
     G.time++; if (G.state !== 'play') { G.clock = (G.clock + 1 / 20000) % 1; atmoTick(); } updateSun(); tickParts(); const c = G.cam; c.px = c.x; c.py = c.y;
@@ -530,7 +531,7 @@ function beginPlay(fresh) {
   else G.banner = { text: (WORLD.name || 'WORLD').toUpperCase(), sub: WT_ON && WT_KEYS.length && !WORLD.arena ? traitLine() : fresh ? 'a free forge' : 'welcome back, Waker', t: 0 };
   if (WT_ON && WT_KEYS.length && !WORLD.arena) unlock('world');
   if (fresh && WORLD.mode === 0 && WT_ON && WT_KEYS.length) { say('This world is ' + WT_KEYS.map(k => TRAITS[k].n).join(', ') + '. The menu (Esc) says what that means.'); }
-  if (!SETTINGS.tip1 && !WORLD.arena) { SETTINGS.tip1 = 1; saveSettings(); say('Hold left click to dig. In a fight, strike again when your weapon GLINTS: never mash.'); say('Esc opens the menu: CONTROLS and DIFFICULTY live there.'); }
+  if (!SETTINGS.tip1 && !WORLD.arena) { SETTINGS.tip1 = 1; saveSettings(); say('Hold left click to dig. In a fight, strike again when your weapon GLINTS, not before: blows in time come faster and faster.'); say('Esc opens the menu: CONTROLS and DIFFICULTY live there.'); }
 }
 function advance() { if (G.state === 'intro') { if (G.introT < 20) return; if (++G.introI >= INTRO.length) beginPlay(true); else { G.introT = 0; sfx('ui'); } } }
 function quitToTitle() {
@@ -582,9 +583,10 @@ cv.addEventListener('mousedown', e => {
   if (e.button === 0) { mouse.held = true; mouse.hp = true; }
   if (uiMouseDown(e.button)) return;
   if (G.state !== 'play') return;
-  if (e.button === 2 || (e.button === 0 && e.ctrlKey)) { mouse.r = true; mouse.rp = true; } else if (e.button === 0) { mouse.l = true; mouse.lp = true; }
+  if (e.button === 2 || (e.button === 0 && e.ctrlKey)) { mouse.r = true; mouse.rp = true; if (e.button === 0) mouse.lr = true; } else if (e.button === 0) { mouse.l = true; mouse.lp = true; }
 });
-addEventListener('mouseup', e => { if (e.button === 0) { mouse.l = false; mouse.r = false; mouse.held = false; setMouse(e); uiMouseUp(); } else if (e.button === 2) mouse.r = false; });
+// (letting go of the left button lets go of a heavy only if that button was holding it: Ctrl and left)
+addEventListener('mouseup', e => { if (e.button === 0) { mouse.l = false; if (mouse.lr) mouse.r = false; mouse.lr = false; mouse.held = false; setMouse(e); uiMouseUp(); } else if (e.button === 2) mouse.r = false; });
 cv.addEventListener('contextmenu', e => e.preventDefault());
 cv.addEventListener('wheel', e => {
   e.preventDefault(); const d = sign(e.deltaY);

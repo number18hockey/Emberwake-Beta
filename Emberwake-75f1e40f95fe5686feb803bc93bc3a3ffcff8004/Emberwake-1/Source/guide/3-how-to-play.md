@@ -71,10 +71,18 @@ Feathers can be had in any world: besides the willow hen, the **galewisp** that 
 
 ![Three embers of tempo circling the Waker, and a husk about to strike](pictures/fight.jpg)
 
-A fight has a pulse, and you win by keeping it. **Hammering the mouse button loses.** Holding it down does nothing at all.
+A fight has a pulse, and you win by keeping it. Keep it well and it speeds up, until for a moment quick hands are all that matter. Holding the button down does nothing at all.
 
 - **The glint.** After every blow your weapon **glints** (your Waker catches the light too, and there is a soft tick). Strike again **on the glint** and the chain goes on. Right on it is **CRISP**: a little more damage and some stamina back.
-- **Rushed.** Strike **before** the glint and the blow in your hand is **RUSHED**: weaker, much slower to recover from, and the chain starts over. This is what happens to anyone who mashes.
+- **The quickening.** A crisp blow, struck after a blow that landed, **quickens** the next one: it winds up a little sooner, its follow-through is shorter, and its glint comes earlier (and is a little narrower). There are five steps. A thin bar under your embers shows how far you have come, and the glint's tick rises a note with each step. A sword goes from under four blows a second to about five; daggers and fists faster still. A press **just off** the glint, a little early or a little late, keeps your pace; a **late** one, after the moment has passed, still carries the chain on but loses a step.
+- **Other ways up.** Winning a **CLASH**, **breaking** a foe's guard and a **riposte** that lands each give two steps.
+- **Losing pace.** Being hit costs two steps (one for a glancing blow, all of them if you are **CAUGHT**). A swing at nothing costs one, and so does a jump that cuts a blow short before its glint. A heavy blow costs two. Out of a fight the steps fade one by one, a third of a second each; a dodge holds them for a moment.
+- **Hasty.** Press **once before** the glint and you are **HASTY**: nothing is cancelled, but the next blow waits for this one to finish, comes **out of time** (no ember, no bite) and a step slower. It costs no stamina. A second early press does nothing more.
+- **Rushed.** Keep pressing early, three times in a row (the count carries on through the hasty blows), and the blow in your hand is **RUSHED**: weaker, much slower to recover from, and the chain and the pace start over. This is what happens to anyone who hammers the button.
+- **DRUMFIRE.** Reach the fifth step and **DRUMFIRE** starts (a gold word, a snare roll): for about a second and a quarter (longer on **EASY**, shorter on **HARD**) timing lets go. Any press carries the chain on, and none is too early. Presses that come quickly, about seven a second, **stoke** the blows: each stoke adds 3% to the damage and 8% to what a blow does to a guard, up to four. Faster earns nothing more. A small gold spark and a rim click mark each stoke. When it burns out you drop back to the second step with a third of a second of grace, in which an early press is let go; three more crisp blows bring it back.
+- **The CRASH.** A **heavy blow** begun in DRUMFIRE, or in the grace just after it, is a **CRASH**: it takes the stokes with it and ends the DRUMFIRE. With five embers it is a **CRESCENDO** as well.
+- **Shake-off.** When a blow throws you, **press** to get back on your feet sooner. A few presses do it (four count, a tenth of a second apart, each a little sooner); a flurry does no more. A press near the end is kept, so a blow starts the moment you recover. A clash's stun cannot be shaken off.
+- **What quick hands do, and do not.** Hammering never climbs the pace and never lights embers. Ten presses a second give you hasty and rushed blows, about a third of what keeping time does; twenty a second, about a fifth. Quick hands pay in exactly two places: **DRUMFIRE**, and **shaking off** a blow.
 - **Tempo.** Every blow struck in time lights an **ember** (up to five; they circle your Waker and show above the hotbar). Each ember makes your blows hit harder. Embers fade if you stop landing blows, and you lose them when you are hit, when you rush, or when you swing at nothing.
 - **Spending it.** A **heavy blow** (right mouse) takes every ember with it and hits far harder for each one. At five embers it is a **CRESCENDO**. Blades and fists get the most from this.
 - **Biting.** A lone light blow hurts a sturdy foe but does not stop it: it keeps coming. Blows in time, heavy blows and clean blows **bite**: the foe flinches. So one click at a time is the weakest way to fight, and a timed chain is the strongest.
@@ -84,8 +92,9 @@ A fight has a pulse, and you win by keeping it. **Hammering the mouse button los
 - **Their blows.** A foe shows **!** over its head before it strikes. Answer it: **dodge** (Shift) through the blow and strike back for a **riposte**, or **CLASH**: time a swing of your own so it meets theirs, and theirs is turned aside.
 - **The answer.** For a second after a clash, your next blow is the **ANSWER**: it hits a quarter harder and always bites.
 - **Perfect release.** Hold the heavy button to charge a blow, and let go **just as it flashes**: a **PERFECT RELEASE**, a fifth harder. Hold on too long and it is only a charged blow.
-- **Caught.** Being hit while you wind up, or after you rush, hurts a quarter more and takes all your embers.
-- **Stamina.** A rushed blow and a swing at nothing both cost stamina, so mashing leaves you with no wind to dodge or strike heavy.
+- **Caught.** Being hit while you wind up, or after you rush, hurts a quarter more and takes all your embers and all your pace.
+- **Stamina.** A rushed blow and a swing at nothing both cost stamina, so hammering outside DRUMFIRE leaves you with no wind to dodge or strike heavy.
+- **Computer fighters play by the same rules.** Rivals, hollows and the echoes of the arenas climb the pace as far as their skill allows: a clumsy one a step or two, the best all the way to DRUMFIRE, where they drum steadily until it ends or spend it on a heavy. At the top of their pace they strike just after the bright glint, which holds it without climbing. Skilled ones chain longer and shake off your blows sooner; clumsy ones still hammer and rush now and then. Your hasty and rushed blows do not bite, so they only nudge a fighter and do not stop its swing; between people online the same is true.
 - **Warded foes.** Now and then a foe carries a **shield** (you can see it, and its name says *Warded*). Plain blows from the front **glance off**. A heavy blow, a clean one or a critical one gets through, and so does anything **from behind**: dodge through it and turn. Break its guard and the shield drops while it reels.
 
 **Each kind of weapon keeps the beat its own way.** The forms page (**C**) says how, under *In time*:
@@ -102,7 +111,7 @@ A fight has a pulse, and you win by keeping it. **Hammering the mouse button los
 
 **How hard things hit.** Each metal is about a fifth better than the one before it, all the way up. For the same metal, a slow weapon hits hardest and a long one least, but used well they all end up within reach of each other: pick the one whose rhythm you like. **Tools are not weapons**: a tapped pick or axe does about half what a sword of the same metal does, and a wound-up swing (hold the right button) nearly as much as one.
 
-The practice post in the village teaches all of this: press **F** at it with a weapon in hand. The journal (**J**) keeps a page called *The Beat of a Fight*. On **EASY** the timing is generous; **NORMAL** and **HARD** tighten it.
+The practice post in the village teaches all of this: press **F** at it with a weapon in hand. The journal (**J**) keeps a page called *The Beat of a Fight*. On **EASY** the timing is generous and DRUMFIRE lasts longest; **NORMAL** and **HARD** tighten both. The arenas always fight by **NORMAL**.
 
 ### Keeping your run
 

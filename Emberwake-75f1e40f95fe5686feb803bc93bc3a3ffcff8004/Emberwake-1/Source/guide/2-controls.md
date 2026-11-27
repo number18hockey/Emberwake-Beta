@@ -5,7 +5,7 @@
 | **A / D** | move |
 | **Space** or **W** | jump (hold **S** to drop through bridges) |
 | **Shift** | dodge (dodge through a hit at the last moment, then strike back: a riposte) |
-| **Left mouse** | a light blow. Strike again when your weapon **glints**, not before (see *Fighting: the beat*). Holding it down does not attack. Clicking a creature always punches it, whatever you hold |
+| **Left mouse** | a light blow. Strike again when your weapon **glints**, not before: in time, blows come faster and faster (see *Fighting: the beat*). Quick presses pay only in **DRUMFIRE** and to shake off a blow. Holding it down does not attack. Clicking a creature always punches it, whatever you hold |
 | **Right mouse** or **Q** | a heavy blow: spends your tempo for a harder hit (hold to charge); also opens doors |
 | **V** | change weapon style (five per weapon, unlocked by training) |
 | **X** | swap to your off-hand weapon (pairs make combo finishers) |
@@ -43,7 +43,7 @@ Blocks, food and other usable things still do their job when you click empty spa
 Touch controls appear by themselves, whichever way up you hold it. With a mouse and keys they never show.
 
 - The **stick** moves you. Pull it down to drop through a bridge or aim low. **JUMP**, **DASH**, **USE**, **LIGHT** and **HEAVY** are the buttons around it. **DASH** is the dodge (the **Shift** key). **USE** is the **F** key, and you can hold it.
-- **LIGHT** and **HEAVY** strike at whoever is in front of you. The beat is the same as with a mouse: tap again when your weapon **glints**. Holding a button down does not attack again.
+- **LIGHT** and **HEAVY** strike at whoever is in front of you. The beat is the same as with a mouse: tap again when your weapon **glints**, and drum **LIGHT** in DRUMFIRE (the phone gives a short buzz when it starts, where it can). Holding a button down does not attack again.
 - **Touch the world** to dig, gather or strike exactly there. Tap the hotbar to change what you hold.
 - **PACK** opens your pack and crafting: tap a recipe to make it, slide a finger to scroll, **CLOSE** to go back. **HEAL** is a quick heal, **MAP** the map (once you have drawn one) and **MENU** the menu.
 - **CHAT** shows when friends are in your world.

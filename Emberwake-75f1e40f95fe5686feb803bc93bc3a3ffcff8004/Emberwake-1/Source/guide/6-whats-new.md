@@ -2,6 +2,10 @@
 
 Newest first.
 
+## Faster fights
+
+- **The quickening.** Blows struck on the glint now **quicken**: each crisp one after a hit makes the next come sooner, up to five steps (a thin bar under your embers). Five start **DRUMFIRE**, about a second when timing lets go and quick presses **stoke** every blow; end it with a heavy **CRASH**. One press too soon is only **HASTY** (out of time, a step slower); hammering is still **RUSHED**. Press while a blow throws you to **shake it off** sooner. Computer fighters play the same way, as far as their skill allows. Between people a blow that did not bite now lands soft, as it does on an echo, and a friend's blows on a hollow hit as hard as the host's. Letting go of the left button no longer drops a heavy blow you are charging with the right. Old and new versions cannot play together.
+
 ## Two versions made into one
 
 This version joins two that had grown apart. One had the Trials, the four worlds past the floors and fighting by the beat. The other had accounts, touch controls and weather you can feel. Now they are one game.

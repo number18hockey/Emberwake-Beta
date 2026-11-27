@@ -72,7 +72,7 @@ Choose one, or **EITHER** for a surprise (in a lobby the leader chooses).
 
 When you fall you drop everything you carried and can watch the others (**A / D** to switch). **Tab** shows who is left.
 
-Fights use the same rules as everywhere else: strike on the glint, never mash (see *How to play: Fighting*). Blows do less damage in the Trials than in the world, so a fight lasts long enough to be won by timing.
+Fights use the same rules as everywhere else: strike on the glint and your blows quicken; hammer only in DRUMFIRE or to shake off a blow (see *How to play: Fighting*). Blows do less damage in the Trials than in the world, so a fight lasts long enough to be won by timing.
 
 ## A third arena: the Wilds
 
@@ -134,7 +134,7 @@ Echoes are the computer's Wakers, and they think.
 - **They run to somewhere safe**, out of sight and out of reach, not just the other way. They use a salve only when no foe is near or looking.
 - **They pick their fights:** by their health and weapon against yours, by how many are near, by whether a teammate is close. They go for a foe who is nearly done for, and in a team they help the one who is fighting and take the same foe.
 - **They leave in time** when the closing ash would catch them on the walk out, and they choose the chest they can actually reach.
-- **They keep the beat as well as their skill allows.** A practised echo strikes on the glint, answers the openings you give it, dodges, and spends five embers on a heavy. A clumsy one still rushes some of its blows.
+- **They keep the beat as well as their skill allows.** A practised echo strikes on the glint, quickens its blows as far as its skill goes (the best reach DRUMFIRE), shakes off your blows, answers the openings you give it, dodges, and spends five embers on a heavy. A clumsy one still rushes some of its blows.
 
 The duelists of the Cinder Ring and the rivals in your world find their way to you by the same means.
 

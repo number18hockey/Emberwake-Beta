@@ -46,7 +46,7 @@ function netPeers(list) {
   for (const pe of list) {
     if (pe.isMe && pe.sameTab) { NET.me = pe.peer; continue; }
     if (pe.kind !== 'viewer') continue;
-    const s = pe.presence; if (!s || s.v !== 1 || s.ring !== NET.code) continue;
+    const s = pe.presence; if (!s || s.v !== 2 || s.ring !== NET.code) continue;
     here.add(pe.peer);
     let f = NET.peers.get(pe.peer);
     if (!f) {
@@ -95,7 +95,7 @@ function netTakeHit(from, h) {
     else if (['pin', 'hook', 'burn', 'blind', 'launched', 'frost', 'poison', 'bleed'].includes(k) && !(p.iDodge > 0)) applyStatus(p, k, from, { d: d || undefined, side, floor: !side });
     if (num(h[2]) <= 0) return;
   }
-  hurtFighter(p, clamp(num(h[2]), 1, 90), from.x + 3, { kx: clamp(num(h[3]), -8, 8), ky: clamp(num(h[4]), -8, 8), by: from, pvp: true, net: true, crit: !!h[5], stop: 3, shake: 2, link: !!(p.st && p.st.held) });
+  hurtFighter(p, clamp(num(h[2]), 1, 90), from.x + 3, { kx: clamp(num(h[3]), -8, 8), ky: clamp(num(h[4]), -8, 8), by: from, pvp: true, net: true, crit: !!(num(h[5]) & 1), bite: num(h[5]) & 2 ? false : undefined, stop: 3, shake: 2, link: !!(p.st && p.st.held) });
 }
 function netDeathSeen(victim, killerPeer) {
   if (WORLD.royale) return brDeathSeen(victim, killerPeer);
@@ -104,7 +104,8 @@ function netDeathSeen(victim, killerPeer) {
   G.kfeed.unshift({ a: killer ? killer.name : '', b: victim.name, t: 0, me: killer === G.p ? 1 : 0 });
   burst(victim.x + 3, victim.y + 10, 30, SPARK, 3, 50, { glow: 1, g: .02 });
 }
-function netHit(target, dmg, kx, ky, crit, extra, by) { const h = [target.peer, ++NET.hitSeq, round(dmg), r1(kx), r1(ky), crit ? 1 : 0, extra || 0]; if (by && by.brBot && !by.remote) h.push(by.botTag); NET.hits.push(h); if (NET.hits.length > 10) NET.hits.shift(); }
+// (crit: 1 for a critical blow, plus 2 for one that did not bite, so that it lands soft on a person as on an echo)
+function netHit(target, dmg, kx, ky, crit, extra, by) { const h = [target.peer, ++NET.hitSeq, round(dmg), r1(kx), r1(ky), (+crit | 0) & 3, extra || 0]; if (by && by.brBot && !by.remote) h.push(by.botTag); NET.hits.push(h); if (NET.hits.length > 10) NET.hits.shift(); }
 function netShot(pr) {
   if (!WORLD.arena || !NET.R) return; const k = SHOT_TYPES.indexOf(pr.type); if (k < 0) return;
   NET.shots.push([++NET.shotSeq, k, r1(pr.x), r1(pr.y), r2(pr.vx), r2(pr.vy), round(pr.g * 1000) / 1000, pr.boom | 0, pr.owner && pr.owner.brBot ? pr.owner.botTag : 0]); if (NET.shots.length > 6) NET.shots.shift();
@@ -114,12 +115,14 @@ function netSend() {
   const R = NET.R; if (!R || !R.connected()) return;
   const p = G.p, a = p.atk, W = heldOf(p);
   R.presence({
-    v: 1, ring: NET.code, n: G.nick, sk: G.skin, w: W && RING_WEAPONS.includes(W.id) ? W.id : 'sword', x: r1(p.x), y: r1(p.y), vx: r2(p.vx), vy: r2(p.vy), f: p.face, g: p.onGround ? 1 : 0,
+    v: 2, ring: NET.code, n: G.nick, sk: G.skin, w: W && RING_WEAPONS.includes(W.id) ? W.id : 'sword', x: r1(p.x), y: r1(p.y), vx: r2(p.vx), vy: r2(p.vy), f: p.face, g: p.onGround ? 1 : 0,
     st: p.dead ? 4 : p.state === 'dodge' ? 2 : p.hurtT > 0 ? 3 : a ? 1 : 0, dd: p.dodgeDir, hp: max(0, round(p.hp)), k: p.kills, d: p.deaths, rd: NET.rd,
     m: a ? a.id : '', an: p.atkN, mp: a ? a.phase : 0, mt: a ? a.pt : 0, ma: a ? r2(a.aimA) : 0, md: a ? round(a.dist) : 0, mc: a ? a.charge : 0, mf: a ? a.face : p.face, rp: p.riposte > 0 ? 1 : 0, sp: p.inv > 30 ? 1 : 0,
     hs: NET.hits, ps: NET.shots, kb: NET.kb, sx: p.st ? [p.st.pin > 0 ? (p.st.pinS || 0) + 2 : 0, p.st.burn > 0 ? 1 : 0, p.st.blind > 0 ? 1 : 0, p.st.hook > 0 || p.st.reel > 0 ? 1 : 0] : 0, lk: p.state === 'link' ? 1 : 0
   }).catch(() => { });
 }
+// how far a replayed blow may run in each phase: as long as the weapon's own speed and a rushed recovery can make it
+function replayCap(at, mc) { const m = at.m, s = (at.W && at.W.wsp || 1) * 1.3; return at.phase === 0 ? ceil(m.wind * s) + (mc ? 0 : 1) : at.phase === 1 ? at.act : ceil(m.rec * s * 1.7) + 4; }
 // replay another person's Waker, about a tenth of a second behind, so motion is smooth
 function tickRemote(f) {
   f.px = f.x; f.py = f.y; if (f.flash > 0) f.flash--; if (f.spawnT > 0) f.spawnT--;
@@ -141,7 +144,7 @@ function tickRemote(f) {
   if (m) {
     if (!f.atk || f.atk.id !== a.m || f.atkN !== a.an) { f.atkN = a.an; f.atk = { f, id: a.m, m, W, set, setName: W.set, btn: m.btn, phase: 0, pt: 0, face: a.mf, aimA: a.ma, dist: a.md, charge: 0, hits: new Map(), act: m.act, aimOff: 0, th: 0, dashT: 0, lastPhase: 0 }; setAim(f.atk); }
     const at = f.atk, adv = (rt - a.t) / 16.67; at.phase = a.mp; at.charge = a.mc; at.face = a.mf;
-    at.pt = clamp(a.mt + adv, 0, at.phase === 0 ? m.wind + (a.mc ? 0 : 1) : at.phase === 1 ? at.act : m.rec);
+    at.pt = clamp(a.mt + adv, 0, replayCap(at, a.mc));
     if (at.phase === 1 && at.lastPhase === 0) fsx(f, m.kind === 'thrust' ? 'thrust' : m.big ? 'heavy' : 'swing', 0);
     if (at.phase === 2 && at.lastPhase === 1) fadeTrail(at);
     at.lastPhase = at.phase; if (at.dashN && at.phase === 1 && G.time % 2 === 0) f.ghostReq = true;

@@ -21,7 +21,7 @@ function newFighter(x, y, o) {
     inv: 0, iDodge: 0, dodgeT: 0, dodgeCd: 0, dodgeDir: 1, dodgeGrace: 0, dodgeGround: true, dbuf: 0, airDash: 1, updraft: true, dblUsed: false, perfected: false,
     state: 'normal', atk: null, buf: null, coyote: 0, jbuf: 0, runPh: 0, landT: 0, hurtT: 0, riposte: 0, lastMove: null, chainT: 0, hist: [], toolT: 0, mineX: -1, mineY: -1, mineP: 0,
     placeCd: 0, dead: false, deadT: 0, healCd: 0, regenT: 0, sHold: 0, noCut: false, ghostReq: false, scarf: [], skin: 0, hat: 0, team: 'p', name: '', wid: 'sword', flash: 0, taken: 0, takenT: 0,
-    kills: 0, deaths: 0, foes: [], atkN: 0
+    kills: 0, deaths: 0, foes: [], atkN: 0, quick: 0, quickT: 0, rollT: 0, rollOut: 0, stoke: 0, tapAt: -99, shN: 0, shLast: -99
   };
   Object.assign(f, o);
   for (let i = 0; i < 7; i++) f.scarf.push({ x: x + 3, y: y + 5, ox: x + 3, oy: y + 5 });
@@ -32,14 +32,14 @@ function newPlayer() {
   while (boxHits(p.x, p.y, p.w, p.h)) p.y -= T; p.py = p.y; return p;
 }
 function reviveFighter(f, x, y) {
-  Object.assign(f, { x, y, px: x, py: y, vx: 0, vy: 0, hp: f.maxhp, stam: f.maxstam, dead: false, deadT: 0, inv: 120, iDodge: 0, state: 'normal', atk: null, buf: null, hurtT: 0, riposte: 0, taken: 0, chainT: 0, mineP: 0 });
+  Object.assign(f, { x, y, px: x, py: y, vx: 0, vy: 0, hp: f.maxhp, stam: f.maxstam, dead: false, deadT: 0, inv: 120, iDodge: 0, state: 'normal', atk: null, buf: null, hurtT: 0, riposte: 0, taken: 0, chainT: 0, mineP: 0, quick: 0, rollT: 0, rollOut: 0, stoke: 0 });
   while (boxHits(f.x, f.y, f.w, f.h)) { f.y -= T; f.py = f.y; }
   for (const s of f.scarf) { s.x = s.ox = f.x + 3; s.y = s.oy = f.y + 5; }
 }
 function startDodge(f, md, I) {
   const c = atkContext(f, I), dir = md || -c.side;
   if (f.atk) endAttack(f); f.state = 'dodge'; f.dodgeT = 0; f.dodgeDir = dir; f.dodgeGround = f.onGround || f.coyote > 0; if (!f.dodgeGround) { f.airDash--; f.vy = 0; }
-  f.iDodge = f === G.p && boonHas('veil') ? 15 : 10; f.dodgeCd = 24; f.stam = max(0, f.stam - 22 * (f.dodgeCost || 1)); f.stamDelay = 38; f.dbuf = 0; f.perfected = false; if (md) f.face = dir;
+  f.iDodge = f === G.p && boonHas('veil') ? 15 : 10; f.dodgeCd = 24; f.stam = max(0, f.stam - 22 * (f.dodgeCost || 1)); f.stamDelay = 38; f.dbuf = 0; f.perfected = false; f.quickT = QK.DODGE_HOLD; if (md) f.face = dir;
   fsx(f, 'dodge', 0); dust(f.x + 3, f.y + f.h, 5); f.ghostReq = true;
   if (f === G.p && G.drill) drillNote('dodge');
 }
@@ -68,7 +68,7 @@ function hurtFighter(f, dmg, fromX, o = {}) {
   f.hp -= dmg; f.regenT = 0; f.flash = 6; if (o.by) f.lastHitBy = o.by;
   if (gp && boonHas('thorn') && !o.net && !pvp) { const by = o.by && !o.by.fighter && !o.by.dead ? o.by : G.enemies.find(e => !e.dead && !e.noHit && e.type !== 'dummy' && abs(e.x + e.w / 2 - (f.x + 3)) < 22 && abs(e.y + e.h / 2 - (f.y + 10)) < 24); if (by && by.hp !== undefined) damageEnemy(by, max(1, round(dmg * .25)), 0, 0, { thorn: 1 }); }
   const held = f.st && f.st.held > 0;
-  if (held) { f.flash = 6; f.hurtT = 8; }
+  if (held) { f.flash = 6; f.hurtT = 8; f.shN = QK.SHAKE_N; }
   // cold, dark and the like wear at you without throwing you about
   else if (o.env) { f.inv = max(f.inv, 12); }
   // hollow iron does not flinch at small blows
@@ -76,12 +76,12 @@ function hurtFighter(f, dmg, fromX, o = {}) {
   else if (!armored) {
     const d = sign((f.x + 3) - fromX) || -f.face;
     const pz = (gp ? gearMul('poise') : 1) * (soft ? .45 : 1); f.vx = (o.kx !== undefined ? o.kx * .85 : d * 2.7) * pz; if (!soft) { f.vy = (o.ky !== undefined ? min(o.ky, -1.2) : -2.3) * (.4 + .6 * pz); f.onGround = false; }
-    f.hurtT = soft ? 5 : pvp ? clamp(o.stagger ? 24 : 11 + (o.stop || 2), 10, 26) : 13; f.inv = pvp ? 7 : 50;
+    f.hurtT = soft ? 5 : pvp ? clamp(o.stagger ? 24 : 11 + (o.stop || 2), 10, 26) : 13; f.inv = pvp ? 7 : 50; f.shN = 0; f.shLast = -99;
     if (o.link) f.inv = 0; else if (pvp && ++f.taken >= 4) { f.inv = 50; f.taken = 0; f.vx *= 1.4; sparks(f.x + 3, f.y + 10, 10, 0, 2, FROST); }
     f.takenT = 70; if (!(soft && f.atk && f.atk.phase === 1)) { f.atk = null; f.state = 'normal'; f.lastMove = null; f.chainT = 0; f.glintT = 0; } f.buf = null;
   } else fsx(f, 'hit2', 0);
   // a blow that lands takes your rhythm with it; one that catches you mid wind-up takes all of it
-  if (!o.env && !o.dot) { if (caught) { f.tempo = 0; numPop(f.x + 3, f.y - 14, 'CAUGHT', '#ff6b6b'); fsx(f, 'caught', 0); if (f === G.p) tempoHint('caught', 'CAUGHT. A blow that lands while you wind up, or after you rush, hurts a quarter more. Watch for the ! over a foe and answer it: dodge, or meet it with a swing of your own.'); } else if (f.tempo > 0) tempoAdd(f, -2); }
+  if (!o.env && !o.dot) { if (caught) { f.tempo = 0; numPop(f.x + 3, f.y - 14, 'CAUGHT', '#ff6b6b'); fsx(f, 'caught', 0); if (f === G.p) tempoHint('caught', 'CAUGHT. A blow that lands while you wind up, or after you rush, hurts a quarter more. Watch for the ! over a foe and answer it: dodge, or meet it with a swing of your own.'); } else if (f.tempo > 0) tempoAdd(f, -2); quickStep(f, -(caught ? QK.LOSE_CAUGHT : soft ? QK.LOSE_SOFT : QK.LOSE_HURT)); }
   if (f === G.p && o.env) { sfx('hurt', 0); numPop(f.x + 3, f.y - 4, dmg, '#9adcf0'); }
   else if (f === G.p) {
     G.combo.n = 0; G.combo.pts = 0; G.combo.t = 0; addShake(4.5); G.hitstop = max(G.hitstop, 5); sfx('hurt', 0); G.flash = .24; G.flashCol = '226,72,59';
@@ -120,15 +120,16 @@ function tickFighter(f, I) {
   if (WORLD.arena && !WORLD.royale) { if (f.regenT > 240 && f.hp < f.maxhp && G.time % 4 === 0) f.hp++; }
   else if (f.isPlayer && f.regenT > 420 / DIFF().regen && G.time % max(1, round((WORLD.mode === 1 || G.food > 70 ? 40 : G.food > 30 ? 80 : 1e9) / DIFF().regen / blessRegen())) === 0 && f.hp < f.maxhp) f.hp++;
   const W = heldOf(f), isW = W && W.type === 'weapon', free = f.hurtT <= 0;
-  // every press is weighed against the beat: holding the button down does nothing, and hammering it is a mistake
-  if (isW && free) { if (I.rp) beatPress(f, 'H'); else if (I.lp) beatPress(f, 'L'); }
+  // every press is weighed against the beat: holding the button down does nothing, and hammering it is a mistake.
+  // A press while you reel shakes the blow off sooner, and is kept so that a blow starts as you recover
+  { const b = I.rp ? 'H' : I.lp ? 'L' : 0; if (b && !free) { shakeOff(f); if (isW) f.buf = { b, t: 8, beat: 0 }; } else if (b && isW) beatPress(f, b); }
   if (f.buf && --f.buf.t < 0) f.buf = null;
   if (I.dodgeP) f.dbuf = 7; else if (f.dbuf > 0) f.dbuf--;
   let a = f.atk;
   if (f.dbuf > 0 && f.dodgeCd <= 0 && f.hurtT <= 0 && f.stam >= 12 && (f.state === 'normal' || (f.state === 'attack' && (a.phase === 2 || (a.phase === 0 && a.charge > 0)))) && (f.onGround || f.coyote > 0 || f.airDash > 0)) startDodge(f, I.md, I);
   if (f.buf && f.hurtT <= 0) {
     a = f.atk; const ok = f.state === 'normal' || (f.state === 'dodge' && f.dodgeT >= 2) || (f.state === 'attack' && a.phase === 2 && !a.rushed && a.pt >= beatOpen(a));
-    if (ok) { const b = f.buf.b; f.beatIn = f.state === 'dodge' ? 1 : f.buf.beat | 0; f.buf = null; if (f.state === 'attack') endAttack(f); if (startAttack(f, b, I)) f.atkN++; f.beatIn = 0; }
+    if (ok) { const b = f.buf.b; f.beatIn = f.state === 'dodge' ? 1 : f.buf.beat | 0; f.preIn = f.buf.pre | 0; quickStep(f, f.buf.step | 0); f.buf = null; if (f.state === 'attack') endAttack(f); if (startAttack(f, b, I)) f.atkN++; f.beatIn = f.preIn = 0; }
   }
   let grav = .26; const gp = f === G.p && gearOn(), maxV = 1.45 * (gp ? gearMul('walk') : 1) * (f.spd || 1) * (f.st && f.st.frost > 0 ? .72 : 1) * (f === G.p ? brewMul('swift') : 1) * wxSpeed(f, I.md);
   if (gp && f.vy > 0 && (gearHas('feather') || gearHas('prismatic')) && I.jumpH && !f.onGround) grav = .17;
@@ -182,7 +183,10 @@ function tickFighter(f, I) {
   if (f.y > WH * T - 30) { f.inv = 0; f.iDodge = 0; if (!f.dead) killFighter(f, f.lastHitBy); }
   tickScarf(f);
 }
-function doJump(f, v) { f.vy = v; f.onGround = false; f.coyote = 0; f.jbuf = 0; f.noCut = false; if (f.atk) endAttack(f); fsx(f, 'jump'); dust(f.x + 3, f.y + f.h, 3); }
+function doJump(f, v) {
+  // a jump may end a follow-through, but not to skip the wait for the glint: before it, the chain is gone and a step with it
+  const a = f.atk, early = a && a.phase === 2 && !a.rushed && !(f.rollT > 0) && !(f.rollOut > 0) && a.pt < beatOpen(a) - BEAT().early - atkBB(a);
+  f.vy = v; f.onGround = false; f.coyote = 0; f.jbuf = 0; f.noCut = false; if (f.atk) endAttack(f); if (early) { f.chainT = 0; f.lastMove = null; quickStep(f, -QK.LOSE_JUMP); } fsx(f, 'jump'); dust(f.x + 3, f.y + f.h, 3); }
 // a blow's step forward never takes speed away, and never turns you round while you are holding away from it
 function stepIn(f, fc, step) { const v = f.vx * fc; if (v < -.2 && f.md === -fc) return; f.vx = fc * max(step, v); }
 function tickScarf(f) {
@@ -243,6 +247,8 @@ function aiThink(f) {
   I.lp = I.rp = I.jumpP = I.dodgeP = I.armP = false;
   if (B.atkCd > 0) B.atkCd--; if (B.jumpCd > 0) B.jumpCd--; if (B.rest > 0) B.rest--;
   if (f.dead) { I.md = 0; I.l = I.r = I.jumpH = I.down = false; return I; }
+  // reeling from a blow, a practised hand shakes it off sooner
+  if (f.hurtT > 0 && G.time % QK.SHAKE_GAP === 0 && Math.random() < .2 + .6 * sk) shakeOff(f);
   if (--B.retarget <= 0 || !B.tgt || B.tgt.dead || B.tgt.noHit) {
     B.retarget = 40; let best = null, bd = 1e9;
     for (const o of foesOf(f)) { if (o.dead || o.noHit || o.root) continue; const d = hypot(o.x - f.x, (o.y - f.y) * 1.5) * (o === G.p ? .8 : 1); if (d < bd) { bd = d; best = o; } }
@@ -272,9 +278,14 @@ function aiThink(f) {
   }
   if (t.st && (t.st.pin > 0 || t.st.hook > 0) && adx < 48 && f.state === 'normal' && f.hurtT <= 0) { I.lp = true; I.md = dir; return I; }
   // --- keep the beat: a practised hand strikes again on the glint, a clumsy one rushes or lets it pass ---
+  // (each climbs the cadence only so far, by skill: at its height it strikes just after the bright glint, which holds the
+  //  cadence without raising it. In DRUMFIRE the best of them drum steadily until it ends.)
   if (f.state === 'attack' && f.atk) {
-    const a = f.atk; if (a.phase === 2 && B.chainN > 0 && !a.rushed && a.pt === beatOpen(a) + B.chainLag) { B.chainN--; B.chainLag = floor(Math.random() * (1 - sk) * 7); I.wx = tcx; I.wy = tcy; if (B.chainH) { I.rp = true; B.chainH = false; } else I.lp = true; }
-    else if (a.phase < 2 && a.pt === 2 && Math.random() < (1 - sk) * .1) I.lp = true;
+    const a = f.atk, open = beatOpen(a), top = (f.quick | 0) >= qCap(f), at = top ? min(open + perfQ(a) + 1, atkRec(a) - 1) : open + B.chainLag;
+    if (f.rollT > 0 && a.btn === 'L' && !a.rushed) { if (G.time - (B.drumAt === undefined ? -99 : B.drumAt) >= round(lerp(QK.BOT_DRUM[0], QK.BOT_DRUM[1], sk))) { B.drumAt = G.time; I.wx = tcx; I.wy = tcy; I.lp = true; } }
+    else if (a.phase === 2 && B.chainN > 0 && !a.rushed && a.pt === at) { B.chainN--; B.chainLag = floor(Math.random() * (1 - sk) * 7); I.wx = tcx; I.wy = tcy; if (B.chainH) { I.rp = true; B.chainH = false; } else I.lp = true; }
+    else if (a.phase < 2 && a.pt === 2 && B.rushA !== a && Math.random() < (1 - sk) * .1) { B.rushA = a; B.rushK = 0; I.lp = true; }   // a clumsy hand hammers: three presses in the wind-up
+    else if (B.rushA === a && !a.rushed && ++B.rushK % 2 === 0 && B.rushK <= 4) I.lp = true;
   }
   // --- a perfect dodge opens a riposte ---
   if (f.riposte > 0 && f.state !== 'attack' && adx < pref + 40) { I.lp = true; I.md = 0; return I; }
@@ -302,7 +313,7 @@ function aiThink(f) {
   const inRange = ranged ? adx < 270 && abs(dy) < 130 : adx < pref + 14 && abs(dy) < 34;
   if (inRange && B.atkCd <= 0 && f.hurtT <= 0 && f.state === 'normal') {
     const r = Math.random(), heavy = f.stam > 35 && Math.random() < (f.tempo >= TEMPO_MAX ? .55 + sk * .45 : f.tempo >= 3 ? .7 - sk * .5 : .22);
-    B.atkCd = round(lerp(60, 30, sk) + Math.random() * 20); B.chainN = heavy || ranged ? 0 : Math.random() < .35 + sk * .6 ? 1 + (Math.random() < sk ? 1 : 0) + (Math.random() < sk * .5 ? 1 : 0) : 0; B.chainLag = floor(Math.random() * (1 - sk) * 7); B.chainH = B.chainN > 1 && Math.random() < .4;
+    B.atkCd = round(lerp(48, 24, sk) + Math.random() * 16); B.chainN = heavy || ranged ? 0 : Math.random() < .35 + sk * .6 ? 1 + (Math.random() < sk ? 1 : 0) + (Math.random() < sk * .5 ? 1 : 0) + (sk > .6 ? 1 : 0) + (sk > .8 ? 1 : 0) : 0; B.chainLag = floor(Math.random() * (1 - sk) * 7); B.chainH = B.chainN > 1 && Math.random() < .4;
     let ax = tcx, ay = tcy;
     if (r < .14 && f.onGround && !ranged) { I.jumpP = I.jumpH = true; B.plan = { b: heavy ? 'H' : 'L', t: 8, down: Math.random() < .3 }; }
     else if (r < .27 && adx > 30) { I.md = dir; ax = tcx + dir * 50; }

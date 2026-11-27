@@ -77,7 +77,7 @@ function wBrLeave() { brPayLeaving();
 // ---------------- what this computer says about itself ----------------
 function wBrSend() {
   const R = NET.R; if (!R || !R.connected()) return; BR.sentAt = performance.now();
-  const o = { v: 1, br: 1, ring: BR.code, mode: BR.matchType, n: G.nick, sk: G.skin | 0, sq: ++BR.sq, ph: BR.phase === 'lobby' ? 'L' : 'M', mi: BR.phase === 'lobby' ? '' : BR.mi, ld: 0 };
+  const o = { v: 2, br: 1, ring: BR.code, mode: BR.matchType, n: G.nick, sk: G.skin | 0, sq: ++BR.sq, ph: BR.phase === 'lobby' ? 'L' : 'M', mi: BR.phase === 'lobby' ? '' : BR.mi, ld: 0 };
   if (BR.phase !== 'lobby' && G.p) {
     const p = G.p, a = p.atk, W = heldOf(p);
     Object.assign(o, {
@@ -109,7 +109,7 @@ function wBrPeers(list) {
   for (const pe of list) {
     if (pe.isMe && pe.sameTab) { NET.me = pe.peer; continue; }
     if (pe.isMe || (pe.kind && pe.kind !== 'viewer')) continue;
-    const s = pe.presence; if (!s || s.v !== 1 || !s.br || s.ring !== BR.code || (s.mode || 'unranked') !== BR.matchType) continue;
+    const s = pe.presence; if (!s || s.v !== 2 || !s.br || s.ring !== BR.code || (s.mode || 'unranked') !== BR.matchType) continue;
     here.add(pe.peer);
     let q = BR.people.get(pe.peer); if (!q) { q = { id: pe.peer, sq: -1 }; BR.people.set(pe.peer, q); }
     if (q.sq === s.sq && q.pres) continue; q.sq = s.sq; q.pres = s; q.at = performance.now();
@@ -202,7 +202,7 @@ function wBrBotHit(from, h) {
   const x = Array.isArray(h[6]) ? h[6] : null;
   if (x) { const k = x[0], d = clamp(num(x[1]) | 0, 0, 400), side = clamp(num(x[2]) | 0, -1, 1); if (['pin', 'hook', 'burn', 'blind', 'launched'].includes(k)) applyStatus(b, k, from, { d: d || undefined, side, floor: !side }); }
   if (num(h[2]) <= 0) return;
-  hurtFighter(b, clamp(num(h[2]), 1, 90), from.x + 3, { kx: clamp(num(h[3]), -8, 8), ky: clamp(num(h[4]), -8, 8), by: from, pvp: true, net: true, crit: !!h[5], stop: 3 });
+  hurtFighter(b, clamp(num(h[2]), 1, 90), from.x + 3, { kx: clamp(num(h[3]), -8, 8), ky: clamp(num(h[4]), -8, 8), by: from, pvp: true, net: true, crit: !!(num(h[5]) & 1), bite: num(h[5]) & 2 ? false : undefined, stop: 3 });
 }
 // someone else's Waker fell; their computer says who did it
 function wBrDeathSeen(victim, tag) {
