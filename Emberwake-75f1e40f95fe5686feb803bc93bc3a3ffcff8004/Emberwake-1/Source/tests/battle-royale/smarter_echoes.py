@@ -37,6 +37,9 @@ async def beat():
       G.p.noHit = true; G.p.x = G.p.px = 20 * T; const gy = 60 * T - 20;
       // (a walled pen with a flat floor, so that nothing but their skill is being compared)
       for (let x = 58; x <= 112; x++) { for (let y = 30; y < 60; y++) tiles[y * WW + x] = x < 60 || x > 110 ? BRICK : AIR; for (let y = 60; y < WH - 3; y++) tiles[y * WW + x] = BRICK; }
+      // (and the arena's own echoes are sent away and not sent for again: they spawn in the pen too, and when one of them
+      // takes ten the round starts over, which sends these two back to the spawns healed of all they took)
+      G.fighters = G.fighters.filter(f => !f.echoBot); G.echoT = 1e9;
       const mk = (x, team, sk) => { const f = newFighter(x * T, gy, { name: team, team, wid: 'sword', hp: 1e7, maxhp: 1e7, ai: newBrain(sk), noRegen: true }); G.fighters.push(f); return f; };
       window.LOW = mk(80, 'clumsy', .22); window.HIGH = mk(88, 'practised', .86);
       const spend = tempoSpend; tempoSpend = a => { spend(a); if (a.spent) { a.f._sp = (a.f._sp | 0) + 1; if (a.cresc) a.f._cr = (a.f._cr | 0) + 1; } };

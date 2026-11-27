@@ -9,6 +9,9 @@ SAFE = "G.p.inv = 1e9; G.p.hp = max(G.p.hp, 60);"
 # keep the tester out of the ashfall while it only watches
 KEEP = SAFE + "const z = BR.storm; if (z && z.dps > 0) { const m = (z.L + z.R) / 2; if (G.p.x < z.L + 20 || G.p.x > z.R - 20) { G.p.x = G.p.px = m; let n = 0; while (boxHits(G.p.x, G.p.y, G.p.w, G.p.h) && n++ < 80) G.p.y = G.p.py = G.p.y - T; } }"
 PUT = "(() => { const p = G.p; p.x = p.px = %d * T - 6; p.y = p.py = (%d + 1) * T - p.h; p.vx = p.vy = 0; })()"
+# (a few camps on some islands sit under the updraft that lifts to a floating isle: whoever is put there is carried up and
+# away before F does anything, so the tester skips anything that stands in one)
+VENT = "const inVent = (x, y) => { const cx = x * T - 3, bot = (y + 1) * T, top = bot - G.p.h; return VENTS.some(v => abs(cx - v.cx) < 11 && bot > v.top * T && top < v.gy * T); };"
 
 
 async def main():
@@ -34,7 +37,7 @@ async def main():
     # ---- scavenging: a bush, a chest, hunger ----
     await h.ev(SAFE)
     # (a bush no echo is standing by: they go for what they can reach now, and one may strip the nearest bush first)
-    b = await h.ev("(() => { const free = c => c.kind === 'bush' && !c.open, far = c => !G.fighters.some(f => f !== G.p && !f.dead && Math.abs(f.x - c.x * T) < 200); const c = BR.chests.find(c => free(c) && far(c)) || BR.chests.find(free); return [c.i, c.x, c.y]; })()")
+    b = await h.ev("(() => { " + VENT + " const free = c => c.kind === 'bush' && !c.open && !inVent(c.x, c.y), far = c => !G.fighters.some(f => f !== G.p && !f.dead && Math.abs(f.x - c.x * T) < 200); const c = BR.chests.find(c => free(c) && far(c)) || BR.chests.find(free); return [c.i, c.x, c.y]; })()")
     await h.ev(PUT % (b[1], b[2])); await h.step(10, SAFE); await h.step(1, SAFE + "pressed.KeyF = true;"); await h.step(80, SAFE)
     berries = await h.ev("countItem('br_berries')")
     ok.append(('a bush gives berries', berries >= 2 and await h.ev("BR.chests[%d].open" % b[0])))
@@ -44,7 +47,7 @@ async def main():
     f0 = await h.ev("G.food = 50, G.food"); await h.step(600, SAFE)
     ok.append(('hunger grows as the match goes on', await h.ev("G.food") < f0 - 2))
     for _ in range(3):   # (what spills from a chest can roll away before it is picked up: three chests make sure of a weapon)
-        c = await h.ev("(() => { let b = null, bd = 1e9; for (const c of BR.chests) { if (c.open || c.cave || c.kind || c.feast || c.high) continue; const d = abs(c.x * T - G.p.x); if (d < bd) { bd = d; b = c; } } return [b.i, b.x, b.y]; })()")
+        c = await h.ev("(() => { " + VENT + " let b = null, bd = 1e9; for (const c of BR.chests) { if (c.open || c.cave || c.kind || c.feast || c.high || inVent(c.x, c.y)) continue; const d = abs(c.x * T - G.p.x); if (d < bd) { bd = d; b = c; } } return [b.i, b.x, b.y]; })()")
         await h.ev(PUT % (c[1], c[2])); await h.step(10, SAFE); await h.step(1, SAFE + "pressed.KeyF = true;"); await h.step(160, SAFE)
         if await h.ev("inv.some(s => s && IT[s.id].type === 'weapon')"): break
     print('pack after a chest:', await h.ev("inv.filter(Boolean).map(s => s.id + 'x' + s.n).join(' ')"))
@@ -55,7 +58,7 @@ async def main():
     ok.append(('the feast chests are sealed before the feast', await h.ev("!BR.chests[%d].open && trSealed(BR.chests[%d])" % (fc[0], fc[0]))))
     ims.append(await h.shot()); labels.append('the Hearth: sealed feast chests')
     # ---- the forge ----
-    a = await h.ev("[BR.anvils[0].x, BR.anvils[0].y]")
+    a = await h.ev("(() => { " + VENT + " const a = BR.anvils.find(a => !inVent(a.x, a.y)); return [a.x, a.y]; })()")
     await h.ev("inv.fill(null); inv[0] = { id: brPool()[0].find(id => IT[id].set === 'sword') || brPool()[0][0], n: 1 }; inv[1] = { id: 'br_scrap', n: 6 }; G.sel = 0; 1")
     w0 = await h.ev("inv[0].id"); await h.ev(PUT % (a[0], a[1])); await h.step(10, SAFE)
     for _ in range(4):   # (a camp has a chest and bushes by its anvil: F takes the nearest thing first)
