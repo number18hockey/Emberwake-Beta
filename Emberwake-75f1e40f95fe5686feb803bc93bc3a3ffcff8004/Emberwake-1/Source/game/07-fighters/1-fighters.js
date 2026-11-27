@@ -149,9 +149,11 @@ function tickFighter(f, I) {
       // walking into a shut door pushes it open
       if ((f === G.p && !WORLD.arena || wildOn() && !f.remote) && f.state === 'normal') { const tx = floor((f.x + (md > 0 ? f.w + 1.5 : -1.5)) / T); for (let y = floor(f.y / T); y <= floor((f.y + f.h - 1) / T); y++) if (tileAt(tx, y) === DOORC) { if (toggleDoor(tx, y)) G.autoDoors.push({ tx, ty: y, t: 150 }); break; } }
     }
-    // hands off the keys you come to a stop (a little later out of a dodge); and anyone but you in the open world
-    // is braked while reeling from a blow, key or no key, so a hit throws them exactly as far as it always did
-    if (!steer || f.hurtT > 0 && !(f === G.p && !WORLD.arena)) f.vx = approach(f.vx, 0, f.onGround ? (a ? .12 : f.carryT > 0 ? .07 : .2) * wxSlick(f) : (a ? .021 : .035));
+    // hands off the keys you come to a stop (a little later out of a dodge). Anyone but you in the open world is also
+    // braked while walking and while reeling from a blow, key or no key, exactly as always: so rivals, echoes and
+    // everyone in an arena keep their old pace, and a hit throws them as far as it always did. (Not in the Wilds,
+    // and not during a blow: that is the carried momentum.)
+    if (!steer || (f.hurtT > 0 || !a && !wildOn()) && !(f === G.p && !WORLD.arena)) f.vx = approach(f.vx, 0, f.onGround ? (a ? .12 : f.carryT > 0 && !steer ? .07 : .2) * wxSlick(f) : (a ? .021 : .035));
   }
   if (f.carryT > 0) f.carryT--;
   if (f.jbuf > 0 && !(f.climbing && !I.md) && f.hurtT <= 0 && (f.state === 'normal' || (f.state === 'attack' && a.phase === 2))) {
