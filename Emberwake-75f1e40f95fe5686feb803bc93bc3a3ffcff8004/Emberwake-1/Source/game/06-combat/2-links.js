@@ -71,7 +71,7 @@ function applyStatus(e, k, by, o = {}) {
   else if (k === 'blind') { if (e.type === 'hollow') return false; s.blind = max(s.blind, o.d || 160); }
   else if (k === 'launched') s.launched = max(s.launched, o.d || 50);
   else if (k === 'mire') e.mire = max(e.mire | 0, o.d || 100);
-  else if (k === 'poison' || k === 'bleed') { if (e === G.p && e.ward > 0) return false; if (k === 'poison' && (e.type === 'golem' || e.type === 'mote' || e.type === 'cinderling')) return false; s[k] = max(s[k] || 0, o.d || 240); s[k + 'By'] = by; }
+  else if (k === 'poison' || k === 'bleed') { if (e === G.p && (e.ward > 0 || boonHas('ward'))) return false; if (k === 'poison' && (e.type === 'golem' || e.type === 'mote' || e.type === 'cinderling')) return false; s[k] = max(s[k] || 0, o.d || 240); s[k + 'By'] = by; }
   else if (k === 'frost') { if (e.fireproof && e.type !== 'golem') { s.burn = 0; } s.frost = max(s.frost || 0, o.d || 100); s.burn = 0; }
   return true;
 }

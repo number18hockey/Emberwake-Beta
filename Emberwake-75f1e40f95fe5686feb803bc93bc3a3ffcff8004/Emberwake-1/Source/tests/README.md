@@ -129,6 +129,7 @@ The Ashfall: alone, with friends, online, over the relay.
 - `wilds_rules.py` The rules of the Wilds: the fall from the sky, empty hands, gathering and crafting, digging, the lava, sparse chests, a border that answers to the fallen, pacts, doors, beasts.
 - `wilds_solo.py` The Wilds alone with the echoes: the fall, gathering and crafting by echoes, the border, the fights, to the end.
 - `wilds_rewards.py` What a match in the Wilds pays: a soul for every kill, coins for a win, looks from the wheel and the shop; nothing owned is carried into a match.
+- `cosmetic_shop.py` The account cosmetic shop: rarity-priced skins, trails and hats; Souls and Coins purchases; equipping, unequipping, account persistence and multiplayer appearance fields.
 - `wilds_balance.py` The Wilds: weapons of a kind against each other, by evenly matched echoes (slow; give it a number of rounds).
 - `wilds_echoes_find_their_way.py` The echoes of the Wilds find a real way: up to a thing above them, down to one below, and through earth when digging is the only way; never into the hot rock or the lava; and what the searching costs with 31 echoes.
 - `wilds_with_friends.py` The Wilds with friends by game code: the host opens a lobby, a friend joins, and the match starts for both.

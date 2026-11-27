@@ -11,7 +11,7 @@ function wBrNewBot(i, skill) {
 }
 function wBrSkill() { const d = SETTINGS.diff; return d === 'hard' ? frand(.5, .78) : d === 'normal' ? frand(.36, .6) : frand(.24, .46); }
 // how good a thing is to fight with, for an echo choosing
-const brWorth = id => { const W = IT[id]; return !W || W.fist || W.type !== 'weapon' ? 0 : 1 + wBrTier(id) * .9 + brDmgOf(W) * .05; };
+const brWorth = id => { const W = IT[id]; return !W || W.fist || W.type !== 'weapon' ? 0 : 1 + wBrTier(id) * .9 + brDmgOf(W) * .05 + (W.legendary ? .25 : 0); };
 function wBrBotTake(f, id, n) {
   const it = IT[id], br = f.br; if (!it || !br) return;
   if (it.type === 'weapon') { if (it.set === 'bow' && br.arrows < 4) { br.bag[id] = 1; return; } if (brWorth(id) > brWorth(f.wid)) { br.backup = f.wid; f.wid = id; } }
@@ -27,14 +27,35 @@ const BR_MAKE = [
   { id: 'stone_club', need: { stick: 1, rock: 2, fiber: 3 } }, { id: 'flint_spear', need: { flint: 1, stick: 2, fiber: 3 } }, { id: 'flint_daggers', need: { flint: 2, stick: 1, fiber: 6 } }, { id: 'bone_club', need: { bone: 3, fiber: 3 } }, { id: 'bone_spear', need: { bone: 2, stick: 2, fiber: 3 } },
   { id: 'flint_battleaxe', need: { flint: 4, stick: 2, fiber: 6 } }, { id: 'bone_cleaver', need: { bone: 4, stick: 1, fiber: 3 } }, { id: 'bone_nunchaku', need: { bone: 2, fiber: 9 } },
   { id: 'copper_shortsword', need: { copper_ore: 6, stick: 1, coal: 1 }, forge: 1 }, { id: 'copper_spear', need: { copper_ore: 9, stick: 2, coal: 1 }, forge: 1 }, { id: 'copper_mace', need: { copper_ore: 9, stick: 1, coal: 1 }, forge: 1 },
-  { id: 'bronze_sword', need: { copper_ore: 9, tin_ore: 3, stick: 1, coal: 1 }, forge: 1 }, { id: 'bronze_spear', need: { copper_ore: 9, tin_ore: 3, stick: 2, coal: 1 }, forge: 1 }, { id: 'iron_sword', need: { iron_ore: 12, stick: 1, coal: 2 }, forge: 1 }, { id: 'iron_spear', need: { iron_ore: 12, stick: 2, coal: 2 }, forge: 1 }
+  { id: 'bronze_sword', need: { copper_ore: 9, tin_ore: 3, stick: 1, coal: 1 }, forge: 1 }, { id: 'bronze_spear', need: { copper_ore: 9, tin_ore: 3, stick: 2, coal: 1 }, forge: 1 }, { id: 'iron_sword', need: { iron_ore: 12, stick: 1, coal: 2 }, forge: 1 }, { id: 'iron_spear', need: { iron_ore: 12, stick: 2, coal: 2 }, forge: 1 },
+  ...BR_LEGENDARY_RECIPES.map(r => ({ id: r.id, need: r.need, forge: 1, legendary: true }))
 ];
+const brLegendaryOpen = () => BR.ring.n >= 2 || BR.lastAlive <= 10;
+function brLegendaryTarget(f) {
+  if (!f || !f.br || !brLegendaryOpen()) return null;
+  const br = f.br;
+  if (br.legendaryTarget) return BR_LEGENDARY_RECIPES.find(r => r.id === br.legendaryTarget) || null;
+  let choice;
+  if (f.hp < 65) choice = BR_LEGENDARY_RECIPES.find(r => r.id === 'soulreaper');
+  else {
+    const liked = BR_LEGENDARY_RECIPES.filter(r => r.set === br.likes);
+    choice = liked.length ? liked[f.botI % liked.length] : BR_LEGENDARY_RECIPES[f.botI % BR_LEGENDARY_RECIPES.length];
+  }
+  if (BR.ring.n >= 4 && f.hp >= 65 && (br.bold > .6 || BR.lastAlive <= 4)) choice = BR_LEGENDARY_RECIPES.find(r => r.id === 'earthshatter');
+  br.legendaryTarget = choice.id;
+  return choice;
+}
 const brHas = (bag, need) => { for (const k in need) if ((bag[k] || 0) < need[k]) return false; return true; };
 const brPay = (bag, need) => { for (const k in need) bag[k] -= need[k]; };
 function brForgeNear(f, r = 24) { for (const o of tileObjs.values()) if ((o.id === ANVIL || o.id === ANVIL2) && abs(o.x * T - f.x) < r * T && abs(o.y * T - f.y) < 22 * T) return o; return null; }
 function brBotCraft(f) {
-  const br = f.br, bag = br.bag, forge = brForgeNear(f); let best = null, bs = brWorth(f.wid) + .12 + (IT[f.wid] && IT[f.wid].set === br.likes ? .4 : 0);
-  for (const m of BR_MAKE) { if (m.forge && !forge || !IT[m.id] || !brHas(bag, m.need)) continue; const s = brWorth(m.id) + (IT[m.id].set === br.likes ? .4 : 0); if (s > bs) { bs = s; best = m; } }
+  const br = f.br, bag = br.bag, forge = brForgeNear(f), target = brLegendaryTarget(f); let best = null, bs = brWorth(f.wid) + .12 + (IT[f.wid] && IT[f.wid].set === br.likes ? .4 : 0);
+  if (IT[f.wid] && IT[f.wid].legendary) bs += 1.5;
+  for (const m of BR_MAKE) {
+    if (m.id === f.wid || m.forge && !forge || !IT[m.id] || !brHas(bag, m.need) || m.legendary && (!target || target.id !== m.id)) continue;
+    const s = brWorth(m.id) + (IT[m.id].set === br.likes ? .4 : 0) + (m.legendary ? 1.5 + min(.5, BR.ring.n * .1) : 0);
+    if (s > bs) { bs = s; best = m; }
+  }
   if (best) { brPay(bag, best.need); br.backup = f.wid === 'fists' ? null : f.wid; f.wid = best.id; if (best.arrows) br.arrows += best.arrows; br.made = (br.made | 0) + 1; if (near(f)) { sfx('craft', 60); sparks(f.x + 3, f.y + 10, 8, 0, 1.6); } return true; }
   // with something to fight with, tools next: a pick for ore, an axe for wood
   if (f.wid !== 'fists' && !br.pick && brHas(bag, { flint: 2, stick: 1, fiber: 3 })) { brPay(bag, { flint: 2, stick: 1, fiber: 3 }); br.pick = 1; return true; }
@@ -154,10 +175,11 @@ function brClimbOut(f, I) {
 const brInZone = (x, pad = 30) => { const z = BR.storm; if (brInHazard(x, pad)) return false; return !z || (x > z.L + pad && x < z.R - pad && (!(z.warn || z.moving) || (x > z.nL + pad && x < z.nR - pad))); };
 function brSkipped(br, x) { const t = br.skip.get(x); if (t === undefined) return false; if (BR.t > t) { br.skip.delete(x); return false; } return true; }
 function brGatherGoal(f) {
-  const br = f.br, bag = br.bag, cx = floor((f.x + 3) / T), want = new Set(), armed = f.wid !== 'fists', lim = armed ? 4 : 2;
+  const br = f.br, bag = br.bag, cx = floor((f.x + 3) / T), want = new Set(), armed = f.wid !== 'fists', lim = armed ? 4 : 2, legendary = brLegendaryTarget(f);
   if ((bag.stick || 0) < lim + 1) for (const t of [STICKS, BUSH, DEADBUSH, BERRY]) want.add(t); if ((bag.fiber || 0) < lim * 3) for (const t of [TALLGRASS, FLOWER, REED, DEADBUSH]) want.add(t); if ((bag.rock || 0) < 3 || (bag.flint || 0) < lim) want.add(PEBBLE); if ((bag.bone || 0) < 4) want.add(BONES); if (f.hp < 90 || (bag.berries || 0) < 3) { want.add(BERRY); want.add(GLOWCAP); }
+  if (legendary && (bag.bone || 0) < (legendary.need.bone || 0)) want.add(BONES);
   if (br.axe && (bag.log || 0) < 2) for (let d = 2; d < 60; d++) for (const s of [br.dir, -br.dir]) { const x = cx + s * d; if (treeTops.has(x) && !brSkipped(br, x) && brInZone(x * T) && TP[tileAt(x, heights[x] - 1)].stalk) return { kind: 'chop', x, y: heights[x] - 1 }; }
-  if (br.pick && Math.random() < .5) { let best = null, bd = 99; for (let x = max(6, cx - 34); x <= min(WBRW - 7, cx + 34); x++) for (let y = heights[x] + 1; y < heights[x] + 8; y++) { const t = tileAt(x, y); if ((t === COPPER || t === TIN || t === COAL || t === IRON) && !brSkipped(br, x) && abs(x - cx) < bd && brInZone(x * T)) { bd = abs(x - cx); best = { kind: 'mine', x, y }; } } if (best) return best; }
+  if (br.pick && Math.random() < .5) { let best = null, bd = 99; const needed = legendary ? Object.entries(legendary.need).filter(([id, n]) => (bag[id] || 0) < n).map(([id]) => ({ copper_ore: COPPER, tin_ore: TIN, coal: COAL, iron_ore: IRON })[id]).filter(Boolean) : []; for (let x = max(6, cx - 34); x <= min(WBRW - 7, cx + 34); x++) for (let y = heights[x] + 1; y < heights[x] + 8; y++) { const t = tileAt(x, y); if ((needed.length ? needed.includes(t) : [COPPER, TIN, COAL, IRON].includes(t)) && !brSkipped(br, x) && abs(x - cx) < bd && brInZone(x * T)) { bd = abs(x - cx); best = { kind: 'mine', x, y }; } } if (best) return best; }
   if (want.size) for (let d = 0; d < 110; d++) for (const s of d ? [br.dir, -br.dir] : [1]) { const x = cx + s * d; if (x < 8 || x > WBRW - 9 || brSkipped(br, x) || !brInZone(x * T)) continue; const y = heights[x] - 1, t = tileAt(x, y); if (want.has(t)) return { kind: 'pick', x, y, t }; }
   return null;
 }
@@ -166,7 +188,19 @@ function brChestGoal(f, reach) {
   for (const c of BR.chests) { if (c.open || c.hid || c.cave || brSkipped(br, c.x)) continue; const x = c.x * T + 4, dx = abs(x - cx); if (dx > reach || !brInZone(x)) continue; const dy = (c.y + 1) * T - fy; if (dy < -8 * T) continue; const d = dx + abs(dy) * 2; if (d < bd) { bd = d; best = c; } }
   return best ? { kind: 'chest', x: best.x, y: best.y, c: best } : null;
 }
-function brForgeGoal(f) { const bag = f.br.bag; if (!BR_MAKE.some(m => m.forge && brHas(bag, m.need) && brWorth(m.id) > brWorth(f.wid) + .12)) return null; let best = null, bd = 260; for (const o of tileObjs.values()) if (o.id === ANVIL && abs(o.y - heights[clamp(o.x, 0, WBRW - 1)]) < 12) { const d = abs(o.x - f.x / T); if (d < bd && brInZone(o.x * T)) { bd = d; best = o; } } return best ? { kind: 'forge', x: best.x, y: best.y } : null; }
+function brForgeGoal(f) { const bag = f.br.bag, target = brLegendaryTarget(f), current = brWorth(f.wid) + (IT[f.wid] && IT[f.wid].legendary ? 1.5 + min(.5, BR.ring.n * .1) : 0); if (!BR_MAKE.some(m => m.forge && (!m.legendary || target && target.id === m.id) && m.id !== f.wid && brHas(bag, m.need) && brWorth(m.id) + (m.legendary ? 1.5 + min(.5, BR.ring.n * .1) : 0) > current + .12)) return null; let best = null, bd = 260; for (const o of tileObjs.values()) if (o.id === ANVIL && abs(o.y - heights[clamp(o.x, 0, WBRW - 1)]) < 12) { const d = abs(o.x - f.x / T); if (d < bd && brInZone(o.x * T)) { bd = d; best = o; } } return best ? { kind: 'forge', x: best.x, y: best.y } : null; }
+function brLegendaryGoal(f) {
+  const recipe = brLegendaryTarget(f); if (!recipe) return null;
+  if (f.wid === recipe.id) return null;
+  const br = f.br, missing = Object.entries(recipe.need).filter(([id, n]) => (br.bag[id] || 0) < n);
+  if (!missing.length) return brForgeGoal(f);
+  const oreTile = { iron_ore: IRON, copper_ore: COPPER, tin_ore: TIN, coal: COAL };
+  if (br.pick) {
+    const wanted = missing.map(([id]) => oreTile[id]).filter(t => t !== undefined);
+    if (wanted.length) { const cx = floor((f.x + 3) / T); let best = null, bd = 99; for (let x = max(6, cx - 34); x <= min(WBRW - 7, cx + 34); x++) for (let y = heights[x] + 1; y < heights[x] + 8; y++) { const t = tileAt(x, y); if (wanted.includes(t) && !brSkipped(br, x) && abs(x - cx) < bd && brInZone(x * T)) { bd = abs(x - cx); best = { kind: 'mine', x, y }; } } if (best) return best; }
+  }
+  return brGatherGoal(f);
+}
 function brHuntGoal(f) {
   // nobody knows where everyone is, but smoke, birds and noise say roughly where someone is
   let best = null, bd = BR.ring.n >= 3 ? 1e9 : 2600; for (const o of G.fighters) { if (o === f || !o.brIn || o.dead || o.team === f.team || o.noHit) continue; const d = abs(o.x - f.x) * (o === G.p ? 1 : 1.05) + frand(700); if (d < bd) { bd = d; best = o; } }
@@ -174,6 +208,7 @@ function brHuntGoal(f) {
 }
 function brPlan(f) {
   const br = f.br, armed = f.wid !== 'fists', z = BR.storm, r = Math.random(); if (br.dirT > 0) br.dirT -= 40;
+  const legendary = brLegendaryGoal(f); if (legendary && r < (BR.ring.n >= 4 ? .78 : .58)) return legendary;
   if (!armed) { const c = brChestGoal(f, 200), g = brGatherGoal(f); if (c && (!g || r < .4)) return c; if (g) return g; }
   else {
     const late = BR.ring.n >= 2 || BR.lastAlive <= 10, early = BR.t < 60 * 60 * 3; const forge = brForgeGoal(f); if (forge) return forge;

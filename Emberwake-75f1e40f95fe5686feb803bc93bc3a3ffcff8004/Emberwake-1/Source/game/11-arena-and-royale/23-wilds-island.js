@@ -5,7 +5,11 @@
 //  turns to fire. Everything comes from the match's seed, so every
 //  computer raises the same island.
 // ============================================================
-const WBRW = 3500, WBRH = 286, BR_GROUND = 92, BR_HOT = 238, BR_LAVA = 264;
+// 3500 paces x 8 game units = 28000 game units. 3750 paces brings the horizontal
+// field to exactly 30000 game units while preserving the proven vertical/depth model.
+const WBRW = 3750, WBRH = 286, BR_GROUND = 92, BR_HOT = 238, BR_LAVA = 264;
+const WBR_MAP_UNITS = WBRW * 8;
+const BR_STRUCTURE_TYPES = ['fortress', 'bunker', 'village', 'temple', 'outpost'];
 const WBR_BIOMES = ['moor', 'mosswood', 'willowmere', 'thorn', 'fen', 'dunes', 'scoria', 'reach', 'ash'];
 const WBR_SURF = { moor: [GRASS, DIRT], mosswood: [GRASS, DIRT], willowmere: [GRASS, MUD], thorn: [GRASS, DIRT], fen: [MUD, PEAT], dunes: [SAND, SANDSTONE], scoria: [SAND, SANDSTONE], reach: [SNOW, STONE], ash: [ASH, STONE] };
 const WBR_WALL = { moor: W_DIRT, mosswood: W_DIRT, willowmere: W_DIRT, thorn: W_DIRT, fen: W_DIRT, dunes: W_SAND, scoria: W_SAND, reach: W_STONE, ash: W_ASH };
@@ -50,7 +54,7 @@ function wBrChest(x, y, rare, o = {}) {
   if (!inW(x, y) || tiles[y * WW + x] !== AIR && !(TP[tiles[y * WW + x]].decor && !TP[tiles[y * WW + x]].dyn) || !TP[tileAt(x, y + 1)].solid && tileAt(x, y + 1) !== PLATFORM) return null;
   for (const c of BR.chests) if (abs(c.x - x) < 4 && abs(c.y - y) < 4) return null;
   tiles[y * WW + x] = AIR;
-  const c = { i: BR.chests.length, x, y, rare: !!rare, cave: !!o.cave, high: !!o.high, crown: !!o.crown, feast: !!o.feast, open: false, t: 0 }; BR.chests.push(c); return c;
+  const c = { i: BR.chests.length, x, y, rare: !!rare, cave: !!o.cave, high: !!o.high, crown: !!o.crown, feast: !!o.feast, structure: o.structure || '', open: false, t: 0 }; BR.chests.push(c); return c;
 }
 // the island's own crowns: mangroves in the fen, pines on the reach, maples on the scoria, palms on the dunes (the open world grows only oak and willow)
 const wCrownFor = (b, kind, r) => b === 'mosswood' ? (r < .72 ? CROWN.oak : kind) : b === 'willowmere' ? (r < .75 ? CROWN.willow : kind) : b === 'fen' ? (r < .7 ? CROWN.mangrove : kind) : b === 'reach' ? (r < .42 ? CROWN.pine : kind) : b === 'scoria' ? (r < .55 ? CROWN.maple : kind) : b === 'dunes' ? CROWN.palm : kind;
@@ -84,7 +88,7 @@ function wGenRoyale(seed) {
   buildWildProps(); SEED = seed >>> 0; rng = mulberry32(SEED); DIM = 0; resetWorld(WBRW, WBRH); WORLD.arena = true; WORLD.royale = true; WORLD.endless = 0; BR.wildLand = true;
   SPAWN_X = WBRW >> 1; SHRINE_X = SHRINE2_X = MINE_X = FORGE_X = GATE_X = SKY_X = BLADE_X = SPIRE_X = REACH_X = RUST_X = -100000; SHRINE_Y = SHRINE2_Y = GATE_Y = MINE_Y = FORGE_Y = SKY_Y = 0;
   BASE_Y = BR_GROUND; DEEP_Y = 9999; DRIFT_Y = -99; VIL_Y = -999; brDealLands();
-  BR.chests = []; BR.pois = []; BR.caves = []; BR.nests = []; BR.lakes = [];
+  BR.chests = []; BR.pois = []; BR.caves = []; BR.nests = []; BR.lakes = []; BR.structures = [];
   // the lie of the land: each land's own shape, melting into the next; cliffs at the world's two ends
   const raw = new Float32Array(WBRW);
   for (let x = 0; x < WBRW; x++) { let s = 0; for (const [b, w] of brSegWeights(x, 110)) s += w * LFN[b](x) * (b === 'reach' ? .44 : b === 'scoria' ? .7 : .62); let h = BR_GROUND + (fbm(x * .0023, 3.3, 3) - .5) * 44 + s; const e = min(x, WBRW - 1 - x); if (e < 18) h -= (18 - e) * 3.2; raw[x] = h < 56 ? 56 - sqrt(56 - h) * 1.6 : min(h, 128); }
@@ -156,6 +160,7 @@ function wGenRoyale(seed) {
     for (let q = x; q <= x + 12; q++) if (q !== x + 6) { tiles[py * WW + q] = PLATFORM; for (let y = py - 4; y < py; y++) if (TP[tiles[y * WW + q]].stalk) tiles[y * WW + q] = AIR; } if (k % 3 === 0) wBrChest(x + 3, py - 1, false, { high: true }); reserve(x - 1, x + 13, 1);
   }
   brWilds(lakeAtX);
+  wBrDistributeStructures(lakeAtX);
   for (let x = 0; x < WBRW; x++) SKYL[x] = heights[x] + 3;
   for (const [x, tr] of [...treeTops]) if (!TP[tileAt(x, tr.y)].stalk) treeTops.delete(x);
   for (const q of PROPS) bucketAdd(PROPB, q); for (const q of FGP) bucketAdd(FGPB, q);
@@ -193,7 +198,7 @@ function brWilds(lakeAtX) {
     // the small things you can gather by hand
     if (shore) { if (r < .55) tiles[i] = REED; else if (r < .6) propC(WILD.reeds[randi(0, 1)], x, gy, { lit: 1 }); continue; }
     if (b === 'dunes') tiles[i] = r < .05 ? BONES : r < .1 ? PEBBLE : r < .17 ? DEADBUSH : r < .2 ? STICKS : AIR;
-    else if (b === 'scoria') tiles[i] = r < .1 ? PEBBLE : r < .16 ? DEADBUSH : r < .2 ? STICKS : r < .22 ? BERRY : AIR;
+    else if (b === 'scoria') tiles[i] = r < .1 ? PEBBLE : r < .16 ? DEADBUSH : r < .22 ? STICKS : r < .38 ? TALLGRASS : r < .42 ? BERRY : AIR;
     else if (b === 'ash') tiles[i] = r < .06 ? BONES : r < .12 ? PEBBLE : r < .2 ? DEADBUSH : r < .24 ? STICKS : AIR;
     else if (b === 'reach') tiles[i] = r < .07 ? CRYSTAL : r < .12 ? PEBBLE : r < .16 ? STICKS : r < .24 ? DEADBUSH : r < .26 ? BERRY : AIR;
     else if (b === 'fen') tiles[i] = r < .34 ? REED : r < .4 ? STICKS : r < .44 ? BERRY : r < .48 ? PEBBLE : r < .5 ? GLOWCAP : AIR;
@@ -290,6 +295,51 @@ function wBrPOI(b, cx, name) {
     vent(cx - 18, gy - 28); wBrChest(cx + 8, gy - 14, true, { high: true }); wBrChest(cx + 17, gy - 1, false); brStations(cx, [BLOOMERY, FURNACE, ANVIL, BENCH, FIRE], [-4, 0, 2, -2, 3]);
   }
   reserve(cx - 30, cx + 30, 2);
+}
+// the island carries a fixed five kinds of small structure in every match:
+// Five landmark types are spread across the field, so the Crown is not the only destination.
+function wBrDistributeStructures(lakeAtX) {
+  BR.structures = [];
+  for (let k = 0; k < 30; k++) {
+    const type = BR_STRUCTURE_TYPES[k % BR_STRUCTURE_TYPES.length];
+    let cx = -1;
+    for (let tries = 0; tries < 12 && cx < 0; tries++) {
+      const x = round((k + .5) * WBRW / 30 + rand(-68, 68));
+      if (x < 45 || x > WBRW - 46 || lakeAtX[x] || RESV[x]) continue;
+      const gy = heights[x];
+      if (abs(heights[x - 1] - gy) > 2 || abs(heights[x + 1] - gy) > 2) continue;
+      if (BR.pois.some(q => abs(q.x - x) < 65) || BR.structures.some(s => abs(s.x - x) < 62)) continue;
+      cx = x;
+    }
+    if (cx < 0) continue;
+    const gy = heights[cx];
+    wBrFlat(cx - 7, cx + 7, gy, wBrBio(cx));
+    if (type === 'fortress') {
+      for (const ox of [-8, 8]) for (let y = gy - 9; y < gy; y++) tiles[y * WW + cx + ox] = CINDERBRICK;
+      for (let x = cx - 8; x <= cx + 8; x++) if (abs(x - cx) > 1) tiles[(gy - 9) * WW + x] = BRICK;
+      for (let y = gy - 5; y < gy; y++) { tiles[y * WW + cx - 4] = BRICK; tiles[y * WW + cx + 4] = BRICK; }
+    } else if (type === 'bunker') {
+      brDig(cx, gy + 8, 9, 6, W_STONE, .16);
+      for (let x = cx - 8; x <= cx + 8; x++) tiles[(gy + 2) * WW + x] = CINDERBRICK;
+      for (let y = gy + 2; y < gy + 8; y++) { tiles[y * WW + cx - 8] = BRICK; tiles[y * WW + cx + 8] = BRICK; }
+      for (let y = gy + 1; y < gy + 8; y++) if (tileAt(cx, y) === AIR) tiles[y * WW + cx] = LADDER;
+    } else if (type === 'village') {
+      house(cx - 6, gy, 8, 5, 3, { door: 2 });
+      house(cx + 3, gy, 6, 5, 2, { door: 2 });
+      dyn(cx + 8, gy - 1, BENCH);
+    } else if (type === 'temple') {
+      for (const ox of [-7, -3, 3, 7]) for (let y = gy - 8; y < gy; y++) tiles[y * WW + cx + ox] = CINDERBRICK;
+      for (let x = cx - 7; x <= cx + 7; x++) tiles[(gy - 8) * WW + x] = BRICK;
+      for (let x = cx - 7; x <= cx + 7; x++) tiles[(gy - 1) * WW + x] = PLATFORM;
+    } else {
+      for (const ox of [-5, 5]) for (let y = gy - 11; y < gy; y++) tiles[y * WW + cx + ox] = BEAM;
+      for (let x = cx - 6; x <= cx + 6; x++) tiles[(gy - 11) * WW + x] = PLATFORM;
+      for (let y = gy - 10; y < gy - 3; y++) if (tileAt(cx, y) === AIR) tiles[y * WW + cx] = LADDER;
+    }
+    if (k % 5 === 0) wBrChest(cx + (type === 'village' ? 8 : k % 10 ? 3 : -3), type === 'bunker' ? gy + 1 : gy - 1, k % 15 === 0, { structure: type, high: type === 'outpost' });
+    BR.structures.push({ x: cx, y: gy, type, kind: 'structure' });
+    reserve(cx - 10, cx + 10, 1);
+  }
 }
 // a small picture of the whole island for the map and the strip along the top
 function wBrMapArt() {

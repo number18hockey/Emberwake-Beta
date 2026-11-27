@@ -12,6 +12,12 @@ async def main():
     h = await H().start(seed=4242, size=1); res = {}; ims = []; labels = []
     await h.ev("SETTINGS.craft = 'simple'; G.cine = null; G.dialog = null; G.says.length = 0; G.sayCur = null; inv.fill(null); G.p.inv = 1e9; G.enemies.length = 0;")
     here = "const p = G.p, tx = floor((p.x + 3) / T), ty = floor((p.y + p.h - 1) / T);"
+    res['ingredient counts reserve materials before fuel'] = await h.ev("""(() => {
+      const r = RECIPES.find(r => r.out === 'steel_bar'); addItem('iron_bar', 2); addItem('coal', 2); addItem('crucible', 1);
+      const before = craftChecks(r).find(q => q.kind === 'fuel'); const blocked = canCraft(r); addItem('charcoal', 1);
+      const after = craftChecks(r).find(q => q.kind === 'fuel'); const ready = canCraft(r); inv.fill(null);
+      return [before.have, before.need, blocked, after.have, after.need, ready];
+    })()""")
     # ---- every bench: it can be built, placed, opened, and lists its own work ----
     res['benches and what they make'] = json.loads(await h.ev("""(() => { %s const out = {};
       for (const [tile, kind, item] of [[CARPENTER, 'carp', 'carpenter'], [ARMOURY, 'armr', 'armoury'], [TINKER, 'tink', 'tinker'], [JEWELLER, 'jewel', 'jeweller'], [OVEN, 'oven', 'oven'], [OFFERING, 'altar', 'offering_altar']]) {
@@ -28,6 +34,28 @@ async def main():
     cx, cy = await h.ev("(() => { const r = cv.getBoundingClientRect(), k = VS.ui * r.width / cv.width; return [r.left + %f * k, r.top + %f * k]; })()" % tuple(xy))
     await h.pg.mouse.click(cx, cy); await h.step(80, "")
     res['made a quickstep ring'] = await h.ev("countItem('quick_ring')")
+    await h.ev("""(() => { %s closeUI(); addItem('husk_fiber', 2); addItem('resin', 2); addItem('venom', 1); setTile(tx + 2, ty, JEWELLER); openStation(tx + 2, ty); UI.stnCan = true; })()""" % here)
+    await h.step(2, "")
+    xy = await h.ev("stnRowXY('jewel', JEWELLER, e => e.r.out === 'briar_ward' && e.can)")
+    assert xy, 'The Briar Ward should be available at the Jeweller when its materials are owned.'
+    if xy:
+        cx, cy = await h.ev("(() => { const r = cv.getBoundingClientRect(), k = VS.ui * r.width / cv.width; return [r.left + %f * k, r.top + %f * k]; })()" % tuple(xy))
+        await h.pg.mouse.click(cx, cy); await h.step(80, "")
+    res['crafted and wore Briar Ward blocks poison and bleeding'] = await h.ev("""(() => {
+      const k = inv.findIndex(s => s && s.id === 'briar_ward'); const made = countItem('briar_ward'); wearTrinketAt(k); G.p.st = {};
+      const poison = applyStatus(G.p, 'poison', null), bleed = applyStatus(G.p, 'bleed', null);
+      return [made, G.trink.includes('briar_ward'), poison, bleed, G.p.st.poison || 0, G.p.st.bleed || 0];
+    })()""")
+    await h.ev("addItem('copper_bar', 2); addItem('glass_wing', 2); addItem('skyglass', 1);")
+    xy = await h.ev("stnRowXY('jewel', JEWELLER, e => e.r.out === 'storm_ward' && e.can)")
+    assert xy, 'The Storm Ward should be available at the Jeweller when its materials are owned.'
+    await h.ev("(() => { const e = stnList('jewel', JEWELLER).find(e => e.r.out === 'storm_ward'); pickRecipe(e, UI.stn, stnState(UI.stn.i, UI.stn.t)); })()")
+    await h.step(80, "")
+    res['Storm Ward halves shock damage'] = await h.ev("""(() => {
+      const k = inv.findIndex(s => s && s.id === 'storm_ward'); const made = countItem('storm_ward'); wearTrinketAt(k);
+      const res = gearRes('shock'); G.trink[G.trink.indexOf('storm_ward')] = null;
+      return [made, res];
+    })()""")
     await h.ev("closeUI(); setTile(floor((G.p.x + 3) / T) + 2, floor((G.p.y + G.p.h - 1) / T), AIR);")
     res['walk speed before / after wearing it'] = await h.ev("(() => { const a = gearMul('walk'); const k = inv.findIndex(s => s && s.id === 'quick_ring'); wearTrinketAt(k); return [+a.toFixed(3), +gearMul('walk').toFixed(3), G.trink.filter(Boolean), countItem('quick_ring')]; })()")
     res['slots at the start, then with the Warden beaten'] = await h.ev("(() => { const a = trinkSlots(); G.flags.wardenDead = true; const b = trinkSlots(); G.flags.wardenDead = false; return [a, b]; })()")
@@ -77,5 +105,8 @@ async def main():
     sheet(ims, 2, shot('benches_and_trinkets.png'), labels, .5)
     for k, v in res.items(): print(k, '=>', v)
     print('errors:', [e for e in h.errs if 'agent-proxy' not in e][:6])
+    assert res['ingredient counts reserve materials before fuel'] == [0, 1, False, 1, 1, True]
+    assert res['crafted and wore Briar Ward blocks poison and bleeding'] == [1, True, False, False, 0, 0]
+    assert res['Storm Ward halves shock damage'] == [1, .5]
     await h.stop()
 asyncio.run(main())

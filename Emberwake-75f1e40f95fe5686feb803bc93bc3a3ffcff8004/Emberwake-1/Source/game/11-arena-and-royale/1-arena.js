@@ -50,7 +50,7 @@ function netPeers(list) {
     here.add(pe.peer);
     let f = NET.peers.get(pe.peer);
     if (!f) {
-      f = newFighter(num(s.x, 600), num(s.y, 300), { remote: true, peer: pe.peer, team: 'r:' + pe.peer, snaps: [], spawnT: 40, name: cleanName(s.n) || 'WAKER', skin: clamp(num(s.sk) | 0, 0, SKINS.length - 1), guest: !!pe.guest });
+      f = newFighter(num(s.x, 600), num(s.y, 300), { remote: true, peer: pe.peer, team: 'r:' + pe.peer, snaps: [], spawnT: 40, name: cleanName(s.n) || 'WAKER', skin: clamp(num(s.sk) | 0, 0, SKINS.length - 1), hat: clamp(num(s.ht) | 0, 0, 3), trail: clamp(num(s.tr) | 0, 0, BR_TRAILS.length - 1), guest: !!pe.guest });
       NET.peers.set(pe.peer, f); G.fighters.push(f); G.kfeed.unshift({ a: '', b: f.name, txt: 'entered the ring', t: 0 }); sfx('quest', 0);
     }
     if (pe.presence !== f.lastPres) { f.lastPres = pe.presence; netApply(f, s); }
@@ -60,7 +60,7 @@ function netPeers(list) {
 }
 function netApply(f, s) {
   const now = performance.now();
-  f.name = cleanName(s.n) || 'WAKER'; f.skin = clamp(num(s.sk) | 0, 0, SKINS.length - 1); f.wid = WORLD.royale ? (IT[s.w] && IT[s.w].type === 'weapon' ? s.w : 'fists') : RING_WEAPONS.includes(s.w) ? s.w : 'sword';
+  f.name = cleanName(s.n) || 'WAKER'; f.skin = clamp(num(s.sk) | 0, 0, SKINS.length - 1); if (s.ht !== undefined) f.hat = clamp(num(s.ht) | 0, 0, 3); if (s.tr !== undefined) f.trail = clamp(num(s.tr) | 0, 0, BR_TRAILS.length - 1); f.wid = WORLD.royale ? (IT[s.w] && IT[s.w].type === 'weapon' ? s.w : 'fists') : RING_WEAPONS.includes(s.w) ? s.w : 'sword';
   const snap = {
     t: now, x: clamp(num(s.x, f.x), 0, WW * T), y: clamp(num(s.y, f.y), 0, WH * T), vx: clamp(num(s.vx), -9, 9), vy: clamp(num(s.vy), -9, 9), face: s.f < 0 ? -1 : 1, g: !!s.g, st: num(s.st) | 0, dd: s.dd < 0 ? -1 : 1,
     m: typeof s.m === 'string' ? s.m : '', an: num(s.an) | 0, mp: clamp(num(s.mp) | 0, 0, 2), mt: clamp(num(s.mt), 0, 200), ma: clamp(num(s.ma), -3.2, 3.2), md: clamp(num(s.md, 40), 0, 900), mc: clamp(num(s.mc) | 0, 0, 60), mf: s.mf < 0 ? -1 : 1, rp: !!s.rp, sp: !!s.sp
@@ -114,7 +114,7 @@ function netSend() {
   const R = NET.R; if (!R || !R.connected()) return;
   const p = G.p, a = p.atk, W = heldOf(p);
   R.presence({
-    v: 1, ring: NET.code, n: G.nick, sk: G.skin, w: W && RING_WEAPONS.includes(W.id) ? W.id : 'sword', x: r1(p.x), y: r1(p.y), vx: r2(p.vx), vy: r2(p.vy), f: p.face, g: p.onGround ? 1 : 0,
+    v: 1, ring: NET.code, n: G.nick, sk: G.skin, ht: G.hat | 0, tr: G.trail | 0, w: W && RING_WEAPONS.includes(W.id) ? W.id : 'sword', x: r1(p.x), y: r1(p.y), vx: r2(p.vx), vy: r2(p.vy), f: p.face, g: p.onGround ? 1 : 0,
     st: p.dead ? 4 : p.state === 'dodge' ? 2 : p.hurtT > 0 ? 3 : a ? 1 : 0, dd: p.dodgeDir, hp: max(0, round(p.hp)), k: p.kills, d: p.deaths, rd: NET.rd,
     m: a ? a.id : '', an: p.atkN, mp: a ? a.phase : 0, mt: a ? a.pt : 0, ma: a ? r2(a.aimA) : 0, md: a ? round(a.dist) : 0, mc: a ? a.charge : 0, mf: a ? a.face : p.face, rp: p.riposte > 0 ? 1 : 0, sp: p.inv > 30 ? 1 : 0,
     hs: NET.hits, ps: NET.shots, kb: NET.kb, sx: p.st ? [p.st.pin > 0 ? (p.st.pinS || 0) + 2 : 0, p.st.burn > 0 ? 1 : 0, p.st.blind > 0 ? 1 : 0, p.st.hook > 0 || p.st.reel > 0 ? 1 : 0] : 0, lk: p.state === 'link' ? 1 : 0

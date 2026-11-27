@@ -589,7 +589,8 @@ cv.addEventListener('contextmenu', e => e.preventDefault());
 cv.addEventListener('wheel', e => {
   e.preventDefault(); const d = sign(e.deltaY);
   if (G.state === 'worlds' || G.state === 'accounts') { UI.scroll = max(0, UI.scroll + d); return; }
-  if (G.state === 'brform' && BR.wild && BR.menuTab !== 'queue') { BR.menuScroll = clamp(BR.menuScroll + d, 0, max(0, BR_LOOKS.length - BR.menuRows)); return; }
+  if (G.state === 'shop') { COSMETIC_SHOP.scroll = clamp(COSMETIC_SHOP.scroll + d, 0, max(0, BR_SHOP_ITEMS.filter(k => k.kind === COSMETIC_SHOP.tab).length - COSMETIC_SHOP.rows)); return; }
+  if (G.state === 'brform' && BR.wild && BR.menuTab !== 'queue') { BR.menuScroll = clamp(BR.menuScroll + d, 0, max(0, (BR.menuTab === 'wheel' ? BR_LOOKS : BR_SHOP_ITEMS).length - BR.menuRows)); return; }
   if (G.state !== 'play') return;
   if (UI.open === 'map') mapZoom(d);
   else if (UI.open) UI.scroll = max(0, UI.scroll + d * (UI.open === 'inv' ? 1 : 2));

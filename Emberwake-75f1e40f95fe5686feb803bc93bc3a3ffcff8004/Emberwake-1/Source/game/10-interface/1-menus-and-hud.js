@@ -5,6 +5,7 @@
 // ============================================================
 const inR = (x, y, w, h) => mouse.ux >= x && mouse.ux < x + w && mouse.uy >= y && mouse.uy < y + h;
 const FORM = { name: '', seed: '', size: 1, shape: 0, mode: 0, skin: 0, hat: 0, nick: '', code: '', accountName: '', accountPassword: '', accountConfirm: '', brRanked: false };
+const COSMETIC_SHOP = { tab: 'skin', selected: 0, scroll: 0, rows: 1 };
 const SIZE_D = ['600 x 260 tiles', '900 x 320 tiles', '1400 x 380 tiles', '2200 x 440 tiles: days to cross'], SHAPE_D = ['every seed deals its lands in a new order', 'the Drift is crowded with islands', 'few islands, the Underdark yawns wider'], MODE_D = ['three embers, any order, nothing forced', 'every item, no monsters, build freely'];
 let HITS = [], HITS_NEXT = [];
 const hit = (x, y, w, h, fn, slot) => HITS_NEXT.push({ x, y, w, h, fn, slot: !!slot });
@@ -179,19 +180,63 @@ function drawTitle(c) {
     titleCard(c, x0, cy, cw, ch, 'ALONE', '#ffd35a', 'fire', alone);
     titleCard(c, x0 + cw + gap, cy, cw, ch, 'WITH FRIENDS', '#7ddc6f', 'friends', friends);
     titleCard(c, x0 + (cw + gap) * 2, cy, cw, ch, 'THE ARENAS', '#ff6b6b', 'arena', arenas);
-    const by = min(uh - 36, cy + ch + 10), bw = min(104, floor((uw - 28) / 4) - 4), bx = round((uw - bw * 4 - 12) / 2);
+    const by = min(uh - 36, cy + ch + 10), bw = min(104, floor((uw - 44) / 5)), bx = round((uw - bw * 5 - 16) / 2);
     button(c, bx, by, bw, 14, muted ? 'SOUND: OFF' : 'SOUND: ON', () => { muted = !muted; sfx('ui'); }); if (inR(bx, by, bw, 14)) TITLE.hint = 'Sound on or off (also the O key while playing).';
     button(c, bx + bw + 4, by, bw, 14, 'DIFFICULTY: ' + DIFF().n, () => { SETTINGS.diff = SETTINGS.diff === 'easy' ? 'normal' : SETTINGS.diff === 'normal' ? 'hard' : 'easy'; saveSettings(); sfx('ui'); }); if (inR(bx + bw + 4, by, bw, 14)) TITLE.hint = 'How hard blows land on you, and how wide the timing of your own blows is.';
     button(c, bx + (bw + 4) * 2, by, bw, 14, 'CONTROLS: ' + (SETTINGS.combat === 'simple' ? 'SIMPLE' : 'FULL'), () => { SETTINGS.combat = SETTINGS.combat === 'simple' ? 'full' : 'simple'; saveSettings(); sfx('ui'); }); if (inR(bx + (bw + 4) * 2, by, bw, 14)) TITLE.hint = 'SIMPLE: aim and S choose the form. FULL: movement keys and distance change it too.';
     button(c, bx + (bw + 4) * 3, by, bw, 14, 'HOW TO PLAY', () => { G.state = 'howto'; sfx('ui'); }); if (inR(bx + (bw + 4) * 3, by, bw, 14)) TITLE.hint = 'The keys, and how a fight works.';
+    button(c, bx + (bw + 4) * 4, by, bw, 14, 'COSMETIC SHOP', () => { G.state = 'shop'; COSMETIC_SHOP.scroll = 0; sfx('ui'); });
   } else {
     // a narrow window: one plain column
     const bw = min(176, uw - 16), bx = round((uw - bw) / 2); let by = max(ly + 56, round(uh * .36));
     for (const r of [...alone, ...friends, ...arenas]) { button(c, bx, by, bw, 16, r[0], r[2], r[4] || {}); if (inR(bx, by, bw, 16)) TITLE.hint = r[3]; by += 19; }
+    button(c, bx, by, bw, 14, 'COSMETIC SHOP', () => { G.state = 'shop'; COSMETIC_SHOP.scroll = 0; sfx('ui'); }); by += 16;
     button(c, bx, by, bw, 14, 'HOW TO PLAY', () => { G.state = 'howto'; sfx('ui'); });
   }
   { let h = TITLE.hint || (mobileDevice ? 'touch to move and fight' : 'mouse + keyboard'); while (h.length > 3 && textW(h) > uw - 12) h = h.slice(0, -1); textC(c, h, uw / 2, uh - 15, TITLE.hint ? '#d8d4e6' : '#8b8fa3', 1, textO); }
   const vs = 'version ' + GAME_VERSION; textS(c, vs, uw - textW(vs) - 4, uh - 10, '#6a6485');
+}
+function drawCosmeticShop(c) {
+  const uw = VS.uw, uh = VS.uh, w = min(440, uw - 12), h = min(360, uh - 12), x = round((uw - w) / 2), y = max(6, round((uh - h) / 2)), p = brProfile();
+  c.fillStyle = 'rgba(18,13,31,.68)'; c.fillRect(0, 0, uw, uh); panel(c, x, y, w, h, 'THE COSMETIC SHOP');
+  const fx = x + 8, fw = w - 16, cats = [['skin', 'SKINS'], ['trail', 'TRAILS'], ['hat', 'HATS']], tabY = y + 15, tabW = fw / cats.length;
+  for (let i = 0; i < cats.length; i++) button(c, fx + i * tabW, tabY, tabW - 3, 14, cats[i][1], () => { COSMETIC_SHOP.tab = cats[i][0]; COSMETIC_SHOP.scroll = 0; sfx('ui'); }, { on: COSMETIC_SHOP.tab === cats[i][0] });
+  const wallet = `${p.coins} COINS   ·   ${p.souls} SOULS`; drawText(c, wallet, fx, y + 34, '#8ff5e6');
+  const all = BR_SHOP_ITEMS.filter(k => k.kind === COSMETIC_SHOP.tab), tabX = fx, listY = y + 47, bottom = y + h - 25, listW = floor(fw * .56), rowH = min(18, max(12, floor((bottom - listY) / min(6, all.length || 1))));
+  const rows = COSMETIC_SHOP.rows = max(1, floor((bottom - listY) / rowH));
+  COSMETIC_SHOP.scroll = clamp(COSMETIC_SHOP.scroll, 0, max(0, all.length - rows));
+  const selected = all.findIndex(k => k.id === COSMETIC_SHOP.selected);
+  if (selected < 0 && all.length) COSMETIC_SHOP.selected = all[0].id;
+  for (let i = 0; i < rows; i++) {
+    const k = all[COSMETIC_SHOP.scroll + i]; if (!k) continue;
+    const ry = listY + i * rowH, active = k.id === COSMETIC_SHOP.selected, own = brOwns(p, k), rarityCol = ({ COMMON: '#c8c4d4', UNCOMMON: '#7ddc6f', RARE: '#5aa8ff', EPIC: '#c77dff', LEGENDARY: '#ffd35a' })[k.rarity];
+    c.fillStyle = active ? '#3d3320' : i % 2 ? '#211e2c' : '#191622'; c.fillRect(tabX, ry, listW - 3, rowH - 1);
+    const name = `${k.id === 0 && k.kind === 'trail' ? 'TRAIL' : k.name}`;
+    textS(c, name, tabX + 4, ry + max(2, round((rowH - 8) / 2)), own ? '#fff' : '#d8d4e6', min(1, (listW - 62) / max(1, textW(name))));
+    textS(c, own ? 'OWNED' : k.cost ? `${k.cost}${k.currency === 'souls' ? 'S' : 'C'}` : 'FREE', tabX + listW - textW(own ? 'OWNED' : k.cost ? `${k.cost}${k.currency === 'souls' ? 'S' : 'C'}` : 'FREE') - 7, ry + max(2, round((rowH - 8) / 2)), rarityCol);
+    hit(tabX, ry, listW - 3, rowH, () => { COSMETIC_SHOP.selected = k.id; sfx('ui'); });
+  }
+  const k = all.find(item => item.id === COSMETIC_SHOP.selected) || all[0], px = fx + listW + 4, pw = fw - listW - 4, py = listY;
+  c.fillStyle = '#191622'; c.fillRect(px, py, pw, bottom - py);
+  if (k) {
+    const own = brOwns(p, k), wearing = k.kind === 'skin' ? G.skin === k.id : k.kind === 'hat' ? G.hat === k.id : G.trail === k.id, col = ({ COMMON: '#c8c4d4', UNCOMMON: '#7ddc6f', RARE: '#5aa8ff', EPIC: '#c77dff', LEGENDARY: '#ffd35a' })[k.rarity];
+    const skin = k.kind === 'skin' ? k.id : G.skin, hat = k.kind === 'hat' ? k.id : G.hat, trail = k.kind === 'trail' ? k.id : G.trail;
+    c.save(); c.translate(px + pw / 2, py + 45); c.scale(3, 3); c.drawImage(SK[skin] ? SK[skin].head : SK[0].head, SK[skin] ? SK[skin].hx : SK[0].hx, SK[skin] ? SK[skin].hy : SK[0].hy); drawHat(c, hat); c.restore();
+    const trailItem = BR_TRAILS[trail] || BR_TRAILS[0]; c.fillStyle = trailItem.color; c.globalAlpha = trail ? .35 : .12;
+    for (let i = 0; i < 4; i++) { const pulse = (i + G.time) % 4; c.fillRect(px + pw / 2 - 15 - pulse * 2, py + 67 + i * 3, 2 + (i % 2), 2); }
+    c.globalAlpha = 1;
+    textC(c, k.name, px + pw / 2, py + 79, '#fff1a8', min(1, pw / max(1, textW(k.name))), drawText);
+    textC(c, k.rarity, px + pw / 2, py + 92, col, min(1, pw / max(1, textW(k.rarity))), drawText);
+    const desc = k.kind === 'trail' ? 'A light-only running trail.' : 'A look, with no change to your strength.';
+    textC(c, desc, px + pw / 2, py + 106, '#8b8fa3', min(1, pw / max(1, textW(desc))), drawText);
+    const label = wearing ? k.id === 0 ? 'WEARING' : 'UNEQUIP' : own ? 'EQUIP' : `BUY ${k.cost} ${k.currency.toUpperCase()}`;
+    button(c, px + 2, bottom - 19, pw - 4, 16, label, () => {
+      if (wearing) brUnequipCosmetic(k.kind);
+      else brShopCosmetic(k.kind, k.id);
+    }, { off: (wearing && k.id === 0) || (!own && p[k.currency] < k.cost), on: wearing });
+  } else textC(c, 'No cosmetics available.', px + pw / 2, py + 30, '#8b8fa3', 1, drawText);
+  if (BR.menuMsg) textS(c, BR.menuMsg, fx, bottom - 20, '#ffd35a', min(1, (fw - 76) / max(1, textW(BR.menuMsg))));
+  button(c, x + w - 60, y + h - 20, 52, 14, 'BACK', () => { G.state = 'title'; sfx('ui'); });
 }
 function drawHowTo(c) {
   const uw = VS.uw, uh = VS.uh, w = min(430, uw - 12), h = min(uh - 12, 300), x = round((uw - w) / 2), y = round((uh - h) / 2);
@@ -579,7 +624,7 @@ function drawDialog(c) {
 }
 function drawUI(c) {
   HITS_NEXT = []; const uw = VS.uw, uh = VS.uh, st = G.state;
-  if (st === 'title') drawTitle(c); else if (st === 'accounts') drawAccounts(c); else if (st === 'howto') drawHowTo(c); else if (st === 'worlds') drawWorlds(c); else if (st === 'create') drawCreate(c); else if (st === 'ring') drawRingForm(c); else if (st === 'brform') drawBrForm(c); else if (st === 'bropen') drawBrOpen(c); else if (st === 'brlobby') drawBrLobby(c); else if (st === 'join') drawJoin(c); else if (st === 'wcopy') drawWorldCopy(c); else if (st === 'wpaste') drawWorldPaste(c);
+  if (st === 'title') drawTitle(c); else if (st === 'shop') drawCosmeticShop(c); else if (st === 'accounts') drawAccounts(c); else if (st === 'howto') drawHowTo(c); else if (st === 'worlds') drawWorlds(c); else if (st === 'create') drawCreate(c); else if (st === 'ring') drawRingForm(c); else if (st === 'brform') drawBrForm(c); else if (st === 'bropen') drawBrOpen(c); else if (st === 'brlobby') drawBrLobby(c); else if (st === 'join') drawJoin(c); else if (st === 'wcopy') drawWorldCopy(c); else if (st === 'wpaste') drawWorldPaste(c);
   else if (st === 'loading') { c.fillStyle = 'rgba(18,13,31,.82)'; c.fillRect(0, 0, uw, uh); textC(c, G.loadMsg || 'Loading...', uw / 2, round(uh * .45), '#fff1a8', 1, textO); const n = (performance.now() / 300 | 0) % 4; textC(c, '.'.repeat(n), uw / 2, round(uh * .45) + 12, '#ffd35a', 1, textO); }
   else if (st === 'intro') {
     c.fillStyle = 'rgba(18,13,31,.84)'; c.fillRect(0, 0, uw, uh);

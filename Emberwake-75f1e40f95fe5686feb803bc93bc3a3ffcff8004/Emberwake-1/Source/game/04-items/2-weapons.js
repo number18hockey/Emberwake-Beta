@@ -53,6 +53,13 @@ const WLIST = [['shortsword', 'copper'], ['shortsword', 'bronze'], ['shortsword'
   ['daggers', 'flint'], ['daggers', 'bone'], ['daggers', 'iron'], ['kama', 'bronze'], ['kama', 'iron'], ['claws', 'bone'], ['claws', 'steel'], ['claws', 'chitin'], ['sai', 'glass'],
   ['club', 'wood'], ['club', 'stone'], ['club', 'bone'], ['mace', 'copper'], ['mace', 'bronze'], ['mace', 'rust'], ['warhammer', 'deep'], ['battleaxe', 'flint'], ['battleaxe', 'bronze'], ['battleaxe', 'iron'], ['greataxe', 'steel'], ['greataxe', 'ember'],
   ['shortbow', 'wood'], ['recurve', 'bone'], ['longbow', 'wood'], ['longbow', 'glass'], ['longbow', 'ember'], ['nunchaku', 'bone'], ['nunchaku', 'steel'], ['flail', 'iron'], ['flail', 'ember'], ['chainwhip', 'glass']];
+const BR_LEGENDARY_RECIPES = [
+  { id: 'voidblade', set: 'sword', need: { iron_ore: 12, coal: 3, bone: 2 } },
+  { id: 'stormpiercer', set: 'spear', need: { copper_ore: 9, tin_ore: 4, coal: 3 } },
+  { id: 'rimecaller', set: 'sword', need: { iron_ore: 12, coal: 3, bone: 4 } },
+  { id: 'soulreaper', set: 'fangs', need: { copper_ore: 9, tin_ore: 4, bone: 3, fiber: 6 } },
+  { id: 'earthshatter', set: 'maul', need: { iron_ore: 15, coal: 3, rock: 4 } }
+];
 const NUN0 = { st: '#8a6a48', cap: '#c9a44a', l1: '#e8edf2', l2: '#7f8898', end: 'stick', n: 3 };
 function bowSpr(h, M, curl) {
   const w = 9; const [c, x] = mk(w, h);
@@ -95,6 +102,18 @@ function buildWeapons() {
   // the old weapons get recipes of their own and their trait flags
   IT.spear.desc = 'Fire-hardened stalkwood. Long reach. Thrusts, vaults and sweeps.'; IT.fangs.desc = 'Sunmetal twin blades. Fast, close, relentless.'; IT.maul.desc = 'Hollow iron, slow and enormous. Heavy forms shrug off blows.';
   R('bench', 'spear', 1, { stick: 3, twine: 1, log: 1 }); R('bench', 'bow', 1, { log: 2, twine: 2, cinder: 3 }); R('bench', 'nunchaku', 1, { stick: 2, chain: 1 }); R('anvil', 'fangs', 1, { copper_bar: 2, stick: 1 }, { lvl: 1, q: 1 }); R('anvil', 'maul', 1, { iron_bar: 4, leather: 1 }, { lvl: 2, q: 1 });
+  const legends = {
+    voidblade: { base: 'steel_sword', name: 'Voidblade', dmg: 21, ability: 'rift', cooldown: 8 * 60, desc: 'Rift Rend: a void arc lashes a nearby foe every 8 seconds.' },
+    stormpiercer: { base: 'steel_spear', name: 'Stormpiercer', dmg: 20, ability: 'chain', cooldown: 7 * 60, desc: 'Chain Lightning: a strike jumps to a nearby foe every 7 seconds.' },
+    rimecaller: { base: 'steel_greatsword', name: 'Rimecaller', dmg: 24, ability: 'rime', cooldown: 9 * 60, frost: 1, cold: true, desc: 'Winter Pulse: chills nearby foes every 9 seconds.' },
+    soulreaper: { base: 'iron_kama', name: 'Soulreaper', dmg: 20, ability: 'harvest', cooldown: 10 * 60, steal: .06, desc: 'Soul Harvest: a landed blow restores health every 10 seconds.' },
+    earthshatter: { base: 'deep_warhammer', name: 'Earthshatter', dmg: 25, ability: 'quake', cooldown: 9 * 60, stag: 1, desc: 'Faultline: a grounded blow shakes nearby foes every 9 seconds.' }
+  };
+  for (const recipe of BR_LEGENDARY_RECIPES) {
+    const L = legends[recipe.id], base = IT[L.base];
+    defI(recipe.id, Object.assign({}, base, { id: recipe.id, name: L.name, dmg: L.dmg, tier: 'ember', legendary: true, relic: true, legendAbility: L.ability, abilityCooldown: L.cooldown, desc: `${base.desc} ${L.desc}` }, L.frost ? { frost: L.frost, cold: L.cold } : {}, L.steal ? { steal: L.steal } : {}, L.stag ? { stag: L.stag } : {}));
+    R('anvil', recipe.id, 1, recipe.need, { lvl: 2, q: 1, wild: true });
+  }
   for (const id of ['vpike', 'vfangs']) { IT[id].frost = 1; IT[id].icon = rotIcon(IT[id].held); } IT.kmaul.burn = 1; IT.kblade.burn = 1;
   defI('fists', { name: 'Bare Hands', type: 'weapon', set: 'brawl', dmg: 5, len: 4, held: null, grip: [0, 0], dual: false, stack: 1, fist: true, desc: 'Jab, cross, hook, uppercut. Click a creature to punch it, whatever you hold.', icon: null });
 }

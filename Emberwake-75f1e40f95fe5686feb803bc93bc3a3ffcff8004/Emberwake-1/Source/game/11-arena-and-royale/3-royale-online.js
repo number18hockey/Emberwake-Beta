@@ -77,7 +77,7 @@ function brLeave() { if (BR.wild) return wBrLeave();
 // ---------------- what this computer says about itself ----------------
 function brSend() { if (BR.wild) return wBrSend();
   const R = NET.R; if (!R || !R.connected()) return; BR.sentAt = performance.now();
-  const o = { v: 3, br: 1, ring: BR.code, n: G.nick, sk: G.skin | 0, sq: ++BR.sq, ph: BR.phase === 'lobby' ? 'L' : 'M', mi: BR.phase === 'lobby' ? '' : BR.mi, ld: 0, tw: BR.wish | 0, pt: BR.party || '' };
+  const o = { v: 3, br: 1, ring: BR.code, n: G.nick, sk: G.skin | 0, ht: G.hat | 0, tr: G.trail | 0, sq: ++BR.sq, ph: BR.phase === 'lobby' ? 'L' : 'M', mi: BR.phase === 'lobby' ? '' : BR.mi, ld: 0, tw: BR.wish | 0, pt: BR.party || '' };
   if (BR.phase !== 'lobby' && G.p) {
     const p = G.p, a = p.atk, W = heldOf(p);
     Object.assign(o, {
@@ -125,7 +125,7 @@ function brSaw(id, q, s) {
   if (!BR.mi || BR.phase === 'lobby' || q.mi !== BR.mi) { const f = NET.peers.get(id); if (f) { NET.peers.delete(id); f.gone = true; } return; }
   if (q.ld && q.ld.st === 'M' && q.ld.mi === BR.mi && !BR.lead) brFromLeader(id, q.ld);
   let f = NET.peers.get(id);
-  if (!f && BR.ro.includes(id)) { f = newFighter(num(s.x, 600), num(s.y, 300), { remote: true, peer: id, team: trTeam(id), snaps: [], spawnT: 0, name: q.n, skin: q.sk, brIn: true, ward: 0, guest: q.guest }); NET.peers.set(id, f); G.fighters.push(f); }
+  if (!f && BR.ro.includes(id)) {   f = newFighter(num(s.x, 600), num(s.y, 300), { remote: true, peer: id, team: trTeam(id), snaps: [], spawnT: 0, name: q.n, skin: q.sk, hat: clamp(num(s.ht) | 0, 0, 3), trail: clamp(num(s.tr) | 0, 0, BR_TRAILS.length - 1), brIn: true, ward: 0, guest: q.guest }); NET.peers.set(id, f); G.fighters.push(f); }
   if (f && typeof s.x === 'number') {
     netApply(f, s); f.ward = clamp(num(s.wd) | 0, 0, 100); f.glide = !!s.gl; f.onBarge = !!s.ob; f.noHit = !!s.ob;
     f.tempo = clamp(num(s.tp) | 0, 0, 5); f.perks = typeof s.pk === 'string' ? s.pk.split(',').filter(k => TR_PERKS[k]).slice(0, 6) : [];
@@ -253,7 +253,7 @@ function ringRtcEnd() {
 // the host lets a friend into the lobby
 function brRtcWelcome(P, m) { if (BR.wild) return wBrRtcWelcome(P, m);
   if ([...COOP.peers.values()].filter(Q => Q.ok).length >= brMaxG()) { sendTo(P, { t: 'kick' }); return; }
-  P.name = cleanName(m.n) || P.name || 'WAKER'; P.skin = clamp(m.sk | 0, 0, SKINS.length - 1); P.ok = true; P.pres = null;
+  P.name = cleanName(m.n) || P.name || 'WAKER'; P.skin = clamp(m.sk | 0, 0, SKINS.length - 1); P.hat = clamp(m.ht | 0, 0, 3); P.trail = clamp(m.tr | 0, 0, BR_TRAILS.length - 1); P.ok = true; P.pres = null;
   sendTo(P, { t: 'brw', v: NETV, id: P.id, host: coopName(), code: COOP.ring ? NET.code : BR.code, mode: COOP.ring ? 'ring' : 'br', pt: BR.party || COOP.gcode || '' }); COOP.note = ''; sfx('quest', 0); BR.rtcDirty = true;
   if (COOP.ring) G.kfeed.unshift({ a: '', b: P.name, txt: 'is on the way in', t: 0 });
 }

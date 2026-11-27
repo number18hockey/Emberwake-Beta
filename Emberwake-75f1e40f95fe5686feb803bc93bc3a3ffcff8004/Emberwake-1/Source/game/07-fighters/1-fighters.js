@@ -21,14 +21,14 @@ function newFighter(x, y, o) {
     inv: 0, iDodge: 0, dodgeT: 0, dodgeCd: 0, dodgeDir: 1, dodgeGrace: 0, dodgeGround: true, dbuf: 0, airDash: 1, updraft: true, dblUsed: false, perfected: false,
     state: 'normal', atk: null, buf: null, coyote: 0, jbuf: 0, runPh: 0, landT: 0, hurtT: 0, riposte: 0, lastMove: null, chainT: 0, hist: [], toolT: 0, mineX: -1, mineY: -1, mineP: 0,
     placeCd: 0, dead: false, deadT: 0, healCd: 0, regenT: 0, sHold: 0, noCut: false, ghostReq: false, scarf: [], skin: 0, hat: 0, team: 'p', name: '', wid: 'sword', flash: 0, taken: 0, takenT: 0,
-    kills: 0, deaths: 0, foes: [], atkN: 0
+    kills: 0, deaths: 0, foes: [], atkN: 0, trail: 0
   };
   Object.assign(f, o);
   for (let i = 0; i < 7; i++) f.scarf.push({ x: x + 3, y: y + 5, ox: x + 3, oy: y + 5 });
   return f;
 }
 function newPlayer() {
-  const sx = SPOTS.camp ? SPOTS.camp.x - 6 : SPAWN_X, sy = SPOTS.camp ? SPOTS.camp.y : heights[SPAWN_X]; const p = newFighter(sx * T + 1, (sy - 3) * T, { isPlayer: true, skin: G.skin || 0, hat: G.hat || 0, name: G.nick || 'You' });
+  const sx = SPOTS.camp ? SPOTS.camp.x - 6 : SPAWN_X, sy = SPOTS.camp ? SPOTS.camp.y : heights[SPAWN_X]; const p = newFighter(sx * T + 1, (sy - 3) * T, { isPlayer: true, skin: G.skin || 0, hat: G.hat || 0, trail: G.trail || 0, name: G.nick || 'You' });
   while (boxHits(p.x, p.y, p.w, p.h)) p.y -= T; p.py = p.y; return p;
 }
 function reviveFighter(f, x, y) {
@@ -407,6 +407,12 @@ function visHeld(f) { if (f.isPlayer && (f.toolT > 0 || f.toolCharge > 0) && f.s
 function drawFighterRig(x, f, al, rx, ry) {
   const P = fighterPose(f, al), it = visHeld(f), S = f === G.p ? gearSkin(SK[f.skin] || SK[0], f.skin) : f.coop && f.gearObj ? gearSkinOf(f) : SK[f.skin] || SK[0];
   P.hat = f.hat || 0;
+  const trail = BR_TRAILS[f.trail | 0];
+  if (f.trail && trail && hypot(f.vx || 0, f.vy || 0) > .6) {
+    x.save(); x.globalAlpha = .8; x.fillStyle = trail.color;
+    for (let i = 0; i < 4; i++) { const drift = (G.time + i * 3) % 8; x.fillRect(-f.face * (7 + i * 3 + drift), -4 + i * 4, i < 2 ? 2 : 1, 2); }
+    x.restore();
+  }
   if (S.scarf) { const sc = f.scarf; for (let i = 1; i < sc.length; i++) seg(x, sc[i - 1].x - rx, sc[i - 1].y - ry, sc[i].x - rx, sc[i].y - ry, i < 3 ? 2.4 : 2, S.scarf[i % 2]); }
   let wp = null, wp2 = null; if (it) { if (it.held || it.chuks) { wp = it; if (it.dual) wp2 = it; } else if (it.id === 'torch') { TORCH_HELD.held = SPR.i_torch; wp = TORCH_HELD; } }
   x.save(); x.scale(f.face, 1); drawRig(x, P, S, wp, wp2); x.restore();

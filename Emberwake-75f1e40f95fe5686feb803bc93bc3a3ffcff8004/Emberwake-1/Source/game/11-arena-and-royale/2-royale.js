@@ -9,8 +9,8 @@
 //  shares it as presence, exactly like the Cinder Ring.
 // ============================================================
 const BRW = 800, BRH = 140, BRSKY = 17, BR_MAX = 12, BR_FILL = 12;
-const BR_TIERS = ['COMMON', 'UNCOMMON', 'RARE', 'EPIC', 'LEGENDARY'], BR_TCOL = ['#c8c4d4', '#7ddc6f', '#5aa8ff', '#c77dff', '#ffd35a'];
-const BR_MATT = { wood: 0, flint: 0, bone: 0, stone: 0, copper: 1, bronze: 1, rust: 2, chitin: 2, iron: 2, steel: 3, glass: 3, deep: 4, ember: 4 };
+const BR_TIERS = ['COMMON', 'UNCOMMON', 'RARE', 'EPIC', 'LEGENDARY', 'MYTHIC'], BR_TCOL = ['#c8c4d4', '#7ddc6f', '#5aa8ff', '#c77dff', '#ffd35a', '#ff7a9e'];
+const BR_MATT = { wood: 0, flint: 0, bone: 0, stone: 0, copper: 1, bronze: 1, rust: 2, chitin: 2, iron: 2, steel: 3, glass: 3, deep: 4, ember: 5 };
 const BR_OLD = { sword: 0, spear: 0, fangs: 1, maul: 2, bow: 1, nunchaku: 1, kblade: 4, kmaul: 4, vpike: 3, vfangs: 3 };
 const BR_BIOMES = ['moor', 'thorn', 'dunes', 'reach', 'ash'];
 const BR_SURF = { moor: [GRASS, DIRT], thorn: [GRASS, DIRT], dunes: [SAND, SANDSTONE], reach: [SNOW, STONE], ash: [ASH, STONE] };
@@ -27,7 +27,7 @@ const BR = {
   dlSeen: new Set(), dl: null, place: 0, spec: null, specT: 0, overT: 0, winner: '', winMe: false, pois: [], segs: BR_BIOMES.slice(), segW: BRW / 5, mapCv: null,
   note: '', noteT: 0, chan: null, inStorm: false, poiNow: '', mapOpen: false, total: 0, lastAlive: 0, lobbyT: 0, err: '',
   // the Wilds (the third arena: 20-wilds-royale.js and on) keeps its own extra state here
-  wild: false, wildLand: false, matchType: 'unranked', rewarded: false, ring: { n: 0, at: 0 }, lastFall: 0, caves: [], nests: [], lakes: [], segX: [], bio: null, lastTeams: 0, pactWith: '', pactFrom: '', pactFromT: 0, teammate: '', pactSeen: false, leaveT: 0, dropsOut: [], dropSeq: 0, dropSeen: new Map(), tookOut: [], tookSeq: 0, tookSeen: new Map(), tileOut: new Map(), applying: false, fallen: [], fallenT: 0, show: null, gifts: [], giftAt: 0, feast: 0, hazard: null, hounds: 0, bounty: null, mobT: 0, botMobT: 0, menuTab: 'queue', menuScroll: 0, menuRows: 1, menuMsg: ''
+  wild: false, wildLand: false, matchType: 'unranked', rewarded: false, ring: { n: 0, at: 0 }, lastFall: 0, caves: [], nests: [], lakes: [], segX: [], bio: null, structures: [], lastTeams: 0, pactWith: '', pactFrom: '', pactFromT: 0, teammate: '', pactSeen: false, leaveT: 0, dropsOut: [], dropSeq: 0, dropSeen: new Map(), tookOut: [], tookSeq: 0, tookSeen: new Map(), tileOut: new Map(), applying: false, fallen: [], fallenT: 0, show: null, gifts: [], giftAt: 0, feast: 0, hazard: null, hounds: 0, bounty: null, mobT: 0, botMobT: 0, menuTab: 'queue', menuScroll: 0, menuRows: 1, menuMsg: ''
 };
 const brOn = () => WORLD.royale && BR.on;
 // true only inside a match of the Wilds (the third arena): everything the Wilds changes in the shared game asks this first
@@ -37,7 +37,7 @@ const brTag = f => !f ? '' : f === G.p ? (NET.me || 'me') : f.botTag || f.peer |
 // ---------------- loot ----------------
 const brTier = id => { const it = IT[id]; if (!it || it.type !== 'weapon' || it.fist) return -1; return it.tier ? (BR_MATT[it.tier] ?? -1) : (BR_OLD[id] ?? -1); };
 let BR_POOL = null;
-function brPool() { if (BR_POOL) return BR_POOL; BR_POOL = [[], [], [], [], []]; for (const id in IT) { const k = brTier(id); if (k >= 0 && !IT[id].relic) BR_POOL[k].push(id); } return BR_POOL; }
+function brPool() { if (BR_POOL) return BR_POOL; BR_POOL = [[], [], [], [], [], []]; for (const id in IT) { const k = brTier(id); if (k >= 0 && !IT[id].relic) BR_POOL[k].push(id); } return BR_POOL; }
 function brItems() {
   const v = (a, b, c, d, e) => ({ a, b, c, d, e });
   defI('br_salve', { name: 'Ember Salve', type: 'brheal', heal: 25, cap: 100, use: 70, stack: 6, icon: icon('vial', v('#ffd3a0', '#ff8a3d', '#c94a1e', '#5a2010', '#fff1a8')), desc: 'Heals 25. Takes a moment to rub in.' });
@@ -46,9 +46,9 @@ function brItems() {
   defI('br_ward', { name: 'Greatward Flask', type: 'brheal', ward: 50, cap: 100, use: 160, stack: 3, icon: icon('vial', v('#e0f4ff', '#5aa8ff', '#2a62c0', '#14305a', '#ffffff')), desc: '+50 ward, up to 100.' });
   trItems(); trKitItems(); wBrItems();
 }
-function brRollTier(rare) { const r = Math.random(); return rare ? (r < .3 ? 2 : r < .78 ? 3 : 4) : (r < .4 ? 0 : r < .7 ? 1 : r < .89 ? 2 : r < .975 ? 3 : 4); }
+function brRollTier(rare) { const r = Math.random(); return rare ? (r < .22 ? 2 : r < .58 ? 3 : r < .94 ? 4 : 5) : (r < .42 ? 0 : r < .72 ? 1 : r < .91 ? 2 : r < .99 ? 3 : r < .999 ? 4 : 5); }
 function brLoot(rare) {
-  const P = brPool(), k = brRollTier(rare), pool = P[k].length ? P[k] : P[0], out = [[fpick(pool), 1]];
+  const P = brPool(), k = brRollTier(rare), pool = P[k].length ? P[k] : P.slice(0, k).reverse().find(p => p.length) || P[0], out = [[fpick(pool), 1]];
   const n = rare ? 2 : 1 + (Math.random() < .55 ? 1 : 0);
   for (let i = 0; i < n; i++) {
     const r = Math.random();
