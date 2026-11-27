@@ -24,6 +24,8 @@ This version joins two that had grown apart. One had the Trials, the four worlds
 - **A third arena for the Ashfall: THE WILDS.** Thirty-two fall from the sky with nothing, over an island 3,500 paces wide with caves beneath it. Dig, gather, make your weapons, make pacts. It pays **souls** and **coins** for the **soul wheel** and the **shop**, where skins and hats are won and worn. See *The Ashfall Trials: A third arena*.
 - **Armour at the Workbench.** Every piece of armour is now made at the Workbench, for fewer materials and with no anvil of its rank close by. An Armourer's Stand in an old world stays where it is.
 - **FPS MODE** in the menu (**Esc**): no particles and a barer HUD, with an aiming cross, for a cleaner and smoother view. The game stays side-on. See *Controls: The menu*.
+- **Ropes, ladders and vines** no longer snag your shoulder or catch you again when you leap off, in every world.
+- **Dead bushes** give a little fibre as well as sticks, in every world.
 - A frame that goes wrong no longer stops the game.
 - **This version can't play with older ones, so send your friends the new files.**
 

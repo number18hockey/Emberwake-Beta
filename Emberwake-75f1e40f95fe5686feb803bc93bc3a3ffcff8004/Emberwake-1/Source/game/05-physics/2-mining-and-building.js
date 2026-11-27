@@ -386,15 +386,15 @@ function splash(tx, ty) { for (let k = 0; k < 8; k++) P(tx * T + 4, ty * T + 4, 
 // ---------------- moving: ladders, ropes, gliders, claws ----------------
 function climbAt(f) { const cx = floor((f.x + 3) / T); for (let y = floor((f.y + 2) / T); y <= floor((f.y + f.h - 1) / T); y++) if (TP[tileAt(cx, y)].climb) return true; return false; }
 function travelTick(f, I, grav) {
-  // (in the Wilds everyone climbs, echoes too; having leapt off a rope there you don't catch the same one again at once,
-  //  and with hands off the side keys you line up with what you are climbing so a lip of rock doesn't catch your shoulder)
+  // (in the Wilds everyone climbs, echoes too. Wherever you climb: having leapt off a rope you don't catch the same one again at
+  //  once, and with hands off the side keys you line up with what you are climbing so a lip of rock doesn't catch your shoulder)
   const wild = wildOn(); if ((wild ? !f.isPlayer && !f.brBot || f.remote : !f.isPlayer || WORLD.arena) || f.dead) return grav;
   if (f.dragT > 0) { f.dragT--; f.vx = approach(f.vx, sign(f.dragX - (f.x + 3)) * 2.2, .35); }
   const onC = climbAt(f), col = floor((f.x + 3) / T); if (f.letGo > 0) f.letGo--;
   if (onC && !(f.letGo > 0 && f.letGoX === col) && (I.jumpH && !f.onGround || I.down || (I.jumpH && f.onGround && !I.md))) f.climbing = true;
   if (f.climbing) {
-    if (!onC || (I.jumpP && I.md)) { f.climbing = false; if (I.jumpP && I.md) { f.vy = -3.6; f.vx = I.md * 2; if (wild) { f.letGo = 14; f.letGoX = col; } } }
-    else { f.vy = I.jumpH ? -1.35 : I.down ? 1.7 : 0; f.vx *= .6; if (wild && !I.md) { const off = col * T + 1 - f.x; if (abs(off) > .3) f.vx += clamp(off * .12, -.35, .35); } f.coyote = 0; f.dblUsed = false; f.airDash = airDashMax(f); f.onGround = false; f.runPh += abs(f.vy) * .3; return 0; }
+    if (!onC || (I.jumpP && I.md)) { f.climbing = false; if (I.jumpP && I.md) { f.vy = -3.6; f.vx = I.md * 2; f.letGo = 14; f.letGoX = col; } }
+    else { f.vy = I.jumpH ? -1.35 : I.down ? 1.7 : 0; f.vx *= .6; if (!I.md) { const off = col * T + 1 - f.x; if (abs(off) > .3) f.vx += clamp(off * .12, -.35, .35); } f.coyote = 0; f.dblUsed = false; f.airDash = airDashMax(f); f.onGround = false; f.runPh += abs(f.vy) * .3; return 0; }
   }
   f.gliding = f.clinging = false; if (!f.isPlayer) return grav;
   if (!f.onGround && !liqAt(f.x + 3, f.y + f.h - 5)) {

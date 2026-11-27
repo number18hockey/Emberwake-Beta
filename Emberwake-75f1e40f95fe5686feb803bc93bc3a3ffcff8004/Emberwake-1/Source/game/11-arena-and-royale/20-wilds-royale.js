@@ -28,8 +28,6 @@ const BR_WARN = 40 * 60, BR_MOVE = 105 * 60, BR_RESTLESS = 5 * 60 * 60;
 const BR_TITLES = ['TRIBUTE', 'FORAGER', 'TRAPPER', 'SCAVENGER', 'RANGER', 'CAREER', 'VICTOR'];
 // (the match state BR is the one object shared with the Trials: see 2-royale.js; BR.wild is true while this arena is in play)
 const wBrOn = () => WORLD.royale && BR.on;
-// on the island a dead bush gives fibre as well as sticks (twine is short there); in every other place it gives what it always gave
-{ const dry = PLUCK[DEADBUSH], wild = [...dry, ['fiber', 1, 2]]; Object.defineProperty(PLUCK, DEADBUSH, { get: () => wildOn() ? wild : dry, enumerable: true }); }
 const wBrTag = f => !f ? '' : f === G.p ? (NET.me || 'me') : f.botTag || f.peer || '';
 const brSay = (s, t = 150) => { BR.note = s; BR.noteT = t; };
 
