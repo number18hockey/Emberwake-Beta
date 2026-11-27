@@ -202,48 +202,6 @@ function drawTitle(c) {
   { let h = TITLE.hint || (mobileDevice ? 'touch to move and fight' : 'mouse + keyboard'); while (h.length > 3 && textW(h) > uw - 12) h = h.slice(0, -1); textC(c, h, uw / 2, uh - 15, TITLE.hint ? '#d8d4e6' : '#8b8fa3', 1, textO); }
   const vs = 'version ' + GAME_VERSION; textS(c, vs, uw - textW(vs) - 4, uh - 10, '#6a6485');
 }
-function drawCosmeticShop(c) {
-  const uw = VS.uw, uh = VS.uh, w = min(440, uw - 12), h = min(360, uh - 12), x = round((uw - w) / 2), y = max(6, round((uh - h) / 2)), p = brProfile();
-  c.fillStyle = 'rgba(18,13,31,.68)'; c.fillRect(0, 0, uw, uh); panel(c, x, y, w, h, 'THE COSMETIC SHOP');
-  const fx = x + 8, fw = w - 16, cats = [['skin', 'SKINS'], ['trail', 'TRAILS'], ['hat', 'HATS']], tabY = y + 15, tabW = fw / cats.length;
-  for (let i = 0; i < cats.length; i++) button(c, fx + i * tabW, tabY, tabW - 3, 14, cats[i][1], () => { COSMETIC_SHOP.tab = cats[i][0]; COSMETIC_SHOP.scroll = 0; sfx('ui'); }, { on: COSMETIC_SHOP.tab === cats[i][0] });
-  const wallet = `${p.coins} COINS   ·   ${p.souls} SOULS`; drawText(c, wallet, fx, y + 34, '#8ff5e6');
-  const all = BR_SHOP_ITEMS.filter(k => k.kind === COSMETIC_SHOP.tab), tabX = fx, listY = y + 47, bottom = y + h - 25, listW = floor(fw * .56), rowH = min(18, max(12, floor((bottom - listY) / min(6, all.length || 1))));
-  const rows = COSMETIC_SHOP.rows = max(1, floor((bottom - listY) / rowH));
-  COSMETIC_SHOP.scroll = clamp(COSMETIC_SHOP.scroll, 0, max(0, all.length - rows));
-  const selected = all.findIndex(k => k.id === COSMETIC_SHOP.selected);
-  if (selected < 0 && all.length) COSMETIC_SHOP.selected = all[0].id;
-  for (let i = 0; i < rows; i++) {
-    const k = all[COSMETIC_SHOP.scroll + i]; if (!k) continue;
-    const ry = listY + i * rowH, active = k.id === COSMETIC_SHOP.selected, own = brOwns(p, k), rarityCol = ({ COMMON: '#c8c4d4', UNCOMMON: '#7ddc6f', RARE: '#5aa8ff', EPIC: '#c77dff', LEGENDARY: '#ffd35a' })[k.rarity];
-    c.fillStyle = active ? '#3d3320' : i % 2 ? '#211e2c' : '#191622'; c.fillRect(tabX, ry, listW - 3, rowH - 1);
-    const name = `${k.id === 0 && k.kind === 'trail' ? 'TRAIL' : k.name}`;
-    textS(c, name, tabX + 4, ry + max(2, round((rowH - 8) / 2)), own ? '#fff' : '#d8d4e6', min(1, (listW - 62) / max(1, textW(name))));
-    textS(c, own ? 'OWNED' : k.cost ? `${k.cost}${k.currency === 'souls' ? 'S' : 'C'}` : 'FREE', tabX + listW - textW(own ? 'OWNED' : k.cost ? `${k.cost}${k.currency === 'souls' ? 'S' : 'C'}` : 'FREE') - 7, ry + max(2, round((rowH - 8) / 2)), rarityCol);
-    hit(tabX, ry, listW - 3, rowH, () => { COSMETIC_SHOP.selected = k.id; sfx('ui'); });
-  }
-  const k = all.find(item => item.id === COSMETIC_SHOP.selected) || all[0], px = fx + listW + 4, pw = fw - listW - 4, py = listY;
-  c.fillStyle = '#191622'; c.fillRect(px, py, pw, bottom - py);
-  if (k) {
-    const own = brOwns(p, k), wearing = k.kind === 'skin' ? G.skin === k.id : k.kind === 'hat' ? G.hat === k.id : G.trail === k.id, col = ({ COMMON: '#c8c4d4', UNCOMMON: '#7ddc6f', RARE: '#5aa8ff', EPIC: '#c77dff', LEGENDARY: '#ffd35a' })[k.rarity];
-    const skin = k.kind === 'skin' ? k.id : G.skin, hat = k.kind === 'hat' ? k.id : G.hat, trail = k.kind === 'trail' ? k.id : G.trail;
-    c.save(); c.translate(px + pw / 2, py + 45); c.scale(3, 3); c.drawImage(SK[skin] ? SK[skin].head : SK[0].head, SK[skin] ? SK[skin].hx : SK[0].hx, SK[skin] ? SK[skin].hy : SK[0].hy); drawHat(c, hat); c.restore();
-    const trailItem = BR_TRAILS[trail] || BR_TRAILS[0]; c.fillStyle = trailItem.color; c.globalAlpha = trail ? .35 : .12;
-    for (let i = 0; i < 4; i++) { const pulse = (i + G.time) % 4; c.fillRect(px + pw / 2 - 15 - pulse * 2, py + 67 + i * 3, 2 + (i % 2), 2); }
-    c.globalAlpha = 1;
-    textC(c, k.name, px + pw / 2, py + 79, '#fff1a8', min(1, pw / max(1, textW(k.name))), drawText);
-    textC(c, k.rarity, px + pw / 2, py + 92, col, min(1, pw / max(1, textW(k.rarity))), drawText);
-    const desc = k.kind === 'trail' ? 'A light-only running trail.' : 'A look, with no change to your strength.';
-    textC(c, desc, px + pw / 2, py + 106, '#8b8fa3', min(1, pw / max(1, textW(desc))), drawText);
-    const label = wearing ? k.id === 0 ? 'WEARING' : 'UNEQUIP' : own ? 'EQUIP' : `BUY ${k.cost} ${k.currency.toUpperCase()}`;
-    button(c, px + 2, bottom - 19, pw - 4, 16, label, () => {
-      if (wearing) brUnequipCosmetic(k.kind);
-      else brShopCosmetic(k.kind, k.id);
-    }, { off: (wearing && k.id === 0) || (!own && p[k.currency] < k.cost), on: wearing });
-  } else textC(c, 'No cosmetics available.', px + pw / 2, py + 30, '#8b8fa3', 1, drawText);
-  if (BR.menuMsg) textS(c, BR.menuMsg, fx, bottom - 20, '#ffd35a', min(1, (fw - 76) / max(1, textW(BR.menuMsg))));
-  button(c, x + w - 60, y + h - 20, 52, 14, 'BACK', () => { G.state = 'title'; sfx('ui'); });
-}
 // (how to play, the worlds board and the forge are 7-places.js)
 // a seed you can say out loud, so a friend can forge the same world
 const SEED_A = ['ember', 'ashen', 'hollow', 'glass', 'cinder', 'salt', 'thorn', 'rust', 'pale', 'still', 'deep', 'wake', 'lantern', 'gloam', 'iron', 'moth'], SEED_B = ['vale', 'reach', 'moor', 'fen', 'crown', 'harbor', 'hollow', 'field', 'gate', 'well', 'spire', 'march', 'barrow', 'ford', 'rise', 'drift'];

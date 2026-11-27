@@ -87,23 +87,33 @@ function trPartyTeams(ids, nb, size, wish, party) {
   return out;
 }
 
-// ---------------- the list of open lobbies ----------------
-function drawOpenList(c, x, y, w, h) {
-  const L = openList(), mine = partySize(), lead = !BR.on || (BR.via === 'rtc' && netHost()), now = performance.now();
-  panel(c, x, y, w, h, 'OPEN MATCHES'); hit(x, y, w, h, () => { });
-  if (!openUsable()) wrapDraw(c, NET.room ? 'On claude.ai, PLAY ONLINE is where everyone meets. Type the same PARTY word as your friends to share a team.' : 'This window cannot reach the internet.', x + 8, y + 20, w - 16, '#ffb347');
-  else if (!L.length) wrapDraw(c, openReady() ? 'No lobby is open right now. Open your own (HOST A MATCH, then OPEN TO OTHERS), and anyone looking will see it here.' : 'Looking at the board...', x + 8, y + 20, w - 16, '#d8d4e6');
-  L.slice(0, 7).forEach((e, i) => {
-    const ry = y + 18 + i * 20, room = e.m - e.k, okJoin = lead && room >= mine;
-    c.fillStyle = inR(x + 4, ry, w - 8, 18) ? '#2b2740' : '#221e30'; c.fillRect(x + 4, ry, w - 8, 18);
-    drawText(c, e.n + '\'S LOBBY', x + 9, ry + 2, '#fff'); drawText(c, TR_SIZE_N[e.tm] + '   ' + TR_ARENA_PICK[e.ar] + '   ' + e.k + ' of ' + e.m + ' here', x + 9, ry + 10, '#8b8fa3');
-    button(c, x + w - 74, ry + 2, 66, 14, mine > 1 ? 'JOIN (' + mine + ')' : 'JOIN', () => openJoin(e), { off: !okJoin });
+// ---------------- the list of open lobbies (THE OPEN BOARD, built with the menu kit) ----------------
+// A card: one row per open lobby (whose, team size, arena, how many are in it) with JOIN; BACK (on the board's own
+// screen, to the Trials' form) or CLOSE (over the lobby) in its foot.
+const openRowH = () => KIT.T ? 40 : 30;
+const openMsg = () => !openUsable() ? (NET.room ? 'On claude.ai, PLAY ONLINE is where everyone meets. Type the same PARTY word as your friends to share a team.' : 'This window cannot reach the internet.') : !openList().length ? (openReady() ? 'No lobby is open right now. Open your own (MAKE A PARTY, then OPEN TO OTHERS), and anyone looking will see it here.' : 'Looking at the board...') : '';
+function openListH(w) { const m = openMsg(), n = openList().length; return 29 + (m ? amParaH(m, w - 16) + 8 : 0) + max(1, min(n, 6)) * openRowH() + (n > 6 ? KIT.sizes.sm + 4 : 0) + 6 + KIT.bh + 10; }
+function drawOpenList(c, x, y, w, h, o = {}) {
+  const S = KIT.sizes, L = openList(), mine = partySize(), lead = !BR.on || (BR.via === 'rtc' && netHost()), now = performance.now();
+  const K = kcard(c, x, y, w, h, 'bropen', 'OPEN MATCHES', { foot: true, i: o.i || 0, right: (c, rx, ry) => { const s = L.length + ' OPEN'; drawText(c, s, rx - textW(s), ry + 5, L.length ? '#7ddc6f' : '#8b8fa3'); } });
+  const cx = K.x + 8, cw = K.w - 16, m = openMsg(); let yy = K.by + 1;
+  if (m) yy += amPara(c, m, cx, yy, cw, openUsable() ? '#d8d4e6' : '#ffb347') + 8;
+  if (L.length) klist(c, { x: cx, y: yy, w: cw, h: K.footY - 4 - yy }, L.length, openRowH(), (c, i, rx, ry, rw, rh) => {
+    const e = L[i], room = e.m - e.k, okJoin = lead && room >= mine, bw = KIT.T ? 76 : 66, hv = kin(rx, ry, rw, rh);
+    c.fillStyle = hv ? '#2b2740' : '#221e30'; c.fillRect(rx, ry, rw, rh); c.fillStyle = TR_TEAMCOL[i % TR_TEAMCOL.length]; c.fillRect(rx, ry, 2, rh);
+    // how full it is: a pip for each place
+    for (let k = 0; k < e.m; k++) { c.fillStyle = k < e.k ? '#7ddc6f' : '#2b2740'; c.fillRect(rx + rw - bw - 10 - (e.m - k) * 5, ry + rh - 8, 4, 4); }
+    drawText(c, fitText(e.n + '\'S LOBBY', rw - bw - 16), rx + 7, ry + round(rh / 2) - 9, '#fff'); drawText(c, fitText(TR_SIZE_N[e.tm] + '   ' + TR_ARENA_PICK[e.ar] + '   ' + e.k + ' of ' + e.m + ' here', rw - bw - 16 - e.m * 5), rx + 7, ry + round(rh / 2) + 1, '#8b8fa3');
+    kbutton(c, rx + rw - bw - 4, ry + round((rh - S.sm) / 2), bw, mine > 1 ? 'JOIN (' + mine + ')' : 'JOIN', () => openJoin(e), { small: true, off: !okJoin, main: okJoin && i === 0, hint: !lead ? 'Your party leader chooses the match.' : room < mine ? 'There is no room in it for your whole party.' : 'Walk into ' + e.n + '\'s lobby' + (mine > 1 ? ' with your party.' : '.') });
   });
-  if (!lead) drawText(c, 'your party leader chooses the match', x + 8, y + h - 16, '#8b8fa3');
-  else if (mine > 1) drawText(c, 'your whole party (' + mine + ') goes together', x + 8, y + h - 16, '#7ddc6f');
+  const fy = K.footY + 5, bk = KIT.T ? 64 : 58, note = !lead ? 'your party leader chooses the match' : mine > 1 ? 'your whole party (' + mine + ') goes together' : '';
+  if (note) drawText(c, fitText(note, cw - bk - 8), cx, fy + round((S.bh - 8) / 2), !lead ? '#8b8fa3' : '#7ddc6f');
+  if (o.close) kbutton(c, K.x + K.w - 8 - bk, fy, bk, 'CLOSE', o.close, { hint: 'Back to your lobby.' });
+  else kbutton(c, K.x + K.w - 8 - bk, fy, bk, 'BACK', menuBack, { hint: 'Back to the Ashfall Trials.' });
+  return K;
 }
 function drawBrOpen(c) {
-  const uw = VS.uw, uh = VS.uh, w = min(360, uw - 16), h = 200, x = round((uw - w) / 2), y = max(6, round((uh - h) / 2));
-  c.fillStyle = 'rgba(18,13,31,.55)'; c.fillRect(0, 0, uw, uh); drawOpenList(c, x, y, w, h);
-  button(c, x + w - 70, y + h - 20, 60, 14, 'BACK', () => { G.state = 'brform'; sfx('ui'); });
+  menuBackdrop(c, 'bropen'); kview('bropen');
+  const F = menuFrame('bropen', 380, openListH(min(380, VS.uw - 12))); menuHero(c, 'bropen', F);
+  drawOpenList(c, F.x, F.y, F.w, F.h);
 }

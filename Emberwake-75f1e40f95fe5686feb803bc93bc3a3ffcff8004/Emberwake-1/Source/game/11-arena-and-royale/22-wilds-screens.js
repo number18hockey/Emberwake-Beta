@@ -16,113 +16,30 @@ function drawBrBanner(c, x, y, w, h, compact = false) {
   drawText(c, compact ? 'THE WILDS' : 'THE WILDS OF THE ASHFALL', x + 8, y + 9, '#fff1a8');
   if (!compact) drawText(c, 'LAST WAKER STANDING', x + 8, y + h - 12, '#ffe2b8');
 }
-// three pages: the queue, the soul wheel and the shop. It has to fit a phone held either way
+// three pages, the queue, the soul wheel and the shop, built with the menu kit (helpers in 26-arena-menus.js). The banner
+// is a band in the card on a wide screen and the hero over the card on a phone held upright.
 function wDrawBrForm(c) {
-  const uw = VS.uw, uh = VS.uh, h = min(380, uh - 12), w = min(440, uw - 16), x = round((uw - w) / 2), y = max(6, round((uh - h) / 2)), fx = x + 10, fw = w - 20;
-  const p = brProfile(), compact = uh < 380, tiny = uh < 260, tabY = y + (tiny ? 13 : 48), contentY = y + (tiny ? 56 : 98), actionY = y + h - (tiny ? 19 : 43), tab = BR.menuTab;
-  c.fillStyle = 'rgba(18,13,31,.65)'; c.fillRect(0, 0, uw, uh); panel(c, x, y, w, h, tiny ? 'WILDS' : 'THE WILDS : BATTLE ROYALE');
-  if (!tiny) drawBrBanner(c, fx, y + 14, fw, compact ? 27 : 32, true);
-  else button(c, x + w - 43, y + 1, 38, 12, 'BACK', () => { BR.wild = false; UI.focus = null; sfx('ui'); });
-  const tabs = [['queue', 'QUEUE'], ['wheel', 'SOUL WHEEL'], ['style', 'SHOP']], tw = fw / tabs.length;
-  for (let i = 0; i < tabs.length; i++) button(c, fx + i * tw, tabY, tw - 3, 14, tabs[i][1], () => { BR.menuTab = tabs[i][0]; BR.menuScroll = 0; BR.menuMsg = ''; sfx('ui'); }, { on: tab === tabs[i][0] });
-  const rank = ['ASH', 'EMBER', 'CINDER', 'FLAME', 'CROWN'][min(4, floor(p.elo / 2000))], progress = (p.elo % 2000) / 2000, wallet = `ELO ${p.elo}   ${p.coins} COINS   ${p.souls} SOULS`, small = `${p.coins}C  ${p.souls}S`;
-  if (tiny) { const t = `ELO ${p.elo}   ${small}`; textS(c, t, fx, y + 29, '#8ff5e6', min(1, fw / max(1, textW(t)))); }
-  else if (textW(wallet) <= fw) drawText(c, wallet, fx, y + 68, '#8ff5e6');
-  else { drawText(c, `ELO ${p.elo}`, fx, y + 67, '#8ff5e6'); textS(c, small, x + w - 10 - textW(small), y + 67, '#8ff5e6'); }
-  const pct = `${round(progress * 100)}%`, ry0 = y + (tiny ? 39 : 79); textS(c, rank, fx, ry0, '#ffd35a'); textS(c, pct, x + w - 10 - textW(pct), ry0, '#d8d4e6');
-  bar(c, fx, y + (tiny ? 47 : 90), fw, 4, progress, '#ff8a3d', '#2b2740');
-  if (tab === 'queue') {
-    const half = (fw - 44) / 2, modeY = contentY + (tiny ? 17 : 37), third = fw / 3, lv = brPassLevel();
-    drawText(c, 'NAME', fx, contentY + 2, '#b9bdd0'); field(c, fx + 42, contentY - 2, fw - 42, 'nick', 'WAKER');
-    if (!tiny) { drawText(c, 'ROOM', fx, contentY + 21, '#b9bdd0'); field(c, fx + 42, contentY + 17, fw - 42, 'brcode', 'open / private code'); }
-    button(c, fx + 42, modeY, half, 15, 'UNRANKED', () => { FORM.brRanked = false; }, { on: !FORM.brRanked });
-    button(c, fx + 44 + half, modeY, half, 15, 'RANKED', () => { FORM.brRanked = true; }, { on: !!FORM.brRanked });
-    // as much as there is room for, the most important first
-    const says = [['Everyone falls from the sky with nothing. Gather, dig, craft, and be the last one standing.', '#d8d4e6'], ['Kills earn souls; a win pays 100 coins.', '#d8d4e6'], ['Chests hold little. The ashfall moves when Wakers fall, beasts hunt by night, and dig too deep and the lava takes you. ' + (mobileDevice ? 'PACT' : '[P]') + ' offers a pact, and leaves one.', '#b9bdd0'], [`${brTitle(lv)}  ·  PASS ${lv}  ·  ${p.xp % 1000}/1000 XP  ·  ${p.wins} WINS`, '#8ff5e6']];
-    if (!NET.room) says.push(['ONLINE: open this page on claude.ai to find others.', '#ffb347']);
-    let ty = modeY + 21; for (const [s, col] of says) { const L = wrapText(s, fw); if (ty + L.length * 10 > actionY - 3) continue; L.forEach((l, i) => drawText(c, l, fx, ty + i * 10, col)); ty += L.length * 10 + (tiny ? 1 : 4); }
-    const go = fn => { UI.focus = null; FORM.nick = cleanName(FORM.nick) || 'WAKER'; G.nick = FORM.nick; G.skin = FORM.skin | 0; G.hat = FORM.hat | 0; BR.matchType = FORM.brRanked ? 'ranked' : 'unranked'; accountSaveProfile(); G.state = 'loading'; G.loadMsg = 'Raising the island...'; setTimeout(fn, 30); sfx('quest', 0); };
-    button(c, fx, actionY, third - 2, 17, 'ONLINE', () => go(() => wBrLobbyEnter('room', cleanCode(FORM.brcode) || 'open')), { off: !NET.room });
-    button(c, fx + third, actionY, third - 2, 17, 'HOST', () => go(() => { COOP.br = true; wBrLobbyEnter('rtc', 'friends'); }), { off: !netOK() });
-    button(c, fx + third * 2, actionY, third - 2, 17, 'SOLO', () => go(() => wBrSolo()));
-  } else {
-    const wheel = tab === 'wheel', rowH = wheel ? 14 : 16, listY = contentY + (tiny ? 24 : wheel ? 34 : 18), listBottom = tiny ? (wheel ? actionY - 5 : y + h - 14) : actionY - 22, rows = BR.menuRows = max(1, floor((listBottom - listY) / rowH)), items = wheel ? BR_LOOKS : BR_SHOP_ITEMS, N = items.length, pool = brWheelPool(p);
-    BR.menuScroll = clamp(BR.menuScroll, 0, max(0, N - rows));
-    if (wheel && (!tiny || !BR.menuMsg)) { const t = tiny ? `${BR_SPIN} SOULS A SPIN` : fw < 220 ? `A soul for every kill. ${BR_SPIN} souls a spin.` : `Every kill is a soul. ${BR_SPIN} souls turn the wheel, and it gives you a look you don't own.`; wrapText(t, fw).slice(0, 2).forEach((l, i) => drawText(c, l, fx, contentY + i * 9, '#d8d4e6')); }
-    drawText(c, `${wheel ? 'LOOKS' : 'STYLE'} ${BR.menuScroll + 1}-${min(N, BR.menuScroll + rows)}/${N}`, fx, listY - 12, '#8b8fa3');
-    button(c, fx + fw - 32, listY - 14, 14, 12, '<', () => { BR.menuScroll = max(0, BR.menuScroll - rows); }); button(c, fx + fw - 16, listY - 14, 14, 12, '>', () => { BR.menuScroll = min(max(0, N - rows), BR.menuScroll + rows); });
-    c.save(); c.beginPath(); c.rect(fx, listY, fw, listBottom - listY); c.clip();
-    for (let i = 0; i < rows; i++) {
-      const k = items[BR.menuScroll + i]; if (!k) continue; const ry = listY + i * rowH, own = brOwns(p, k), on = k.kind === 'skin' ? G.skin === k.id : k.kind === 'hat' ? G.hat === k.id : G.trail === k.id, name = `${k.kind.toUpperCase()}: ${k.name}`;
-      if (wheel) { const tag = own ? 'OWNED' : k.cost ? 'ON THE WHEEL' : 'FREE IN THE SHOP'; c.fillStyle = i % 2 ? '#211e2c' : '#191622'; c.fillRect(fx, ry, fw, rowH - 1); drawText(c, name, fx + 4, ry + 3, own ? '#fff' : '#8b8fa3'); textS(c, tag, fx + fw - textW(tag) - 5, ry + 3, own ? '#7ddc6f' : k.cost ? '#ffd35a' : '#8b8fa3'); }
-      else { const label = on ? 'ON' : own ? 'USE' : `BUY ${k.cost}`, bw = max(44, textW(label) + 10); drawText(c, name, fx + 3, ry + 4, '#d8d4e6'); button(c, fx + fw - bw, ry, bw, rowH - 1, label, () => brShopCosmetic(k.kind, k.id), { on, off: !own && p[k.currency] < k.cost }); }
-    }
-    c.restore();
-    if (wheel) { const t = !pool.length ? 'ALL LOOKS OWNED' : tiny ? `WHEEL ${p.souls}/${BR_SPIN}` : `TURN THE WHEEL  ·  ${BR_SPIN} SOULS`; button(c, fx, actionY, fw, 17, t, () => brSpinSoulWheel(), { off: !pool.length || p.souls < BR_SPIN }); if (!tiny && pool.length && p.souls < BR_SPIN && !BR.menuMsg) drawText(c, `${BR_SPIN - p.souls} more souls needed`, fx, actionY - 12, '#8b8fa3'); }
-    if (BR.menuMsg && tiny) textS(c, BR.menuMsg, fx, contentY, '#ffd35a', min(1, fw / max(1, textW(BR.menuMsg)))); else if (BR.menuMsg) wrapText(BR.menuMsg, fw).slice(0, 2).forEach((l, i) => drawText(c, l, fx, actionY - 20 + i * 9, '#ffd35a'));
-  }
-  // (back is the Trials' form, where the way in to here is)
-  if (!tiny) button(c, x + w - 70, y + h - 22, 60, 15, 'BACK', () => { BR.wild = false; UI.focus = null; sfx('ui'); });
+  if (KIT.enter.view !== 'wilds') AM.wal = null; menuBackdrop(c, 'wilds'); kview('wilds');
+  const S = KIT.sizes, p = brProfile(), mode = menuMode(), narrow = mode === 'narrow', tab = BR.menuTab === 'queue' || BR.menuTab === 'wheel' ? BR.menuTab : 'style';
+  if (tab !== 'wheel') AM.turn = false;
+  const band = mode === 'wide' && VS.uh >= 350 ? 34 : 0, headH = band + S.tab + 4 + 4 + 22 + 10, want = 29 + headH + wBodyH(tab, (narrow ? 228 : 460) - 16) + 6 + S.bh + 10;
+  // (on a tall phone the card leaves room above it for the banner, and its body scrolls or pages instead)
+  const room = floor(VS.uh - 24) - 6, F = menuFrame('wilds', 460, narrow && room >= 430 ? min(want, room - 100) : want);
+  if (F.hero && F.hero.h >= 60) { const H = F.hero, bh = min(72, H.h - 20), bw = min(H.w - 24, 300); drawBrBanner(c, round(H.x + (H.w - bw) / 2), round(H.y + (H.h - bh) / 2), bw, bh, false); }
+  const K = kcard(c, F.x, F.y, F.w, F.h, 'wilds', narrow ? 'THE WILDS' : 'THE WILDS : BATTLE ROYALE', { foot: true, i: 0, art: tab === 'wheel' ? 'soulwheel' : 'chute' }), cx = K.x + 8, cw = K.w - 16;
+  let yy = K.by + 1;
+  if (band) { drawBrBanner(c, cx, yy, cw, 30, true); yy += band; }
+  const tabs = [['queue', 'QUEUE'], ['wheel', 'SOUL WHEEL'], ['style', 'SHOP']];
+  yy += ktabs(c, cx, yy, cw, tabs.map(t => t[1]), tabs.find(t => t[0] === tab)[1], nm => wTab(tabs.find(t => t[1] === nm)[0])) + 4;
+  yy += wWalletDraw(c, cx, yy, cw, p) + 4;
+  wBody(c, tab, cx, yy, cw, K.footY - 4, p);
+  const bk = KIT.T ? 64 : 54;
+  kbutton(c, K.x + K.w - 8 - bk, K.footY + 5, bk, 'BACK', menuBack, { hint: 'Back to the Ashfall Trials.' });
+  if (tab === 'wheel') wTurn(c, cx, K.footY + 5, cw - bk - S.gap, p);
+  else if (tab === 'queue') { const t = BR.matchType === 'ranked' || FORM.brRanked ? 'RANKED: your ELO is on the line.' : 'UNRANKED: play for souls and coins.'; if (textW(t) <= cw - bk - 12) drawText(c, t, cx, K.footY + 5 + round((S.bh - 8) / 2), '#6a6485'); }
 }
-function wDrawBrLobby(c) {
-  const uw = VS.uw, uh = VS.uh, host = BR.via === 'rtc' && netHost(), compact = uh < 270 || uw < 300, w = min(384, uw - 16), h = compact ? min(230, uh - 16) : host ? 250 : 196, x = round((uw - w) / 2), y = max(8, round((uh - h) / 2)), fx = x + 10, fw = w - 20;
-  c.fillStyle = 'rgba(18,13,31,.5)'; c.fillRect(0, 0, uw, uh); panel(c, x, y, w, h, compact ? 'WILDS LOBBY' : 'THE WILDS : LOBBY' + (BR.via === 'room' ? '  (' + BR.code.toUpperCase() + ')' : ''));
-  const me = wBrMe(), list = [{ id: me, n: G.nick, me: true }]; for (const [id, q] of BR.people) list.push({ id, n: q.n, ph: q.ph });
-  list.sort((a, b) => (a.ph === 'M') - (b.ph === 'M') || (a.id < b.id ? -1 : 1));
-  let ty = y + 18;
-  if (compact) {
-    drawText(c, `${list.length}/${WBR_MAX} WAKERS : ${BR.matchType.toUpperCase()}`, fx, ty, '#8ff5e6'); ty += 13;
-    if (BR.via === 'room') { drawText(c, 'ROOM ' + BR.code.toUpperCase(), fx, ty, '#ffd35a'); ty += 11; }
-    const shown = min(4, max(1, floor((h - 104 - (BR.via === 'room' ? 11 : 0)) / 10)));
-    list.slice(0, shown).forEach((e, i) => drawText(c, (e.me ? '> ' : '  ') + e.n.slice(0, 10) + (e.me ? ' (you)' : ''), fx, ty + i * 10, e.ph === 'M' ? '#8b8fa3' : e.me ? '#ffd35a' : '#8ff5e6'));
-    if (list.length > shown) drawText(c, '+' + (list.length - shown) + ' more', fx, ty + shown * 10, '#8b8fa3');
-  } else {
-    drawText(c, 'WAKERS HERE', fx, ty, '#b9bdd0'); ty += 11;
-    drawText(c, `${list.length} / ${WBR_MAX}  ·  ${BR.matchType.toUpperCase()}`, fx + 100, ty - 11, '#8ff5e6');
-    list.slice(0, 8).forEach((e, i) => { const lead = e.id === BR.leaderId && e.ph !== 'M'; drawText(c, (e.me ? '> ' : '  ') + e.n + (e.me ? ' (you)' : ''), fx + (i >= 4 ? fw / 2 : 0), ty + (i % 4) * 10, e.ph === 'M' ? '#8b8fa3' : e.me ? '#ffd35a' : '#8ff5e6'); if (lead) drawText(c, 'LEADS', fx + (i >= 4 ? fw / 2 : 0) + 110, ty + (i % 4) * 10, '#7ddc6f'); if (e.ph === 'M') drawText(c, 'IN A MATCH', fx + (i >= 4 ? fw / 2 : 0) + 110, ty + (i % 4) * 10, '#8b8fa3'); });
-    ty += 44;
-  }
-  const now = performance.now(), cd = BR.lead ? (BR.cdEnd ? max(0, ceil((BR.cdEnd - now) / 1000)) : -1) : BR.lastCd > 0 ? BR.lastCd : -1;
-  let st;
-  if (BR.via === 'room' && NET.status === 'offline') st = ['The live room cannot be reached from here.', '#ffb347'];
-  else if (BR.via === 'room' && !NET.me) st = ['Joining the lobby...', '#ffd35a'];
-  else if (BR.via === 'rtc' && BR.lead) st = [BR.lobbyN > 1 ? 'Everyone here? Press START NOW. Echoes fill the empty places.' : 'Give your friends the game code below, then press START NOW.', '#7ddc6f'];
-  else if (BR.busy && cd < 0) st = ['A match is running. The next one starts when it ends (or start now).', '#ffd35a'];
-  else if (cd >= 0) st = ['The sky opens in ' + cd + 's' + (BR.lobbyN < 2 ? '  (echoes fill the empty places)' : ''), '#7ddc6f'];
-  else st = ['Waiting for the leader...', '#d8d4e6'];
-  if (compact) {
-    const shortStatus = BR.via === 'room' && NET.status === 'offline' ? 'OFFLINE: PLAY ECHOES' : cd >= 0 ? 'STARTS IN ' + cd + 'S' : BR.via === 'rtc' && BR.lead ? 'WAITING FOR FRIENDS' : BR.lead ? 'READY TO START' : 'WAITING FOR HOST';
-    drawText(c, shortStatus, fx, y + h - (host ? 72 : 48), st[1]);
-    if (host) {
-      if (!netOK()) drawText(c, 'INVITES UNAVAILABLE', fx, y + h - 58, '#ffb347');
-      else {
-        sigHost('wilds'); drawText(c, 'CODE ' + (COOP.gcode || '......'), fx, y + h - 52, '#ffd35a');
-        button(c, fx + fw - 52, y + h - 59, 50, 14, copyLabel(), () => copyText(COOP.gcode, 'gcopy'));
-      }
-    }
-    if (BR.via === 'room' && NET.status === 'offline') button(c, fx, y + h - 22, max(40, fw - 64), 16, 'PLAY ECHOES', () => { wBrLeave(); wBrSolo(); });
-    else if (BR.lead) button(c, fx, y + h - 22, max(40, fw - 64), 16, 'START NOW', () => { BR.startNow = true; sfx('ui'); });
-    button(c, x + w - 70, y + h - 22, 60, 16, 'LEAVE', () => { wBrLeave(); sfx('ui'); });
-    return;
-  }
-  wrapDraw(c, st[0], fx, ty, fw, st[1]); ty += 22;
-  if (BR.via === 'room' && NET.status === 'offline') button(c, fx, ty, min(150, fw), 15, 'PLAY WITH ECHOES', () => { wBrLeave(); wBrSolo(); });
-  else if (BR.lead) button(c, fx, ty, min(150, fw), 15, 'START NOW', () => { BR.startNow = true; sfx('ui'); });
-  else if (BR.via === 'rtc') drawText(c, 'Your host starts the match.', fx, ty + 4, '#8b8fa3');
-  ty += 22;
-  if (host) {
-    if (!netOK()) drawText(c, 'This window cannot connect to other computers.', fx, ty, '#ffb347');
-    else {
-      sigHost('wilds'); drawText(c, 'GAME CODE: friends pick JOIN A FRIEND and type it', fx, ty, '#d8d4e6'); ty += 11;
-      c.fillStyle = '#16121f'; c.fillRect(fx, ty, fw, 26); textC(c, sigSpaced(COOP.gcode || '......'), fx + (fw - 64) / 2, ty + 5, '#ffd35a', 2, textO);
-      button(c, fx + fw - 60, ty + 7, 56, 12, copyLabel(), () => copyText(COOP.gcode, 'gcopy')); ty += 31;
-      const s2 = COOP.err || COOP.note || (sigReady() ? 'Ready: up to 7 friends can join this lobby.' : performance.now() - SIG.startT > 7000 ? "Can't reach the internet, so friends can't find this match." : 'Getting ready...');
-      if (COOP.copied > 0 && COOP.copyFail) copyHint(c, fx, ty); else wrapDraw(c, s2, fx, ty, fw, COOP.err ? '#ff9a8a' : sigReady() ? '#7ddc6f' : '#ffd35a');
-    }
-  }
-  drawText(c, BR.via === 'room' ? 'Friends need this page: share it from claude.ai.' : BR.via === 'rtc' ? 'Up to 8 Wakers; echoes fill the 32-player match.' : '', fx, y + h - 16, '#8b8fa3');
-  button(c, x + w - 70, y + h - 20, 60, 14, 'LEAVE', () => { wBrLeave(); sfx('ui'); });
-}
+// the Wilds' lobby: the Trials' lobby in violet (arenaLobby, 26-arena-menus.js)
+function wDrawBrLobby(c) { arenaLobby(c, true); }
 
 // ---------------- in the world ----------------
 function wBrWorld(w, al, cx, cy) {
@@ -239,13 +156,12 @@ function brSky(c) {
   if (S.list.length > L.length) textC(c, 'and ' + (S.list.length - L.length) + ' more', uw / 2, y0 + 12 + ceil(L.length / per) * 34, '#b9bdd0', 1, textO); c.globalAlpha = 1;
 }
 function wBrScore(c) {
-  const list = G.fighters.filter(f => f.brIn).sort((a, b) => (a.dead - b.dead) || b.kills - a.kills), uw = VS.uw, two = list.length > 16, w = two ? 380 : 200, rows = two ? 16 : list.length, h = 22 + rows * 10, x = round((uw - w) / 2), y = 40;
-  panel(c, x, y, w, h, 'THE WILDS : ' + BR.lastAlive + ' OF ' + list.length + ' LEFT');
-  list.slice(0, 32).forEach((f, i) => { const xx = x + (two && i >= 16 ? 190 : 0), yy = y + 16 + (i % 16) * 10, ally = f !== G.p && f.team === G.p.team; drawText(c, (f === G.p ? '> ' : ally ? '+ ' : '') + f.name + (f.brBot || f.ghostBot ? '  (echo)' : ''), xx + 8, yy, f.dead ? '#6a6485' : f === G.p ? '#ffd35a' : ally ? '#8ff5e6' : f.brBot || f.ghostBot ? '#d8d4e6' : '#8ff5e6'); drawText(c, f.dead ? 'down' : String(f.kills), xx + 160, yy, f.dead ? '#6a6485' : '#fff'); });
+  const list = G.fighters.filter(f => f.brIn).sort((a, b) => (a.dead - b.dead) || b.kills - a.kills);
+  amScore(c, 'THE WILDS : ' + BR.lastAlive + ' OF ' + list.length + ' LEFT', '#c77dff', list, f => f !== G.p && f.team === G.p.team ? { mark: '+ ', col: '#8ff5e6' } : {});
 }
 function wBrMap(c) {
-  const m = BR.mapCv; if (!m) return; const uw = VS.uw, uh = VS.uh, w = min(uw - 30, 560), k = w / m.width, sy0 = 8, sh = m.height - sy0, h = round(sh * k * 2.1), x = round((uw - w) / 2), y = max(76, round((uh - h) / 2) + 10), ky = h / sh;
-  panel(c, x - 6, y - 60, w + 12, h + 68, 'THE ISLAND  [M] close'); c.fillStyle = '#2a3150'; c.fillRect(x, y, w, h); c.drawImage(m, 0, sy0, m.width, sh, x, y, w, h);
+  const m = BR.mapCv; if (!m) return; const uw = VS.uw, uh = VS.uh, w = min(uw - 30, 560), k = w / m.width, sy0 = 8, sh = m.height - sy0, top = (KIT.T ? 46 : 44) + 68, h = min(round(sh * k * 2.1), hotbarLayout().y - 14 - top), x = round((uw - w) / 2), y = amClearY(x - 8, max(top, round((uh - h) / 2) + 10) - 68, w + 16, h + 76) + 68, ky = h / sh;
+  amMapCard(c, x - 8, y - 68, w + 16, h + 76, ''); c.fillStyle = '#2a3150'; c.fillRect(x, y, w, h); c.drawImage(m, 0, sy0, m.width, sh, x, y, w, h);
   const s = w / (WBRW * T), sy = ky / (2 * T), oy = sy0 * ky, z = BR.storm, Y0 = v => round(v * sy - oy);
   if (z) { c.fillStyle = 'rgba(150,60,170,.45)'; c.fillRect(x, y, round(z.L * s), h); c.fillRect(x + round(z.R * s), y, w - round(z.R * s), h); if (z.warn || z.moving) { c.fillStyle = '#ffffff'; c.fillRect(x + round(z.nL * s), y, 1, h); c.fillRect(x + round(z.nR * s), y, 1, h); } }
   const hz = BR.hazard; if (hz && BR.t > hz.at - 600) { c.fillStyle = hz.kind === 'fire' ? 'rgba(255,110,40,.4)' : 'rgba(130,230,90,.35)'; c.fillRect(x + round(hz.L * s), y, round((hz.R - hz.L) * s), h); }
@@ -258,24 +174,19 @@ function wBrMap(c) {
   const my = clamp(Y0(p.y + 10), 2, h - 2); c.fillStyle = '#ffd35a'; c.fillRect(x + round((p.x + 3) * s) - 2, y + my - 2, 5, 5); c.fillStyle = INK; c.fillRect(x + round((p.x + 3) * s), y + my, 1, 1);
 }
 function wBrDeadPanel(c) {
-  const p = G.p, uw = VS.uw, uh = VS.uh, a = min(1, p.deadT / 50), by = p.lastHitBy;
-  c.globalAlpha = a; textC(c, 'TAKEN DOWN', uw / 2, round(uh * .3), '#e2483b', 2, textO);
-  textC(c, '#' + BR.place + ' of ' + BR.total + (p.cause ? '  :  you ' + p.cause.replace(/^was /, 'were ') : by && by.fighter && !by.gone && p.takenT > 0 ? '  :  ' + by.name + ' got you' : ''), uw / 2, round(uh * .3) + 22, '#fff', 1, textO);
-  const s = BR.spec; if (s) textC(c, 'watching ' + s.name + '   [A] [D] switch', uw / 2, uh - 46, '#8ff5e6', 1, textO);
-  c.globalAlpha = 1;
-  if (p.deadT > 60) { const bw = 110, x = round(uw / 2 - bw - 4); if (BR.via !== 'solo') button(c, x, uh - 34, bw, 14, 'BACK TO LOBBY', () => wBrBackToLobby()); else button(c, x, uh - 34, bw, 14, 'PLAY AGAIN', () => brAgain()); button(c, round(uw / 2 + 4), uh - 34, bw, 14, 'LEAVE', () => wBrLeave()); }
+  const p = G.p, by = p.lastHitBy; if (p.deadT < 20) return;
+  const lines = [['#' + BR.place + ' of ' + BR.total, '#fff']]; if (p.cause) lines.push(['You ' + p.cause.replace(/^was /, 'were ') + '.', '#ff9a8a']); else if (by && by.fighter && !by.gone && p.takenT > 0) lines.push([by.name + ' got you.', '#ff9a8a']);
+  const btn = p.deadT <= 60 ? [] : [BR.via !== 'solo' ? ['BACK TO LOBBY', () => wBrBackToLobby(), 'Back to the lobby for the next match.'] : ['PLAY AGAIN', () => brAgain(), 'Another match against echoes.'], ['LEAVE', () => wBrLeave(), 'Back to the home page.']];
+  amEndCard(c, { title: 'TAKEN DOWN', col: '#e2483b', art: 'fallen', ms: (p.deadT - 20) * 16.7, lines, spec: BR.spec, specNext: wBrSpecNext, buttons: btn });
 }
 // the island takes a moment to raise: say so instead of freezing on the last frame
 function brAgain() { brPayLeaving(); G.state = 'loading'; G.loadMsg = 'Raising the island...'; setTimeout(wBrSolo, 40); }
 function wBrResults(c) {
-  const uw = VS.uw, uh = VS.uh, w = min(280, uw - 16), h = 108, x = round((uw - w) / 2), y = round(uh * .52);
-  panel(c, x, y, w, h, BR.winMe ? 'VICTORY' : 'THE ASHFALL SETTLES');
-  textC(c, BR.winMe ? 'You are the last ember burning.' : BR.winner ? BR.winner + ' is the last ember.' : 'Nobody walked out of the ashfall.', uw / 2, y + 18, BR.winMe ? '#ffd35a' : '#fff', 1, textO);
-  textC(c, 'You placed #' + (BR.place || 1) + ' of ' + BR.total + '   :   ' + G.p.kills + ' taken down', uw / 2, y + 32, '#d8d4e6', 1, drawText);
-  textC(c, BR.rewardText || '', uw / 2, y + 45, '#8ff5e6', 1, drawText); textC(c, brTitle(brPassLevel()) + ' : pass level ' + brPassLevel(), uw / 2, y + 56, '#ffd35a', 1, drawText);
-  if (BR.via !== 'solo') textC(c, 'back to the lobby in ' + max(0, ceil((60 * 14 - BR.overT) / 60)) + 's', uw / 2, y + 68, '#8b8fa3', 1, drawText);
-  const bw = 110; if (BR.via !== 'solo') button(c, x + 10, y + h - 24, bw, 15, 'BACK TO LOBBY', () => wBrBackToLobby()); else button(c, x + 10, y + h - 24, bw, 15, 'PLAY AGAIN', () => brAgain());
-  button(c, x + w - bw - 10, y + h - 24, bw, 15, 'LEAVE', () => wBrLeave());
+  const win = BR.winMe, lines = [[win ? 'You are the last ember burning.' : BR.winner ? BR.winner + ' is the last ember.' : 'Nobody walked out of the ashfall.', win ? '#ffd35a' : '#fff'], ['You placed #' + (BR.place || 1) + ' of ' + BR.total + '   :   ' + G.p.kills + ' taken down', '#d8d4e6']];
+  if (BR.rewardText) lines.push([BR.rewardText, '#8ff5e6']); lines.push([brTitle(brPassLevel()) + ' : pass level ' + brPassLevel(), '#ffd35a']);
+  if (BR.via !== 'solo') lines.push(['back to the lobby in ' + max(0, ceil((60 * 14 - BR.overT) / 60)) + 's', '#8b8fa3']);
+  amEndCard(c, { title: win ? 'VICTORY' : 'THE ASHFALL SETTLES', col: win ? '#ffd35a' : '#c77dff', art: win ? 'crown' : 'chute', ms: (BR.overT - 80) * 16.7, lines,
+    buttons: [BR.via !== 'solo' ? ['BACK TO LOBBY', () => wBrBackToLobby(), 'Back to the lobby for the next match.'] : ['PLAY AGAIN', () => brAgain(), 'Another match against echoes.'], ['LEAVE', () => wBrLeave(), 'Back to the home page.']] });
 }
 // rarity: a coloured edge on a stack in the hotbar, and a glow under drops
 const wBrTierOf = id => { const k = wBrTier(id); return k; };

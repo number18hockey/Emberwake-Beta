@@ -2,83 +2,90 @@
 //  The Ashfall on screen: the menu, the lobby, the barge, chests,
 //  the storm, the match HUD, the map, and the end of a match.
 // ============================================================
+// ---------------- THE ASHFALL TRIALS' FORM: FALLING ASH (built with the menu kit; helpers in 26-arena-menus.js) ----------------
+// Wide: three cards, YOU, THE MATCH and GO. A short screen: YOU and THE MATCH share a scrolling card beside GO.
+// A phone held upright: one scrolling card, with PLAY WITH ECHOES and BACK pinned at its foot.
+const TR_HELP = 'Twelve Wakers on plinths round the Hearth. A horn. Then about twelve minutes: scavenge chests and bushes, reforge at camps, live through three nights, win the crowd\'s favor. The ashfall closes on the Hearth. The last Waker or team standing wins.';
+function trGo(fn) { UI.focus = null; const nick = cleanName(FORM.nick) || 'WAKER'; FORM.nick = nick; G.nick = nick; G.skin = FORM.skin | 0; G.state = 'loading'; G.loadMsg = 'Raising the island...'; setTimeout(fn, 30); sfx('quest', 0); }
+function trWilds() { BR.wild = true; BR.menuTab = 'queue'; BR.menuScroll = 0; BR.menuMsg = ''; FORM.skin = G.skin | 0; FORM.hat = G.hat | 0; UI.focus = null; AM.walT = performance.now(); sfx('ui'); }
+const trArenaDesc = () => BR.arenaWant === 1 ? 'One mountain; a sea of slag rises. High ground buys time.' : BR.arenaWant === 0 ? 'Rolling hills; the ashfall closes from both ends.' : 'The island or the mountain, whichever the horn calls.';
+const trTeamDesc = () => { const d = TR_SIZE_D[FORM.brsize] || ''; return d.charAt(0).toUpperCase() + d.slice(1) + (FORM.brsize > 1 ? ': a fallen teammate can be rekindled.' : '.'); };
+const trRecord = () => { const C = trCareer(); return C.n ? 'Your record: ' + C.n + ' trials, ' + C.w + ' won, ' + C.k + ' taken down.' : 'No trials yet. Your record starts with the first.'; };
+// YOU: name, look and the match code
+const trYouH = () => (KIT.T ? 34 : 28) * 2 + 2 + KIT.sizes.tileH + KIT.sizes.gap + 4;
+function trYou(c, x, y, w) {
+  let yy = y; yy += kfield(c, x, yy, w, 'nick', 'NAME', 'WAKER', { hint: 'The name over your head on the island.' }) + 2;
+  yy += klook(c, x, yy, w, { hat: false }) + 2;
+  kfield(c, x, yy, w, 'brcode', 'MATCH', 'open  (or a private code)', { hint: 'Leave it open to meet anyone, or type a word your friends type too.' });
+}
+// THE MATCH: teams and arena as segments with their own little pictures, the rules in a paragraph, your record
+const trMatchH = (w, help = true) => { const sg = KIT.sizes.sm + 4; return 10 + sg + amParaH(trTeamDesc(), w) + 6 + 10 + sg * 2 + amParaH(trArenaDesc(), w) + 6 + (help ? amParaH(TR_HELP, w) + 6 : 0) + amParaH(trRecord(), w); };
+function trMatch(c, x, y, w, help = true) {
+  let yy = y;
+  drawText(c, 'TEAMS', x, yy, '#b9bdd0'); yy += 10;
+  yy += ksegment(c, x, yy, w, ['SOLO', 'DUOS', 'TRIOS'], TR_SIZE_N[FORM.brsize], op => { FORM.brsize = BR.sizeWant = TR_SIZE_N.indexOf(op); }, { icons: [1, 2, 3].map(n => (c, ix, iy) => amHeads(c, ix, iy, n)), hints: ['Every Waker for themselves.', 'Teams of two.', 'Teams of three.'] });
+  yy += amPara(c, trTeamDesc(), x, yy, w, '#8b8fa3') + 6;
+  drawText(c, 'ARENA', x, yy, '#b9bdd0'); yy += 10;
+  const cur = TR_ARENA_PICK[BR.arenaWant], set = op => { if (op === 'WILDS') trWilds(); else BR.arenaWant = TR_ARENA_PICK.indexOf(op); };
+  yy += ksegment(c, x, yy, w, ['ASHEN ISLE', 'EMBER PEAK'], cur, set, { icons: [amIsleIcon, amPeakIcon], hints: ['Rolling hills; the ashfall closes from both ends.', 'One mountain; a sea of slag rises.'] });
+  yy += ksegment(c, x, yy, w, ['EITHER', 'WILDS'], cur, set, { icons: [amEitherIcon, amChuteIcon], hints: ['Whichever the horn calls.', 'THE WILDS: thirty-two Wakers fall from the sky with nothing. Its own form, matches and shop.'] });
+  yy += amPara(c, trArenaDesc(), x, yy, w, '#8b8fa3') + 6;
+  if (help) yy += amPara(c, TR_HELP, x, yy, w, '#d8d4e6') + 6;
+  amPara(c, trRecord(), x, yy, w, '#8b8fa3');
+}
+// GO: the ways in, each with a line under it saying what it is
+function trGoList() {
+  const L = [], n = OPENB.list.size;
+  L.push({ label: 'PLAY ONLINE', fn: () => trGo(() => { BR.sizeWant = FORM.brsize; brLobbyEnter('room', cleanCode(FORM.brcode) || 'open'); }), off: !NET.room, sub: NET.room ? 'Everyone here who picks the same match meets.' : 'only on claude.ai', hint: NET.room ? 'Everyone with this page open on claude.ai who picks the same match meets here.' : 'Online lobbies are only on claude.ai: open this page there to find others.' });
+  if (netOK()) {
+    L.push({ label: 'MAKE A PARTY  (HOST A LOBBY)', short: 'MAKE A PARTY', fn: () => trGo(() => { COOP.br = true; BR.sizeWant = FORM.brsize; brLobbyEnter('rtc', 'friends'); }), sub: 'A game code for your friends.', hint: 'A game code for your friends. Open it to face other people.' });
+    if (openUsable()) L.push({ label: 'OPEN MATCHES  (' + n + ' open now)', short: 'OPEN MATCHES (' + n + ')', fn: () => { G.state = 'bropen'; sfx('ui'); }, sub: 'Walk into an open lobby.', hint: 'Walk into a lobby someone has opened to everyone.' });
+  }
+  L.push({ label: 'PLAY WITH ECHOES' + (FORM.brsize > 1 ? '  (' + TR_SIZE_N[FORM.brsize] + ')' : ''), short: 'PLAY WITH ECHOES', fn: () => trGo(() => brSolo(FORM.brsize)), echoes: true, sub: 'You and eleven echoes.', hint: 'A match of your own against echoes, the island\'s ghosts.' });
+  return L;
+}
+const trGoH = L => L.length * (KIT.sizes.bh + 3 + 9 + 6);
+function trGoDraw(c, x, y, w, L) {
+  let yy = y; const main = NET.room ? 'PLAY ONLINE' : 'PLAY WITH';
+  for (const b of L) { kbutton(c, x, yy, w, b.label, b.fn, { main: !b.off && b.label.startsWith(main), off: b.off, short: b.short, sub: fitText(b.sub, w), hint: b.hint }); yy += KIT.sizes.bh + 3 + 9 + 6; }
+}
 function drawBrForm(c) { if (BR.wild) return wDrawBrForm(c);
-  const uw = VS.uw, uh = VS.uh, w = min(360, uw - 16), h = 326, x = round((uw - w) / 2), y = max(2, round((uh - h) / 2));
-  c.fillStyle = 'rgba(18,13,31,.55)'; c.fillRect(0, 0, uw, uh); panel(c, x, y, w, h, 'THE ASHFALL TRIALS');
-  const fx = x + 10, fw = w - 20;
-  drawText(c, 'NAME', fx, y + 22, '#b9bdd0'); field(c, fx + 46, y + 18, fw - 46, 'nick', 'WAKER');
-  skinPicker(c, fx, y + 38);
-  drawText(c, 'MATCH', fx, y + 70, '#b9bdd0'); field(c, fx + 46, y + 66, fw - 46, 'brcode', 'open  (or a private code)');
-  const L = ['Twelve Wakers on plinths round the Hearth. A horn. Then about', 'twelve minutes: scavenge chests and bushes, reforge at camps,', 'live through three nights, win the crowd\'s favor. The ashfall', 'closes on the Hearth. The last Waker or team standing wins.'];
-  L.forEach((l, i) => drawText(c, l, fx, y + 90 + i * 10, '#d8d4e6'));
-  if (!FORM.brsize) FORM.brsize = 1;
-  const go = (fn) => { UI.focus = null; const nick = cleanName(FORM.nick) || 'WAKER'; FORM.nick = nick; G.nick = nick; G.skin = FORM.skin | 0; G.state = 'loading'; G.loadMsg = 'Raising the island...'; setTimeout(fn, 30); sfx('quest', 0); };
-  let by = y + 134;
-  drawText(c, 'TEAMS', fx, by + 4, '#b9bdd0'); for (let k = 1; k <= 3; k++) button(c, fx + 46 + (k - 1) * 82, by, 78, 14, TR_SIZE_N[k], () => { FORM.brsize = k; BR.sizeWant = k; sfx('ui'); }, { on: FORM.brsize === k });
-  by += 18; if (BR.arenaWant === undefined) BR.arenaWant = 2;
-  drawText(c, 'ARENA', fx, by + 4, '#b9bdd0'); for (let k = 0; k < 3; k++) button(c, fx + 46 + k * 82, by, 78, 14, TR_ARENA_PICK[k], () => { BR.arenaWant = k; sfx('ui'); }, { on: BR.arenaWant === k });
-  // the third arena is a different game with its own form (its matches, its lobbies, its shop): this is the one way in
-  button(c, fx + 292, by, fw - 292, 14, 'WILDS', () => { BR.wild = true; BR.menuTab = 'queue'; BR.menuScroll = 0; BR.menuMsg = ''; FORM.skin = G.skin | 0; FORM.hat = G.hat | 0; UI.focus = null; sfx('ui'); });
-  drawText(c, BR.arenaWant === 1 ? 'one mountain; a sea of slag rises. High ground buys time.' : BR.arenaWant === 0 ? 'rolling hills; the ashfall closes from both ends.' : TR_SIZE_D[FORM.brsize] + (FORM.brsize > 1 ? ': a fallen teammate can be rekindled' : ''), fx + 46, by + 17, '#8b8fa3'); by += 30;
-  if (NET.room) { button(c, fx, by, fw, 17, 'PLAY ONLINE', () => go(() => { BR.sizeWant = FORM.brsize; brLobbyEnter('room', cleanCode(FORM.brcode) || 'open'); })); drawText(c, 'Everyone with this page open on claude.ai who picks the same match meets here.', fx, by + 20, '#8b8fa3'); by += 34; }
-  else { drawText(c, 'Online lobby: only on claude.ai (open this page there to find others).', fx, by + 4, '#ffb347'); by += 16; }
-  if (netOK()) { button(c, fx, by, fw, 17, 'MAKE A PARTY  (HOST A LOBBY)', () => go(() => { COOP.br = true; BR.sizeWant = FORM.brsize; brLobbyEnter('rtc', 'friends'); })); drawText(c, 'A game code for your friends. Open it to face other people.', fx, by + 20, '#8b8fa3'); by += 32;
-    if (openUsable()) { button(c, fx, by, fw, 17, 'OPEN MATCHES  (' + OPENB.list.size + ' open now)', () => { G.state = 'bropen'; sfx('ui'); }); drawText(c, 'Walk into a lobby someone has opened to everyone.', fx, by + 20, '#8b8fa3'); by += 32; } }
-  button(c, fx, by, fw, 17, 'PLAY WITH ECHOES' + (FORM.brsize > 1 ? '  (' + TR_SIZE_N[FORM.brsize] + ')' : ''), () => go(() => brSolo(FORM.brsize))); by += 22;
-  { const C = trCareer(); if (C.n) drawText(c, 'your record: ' + C.n + ' trials, ' + C.w + ' won, ' + C.k + ' taken down', fx, y + h - 17, '#8b8fa3'); }
-  button(c, x + w - 70, y + h - 22, 60, 15, 'BACK', () => { G.state = 'title'; UI.focus = null; sfx('ui'); });
-}
-function drawBrLobby(c) { if (BR.wild) return wDrawBrLobby(c);
-  const uw = VS.uw, uh = VS.uh, host = BR.via === 'rtc' && netHost(), w = min(404, uw - 12), h = host ? 296 : BR.via === 'room' ? 216 : 196, x = round((uw - w) / 2), y = max(4, round((uh - h) / 2)), fx = x + 10, fw = w - 20;
-  c.fillStyle = 'rgba(18,13,31,.5)'; c.fillRect(0, 0, uw, uh); panel(c, x, y, w, h, 'THE ASHFALL TRIALS : LOBBY' + (BR.via === 'room' ? '  (' + BR.code.toUpperCase() + ')' : ''));
-  const me = brMe(), list = [{ id: me, n: G.nick, me: true, pt: BR.party || '', tw: BR.wish | 0 }]; for (const [id, q] of BR.people) list.push({ id, n: q.n, ph: q.ph, pt: q.pt || '', tw: q.tw | 0 });
-  list.sort((a, b) => (a.ph === 'M') - (b.ph === 'M') || (a.id < b.id ? -1 : 1));
-  const sz = clamp(BR.sizeWant | 0, 1, 3) || 1, parties = [...new Set(list.map(e => e.pt).filter(p => p && list.filter(q => q.pt === p).length > 1))];
-  let ty = y + 18;
-  drawText(c, 'WAKERS HERE  (' + list.length + (BR.via === 'rtc' ? ' of ' + BR_HUMANS : '') + ')', fx, ty, '#b9bdd0'); if (parties.length) drawText(c, 'a bar marks a party', fx + fw - textW('a bar marks a party'), ty, '#6a6485'); ty += 11;
-  list.slice(0, 8).forEach((e, i) => {
-    const cx0 = fx + 4 + (i >= 4 ? fw / 2 : 0), yy = ty + (i % 4) * 10, lead = e.id === BR.leaderId && e.ph !== 'M', pi = parties.indexOf(e.pt);
-    if (pi >= 0) { c.fillStyle = TR_TEAMCOL[pi % TR_TEAMCOL.length]; c.fillRect(cx0 - 4, yy, 2, 8); }
-    drawText(c, (e.me ? '> ' : '  ') + e.n + (e.me ? ' (you)' : '') + (sz > 1 && e.tw ? '  [' + e.tw + ']' : ''), cx0, yy, e.ph === 'M' ? '#8b8fa3' : e.me ? '#ffd35a' : '#8ff5e6');
-    if (lead) drawText(c, 'LEADS', cx0 + 116, yy, '#7ddc6f'); if (e.ph === 'M') drawText(c, 'IN A MATCH', cx0 + 116, yy, '#8b8fa3');
-  });
-  ty += 44;
-  const now = performance.now(), cd = BR.lead ? (BR.cdEnd ? max(0, ceil((BR.cdEnd - now) / 1000)) : -1) : BR.lastCd > 0 ? BR.lastCd : -1, off = BR.via === 'room' && NET.status === 'offline';
-  let st;
-  if (off) st = ['The live room cannot be reached from here.', '#ffb347'];
-  else if (BR.via === 'room' && !NET.me) st = ['Joining the lobby...', '#ffd35a'];
-  else if (BR.via === 'rtc' && BR.lead) st = [BR.lobbyN > 1 ? 'Everyone here? Press START NOW. Echoes fill the empty places.' : 'Give your friends the game code below, or open the lobby to others. Then START NOW.', '#7ddc6f'];
-  else if (BR.busy && cd < 0) st = ['A match is running. The next one starts when it ends (or start now).', '#ffd35a'];
-  else if (cd >= 0) st = ['The horn sounds in ' + cd + 's' + (BR.lobbyN < 2 ? '  (echoes fill the empty places)' : ''), '#7ddc6f'];
-  else st = ['Waiting for the leader...', '#d8d4e6'];
-  wrapDraw(c, st[0], fx, ty, fw, st[1]); ty += 22;
-  if (off) button(c, fx, ty, 150, 15, 'PLAY WITH ECHOES', () => { brLeave(); brSolo(); });
-  else {
-    if (BR.lead) button(c, fx, ty, 86, 15, 'START NOW', () => { BR.startNow = true; sfx('ui'); }); else drawText(c, BR.via === 'rtc' ? 'The host starts it.' : '', fx, ty + 4, '#8b8fa3');
-    const bx = fx + 92, bw = floor((fw - 92 - 8) / 3), aw = BR.arenaWant === undefined ? 2 : BR.arenaWant;
-    if (BR.lead) { button(c, bx, ty, bw, 15, TR_SIZE_N[sz], () => { BR.sizeWant = sz % 3 + 1; sfx('ui'); }); button(c, bx + bw + 4, ty, bw, 15, TR_ARENA_PICK[aw], () => { BR.arenaWant = (aw + 1) % 3; sfx('ui'); }); }
-    else { drawText(c, TR_SIZE_N[sz], bx + 4, ty + 4, '#d8d4e6'); drawText(c, TR_ARENA_PICK[aw], bx + bw + 8, ty + 4, '#d8d4e6'); }
-    if (sz > 1) button(c, bx + (bw + 4) * 2, ty, bw, 15, 'TEAM: ' + (BR.wish ? BR.wish : 'ANY'), () => { BR.wish = ((BR.wish | 0) + 1) % (ceil(BR_FILL / sz) + 1); sfx('ui'); });
+  menuBackdrop(c, 'brform'); kview('brform');
+  if (!FORM.brsize) FORM.brsize = 1; if (BR.arenaWant === undefined) BR.arenaWant = 2;
+  const S = KIT.sizes, mode = menuMode(), L = trGoList(), bk = KIT.T ? 64 : 54, heads = (c, rx, ry) => amTwelve(c, rx, ry);
+  if (mode === 'narrow') {
+    // one card: everything scrolls but PLAY WITH ECHOES and BACK
+    const cw0 = 228 - 16, top = L.filter(b => !b.echoes), need = trYouH() + 8 + trMatchH(cw0) + 10 + trGoH(top) + 4;
+    const F = menuFrame('brform', 228, 29 + need + 8 + S.bh + 10); menuHero(c, 'brform', F);
+    const K = kcard(c, F.x, F.y, F.w, F.h, 'brform', 'THE TRIALS', { foot: true, i: 0, right: heads }), cx = K.x + 8, cw = K.w - 16;
+    const B = { x: K.x + 1, y: K.by - 2, w: K.w - 2, h: K.footY - 2 - K.by }, dy = need > B.h ? kscroll(c, B, need, 'trform') : 0; let yy = K.by + dy;
+    trYou(c, cx, yy, cw - 4); yy += trYouH() + 8; trMatch(c, cx, yy, cw - 4); yy += trMatchH(cw0) + 10; trGoDraw(c, cx, yy, cw - 4, top);
+    if (need > B.h) kscrollEnd(c);
+    const e = L.find(b => b.echoes); kbutton(c, cx, K.footY + 5, cw - bk - S.gap, e.label, e.fn, { main: !NET.room, short: e.short, hint: e.hint });
+    kbutton(c, K.x + K.w - 8 - bk, K.footY + 5, bk, 'BACK', menuBack, { hint: 'Back to the home page.' });
+    return;
   }
-  ty += 22;
-  if (BR.via === 'room') { if (FORM.brparty === undefined) FORM.brparty = ''; drawText(c, 'PARTY', fx, ty + 4, '#b9bdd0'); field(c, fx + 46, ty, 110, 'brparty', 'a shared word'); drawText(c, 'friends who type the same word share a team', fx + 162, ty + 4, '#8b8fa3'); ty += 20; }
-  if (host) {
-    if (!netOK()) drawText(c, 'This window cannot connect to other computers.', fx, ty, '#ffb347');
-    else {
-      sigHost('br'); drawText(c, 'YOUR PARTY\'S GAME CODE: friends pick JOIN A FRIEND and type it', fx, ty, '#d8d4e6'); ty += 11;
-      c.fillStyle = '#16121f'; c.fillRect(fx, ty, fw, 26); textC(c, sigSpaced(COOP.gcode || '......'), fx + (fw - 64) / 2, ty + 5, '#ffd35a', 2, textO);
-      button(c, fx + fw - 60, ty + 7, 56, 12, copyLabel(), () => copyText(COOP.gcode, 'gcopy')); ty += 31;
-      const s2 = COOP.err || COOP.note || (sigReady() ? 'Ready: friends can join with this code.' : performance.now() - SIG.startT > 7000 ? "Can't reach the internet, so friends can't find this match." : 'Getting ready...');
-      if (COOP.copied > 0 && COOP.copyFail) copyHint(c, fx, ty); else wrapDraw(c, s2, fx, ty, fw, COOP.err ? '#ff9a8a' : sigReady() ? '#7ddc6f' : '#ffd35a'); ty += 14;
-      button(c, fx, ty, 168, 15, 'OPEN TO OTHERS: ' + (BR.open ? 'YES' : 'NO'), () => { BR.open = !BR.open; sfx('ui'); }, { on: !!BR.open });
-      button(c, fx + 174, ty, 168, 15, 'FIND AN OPEN MATCH (' + OPENB.list.size + ')', () => { BR.showOpen = true; sfx('ui'); }); ty += 19;
-      wrapDraw(c, BR.open ? 'Listed on the public board: other players and parties can walk in, and face your party.' : 'Private. Open it to meet other people, or take your party to a lobby that is open.', fx, ty, fw, BR.open ? '#7ddc6f' : '#8b8fa3');
-    }
+  const F0 = menuFrame('brform', 640, 400), gw = mode === 'short' ? 168 : min(KIT.T ? 186 : 176, floor(F0.w * .29)), goH = 29 + trGoH(L) + 4 + S.bh + 10;
+  if (mode === 'short') {
+    // YOU and THE MATCH share a scrolling card beside GO
+    const lw = F0.w - gw - 8, cw = lw - 16, need = trYouH() + 10 + trMatchH(cw - 4) + 4, F = menuFrame('brform', 640, max(goH, 29 + need));
+    const K = kcard(c, F.x, F.y, lw, F.h, 'brform', 'THE ASHFALL TRIALS', { i: 0, right: heads }), B = { x: K.x + 1, y: K.by - 2, w: K.w - 2, h: K.y + K.h - 3 - K.by + 2 }, dy = need > B.h ? kscroll(c, B, need, 'trform') : 0; let yy = K.by + dy;
+    trYou(c, K.x + 8, yy, cw - 4); yy += trYouH() + 10; trMatch(c, K.x + 8, yy, cw - 4);
+    if (need > B.h) kscrollEnd(c);
+    const G2 = kcard(c, F.x + lw + 8, F.y, gw, F.h, 'brform', 'GO', { foot: true, i: 1 }); trGoDraw(c, G2.x + 8, G2.by + 1, gw - 16, L);
+    kbutton(c, G2.x + G2.w - 8 - bk, G2.footY + 5, bk, 'BACK', menuBack, { hint: 'Back to the home page.' });
+    return;
   }
-  drawText(c, BR.via === 'room' ? 'Friends need this page: share it from claude.ai.' : BR.via === 'rtc' && !host ? 'You are in ' + (COOP.hostName || 'the host') + '\'s lobby. Your party stays together.' : '', fx, y + h - 16, '#8b8fa3');
-  button(c, x + w - 70, y + h - 20, 60, 14, 'LEAVE', () => { brLeave(); sfx('ui'); });
-  if (BR.showOpen) { drawOpenList(c, x + 8, y + 14, w - 16, h - 22); button(c, x + w - 82, y + h - 28, 66, 14, 'CLOSE', () => { BR.showOpen = false; sfx('ui'); }); }
+  // wide: YOU | THE MATCH | GO
+  const yw = min(KIT.T ? 196 : 184, floor(F0.w * .3)), mw = F0.w - yw - gw - 16, youH = trYouH() + 8 + amParaH(TR_HELP, yw - 16), F = menuFrame('brform', 640, max(goH, 29 + youH + 4, 29 + trMatchH(mw - 16, false) + 4));
+  const Y = kcard(c, F.x, F.y, yw, F.h, 'brform', 'YOU', { i: 0 }); trYou(c, Y.x + 8, Y.by + 1, yw - 16);
+  { const B = { x: Y.x + 1, y: Y.by + trYouH() + 4, w: Y.w - 2, h: Y.y + Y.h - 3 - Y.by - trYouH() - 4 }, need = amParaH(TR_HELP, yw - 16) + 4, dy = need > B.h ? kscroll(c, B, need, 'trhelp') : 0; c.fillStyle = '#2b2740'; c.fillRect(Y.x + 8, B.y + 1, yw - 16, 1); amPara(c, TR_HELP, Y.x + 8, B.y + 6 + dy, yw - 16, '#b9bdd0'); if (need > B.h) kscrollEnd(c); }
+  const M = kcard(c, F.x + yw + 8, F.y, mw, F.h, 'brform', 'THE MATCH', { i: 1, right: heads }); trMatch(c, M.x + 8, M.by + 1, mw - 16, false);
+  const G2 = kcard(c, F.x + yw + mw + 16, F.y, gw, F.h, 'brform', 'GO', { foot: true, i: 2 }); trGoDraw(c, G2.x + 8, G2.by + 1, gw - 16, L);
+  kbutton(c, G2.x + G2.w - 8 - bk, G2.footY + 5, bk, 'BACK', menuBack, { hint: 'Back to the home page.' });
 }
+// the lobby (THE PLINTHS), built with the menu kit: arenaLobby, 26-arena-menus.js (the Wilds' lobby is the same, in violet)
+function drawBrLobby(c) { if (BR.wild) return wDrawBrLobby(c); arenaLobby(c, false); }
 
 // ---------------- in the world ----------------
 function brDrawBarge(w, b, al) {
@@ -166,14 +173,13 @@ function brHud(c) { if (BR.wild) return wBrHud(c);
   if (BR.phase === 'over' && BR.overT > 80) brResults(c);
 }
 function brScore(c) {
-  const list = G.fighters.filter(f => f.brIn).sort((a, b) => (a.dead - b.dead) || b.kills - a.kills), uw = VS.uw, w = 200, h = 22 + list.length * 10, x = round((uw - w) / 2), y = 40;
-  panel(c, x, y, w, h, 'THE ASHFALL : ' + BR.lastAlive + ' OF ' + list.length + ' LEFT');
+  const list = G.fighters.filter(f => f.brIn).sort((a, b) => (a.dead - b.dead) || b.kills - a.kills);
   if (BR.size > 1) list.sort((a, b) => a.team < b.team ? -1 : a.team > b.team ? 1 : 0);
-  list.forEach((f, i) => { const yy = y + 16 + i * 10; if (BR.size > 1) { c.fillStyle = TR_TEAMCOL[(+String(f.team).slice(1) | 0) % TR_TEAMCOL.length]; c.fillRect(x + 3, yy, 2, 8); } drawText(c, (f === G.p ? '> ' : '') + f.name + (f.brBot || f.ghostBot ? '  (echo)' : ''), x + 8, yy, f.dead ? '#6a6485' : f === G.p ? '#ffd35a' : f.brBot || f.ghostBot ? '#d8d4e6' : '#8ff5e6'); drawText(c, f.dead ? 'down' : String(f.kills), x + w - 30, yy, f.dead ? '#6a6485' : '#fff'); });
+  amScore(c, 'THE ASHFALL : ' + BR.lastAlive + ' OF ' + list.length + ' LEFT', '#ff8a3d', list, f => ({ bar: BR.size > 1 ? TR_TEAMCOL[(+String(f.team).slice(1) | 0) % TR_TEAMCOL.length] : null }));
 }
 function brMap(c) {
-  const m = BR.mapCv; if (!m) return; const uw = VS.uw, uh = VS.uh, w = min(uw - 30, 520), k = w / m.width, sy0 = 8, sh = 48, h = round(sh * k), x = round((uw - w) / 2), y = max(30, round((uh - h) / 2) - 10);
-  panel(c, x - 6, y - 16, w + 12, h + 30, 'THE ISLAND  [M] close'); c.fillStyle = '#2a3150'; c.fillRect(x, y, w, h); c.drawImage(m, 0, sy0, m.width, sh, x, y, w, h);
+  const m = BR.mapCv; if (!m) return; const uw = VS.uw, uh = VS.uh, w = min(uw - 30, 520), k = w / m.width, sy0 = 8, sh = 48, h = round(sh * k), x = round((uw - w) / 2), y = amClearY(x - 8, max((KIT.T ? 42 : 30) + 30, round((uh - h) / 2) - 10) - 30, w + 16, h + 46) + 30;
+  amMapCard(c, x - 8, y - 30, w + 16, h + 46, 'gold: chests   red: berries   grey: anvils   green: your team'); c.fillStyle = '#2a3150'; c.fillRect(x, y, w, h); c.drawImage(m, 0, sy0, m.width, sh, x, y, w, h);
   const s = w / (BRW * T), oy = sy0 * 2 * T * s, z = BR.storm;
   if (z) { c.fillStyle = BR.arena === 1 ? 'rgba(255,110,40,.45)' : 'rgba(150,60,170,.45)'; c.fillRect(x, y, round(z.L * s), h); c.fillRect(x + round(z.R * s), y, w - round(z.R * s), h); c.fillStyle = '#ffffff'; c.fillRect(x + round(z.nL * s), y, 1, h); c.fillRect(x + round(z.nR * s), y, 1, h); }
   for (const q of BR.pois) { if (q.camp) continue; const X = x + round(q.x * T * s), Y = y + round(heights[q.x] * T * s - oy) - 14; textC(c, q.name, X, max(y + 2, Y), '#fff1a8', 1, textO); }
@@ -182,27 +188,22 @@ function brMap(c) {
   for (const a of BR.anvils || []) { c.fillStyle = '#b9bdd0'; c.fillRect(x + round(a.x * T * s), y + round(a.y * T * s - oy) - 1, 2, 2); }
   for (const f of G.fighters) if (trMate(f) && !f.dead && !f.gone) { c.fillStyle = '#7ddc6f'; c.fillRect(x + round((f.x + 3) * s) - 1, y + clamp(round((f.y + 10) * s - oy), 2, h - 2) - 1, 3, 3); }
   const p = G.p, me = p, my = clamp(round((me.y + 10) * s - oy), 2, h - 2); c.fillStyle = '#ffd35a'; c.fillRect(x + round((me.x + 3) * s) - 2, y + my - 2, 5, 5); c.fillStyle = INK; c.fillRect(x + round((me.x + 3) * s), y + my, 1, 1);
-  drawText(c, 'gold: chests   red: berries   grey: anvils   green: your team', x, y + h + 3, '#8b8fa3');
 }
+// the dead and results cards (amEndCard, 26-arena-menus.js): above the hotbar, the buttons inside them
 function brDeadPanel(c) {
-  const p = G.p, uw = VS.uw, uh = VS.uh, a = min(1, p.deadT / 50), by = p.lastHitBy;
-  c.globalAlpha = a; textC(c, 'TAKEN DOWN', uw / 2, round(uh * .3), '#e2483b', 2, textO);
-  textC(c, (BR.place ? '#' + BR.place + ' of ' + (BR.size > 1 ? BR.nteams + ' teams' : BR.total) : 'your team fights on') + (by && !by.gone ? '  :  ' + by.name + ' got you' : ''), uw / 2, round(uh * .3) + 22, '#fff', 1, textO);
-  const s = BR.spec; if (s) textC(c, 'watching ' + s.name + '   [A] [D] switch', uw / 2, uh - 46, '#8ff5e6', 1, textO);
-  c.globalAlpha = 1;
-  if (p.deadT > 60) { const bw = 110, x = round(uw / 2 - bw - 4); if (trCanRise(p)) { } else if (BR.via !== 'solo') button(c, x, uh - 34, bw, 14, 'BACK TO LOBBY', () => brBackToLobby()); else button(c, x, uh - 34, bw, 14, 'PLAY AGAIN', () => brSolo()); button(c, round(uw / 2 + 4), uh - 34, bw, 14, 'LEAVE', () => brLeave()); }
+  const p = G.p, by = p.lastHitBy; if (p.deadT < 20) return;
+  const lines = [[(BR.place ? '#' + BR.place + ' of ' + (BR.size > 1 ? BR.nteams + ' teams' : BR.total) : 'Your team fights on.'), '#fff']]; if (by && !by.gone) lines.push([by.name + ' got you.', '#ff9a8a']);
+  const btn = p.deadT <= 60 || trCanRise(p) ? [] : [BR.via !== 'solo' ? ['BACK TO LOBBY', () => brBackToLobby(), 'Back to the lobby for the next match.'] : ['PLAY AGAIN', () => brSolo(), 'Another match against echoes.'], ['LEAVE', () => brLeave(), 'Back to the home page.']];
+  amEndCard(c, { title: 'TAKEN DOWN', col: '#e2483b', art: 'fallen', ms: (p.deadT - 20) * 16.7, lines, spec: BR.spec, specNext: brSpecNext, buttons: btn, footNote: trCanRise(p) ? 'A teammate can still rekindle you.' : '' });
 }
 function brResults(c) {
-  const uw = VS.uw, uh = VS.uh, w = min(300, uw - 16), h = 124, x = round((uw - w) / 2), y = round(uh * .5);
-  panel(c, x, y, w, h, BR.winMe ? 'VICTORY' : BR.arena === 1 ? 'THE SLAG COOLS' : 'THE ASHFALL SETTLES');
-  { const [tt, ts] = trTitle(), S0 = BR.st, C = trCareer(); textC(c, 'you were ' + tt, uw / 2, y + 47, '#8ff5e6', 1, textO); textC(c, ts, uw / 2, y + 58, '#b9bdd0', 1, drawText);
-    textC(c, (S0.crisp | 0) + ' crisp  :  ' + (S0.clean | 0) + ' clean  :  ' + (S0.clash | 0) + ' clashes  :  ' + (S0.dealt | 0) + ' damage', uw / 2, y + 70, '#d8d4e6', 1, drawText);
-    textC(c, 'your record: ' + C.n + ' trials, ' + C.w + ' won, ' + C.k + ' taken down', uw / 2, y + 82, '#8b8fa3', 1, drawText); }
-  { let s1 = BR.winMe ? (BR.size > 1 ? 'Your team outlasted every other.' : 'You are the last ember burning.') : BR.winner ? BR.winner + (BR.size > 1 ? ' outlasted everyone.' : ' is the last ember.') : 'Nobody walked out of the ashfall.'; while (s1.length > 4 && textW(s1) > w - 10) s1 = s1.slice(0, -1); textC(c, s1, uw / 2, y + 18, BR.winMe ? '#ffd35a' : '#fff', 1, textO); }
-  textC(c, 'You placed #' + (BR.place || 1) + ' of ' + (BR.size > 1 ? BR.nteams + ' teams' : BR.total) + '  :  ' + G.p.kills + ' taken down  :  day ' + trClock().day, uw / 2, y + 32, '#d8d4e6', 1, drawText);
-  if (BR.via !== 'solo') textC(c, 'back to the lobby in ' + max(0, ceil((60 * 14 - BR.overT) / 60)) + 's', uw / 2, y + 93, '#8b8fa3', 1, drawText);
-  const bw = 110; if (BR.via !== 'solo') button(c, x + 10, y + h - 24, bw, 15, 'BACK TO LOBBY', () => brBackToLobby()); else button(c, x + 10, y + h - 24, bw, 15, 'PLAY AGAIN', () => brSolo());
-  button(c, x + w - bw - 10, y + h - 24, bw, 15, 'LEAVE', () => brLeave());
+  const [tt, ts] = trTitle(), S0 = BR.st, C = trCareer(), win = BR.winMe;
+  const s1 = win ? (BR.size > 1 ? 'Your team outlasted every other.' : 'You are the last ember burning.') : BR.winner ? BR.winner + (BR.size > 1 ? ' outlasted everyone.' : ' is the last ember.') : 'Nobody walked out of the ashfall.';
+  const lines = [[s1, win ? '#ffd35a' : '#fff'], ['You placed #' + (BR.place || 1) + ' of ' + (BR.size > 1 ? BR.nteams + ' teams' : BR.total) + '  :  ' + G.p.kills + ' taken down  :  day ' + trClock().day, '#d8d4e6'], ['you were ' + tt, '#8ff5e6'], [ts, '#b9bdd0'],
+    [(S0.crisp | 0) + ' crisp  :  ' + (S0.clean | 0) + ' clean  :  ' + (S0.clash | 0) + ' clashes  :  ' + (S0.dealt | 0) + ' damage', '#d8d4e6'], ['your record: ' + C.n + ' trials, ' + C.w + ' won, ' + C.k + ' taken down', '#8b8fa3']];
+  if (BR.via !== 'solo') lines.push(['back to the lobby in ' + max(0, ceil((60 * 14 - BR.overT) / 60)) + 's', '#8b8fa3']);
+  amEndCard(c, { title: win ? 'VICTORY' : BR.arena === 1 ? 'THE SLAG COOLS' : 'THE ASHFALL SETTLES', col: win ? '#ffd35a' : '#c77dff', art: win ? 'crown' : 'ashring', ms: (BR.overT - 80) * 16.7, lines,
+    buttons: [BR.via !== 'solo' ? ['BACK TO LOBBY', () => brBackToLobby(), 'Back to the lobby for the next match.'] : ['PLAY AGAIN', () => brSolo(), 'Another match against echoes.'], ['LEAVE', () => brLeave(), 'Back to the home page.']] });
 }
 // rarity: a coloured edge on a stack in the hotbar, and a glow under drops
 const brTierOf = id => { const k = brTier(id); return k; };

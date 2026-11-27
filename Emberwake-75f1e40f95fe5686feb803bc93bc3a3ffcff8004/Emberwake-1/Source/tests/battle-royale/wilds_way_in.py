@@ -5,8 +5,8 @@ sys.path.insert(0, os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(
 from where import shot
 from harness import H, sheet
 
-# (a click where the game's own screen coordinates say a button is)
-CLICK = "(([x, y]) => { const r = cv.getBoundingClientRect(); return [r.left + (x + 3) * VS.s * r.width / cv.width, r.top + (y + 3) * VS.s * r.height / cv.height]; })"
+# (a click where the game's own menu coordinates say a button is: the middle of a hit found by its tag)
+CLICK = "(([x, y]) => { const r = cv.getBoundingClientRect(); return [r.left + x * VS.ui * r.width / cv.width, r.top + y * VS.ui * r.height / cv.height]; })"
 SAFE = "G.p.inv = 1e9; G.p.hp = 100;"
 
 
@@ -20,19 +20,22 @@ async def main():
     await h.ev("localStorage.removeItem('ew2.br.' + accountId()); G.state = 'brform'; FORM.nick = 'TESTER'; 1"); await h.pg.wait_for_timeout(300)
     im1 = await h.shot()
     check('the Trials form is the Trials form', await h.ev("!BR.wild && G.state === 'brform'"))
-    # the WILDS button sits at the end of the ARENA row
-    await click("(() => { const uw = VS.uw, uh = VS.uh, w = min(360, uw - 16), x = round((uw - w) / 2), y = max(2, round((uh - 326) / 2)); return [x + 10 + 292, y + 134 + 18]; })()")
+    # the WILDS button sits at the end of the ARENA choices
+    await click("(() => { const h = kitHit('btn:WILDS'); return [h.x, h.y]; })()")
     im2 = await h.shot()
     check('WILDS opens the Wilds form', await h.ev("BR.wild && G.state === 'brform' && BR.menuTab === 'queue'"))
-    await click("(() => { const uw = VS.uw, uh = VS.uh, h = min(380, uh - 12), w = min(440, uw - 16), x = round((uw - w) / 2), y = max(6, round((uh - h) / 2)); return [x + w - 70, y + h - 22]; })()")
+    await click("(() => { const h = kitHit('btn:BACK'); return [h.x, h.y]; })()")
     check('BACK returns to the Trials form', await h.ev("!BR.wild && G.state === 'brform'"))
-    await h.ev("BR.wild = true; 1"); await h.pg.keyboard.press('Escape'); await h.pg.wait_for_timeout(200)
+    # Escape is BACK: from the Wilds to the Trials' form, then from there to the home page
+    await h.ev("BR.wild = true; 1"); await h.pg.wait_for_timeout(150); await h.pg.keyboard.press('Escape'); await h.pg.wait_for_timeout(200)
+    check('Escape from the Wilds goes back to the Trials form', await h.ev("!BR.wild && G.state === 'brform'"))
+    await h.pg.keyboard.press('Escape'); await h.pg.wait_for_timeout(200)
     check('the home page leaves the Wilds behind', await h.ev("!BR.wild && G.state === 'title'"))
 
     # a match in the Wilds, then one in the Trials
     await h.ev("G.nick = 'TESTER'; G.skin = 0; SETTINGS.diff = 'normal'; wBrSolo(); G.manual = true;"); await h.step(400, SAFE)
-    w = await h.ev("[BR.wild, wildOn(), G.fighters.length, hotN(), WW]")
-    check('a Wilds match: thirty-two Wakers, ten slots, the long island', w == [True, True, 32, 10, 3500], str(w))
+    w = await h.ev("[BR.wild, wildOn(), G.fighters.length, hotN(), WW === WBRW]")
+    check('a Wilds match: thirty-two Wakers, ten slots, the long island', w == [True, True, 32, 10, True], str(w))
     await h.ev("brLeave(); 1")
     check('leaving it leaves the Wilds', await h.ev("!BR.wild && !BR.on && G.state === 'title'"))
     await h.ev("brSolo(1); G.manual = true;"); await h.step(700, SAFE)

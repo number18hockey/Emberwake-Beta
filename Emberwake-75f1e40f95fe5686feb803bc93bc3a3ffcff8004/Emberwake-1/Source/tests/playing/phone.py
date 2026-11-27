@@ -68,8 +68,12 @@ async def phone(pw, label, w, h):
         fx, fy = await pg.evaluate("(() => { const f = HITS.filter(h => h.tag && h.tag.startsWith('field:'))[1]; return [f.x + 8, f.y + 7]; })()"); x, y = await ui(fx, fy); await hold(x, y, 80); await pg.wait_for_timeout(150); await pg.keyboard.type('Q'); seed = await pg.evaluate("[UI.focus, FORM.seed.slice(-1), FORM.name.length]"); await picture()
         await pg.keyboard.press('Enter'); await pg.wait_for_timeout(100); out['typed'] = [name, seed, await pg.evaluate('UI.focus'), await typing()]
         out['screens'] = []
+        # (ENTER in a field runs the form's main action, here FORGE WORLD: let the world it forges finish starting before the menus
+        #  are looked at, or it lands in the middle of them and the screen changes under the check)
+        await until("G.state === 'intro' || G.state === 'play'", 15000); await pg.wait_for_timeout(300)
         for state in ('create', 'worlds', 'join', 'ring', 'brform'):
-            await pg.evaluate("G.state = '%s'; if (!FORM.nick) FORM.nick = 'WAKER'; if (FORM.brcode === undefined) FORM.brcode = ''; 0" % state); await pg.wait_for_timeout(200); await picture()
+            await pg.evaluate("G.state = '%s'; if (!FORM.nick) FORM.nick = 'WAKER'; if (FORM.brcode === undefined) FORM.brcode = ''; 0" % state); await pg.wait_for_timeout(200)
+            await until("G.state === '%s' && HITS.length >= 3" % state, 2000); await picture()
             if await pg.evaluate("HITS.length < 3 || HITS.some(h => h.x < 0 || h.y < 0 || h.x + h.w > VS.uw || h.y + h.h > VS.uh)"): out['screens'].append(state)
         # ---- a world of your own ----
         await pg.evaluate(WORLD)

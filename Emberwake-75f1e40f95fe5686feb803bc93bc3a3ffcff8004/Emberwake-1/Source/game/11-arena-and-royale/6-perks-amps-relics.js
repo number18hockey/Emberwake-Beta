@@ -66,18 +66,24 @@ function trOfferTick() {
   if (!UI.open) { if (pressed.KeyZ) return trPick(0); if (pressed.KeyX) return trPick(1); if (pressed.KeyV) return trPick(2); }
   if (o.t >= o.max || G.p.dead) trPick((Math.random() * 3) | 0);
 }
+// three kit cards, each as tall as its words (30 + 9 a line), with its key (Z, X, V; TAP on a touch screen) in a chip
 function drawOffer(c) {
-  const o = BR.offer; if (!o) return; const uw = VS.uw, uh = VS.uh, cw = min(150, floor((uw - 24) / 3)), x0 = round((uw - cw * 3 - 8) / 2), keys1 = ['Z', 'X', 'V']; let y = min(round(uh * .73), uh - 76);   // under your feet, so the cards never cover the Wakers on their plinths
+  const o = BR.offer; if (!o) return; const uw = VS.uw, uh = VS.uh, cw = min(150, floor((uw - 24) / 3)), x0 = round((uw - cw * 3 - 8) / 2), keys1 = ['Z', 'X', 'V'];
+  const W = o.ids.map(k => wrapC(TR_PERKS[k].d, cw - 12)), chip = cw >= 140, ch = 30 + max(...W.map(l => l.length)) * 9 + (chip ? 0 : 12);
+  let y = min(round(uh * .73), uh - 36 - ch);   // under your feet, so the cards never cover the Wakers on their plinths
   // on a phone, higher up where no touch control lies over a card (nothing moves on a computer)
   //  (but never above the match's top line, where the title would cover the countdown: there it stops, as clear as it gets)
-  if (mobileDevice && !touchClear(x0 - 2, y - 14, cw * 3 + 12, 58)) { let yy = y; while (yy > 38 && !touchClear(x0 - 2, yy - 14, cw * 3 + 12, 58)) yy -= 4; y = max(38, min(y, yy)); }
+  if (mobileDevice && !touchClear(x0 - 2, y - 14, cw * 3 + 12, ch + 18)) { let yy = y; while (yy > 38 && !touchClear(x0 - 2, yy - 14, cw * 3 + 12, ch + 18)) yy -= 4; y = max(38, min(y, yy)); }
   textC(c, o.why === 'start' ? 'CHOOSE A PERK' : 'DAWN: CHOOSE A PERK  (' + max(0, ceil((o.max - o.t) / 60)) + ')', uw / 2, y - 11, '#ffd35a', 1, textO);
+  const ga = c.globalAlpha, key = (c, x, y, s) => { const w = textW(s) + 6; c.fillStyle = INK; c.fillRect(x - 1, y - 1, w + 2, 11); c.fillStyle = '#3a3350'; c.fillRect(x, y, w, 9); drawText(c, s, x + 3, y + 1, '#ffd35a'); return w; };
   o.ids.forEach((k, i) => {
-    const x = x0 + i * (cw + 4), hv = inR(x, y, cw, 40), P0 = TR_PERKS[k];
-    c.fillStyle = INK; c.fillRect(x - 1, y - 1, cw + 2, 42); c.fillStyle = hv ? 'rgba(58,51,80,.95)' : 'rgba(22,17,34,.9)'; c.fillRect(x, y, cw, 40); c.fillStyle = hv ? '#ffd35a' : '#6a6485'; c.fillRect(x, y, cw, 1);
-    drawText(c, '[' + keys1[i] + '] ' + P0.n, x + 4, y + 4, '#ffd35a'); wrapText(P0.d, cw - 8).slice(0, 3).forEach((l, j) => drawText(c, l, x + 4, y + 14 + j * 8, '#d8d4e6'));
-    hit(x, y, cw, 40, () => trPick(i));
+    const x = x0 + i * (cw + 4), hv = kin(x, y, cw, ch), P0 = TR_PERKS[k], s = KIT.T ? 'TAP' : keys1[i];
+    const K = kcard(c, x, y, cw, ch, 'perks', P0.n, { col: hv ? '#fff1a8' : '#ffd35a', i: amFade(o.t * 16.7) + i, right: chip ? (c, rx, ry) => key(c, rx - textW(s) - 6, ry + 3, s) : null });
+    W[i].forEach((l, j) => drawText(c, l, x + 6, K.by + j * 9, '#d8d4e6'));
+    if (!chip) key(c, x + cw - textW(s) - 9, y + ch - 12, s);
+    khit(x, y, cw, ch, () => trPick(i), 'btn:PERK ' + keys1[i], P0.n + ': ' + P0.d);
   });
+  c.globalAlpha = ga;
 }
 // SECOND WIND: called when a blow would kill. True = it did not.
 function trCheatDeath(f) {

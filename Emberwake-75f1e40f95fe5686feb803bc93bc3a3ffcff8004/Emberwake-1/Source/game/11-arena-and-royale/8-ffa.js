@@ -183,39 +183,8 @@ function ffaQuickPlay() {
   const mode = fpick(FFA_MODES);
   ffaEnter(mode.id);
 }
+// the arcade's screen, the arenas' hub (SAND AND BANNERS), is built with the menu kit: ffaArcade, 26-arena-menus.js
 function drawFFAMenu(c) {
-  const uw = VS.uw, uh = VS.uh, w = min(620, uw - 12), h = min(320, uh - 10), x = round((uw - w) / 2), y = max(5, round((uh - h) / 2));
-  c.fillStyle = 'rgba(18,13,31,.7)'; c.fillRect(0, 0, uw, uh); panel(c, x, y, w, h, 'THE FFA ARCADE  ·  10 MODES');
-  const fx = x + 8, fw = w - 16, mode = ffaMode(FFA.selected), skinY = y + 20;
-  drawText(c, 'NAME', fx, skinY + 4, '#b9bdd0'); field(c, fx + 40, skinY, min(160, fw - 145), 'nick', 'WAKER'); skinPicker(c, x + w - 130, skinY - 2);
-
-  const colGap = 6, cardW = floor((fw - colGap) / 2), cardH = 22, listY = y + 43;
-  for (let i = 0; i < FFA_MODES.length; i++) {
-    const m = FFA_MODES[i], col = i < 5 ? 0 : 1, row = i % 5, cx = fx + col * (cardW + colGap), cy = listY + row * 23;
-    const selected = m.id === FFA.selected;
-    c.fillStyle = selected ? '#3a3020' : 'rgba(32,27,45,.92)'; c.fillRect(cx, cy, cardW, cardH);
-    c.fillStyle = selected ? m.color : '#4a4460'; c.fillRect(cx, cy, 2, cardH);
-    c.fillStyle = m.color; c.fillRect(cx + 6, cy + 6, 8, 8); c.fillStyle = INK; c.fillRect(cx + 8, cy + 8, 4, 4);
-    drawText(c, m.name, cx + 19, cy + 3, selected ? '#fff1a8' : '#fff');
-    let desc = m.desc; while (desc.length > 4 && textW(desc) > cardW - 25) desc = desc.slice(0, -1);
-    drawText(c, desc, cx + 19, cy + 12, '#8b8fa3');
-    const count = '3 BOTS'; drawText(c, count, cx + cardW - textW(count) - 4, cy + 3, '#7ddc6f');
-    hit(cx, cy, cardW, cardH, () => { FFA.selected = m.id; sfx('ui'); });
-  }
-  const stats = ffaModeStats(mode.id), ratio = stats.deaths ? (stats.kills / stats.deaths).toFixed(2) : stats.kills.toFixed(2);
-  const infoY = listY + 5 * 23 + 4;
-  drawText(c, `${mode.name}   ${mode.desc}`, fx, infoY, mode.color);
-  drawText(c, `K ${stats.kills}  D ${stats.deaths}  W ${stats.wins}  MATCHES ${stats.matches}  K/D ${ratio}  ELO ${stats.elo}`, fx, infoY + 10, '#d8d4e6');
-  const best = FFA_MODES.map(m => ({ name: m.name, elo: ffaModeStats(m.id).elo })).sort((a, b) => b.elo - a.elo)[0];
-  drawText(c, `PERSONAL LEADERBOARD  ·  TOP ${best.name} ${best.elo} ELO  ·  QUICK PLAY picks a random mode`, fx, infoY + 20, '#8b8fa3');
-  const milestones = [stats.kills >= 10 && '10 KILLS', stats.wins >= 1 && 'FIRST WIN', stats.matches >= 10 && '10 MATCHES'].filter(Boolean);
-  drawText(c, `MILESTONES  ·  ${milestones.length ? milestones.join('  ·  ') : 'First win, 10 kills, 10 matches'}`, fx, infoY + 30, '#ffd35a');
-  const actionY = y + h - 38;
-  button(c, fx, actionY, floor((fw - 8) / 2), 16, 'PLAY ' + mode.name, () => ffaEnter(mode.id), { col: mode.color });
-  button(c, fx + floor((fw - 8) / 2) + 8, actionY, floor((fw - 8) / 2), 16, 'QUICK PLAY  ·  RANDOM MODE', ffaQuickPlay, { col: '#ffd35a' });
-  if (netOK()) {
-    button(c, fx, actionY + 19, floor((fw - 8) / 2), 15, 'HOST PRIVATE MATCH  ·  CODE', () => ffaEnter(mode.id, true), { col: '#8ff5e6' });
-    drawText(c, 'Friends: title screen → JOIN A FRIEND → enter your code.', fx + floor((fw - 8) / 2) + 8, actionY + 23, '#8b8fa3');
-  } else drawText(c, 'Private matches need WebRTC. Practice is ready offline with 3 bots.', fx, actionY + 23, '#8b8fa3');
-  button(c, x + w - 66, y + h - 18, 58, 13, 'BACK', () => { G.state = 'title'; UI.focus = null; sfx('ui'); });
+  menuBackdrop(c, 'ring'); kview('ring');
+  ffaArcade(c);
 }
