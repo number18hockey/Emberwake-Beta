@@ -17,10 +17,10 @@ canvas{display:block;width:100vw;height:100vh;height:100dvh;image-rendering:pixe
 .touchButton{position:absolute;display:grid;place-items:center;width:clamp(58px,15vmin,82px);height:clamp(58px,15vmin,82px);padding:0;border:2px solid rgba(255,211,90,.68);border-radius:50%;background:radial-gradient(circle at 35% 28%,rgba(255,174,88,.8),rgba(104,40,43,.86));box-shadow:0 4px 16px #0009;color:#fff5d5;font:800 clamp(9px,2.4vmin,12px)/1 system-ui,sans-serif;letter-spacing:.5px;text-shadow:0 1px 3px #000;pointer-events:auto;touch-action:none;-webkit-tap-highlight-color:transparent}
 .touchButton:active,.touchButton.pressed{transform:scale(.94);filter:brightness(1.25)}
 #attackLight{right:calc(env(safe-area-inset-right,0px) + 18px);bottom:calc(env(safe-area-inset-bottom,0px) + 18px)}
-#attackHeavy{right:calc(env(safe-area-inset-right,0px) + 18px);bottom:calc(env(safe-area-inset-bottom,0px) + 96px)}
+#attackHeavy{right:calc(env(safe-area-inset-right,0px) + 18px);bottom:calc(env(safe-area-inset-bottom,0px) + max(96px,18px + clamp(58px,15vmin,82px) + 8px))}
 #mobileJump,#mobileDash{left:calc(env(safe-area-inset-left,0px) + 18px + clamp(112px,22vmin,156px) + 8px);width:clamp(54px,13vmin,68px);height:clamp(54px,13vmin,68px);border-color:rgba(143,245,230,.72);background:radial-gradient(circle at 35% 28%,rgba(143,245,230,.82),rgba(39,76,88,.9))}
 #mobileJump{bottom:calc(env(safe-area-inset-bottom,0px) + 18px)}
-#mobileDash{bottom:calc(env(safe-area-inset-bottom,0px) + 84px);border-color:rgba(255,211,90,.72)}
+#mobileDash{bottom:calc(env(safe-area-inset-bottom,0px) + max(84px,18px + clamp(54px,13vmin,68px) + 8px));border-color:rgba(255,211,90,.72)}
 #mobileUse{right:calc(env(safe-area-inset-right,0px) + 18px + clamp(58px,15vmin,82px) + 12px);bottom:calc(env(safe-area-inset-bottom,0px) + 35px);width:clamp(48px,12vmin,60px);height:clamp(48px,12vmin,60px);border-color:rgba(143,245,230,.72);background:radial-gradient(circle at 35% 28%,rgba(143,245,230,.82),rgba(39,76,88,.9))}
 #mobileTextInput{display:none;position:fixed;z-index:3;left:0;bottom:0;width:2px;height:2px;padding:0;border:0;opacity:.01;font-size:16px;color:transparent;background:transparent}
 .touch #mobileTextInput{display:block}
@@ -29,7 +29,7 @@ canvas{display:block;width:100vw;height:100vh;height:100dvh;image-rendering:pixe
 .touchPill:active,.touchPill.pressed{filter:brightness(1.5)}
 #mobileClose{border-color:rgba(255,211,90,.8);color:#fff1a8}
 #mobileControls.panel #mobileBar{left:auto;right:calc(env(safe-area-inset-right,0px) + 6px);top:calc(env(safe-area-inset-top,0px) + 2px)}
-@media (orientation:portrait){#movePad,#mobileJump,#attackLight{bottom:calc(env(safe-area-inset-bottom,0px) + 66px)}#mobileDash{bottom:calc(env(safe-area-inset-bottom,0px) + 138px)}#attackHeavy{bottom:calc(env(safe-area-inset-bottom,0px) + 144px)}#mobileUse{bottom:calc(env(safe-area-inset-bottom,0px) + 240px)}#mobileBar{top:calc(env(safe-area-inset-top,0px) + 130px)}}
+@media (orientation:portrait){#movePad,#mobileJump,#attackLight{bottom:calc(env(safe-area-inset-bottom,0px) + 66px)}#mobileDash{bottom:calc(env(safe-area-inset-bottom,0px) + max(138px,66px + clamp(54px,13vmin,68px) + 8px))}#attackHeavy{bottom:calc(env(safe-area-inset-bottom,0px) + max(144px,66px + clamp(58px,15vmin,82px) + 8px))}#mobileUse{bottom:calc(env(safe-area-inset-bottom,0px) + 240px)}#mobileBar{top:calc(env(safe-area-inset-top,0px) + 130px)}}
 </style>
 </head>
 <body>
@@ -916,7 +916,7 @@ MAT[PLANK].y = [['plank', 1]]; MAT[BRICK].y = [['brick', 1]]; MAT[PLATFORM].y = 
 for (let t = 0; t < TP.length; t++) if (TP[t] && TP[t].part && TP[t].drop && MAT[t] && !MAT[t].y.length) MAT[t].y = [[TP[t].drop, 1]];
 // what plants, litter and urns give when you take them by hand
 const PLUCK = {
-  [TALLGRASS]: [['fiber', 1, 2]], [FLOWER]: [['fiber', 1, 1]], [GLOWCAP]: [['glowcap', 1, 1]], [DEADBUSH]: [['stick', 2, 3]], [VINE]: [['fiber', 1, 1]], [CRYSTAL]: [['snow', 1, 2]],
+  [TALLGRASS]: [['fiber', 1, 2]], [FLOWER]: [['fiber', 1, 1]], [GLOWCAP]: [['glowcap', 1, 1]], [DEADBUSH]: [['stick', 2, 3], ['fiber', 1, 2]], [VINE]: [['fiber', 1, 1]], [CRYSTAL]: [['snow', 1, 2]],
   [REED]: [['reed', 2, 3]], [BERRY]: [['berries', 2, 3], ['stick', 0, 1]], [BUSH]: [['stick', 1, 2]], [PEBBLE]: [['rock', 1, 2], ['flint', 0, 1]], [STICKS]: [['stick', 2, 3]],
   [BONES]: [['bone', 1, 3]], [FUNGUS]: [['fungus', 1, 1]]
 };
@@ -4322,7 +4322,7 @@ function wxParticles() {
   const w = G.wx; if (!w || w.a <= .02 || WORLD.arena || DIM) return; const cx = G.cam.x, cy = G.cam.y, p = G.p;
   if (!p || realmAt(floor((p.x + 3) / T), floor((p.y + 10) / T)) !== 'surface') return;
   if (w.k === 'rain') { for (let i = 0, n = ceil(w.a * 5 * VS.vw / 420); i < n; i++) P(cx + frand(-30, VS.vw + 90), cy - 6, -1.5, frand(5.4, 6.8), 70, fpick(['#9ac8e8', '#c4e2f4', '#7fb0d8']), { g: 0, fr: 1, rain: 1 }); }
-  else if (G.time % 2 === 0) { for (let i = 0, n = ceil(w.a * 2 * VS.vw / 420); i < n; i++) P(cx + frand(-30, VS.vw + 70), cy - 4, frand(-.7, -.2), frand(.5, 1), 420, fpick(['#ffffff', '#e8f4ff', '#cfe6f4']), { g: 0, fr: 1 }); }
+  else if (G.time % 2 === 0) { for (let i = 0, n = ceil(w.a * 2 * VS.vw / 420); i < n; i++) P(cx + frand(-30, VS.vw + 70), cy - 4, frand(-.7, -.2), frand(.5, 1), 420, fpick(['#ffffff', '#e8f4ff', '#cfe6f4']), { g: 0, fr: 1, sky: 1 }); }
 }
 // the weather dims the day a little
 function seasonSun() {
@@ -4561,8 +4561,8 @@ function tickWeatherWays() {
     // the wind takes whoever is off the ground and out of shelter (never past a fair running speed)
     if (aw > .15 && !f.shel && !f.remote && !f.onGround && f.state !== 'dodge' && !f.climbing) { const gl = f.glide || f.gliding, lim = gl ? 3.4 : 2.4, v = f.vx + wind * .03 * (gl ? 1.5 : 1); if (abs(v) < lim || abs(v) < abs(f.vx)) f.vx = v; }
   }
-  // and it bends whatever is shot, thrown or spat
-  if (aw > .25) for (const pr of G.projs) if ((pr.type === 'arrow' || pr.type === 'flask' || pr.type === 'pellet' || pr.type === 'javelin' || pr.type === 'glob') && pr.t % 2 === 0) pr.vx += wind * .018;
+  // and it bends whatever is shot, thrown or spat (out in the open: not down a mine or under a roof)
+  if (aw > .25) for (const pr of G.projs) if ((pr.type === 'arrow' || pr.type === 'flask' || pr.type === 'pellet' || pr.type === 'javelin' || pr.type === 'glob') && pr.t % 2 === 0 && !wxCovered(pr.x, pr.y)) pr.vx += wind * .018;
   if (netGuest()) return;
   const form = wxForm(); if (form !== WXW.form) { WXW.form = form; if (form) WXW.mobT = 60 * frand(14, 30); }
   if (form && --WXW.mobT <= 0) { WXW.mobT = 60 * frand(22, 44); if (!p.dead && Math.random() < .5) wxMob(form); }
@@ -5798,7 +5798,8 @@ function moveBody(e) {
 }
 
 // ---------------- particles ----------------
-function P(x, y, vx, vy, life, col, o) { if (SETTINGS.fpsMode || G.parts.length > 1400 || wildOn() && wOffScreen(x, y)) return; const p = { x, y, vx, vy, life, max: life, col, sz: 1, g: .12, fr: .985, glow: 0, hit: 0 }; if (o) Object.assign(p, o); G.parts.push(p); }
+// (FPS MODE makes none, but for what the sky itself drops: rain, snow and ash still slow you, so they are still seen)
+function P(x, y, vx, vy, life, col, o) { if (SETTINGS.fpsMode && !(o && (o.rain || o.sky)) || G.parts.length > 1400 || wildOn() && wOffScreen(x, y)) return; const p = { x, y, vx, vy, life, max: life, col, sz: 1, g: .12, fr: .985, glow: 0, hit: 0 }; if (o) Object.assign(p, o); G.parts.push(p); }
 function burst(x, y, n, cols, sp, life, o) { for (let i = 0; i < n; i++) { const a = frand(TAU), v = frand(.2, 1) * sp; P(x, y, cos(a) * v, sin(a) * v, max(4, life * frand(.5, 1) | 0), fpick(cols), o); } }
 function tickParts() {
   const a = G.parts;
@@ -6269,15 +6270,15 @@ function splash(tx, ty) { for (let k = 0; k < 8; k++) P(tx * T + 4, ty * T + 4, 
 // ---------------- moving: ladders, ropes, gliders, claws ----------------
 function climbAt(f) { const cx = floor((f.x + 3) / T); for (let y = floor((f.y + 2) / T); y <= floor((f.y + f.h - 1) / T); y++) if (TP[tileAt(cx, y)].climb) return true; return false; }
 function travelTick(f, I, grav) {
-  // (in the Wilds everyone climbs, echoes too; having leapt off a rope there you don't catch the same one again at once,
-  //  and with hands off the side keys you line up with what you are climbing so a lip of rock doesn't catch your shoulder)
+  // (in the Wilds everyone climbs, echoes too. Wherever you climb: having leapt off a rope you don't catch the same one again at
+  //  once, and with hands off the side keys you line up with what you are climbing so a lip of rock doesn't catch your shoulder)
   const wild = wildOn(); if ((wild ? !f.isPlayer && !f.brBot || f.remote : !f.isPlayer || WORLD.arena) || f.dead) return grav;
   if (f.dragT > 0) { f.dragT--; f.vx = approach(f.vx, sign(f.dragX - (f.x + 3)) * 2.2, .35); }
   const onC = climbAt(f), col = floor((f.x + 3) / T); if (f.letGo > 0) f.letGo--;
   if (onC && !(f.letGo > 0 && f.letGoX === col) && (I.jumpH && !f.onGround || I.down || (I.jumpH && f.onGround && !I.md))) f.climbing = true;
   if (f.climbing) {
-    if (!onC || (I.jumpP && I.md)) { f.climbing = false; if (I.jumpP && I.md) { f.vy = -3.6; f.vx = I.md * 2; if (wild) { f.letGo = 14; f.letGoX = col; } } }
-    else { f.vy = I.jumpH ? -1.35 : I.down ? 1.7 : 0; f.vx *= .6; if (wild && !I.md) { const off = col * T + 1 - f.x; if (abs(off) > .3) f.vx += clamp(off * .12, -.35, .35); } f.coyote = 0; f.dblUsed = false; f.airDash = airDashMax(f); f.onGround = false; f.runPh += abs(f.vy) * .3; return 0; }
+    if (!onC || (I.jumpP && I.md)) { f.climbing = false; if (I.jumpP && I.md) { f.vy = -3.6; f.vx = I.md * 2; f.letGo = 14; f.letGoX = col; } }
+    else { f.vy = I.jumpH ? -1.35 : I.down ? 1.7 : 0; f.vx *= .6; if (!I.md) { const off = col * T + 1 - f.x; if (abs(off) > .3) f.vx += clamp(off * .12, -.35, .35); } f.coyote = 0; f.dblUsed = false; f.airDash = airDashMax(f); f.onGround = false; f.runPh += abs(f.vy) * .3; return 0; }
   }
   f.gliding = f.clinging = false; if (!f.isPlayer) return grav;
   if (!f.onGround && !liqAt(f.x + 3, f.y + f.h - 5)) {
@@ -10712,7 +10713,7 @@ function eventTick(e) {
   const p = G.p;
   if (e.id === 'thunder') thunderTick(e);
   if (e.id === 'starfall' && G.time % 150 === 0 && !p.dead) { const x = p.x + 3 + frand(-240, 240); G.dhaz.push({ kind: 'star', x, y: G.cam.y - 30, vx: frand(-1.2, 1.2), vy: 2.4, g: .03, light: [.6, .7, .7] }); }
-  if (e.id === 'ashfall' && G.time % 2 === 0) P(G.cam.x + frand(VS.vw + 60), G.cam.y - 4, frand(-.5, -.1), frand(.4, .8), 340, fpick(['#a19baa', '#8d8794', '#d6d0dc']), { g: 0, fr: 1 });
+  if (e.id === 'ashfall' && G.time % 2 === 0) P(G.cam.x + frand(VS.vw + 60), G.cam.y - 4, frand(-.5, -.1), frand(.4, .8), 340, fpick(['#a19baa', '#8d8794', '#d6d0dc']), { g: 0, fr: 1, sky: 1 });
   if (e.id === 'emoon' && e.called && !e.shep && !G.boss && G.dn < .25 && e.t > 1500 && (Math.random() < .0015 || e.t > 4200) && realmAt(floor((p.x + 3) / T), floor((p.y + 10) / T)) === 'surface' && placeAt(floor((p.x + 3) / T), floor((p.y + 10) / T)) !== 'village') {
     e.shep = true; const s = Math.random() < .5 ? 1 : -1, tx = floor((p.x + 3) / T) + s * 16, ty = groundAt(tx); const b = bossSpawn('shepherd', tx * T, (ty - 4) * T); b.dir = -s; G.banner = { text: 'THE PALE SHEPHERD', sub: 'it has come for its flock', t: 0 }; learn('shepherd', true);
   }
@@ -11043,7 +11044,7 @@ Object.assign(EVENTS, {
 EVMOB.add('stormcrow');
 function thunderTick(e) {
   const p = G.p; if (!p || p.dead || G.time % 3) return;
-  if (G.time % 2 === 0) for (let k = 0; k < 3; k++) P(G.cam.x + frand(-40, VS.vw + 40), G.cam.y - 4, -.6, frand(3, 3.8), 80, '#8a9ad0', { g: 0, fr: 1 });
+  if (G.time % 2 === 0) for (let k = 0; k < 3; k++) P(G.cam.x + frand(-40, VS.vw + 40), G.cam.y - 4, -.6, frand(3, 3.8), 80, '#8a9ad0', { g: 0, fr: 1, sky: 1 });
   if (G.thunT === undefined) G.thunT = 200; if ((G.thunT -= 3) > 0) return; G.thunT = 180 + frand(260);
   // a rod you raised within reach draws it; otherwise the highest ground near you
   const ptx = floor((p.x + 3) / T); let rod = null; for (const o of tileObjs.values()) if (o.id === LROD && abs(o.x - ptx) < 90 && (!rod || abs(o.x - ptx) < abs(rod.x - ptx))) rod = o;
@@ -12411,7 +12412,7 @@ function drawRingForm(c) {
 function drawHUD(c) {
   const p = G.p, uw = VS.uw, uh = VS.uh, A = WORLD.arena, wild = wildOn();
   c.drawImage(SPR.heart, 3, 3); bar(c, 15, 4, 72, 7, p.hp / p.maxhp, p.hp < 30 && (G.time >> 3) & 1 ? '#ff9a8a' : '#e2483b', '#8f2233'); textO(c, ceil(max(0, p.hp)), 91, 4, '#fff');
-  if ((!A || wild) && gearOn()) { drawGearHud(c); if (!A && !SETTINGS.fpsMode) { drawStyleHud(c); drawFamHud(c); drawDrill(c); } }
+  if ((!A || wild) && gearOn()) { drawGearHud(c); if (!A) { if (!SETTINGS.fpsMode) { drawStyleHud(c); drawFamHud(c); } drawDrill(c); } }
   bar(c, 15, 14, 72, 4, p.stam / p.maxstam, p.stam < 22 ? '#ffd35a' : '#7ddc6f', p.stam < 22 ? '#b85a1e' : '#2f8a43');
   if ((!A || wild) && WORLD.mode !== 1) { const f = G.food / 100; bar(c, 15, 20, 72, 2, f, f < .25 && (G.time >> 4) & 1 ? '#ff9a8a' : '#e0a050', '#7a4a1a'); if (f < .3) textO(c, f <= 0 ? 'STARVING' : 'HUNGRY', 91, 16, '#e0a050'); }
   if (p.riposte > 0 && (G.time >> 2) & 1) textO(c, 'RIPOSTE READY', 15, 22, '#8ff5e6');
@@ -12597,16 +12598,19 @@ function drawPause(c) {
   button(c, x + 186, y + 18, 84, 15, muted ? 'SOUND: OFF' : 'SOUND: ON', () => { muted = !muted; sfx('ui'); });
   if (!A) button(c, x + 276, y + 18, 46, 15, 'SAVE', () => { saveWorld(); sfx('craft'); });
   if (wildOn() && BR.teammate) button(c, x + w - 66, y + h - 19, 58, 15, 'LEAVE PACT', () => { brBreakPact(false); closeUI(); });
-  button(c, A ? x + 276 : x + 328, y + 18, 56, 15, SETTINGS.fx === 'plain' ? 'FX: PLAIN' : 'FX: FULL', () => { SETTINGS.fx = SETTINGS.fx === 'plain' ? 'full' : 'plain'; saveSettings(); sfx('ui'); });   // glow, colour of the air, mist: off for a slow machine
+  // (a phone held upright has a panel narrower than its own top row: there FX goes under SAVE, beside the first line of help,
+  //  and the middle column of the two rows at the bottom narrows to clear the right-hand one. A full-width panel is untouched.)
+  const slim = !A && w < 392, mw = slim ? min(118, w - 112 - 130 - 12) : 118;
+  button(c, A ? x + 276 : slim ? x + w - 64 : x + 328, y + (slim ? 35 : 18), 56, 15, SETTINGS.fx === 'plain' ? 'FX: PLAIN' : 'FX: FULL', () => { SETTINGS.fx = SETTINGS.fx === 'plain' ? 'full' : 'plain'; saveSettings(); sfx('ui'); });   // glow, colour of the air, mist: off for a slow machine
   if (!A && G.p && !G.boss && !G.duel) button(c, x + w - 112, y + h - 19, 104, 13, 'WAKE AT THE FIRE', () => { closeUI(); wakeAtFire(); });
   if (!A) button(c, x + w - 112, y + h - 36, 104, 13, netGuest() ? 'LEAVE THEIR WORLD' : COOP.role ? 'PLAY TOGETHER (' + (1 + [...COOP.peers.values()].filter(P => P.ok).length) + ')' : 'PLAY TOGETHER', () => { if (netGuest()) { closeUI(); quitToTitle(); } else { UI.open = 'coop'; COOP.err = ''; sfx('ui'); } });
   button(c, x + 8, y + h - 19, 118, 13, 'CONTROLS: ' + (SETTINGS.combat === 'simple' ? 'SIMPLE' : 'FULL'), () => { SETTINGS.combat = SETTINGS.combat === 'simple' ? 'full' : 'simple'; saveSettings(); sfx('ui'); });
   if (!A) button(c, x + 8, y + h - 36, 118, 13, 'CRAFTING: ' + (SETTINGS.craft === 'hands' ? 'HANDS-ON' : 'SIMPLE'), () => { SETTINGS.craft = SETTINGS.craft === 'hands' ? 'simple' : 'hands'; saveSettings(); UI.job = null; sfx('ui'); });
   // FPS MODE: no particles and a barer HUD (the game stays side-on); FX above is the uploaded version's own switch and is left as it is.
   // (In a world it sits over DIFFICULTY. An arena's shorter panel has its last line of help there, and no DIFFICULTY: it takes that place.)
-  button(c, x + 130, y + h - (A ? 19 : 36), 118, 13, 'FPS MODE: ' + (SETTINGS.fpsMode ? 'ON' : 'OFF'), () => { SETTINGS.fpsMode = !SETTINGS.fpsMode; if (SETTINGS.fpsMode) G.parts.length = 0; saveSettings(); sfx('ui'); });
+  button(c, x + 130, y + h - (A ? 19 : 36), mw, 13, 'FPS MODE: ' + (SETTINGS.fpsMode ? 'ON' : 'OFF'), () => { SETTINGS.fpsMode = !SETTINGS.fpsMode; if (SETTINGS.fpsMode) G.parts.length = 0; saveSettings(); sfx('ui'); });
   if (!A) textS(c, 'Cleaner HUD; side-view.', x + 130, y + h - 48, '#8b8fa3');
-  if (!A) button(c, x + 130, y + h - 19, 118, 13, 'DIFFICULTY: ' + DIFF().n, () => { SETTINGS.diff = SETTINGS.diff === 'easy' ? 'normal' : SETTINGS.diff === 'normal' ? 'hard' : 'easy'; saveSettings(); sfx('ui'); });
+  if (!A) button(c, x + 130, y + h - 19, mw, 13, 'DIFFICULTY: ' + DIFF().n, () => { SETTINGS.diff = SETTINGS.diff === 'easy' ? 'normal' : SETTINGS.diff === 'normal' ? 'hard' : 'easy'; saveSettings(); sfx('ui'); });
   const H = ['A / D  move        SPACE or W  jump        SHIFT  dodge', 'LMB  light blow: strike again on the GLINT   RMB or Q  heavy', ...(SETTINGS.combat === 'simple' ? ['Aim up to launch, aim down or hold S for low blows. Click', 'a creature to punch it, whatever you are holding.'] : ['Where you aim, which keys you hold, whether you are in', 'the air and how far the cursor is all change the attack.']), 'Never mash: a blow before the glint is RUSHED. Dodge through a hit.', A ? '1-6 weapons    TAB scores    C forms    O sound' : '1-0 / wheel  hotbar     E  pack + crafting     C  forms', A ? 'R  throw sidearm    T  switch sidearm    Echoes leave when a Waker joins.' : 'J  journal + leads   F  talk / use   H  quick heal', A ? '' : 'R  throw sidearm   T  switch sidearm   S held: drop through bridges', A ? '' : 'Ore, keys and such leave your fists free.   K  knap   M  map', A ? '' : 'F beside a station uses it. Hold W/S on ladders. RMB opens doors.', A ? '' : 'V  weapon style (5 per weapon)   X  swap to off hand', A ? '' : 'Tools swing where you point, at rock or beast. Hold RMB: heavy.'];
   H.forEach((l, i) => drawText(c, l, x + 8, y + 42 + i * 12, i === 2 || i === 3 ? '#8ff5e6' : '#d8d4e6'));
 }
@@ -15238,8 +15242,6 @@ const BR_WARN = 40 * 60, BR_MOVE = 105 * 60, BR_RESTLESS = 5 * 60 * 60;
 const BR_TITLES = ['TRIBUTE', 'FORAGER', 'TRAPPER', 'SCAVENGER', 'RANGER', 'CAREER', 'VICTOR'];
 // (the match state BR is the one object shared with the Trials: see 2-royale.js; BR.wild is true while this arena is in play)
 const wBrOn = () => WORLD.royale && BR.on;
-// on the island a dead bush gives fibre as well as sticks (twine is short there); in every other place it gives what it always gave
-{ const dry = PLUCK[DEADBUSH], wild = [...dry, ['fiber', 1, 2]]; Object.defineProperty(PLUCK, DEADBUSH, { get: () => wildOn() ? wild : dry, enumerable: true }); }
 const wBrTag = f => !f ? '' : f === G.p ? (NET.me || 'me') : f.botTag || f.peer || '';
 const brSay = (s, t = 150) => { BR.note = s; BR.noteT = t; };
 
@@ -18151,7 +18153,9 @@ function migrateGuestWorlds() {
   let worlds;
   try { worlds = JSON.parse(oldIndex); } catch (e) { return; }
   if (!Array.isArray(worlds)) return;
-  SAVE.list = worlds.filter(m => m && typeof m.id === 'string');
+  // only worlds that are still there: the old list is never rewritten, so it can name a world deleted since (in a session
+  // where nothing of the account could be written), and that name must not come back
+  SAVE.list = worlds.filter(m => m && typeof m.id === 'string' && (LS.get(profilePath('guest', 'w.' + m.id)) !== null || LS.get('ew2.w.' + m.id) !== null || LS.get(profileKey('w.' + m.id)) !== null));
   // the account's list is written first: a world leaves its old place only once the list that names it is safely kept.
   // (Where the list could not be written nothing has been done for good, and the next sign-in tries again.)
   const listed = LS.set(profileKey('index'), JSON.stringify(SAVE.list));
@@ -18465,7 +18469,13 @@ function restoreStn(o) {
   {
     if (!o || !(o.i >= 0 && o.i < WW * WH) || tiles[o.i] !== o.t) return; const s = stnState(o.i, o.t);
     if (Array.isArray(o.items) && s.items) o.items.forEach((q, k) => { if (k < s.items.length) s.items[k] = Array.isArray(q) && IT[q[0]] ? { id: q[0], n: clamp(q[1] | 0, 1, IT[q[0]].stack) } : null; });
-    if (Array.isArray(o.slots) && s.slots) o.slots.forEach((q, k) => { if (k < s.slots.length) s.slots[k] = Array.isArray(q) && RECIPES[q[0]] && (RECIPES[q[0]].out || '') === q[2] ? { r: q[0], t: q[1] | 0 } : null; });
+    // a job is kept as [recipe number, time, what it makes]. A world made in the game's other branch counts its recipes differently,
+    // so where the number does not make that thing, the job is found again by what it makes (among the stations that work by themselves)
+    if (Array.isArray(o.slots) && s.slots) o.slots.forEach((q, k) => {
+      if (k >= s.slots.length) return; let r = Array.isArray(q) ? q[0] : -1;
+      if (r >= 0 && !(RECIPES[r] && (RECIPES[r].out || '') === q[2])) r = RECIPES.findIndex(R => PASSIVE[R.st] && (R.out || '') === q[2]);
+      s.slots[k] = r >= 0 ? { r, t: q[1] | 0 } : null;
+    });
     for (const k of STN_KEYS) if (o[k] !== undefined) s[k] = o[k];
   }
 }
@@ -19258,7 +19268,7 @@ function ambientMore() {
 // ============================================================
 const mobileControls = document.getElementById('mobileControls'), mobileTextInput = document.getElementById('mobileTextInput');
 const movePad = document.getElementById('movePad'), moveKnob = document.getElementById('moveKnob');
-let stickPointer = null, canvasTouchPointer = null, touchAim = false, touchTap = null;
+let stickPointer = null, canvasTouchPointer = null, touchAim = false, touchTap = null, touchDash = false;
 if (mobileDevice) document.documentElement.classList.add('touch');
 // ---------------- small screens ----------------
 // a label wider than its box is drawn smaller, and a field shows the end of what is typed. A computer draws both as it always did.
@@ -19292,7 +19302,7 @@ mobileTextInput.addEventListener('keydown', e => {
 function virtualKey(code, down) { if (down && !keys[code]) pressed[code] = true; keys[code] = down; }
 function clearMobileInput() {
   stickPointer = null; moveKnob.style.transform = 'translate(-50%,-50%)'; touchAim = false;
-  for (const k of ['KeyA', 'KeyD', 'ArrowDown', 'Space', 'KeyF', 'ShiftLeft']) keys[k] = false;
+  for (const k of ['KeyA', 'KeyD', 'ArrowDown', 'Space', 'KeyF']) keys[k] = false;
   mouse.l = mouse.r = false;
   document.querySelectorAll('#mobileControls .pressed').forEach(el => el.classList.remove('pressed'));
 }
@@ -19338,7 +19348,8 @@ const touchPlay = () => G.state === 'play' && !UI.open;
 bindTouchButton('attackLight', () => { if (touchPlay()) { touchAim = true; mouse.l = true; mouse.lp = true; mobileAim(); } }, () => { mouse.l = false; touchAim = false; });
 bindTouchButton('attackHeavy', () => { if (touchPlay()) { touchAim = true; mouse.r = true; mouse.rp = true; mobileAim(); } }, () => { mouse.r = false; touchAim = false; });
 bindTouchButton('mobileJump', () => { if (touchPlay()) virtualKey('Space', true); }, () => virtualKey('Space', false));
-bindTouchButton('mobileDash', () => { if (touchPlay()) virtualKey('ShiftLeft', true); }, () => virtualKey('ShiftLeft', false));
+// DASH is the Shift key; touchDash says this button is what holds it down (a real keyboard's Shift is never let go from here)
+bindTouchButton('mobileDash', () => { if (touchPlay()) { virtualKey('ShiftLeft', true); touchDash = true; } }, () => { if (touchDash) { touchDash = false; virtualKey('ShiftLeft', false); } });
 // USE is the F key, and it can be held: rekindling a fallen teammate in the Trials takes a held F
 bindTouchButton('mobileUse', () => { if (touchPlay()) virtualKey('KeyF', true); }, () => virtualKey('KeyF', false));
 for (const [id, code] of [['mobilePack', 'KeyE'], ['mobileMap', 'KeyM'], ['mobileHeal', 'KeyH'], ['mobilePact', 'KeyP'], ['mobileMenu', 'Escape']]) bindTouchButton(id, () => { if (touchPlay()) tapKey(code); });
@@ -19354,6 +19365,9 @@ function syncMobileControls() {
   // no button for what would do nothing: there is no pack in the Cinder Ring, no map there or before you have drawn one, and nobody to talk to alone
   if (visible) { const ring = WORLD.arena && !WORLD.royale; touchPackBtn.classList.toggle('off', ring); touchMapBtn.classList.toggle('off', ring || (!WORLD.royale && !hasUtil('fieldmap'))); touchChatBtn.classList.toggle('off', !COOP.role); touchPactBtn.classList.toggle('off', !wildOn()); }
   if (!visible && (stickPointer !== null || mouse.l || mouse.r)) clearMobileInput();
+  // a finger still on DASH when the buttons go or you fall (a panel opens, you leave for the title) no longer holds Shift:
+  // or a tap in the pack would be a Shift-click until it lifts
+  if (touchDash && (!visible || !G.p || G.p.dead)) { touchDash = false; keys.ShiftLeft = false; }
   if (visible && touchAim) mobileAim();
 }
 // ---------------- fingers on the picture itself ----------------
