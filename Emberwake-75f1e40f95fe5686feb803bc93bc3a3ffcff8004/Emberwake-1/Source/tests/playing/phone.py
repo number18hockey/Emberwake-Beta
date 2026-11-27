@@ -53,10 +53,10 @@ async def phone(pw, label, w, h):
             hx, hy = await pg.evaluate("(() => { const h = %s; return [h.x + h.w / 2, h.y + h.h / 2]; })()" % pick)
             x, y = await ui(hx, hy); await hold(x, y, 80); await pg.wait_for_timeout(200)
         board = [await pg.evaluate('G.state'), await pg.evaluate("HITS.length >= 1 && " + FIT)]
-        await press("HITS.find(h => String(h.fn).includes('make'))  || HITS[0]")
+        await press("HITS.find(h => h.tag === 'btn:+ CREATE ACCOUNT')")
         board.append(await pg.evaluate("ACCOUNT.form === 'create' && HITS.length >= 5 && " + FIT)); fields = []
         for k, text in enumerate(('Mira_01!', 'p@ss word#9', 'p@ss word#9')):
-            await press("HITS.filter(h => h.h === 14 && h.w > 60)[%d]" % k); fields.append([await pg.evaluate('UI.focus'), await typing()]); await pg.keyboard.type(text)
+            await press("HITS.filter(h => h.tag && h.tag.startsWith('field:'))[%d]" % k); fields.append([await pg.evaluate('UI.focus'), await typing()]); await pg.keyboard.type(text)
         await pg.wait_for_timeout(100); entered = await pg.evaluate("[FORM.accountName, FORM.accountPassword, FORM.accountConfirm]"); await picture()
         await press("HITS.find(h => String(h.fn).includes('accountCreate'))"); await until("G.state === 'title'", 8000)
         out['signin'] = [board, fields, entered, await pg.evaluate("[G.state, ACCOUNT.active && ACCOUNT.active.name, !!(ACCOUNT.active && ACCOUNT.active.hash), JSON.stringify(ACCOUNT.profiles).includes('p@ss')]")]
@@ -65,7 +65,7 @@ async def phone(pw, label, w, h):
         x, y = await ui(*await pg.evaluate("[HITS[0].x + HITS[0].w / 2, HITS[0].y + HITS[0].h / 2]")); await hold(x, y, 80); await pg.wait_for_timeout(200)
         out['begin'] = [await pg.evaluate('G.state'), await pg.evaluate('UI.focus'), await typing()]
         await pg.evaluate("FORM.name = ''; mobileTextInput.value = ''; 0"); await pg.keyboard.type('Ash-fen 2!'); await pg.keyboard.press('Backspace'); await pg.keyboard.type("é" + 'x' * 30); name = await pg.evaluate('FORM.name')
-        fx, fy = await pg.evaluate("(() => { const f = HITS.filter(h => h.h === 14 && h.w > 60)[1]; return [f.x + 8, f.y + 7]; })()"); x, y = await ui(fx, fy); await hold(x, y, 80); await pg.wait_for_timeout(150); await pg.keyboard.type('Q'); seed = await pg.evaluate("[UI.focus, FORM.seed.slice(-1), FORM.name.length]"); await picture()
+        fx, fy = await pg.evaluate("(() => { const f = HITS.filter(h => h.tag && h.tag.startsWith('field:'))[1]; return [f.x + 8, f.y + 7]; })()"); x, y = await ui(fx, fy); await hold(x, y, 80); await pg.wait_for_timeout(150); await pg.keyboard.type('Q'); seed = await pg.evaluate("[UI.focus, FORM.seed.slice(-1), FORM.name.length]"); await picture()
         await pg.keyboard.press('Enter'); await pg.wait_for_timeout(100); out['typed'] = [name, seed, await pg.evaluate('UI.focus'), await typing()]
         out['screens'] = []
         for state in ('create', 'worlds', 'join', 'ring', 'brform'):

@@ -332,24 +332,118 @@ function drawCoopPanel(c) {
   drawText(c, 'Keep the game running while friends play (switching windows is fine).', fx, y + h - 24, '#8b8fa3');
   button(c, x + w - 132, y + h - 15, 124, 11, 'USE LONG CODES INSTEAD', () => { COOP.long = true; COOP.err = ''; sfx('ui'); });
 }
-function drawJoin(c) {
-  if (COOP.long) return drawJoinLong(c);
-  const uw = VS.uw, uh = VS.uh, w = min(360, uw - 16), h = 214, x = round((uw - w) / 2), y = max(8, round((uh - h) / 2));
-  c.fillStyle = 'rgba(18,13,31,.55)'; c.fillRect(0, 0, uw, uh); panel(c, x, y, w, h, 'JOIN A FRIEND');
-  const fx = x + 10, fw = w - 20; let ty = y + 20;
-  drawText(c, 'NAME', fx, ty + 4, '#b9bdd0'); field(c, fx + 46, ty, 130, 'nick', 'WAKER'); skinPicker(c, fx + 190, ty - 2); ty += 34;
-  if (!netOK()) { ['This window cannot connect to other computers.', 'Open Emberwake.html in Chrome, Safari, Edge or Firefox to play together.'].forEach((l, i) => drawText(c, l, fx, ty + i * 10, '#ffb347')); }
-  else {
-    drawText(c, 'GAME CODE  (your friend sees it in PLAY TOGETHER)', fx, ty, '#d8d4e6'); ty += 11;
-    const busy = (SIG.role === 'guest' && !!SIG.code) || COOP.busy, go = () => { if (!(SIG.role === 'guest' && SIG.code) && !COOP.busy) sigJoin(domVal('gcin')); };
-    const el = domBox('gcin', fx, ty, 120, 22, { input: true, ph: 'K7P2QX', onEnter: go }); el.maxLength = 8; if (!el.dataset.pre && FORM.gcode) { el.value = FORM.gcode; el.dataset.pre = '1'; } el.style.textTransform = 'uppercase'; el.style.letterSpacing = '3px'; el.style.fontSize = max(12, round(parseFloat(el.style.fontSize) * 1.6)) + 'px';
-    if (!busy && !COOP.retry) button(c, fx + 128, ty + 3, 80, 16, 'JOIN', go); else button(c, fx + 128, ty + 3, 80, 16, 'CANCEL', () => { SIG.tok = (SIG.tok | 0) + 1; COOP.retry = null; coopReset(); sigStop(); COOP.note = ''; COOP.err = ''; COOP.busy = false; sfx('ui'); });
-    ty += 30;
-    const st = COOP.retry ? 'Lost the connection to ' + (COOP.hostName || 'your friend') + '. Getting back in (try ' + max(1, COOP.retry.n) + ' of ' + RETRIES + ')...' : COOP.err || COOP.note;
-    if (st) wrapDraw(c, st, fx, ty, fw, COOP.err && !COOP.retry ? '#ff9a8a' : COOP.retry ? '#ffd35a' : '#7ddc6f');
-    if (busy) { const d = '.'.repeat(1 + ((G.time >> 4) % 3)); drawText(c, SIG.stage === 'relay' ? 'no direct line here, going through the relay' + d : SIG.stage === 'link' ? 'connecting' + d : SIG.stage === 'found' ? 'saying hello' + d : 'searching' + d, fx, ty + 22, '#8b8fa3'); }
+// ---------------- JOIN A FRIEND: THE SIGNAL BEACON (built with the menu kit, 10-interface/4-menu-kit.js) ----------------
+// Two cards: YOU (the name and look you bring) and THEIR CODE (the six-letter game code, a lamp lit for each letter).
+// The long-code way in (drawJoinLong, 1-co-op.js) keeps YOU and swaps the second card for A LONG INVITE.
+Object.assign(MENU_ART, {
+  // a beacon tower whose lamp pulses every 2 s
+  beacon(c, x, y) {
+    const on = performance.now() % 2000 < 1000;
+    c.fillStyle = '#514c62'; c.fillRect(x + 6, y + 6, 4, 9); c.fillRect(x + 4, y + 14, 8, 2);
+    c.fillStyle = '#365058'; c.fillRect(x + 5, y + 5, 6, 1); c.fillRect(x + 5, y + 1, 6, 1); c.fillRect(x + 7, y, 2, 1);
+    c.fillStyle = on ? '#c9ffb8' : '#58a868'; c.fillRect(x + 6, y + 2, 4, 3);
+    c.fillStyle = '#8b8fa3'; c.fillRect(x + 7, y + 9, 2, 2);
+    if (on) { c.fillStyle = '#7ddc6f'; c.fillRect(x + 1, y + 3, 3, 1); c.fillRect(x + 12, y + 3, 3, 1); c.fillRect(x + 2, y + 1, 2, 1); c.fillRect(x + 12, y + 5, 2, 1); }
+  },
+  // the long invite: a beacon with a letter rolled beside it
+  letter(c, x, y) {
+    const f = (performance.now() / 110) | 0;
+    c.fillStyle = '#e3d8c2'; c.fillRect(x + 1, y + 4, 14, 9); c.fillStyle = '#b9b0a0'; c.fillRect(x + 1, y + 4, 14, 1); c.fillRect(x + 2, y + 5, 2, 1); c.fillRect(x + 12, y + 5, 2, 1); c.fillRect(x + 4, y + 6, 2, 1); c.fillRect(x + 10, y + 6, 2, 1); c.fillRect(x + 6, y + 7, 4, 1);
+    c.fillStyle = '#c94a4e'; c.fillRect(x + 7, y + 8, 3, 3);
+    c.fillStyle = f % 8 < 4 ? '#7ddc6f' : '#58a868'; c.fillRect(x + 11, y + 1, 2, 2);
   }
-  drawText(c, 'You bring your own pack to their world; it is kept for next time.', fx, y + h - 36, '#8b8fa3');
-  button(c, fx, y + h - 22, 140, 13, 'I HAVE A LONG INVITE CODE', () => { COOP.long = true; COOP.err = ''; sigStop(); sfx('ui'); });
-  button(c, x + w - 70, y + h - 22, 60, 13, 'BACK', () => { COOP.retry = null; coopLeave(); coopReset(); sigStop(); COOP.err = ''; COOP.note = ''; G.state = 'title'; UI.focus = null; sfx('ui'); });
+});
+const joinBusy = () => (SIG.role === 'guest' && !!SIG.code) || COOP.busy;
+function joinGo() { if (!joinBusy()) sigJoin(domVal('gcin')); }
+function joinCancel() { SIG.tok = (SIG.tok | 0) + 1; COOP.retry = null; coopReset(); sigStop(); COOP.note = ''; COOP.err = ''; COOP.busy = false; sfx('ui'); }
+function joinBack() {
+  UI.focus = null;
+  if (COOP.long) { COOP.long = false; coopLeave(); COOP.err = ''; sfx('ui'); return; }
+  COOP.retry = null; coopLeave(); coopReset(); sigStop(); COOP.err = ''; COOP.note = ''; G.state = 'title'; sfx('ui');
 }
+function joinLongOpen() { COOP.long = true; COOP.err = ''; sigStop(); sfx('ui'); }
+// YOU: the name and the look you bring to their world
+const joinYouH = () => 29 + (KIT.T ? 34 : 28) + 2 + KIT.sizes.tileH + 6;
+function joinYou(c, x, y, w, h) {
+  const K = kcard(c, x, y, w, h, 'join', 'YOU', { art: 'beacon', i: 0 }); let yy = K.by + 1;
+  yy += kfield(c, K.x + 8, yy, K.w - 16, 'nick', 'NAME', 'WAKER', { hint: 'The name your friends see over your head.' }) + 2;
+  klook(c, K.x + 8, yy, K.w - 16, { hat: false });
+}
+// the six lamps over the code box: one lit for each letter typed
+function joinLamps(c, x, y, w) {
+  const n = min(6, domVal('gcin').replace(/[^a-z0-9]/gi, '').length), busy = joinBusy(), now = performance.now(), g = floor((w - 6 * 8) / 5);
+  for (let i = 0; i < 6; i++) {
+    const lx = x + i * (8 + g), on = busy ? ((now / 160 | 0) % 6) === i || n === 6 : i < n;
+    if (on) { const ga = c.globalAlpha; c.globalAlpha = ga * .6; c.drawImage(kitGlow(8, '#7ddc6f', .5), lx - 4, y - 5); c.globalAlpha = ga; }
+    c.fillStyle = '#2b2740'; c.fillRect(lx, y, 8, 6); c.fillStyle = on ? '#c9ffb8' : '#1d1a29'; c.fillRect(lx + 1, y + 1, 6, 4); if (on) { c.fillStyle = '#7ddc6f'; c.fillRect(lx + 1, y + 4, 6, 1); }
+  }
+}
+// what is happening: one wrapped status line with its colour, and the stage while it looks
+function joinStatus() {
+  const st = COOP.retry ? 'Lost the connection to ' + (COOP.hostName || 'your friend') + '. Getting back in (try ' + max(1, COOP.retry.n) + ' of ' + RETRIES + ')...' : COOP.err || COOP.note;
+  return st ? { text: st, kind: COOP.err && !COOP.retry ? 'err' : COOP.retry ? 'warn' : 'ok' } : null;
+}
+function joinStage() { const d = '.'.repeat(1 + ((G.time >> 4) % 3)); return SIG.stage === 'relay' ? 'no direct line here, going through the relay' + d : SIG.stage === 'link' ? 'connecting' + d : SIG.stage === 'found' ? 'saying hello' + d : 'searching' + d; }
+const JOIN_PACK = 'You bring your own pack to their world; it is kept for next time.';
+function joinCodeH(w) {
+  const S = KIT.sizes, m = joinStatus(), cw = w - 16, L = s => wrapC(s, cw).length * 9;
+  if (!netOK()) return 29 + 30 + S.sm + 8 + L(JOIN_PACK) + 6 + S.bh + 10;
+  return 29 + 9 + 11 + (KIT.T ? 22 : 20) + 6 + (m ? wrapC(m.text, cw - 8).length * 9 + 2 : 0) + (joinBusy() ? 11 : 0) + 4 + S.sm + 8 + L(JOIN_PACK) + 4 + S.bh + 10;
+}
+function joinCode(c, x, y, w, h) {
+  const S = KIT.sizes, K = kcard(c, x, y, w, h, 'join', 'THEIR CODE', { art: 'beacon', i: 1, dom: true, foot: true }), cx = K.x + 8, cw = K.w - 16, busy = joinBusy(); let yy = K.by + 1;
+  if (!netOK()) {
+    for (const l of wrapC('This window cannot connect to other computers. Open Emberwake.html in Chrome, Safari, Edge or Firefox to play together.', cw)) { drawText(c, l, cx, yy, '#ffb347'); yy += 9; }
+    yy += 4;
+  } else {
+    drawText(c, fitText(kb('Your friend sees it in PLAY TOGETHER (P).', 'Your friend sees it in PLAY TOGETHER.'), cw), cx, yy, '#b9bdd0'); yy += 11;
+    const bw = min(cw, KIT.T ? 150 : 132), bh = KIT.T ? 22 : 20;
+    joinLamps(c, cx + 4, yy - 1, bw - 8); yy += 9;
+    const el = domBox('gcin', cx, yy, bw, bh, { input: true, ph: 'K7P2QX', onEnter: joinGo, onEsc: el => el.blur() }); el.maxLength = 8;
+    if (!el.dataset.pre && FORM.gcode) { el.value = FORM.gcode; el.dataset.pre = '1'; } el.style.textTransform = 'uppercase'; el.style.letterSpacing = '3px'; el.style.fontSize = max(12, round(parseFloat(el.style.fontSize) * 1.6)) + 'px';
+    el.style.borderColor = busy ? '#7ddc6f' : '#6a6485';
+    if (bw + 60 <= cw) drawText(c, fitText(kb('then Enter', 'then JOIN'), cw - bw - 8), cx + bw + 8, yy + round((bh - 8) / 2), '#6a6485');
+    yy += bh + 6;
+    const m = joinStatus(); if (m) yy += kmsg(c, cx, yy, cw, m) + 2;
+    if (busy) { drawText(c, fitText(joinStage(), cw), cx, yy, '#8b8fa3'); yy += 11; }
+    yy += 4;
+  }
+  kbutton(c, cx, yy, min(cw, 170), 'I HAVE A LONG INVITE CODE', joinLongOpen, { small: true, short: 'A LONG INVITE CODE', hint: 'A friend sent you a long code instead (it works without the message boards).' }); yy += S.sm + 8;
+  for (const l of wrapC(JOIN_PACK, cw)) { drawText(c, l, cx, yy, '#8b8fa3'); yy += 9; }
+  const bk = KIT.T ? 64 : 60, fy = K.footY + 5, mw = min(150, cw - bk - S.gap);
+  if (!netOK()) { } else if (!busy && !COOP.retry) kbutton(c, cx, fy, mw, 'JOIN', joinGo, { main: true, hint: 'Find their game and step in.' });
+  else kbutton(c, cx, fy, mw, 'CANCEL', joinCancel, { hint: 'Stop looking for their game.' });
+  kbutton(c, K.x + K.w - 8 - bk, fy, bk, 'BACK', menuBack, { hint: 'Back to the home page.' });
+}
+// both ways in: YOU beside (or, on a phone held upright, above) the code card
+function joinLayout(c, codeH) {
+  const narrow = menuMode() === 'narrow', yh = joinYouH();
+  if (narrow) { const F = menuFrame('join', 228, yh + 8 + codeH(228)); menuHero(c, 'join', F); return { you: [F.x, F.y, F.w, yh], code: [F.x, F.y + yh + 8, F.w, F.h - yh - 8] }; }
+  const F0 = menuFrame('join', 520, 400), yw = min(196, floor(F0.w * .38)), F = menuFrame('join', 520, max(yh, codeH(F0.w - yw - 10)));
+  return { you: [F.x, F.y, yw, yh], code: [F.x + yw + 10, F.y, F.w - yw - 10, F.h] };
+}
+function drawJoin(c) {
+  menuBackdrop(c, 'join'); kview(COOP.long ? 'joinlong' : 'join');
+  if (COOP.long) return drawJoinLong(c);
+  const L = joinLayout(c, joinCodeH);
+  joinYou(c, ...L.you); joinCode(c, ...L.code);
+}
+Object.assign(MENUS, {
+  join: {
+    col: '#7ddc6f', art: 'beacon', motes: 'fireflies', place: 'THE SIGNAL BEACON', sound: 'ting', glow: { x: .85, y: .4 },
+    idle: () => COOP.long ? kb('Paste their invite, make your reply, send it back.', 'Paste their invite, then send your reply back.') : kb('Type the code your friend gives you, then Enter.', 'Type the code your friend gives you.'),
+    diorama(x, W, H) {
+      // a beacon tower on the skyline
+      const tx = round(W * .9) - 9, ty = H - 104; x.fillStyle = '#1d1a29'; x.fillRect(tx, ty + 14, 18, 90); x.fillRect(tx - 4, ty + 100, 26, 4); x.fillStyle = '#2b2740'; x.fillRect(tx - 3, ty + 8, 24, 6); x.fillRect(tx + 2, ty, 14, 8);
+      x.fillStyle = '#120d1f'; for (let k = 0; k < 4; k++) x.fillRect(tx + 7, ty + 30 + k * 18, 4, 6);
+    },
+    live(c, uw, uh, now) {
+      // its light, a cone that pulses every 2 s
+      const W = ceil(uw), H = ceil(uh), lx = round(W * .9), ly = H - 100, p = .5 + .5 * sin(now / 2000 * TAU), ga = c.globalAlpha;
+      c.globalAlpha = .25 + .35 * p; c.drawImage(kitGlow(30, '#7ddc6f', 1), lx - 30, ly - 30);
+      c.fillStyle = '#7ddc6f'; for (let k = 0; k < 6; k++) { c.globalAlpha = (.05 + .07 * p) * (1 - k / 7); c.fillRect(lx - 30 - k * 34, ly - 2 - k * 4, 34, 4 + k * 8); }
+      c.globalAlpha = ga; c.fillStyle = p > .5 ? '#c9ffb8' : '#7ddc6f'; c.fillRect(lx - 3, ly - 2, 6, 4);
+    },
+    back: joinBack
+  }
+});

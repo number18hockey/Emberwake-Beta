@@ -19,22 +19,33 @@ function touchTail(v, w) {
 // ---------------- typing: an unseen text box brings up the phone's keyboard ----------------
 // It follows whichever field the game has in hand (UI.focus). What is typed there is held to the same letters and
 // the same lengths as the keys of a keyboard are (the keydown handler in 1-main.js).
+const secretKey = key => key === 'accountPassword' || key === 'accountConfirm';
 function focusMobileText(key) {
   if (!mobileDevice) return;
   if (!key || G.state === 'play') { mobileTextInput.blur(); return; }
   if (document.activeElement === mobileTextInput && mobileTextInput.dataset.formKey === key) return;
+  // a password brings up the phone's password keyboard (and its password manager); the keyboard's own key reads
+  // 'next' while there is another field to go to, else 'go' (both handled below)
+  const secret = secretKey(key), L = KIT.fieldsPrev, i = L.indexOf(key);
+  mobileTextInput.type = secret ? 'password' : 'text';
+  mobileTextInput.setAttribute('autocomplete', secret ? (key === 'accountPassword' && ACCOUNT.form === 'list' && accountDoorState(accountChosen()) === 'sign' ? 'current-password' : 'new-password') : 'off');
+  mobileTextInput.enterKeyHint = i >= 0 && i + 1 < L.length ? 'next' : 'go';
   mobileTextInput.dataset.formKey = key; mobileTextInput.value = FORM[key] || ''; mobileTextInput.focus({ preventScroll: true });
 }
 mobileTextInput.addEventListener('input', () => {
   const key = mobileTextInput.dataset.formKey; if (!key || UI.focus !== key) return;
   // (the account's name and password follow the same rules as on a keyboard: a password may hold any printable character)
-  const secret = key === 'accountPassword' || key === 'accountConfirm', lim = secret ? 64 : key === 'name' ? 24 : key === 'seed' || key === 'accountName' ? 18 : key === 'gcode' ? 6 : 12;
+  const secret = secretKey(key), lim = secret ? 64 : key === 'name' ? 24 : key === 'seed' || key === 'accountName' ? 18 : key === 'gcode' ? 6 : 12;
   const kept = [...mobileTextInput.value].filter(ch => secret ? !/[\u0000-\u001f]/.test(ch) : /[A-Za-z0-9 _\-'.]/.test(ch)).join('').slice(0, lim);
   const v = key === 'nick' ? kept.toUpperCase() : key === 'code' ? kept.toLowerCase() : kept;
-  FORM[key] = v; if (mobileTextInput.value !== v) mobileTextInput.value = v;
+  FORM[key] = v; if (mobileTextInput.value !== v) mobileTextInput.value = v; kitTyped(key);
 });
+// the phone keyboard's Go (Enter) runs the form's main button, its next (Tab) goes to the next field
 mobileTextInput.addEventListener('keydown', e => {
-  if (e.key === 'Enter' || e.key === 'Tab' || e.key === 'Escape') { e.preventDefault(); UI.focus = null; mobileTextInput.blur(); }
+  KIT.caps = !!(e.getModifierState && e.getModifierState('CapsLock'));
+  if (e.key === 'Enter') { e.preventDefault(); const go = G.state !== 'play' && KIT.mainPrev; UI.focus = null; mobileTextInput.blur(); if (go) { go(); if (UI.focus) focusMobileText(UI.focus); } }
+  else if (e.key === 'Tab') { e.preventDefault(); const nx = kitNextField(e.shiftKey); UI.focus = nx; if (nx) { KIT.focus = 'field:' + nx; focusMobileText(nx); } else mobileTextInput.blur(); }
+  else if (e.key === 'Escape') { e.preventDefault(); UI.focus = null; mobileTextInput.blur(); }
 });
 // ---------------- the stick ----------------
 function virtualKey(code, down) { if (down && !keys[code]) pressed[code] = true; keys[code] = down; }
@@ -112,7 +123,8 @@ function touchClear(x, y, w, h) {
 function syncMobileControls() {
   if (!mobileDevice) return; // (a mouse's clicks and keys are its own business)
   // a finished match shows its own end panel (PLAY AGAIN, LEAVE): the sticks would only lie over it
-  const play = G.state === 'play' && !G.dialog && !G.cine, over = WORLD.royale && BR.on && BR.phase === 'over', visible = play && !UI.open && !over;
+  // (and nothing to steer or strike with while you lie dead: the death screen is left clear)
+  const play = G.state === 'play' && !G.dialog && !G.cine, over = WORLD.royale && BR.on && BR.phase === 'over', visible = play && !UI.open && !over && !(G.p && G.p.dead);
   mobileControls.classList.toggle('visible', visible); mobileControls.classList.toggle('panel', play && !!UI.open); mobileControls.setAttribute('aria-hidden', String(!play));
   // no button for what would do nothing: there is no pack in the Cinder Ring, no map there or before you have drawn one, and nobody to talk to alone
   if (visible) { const ring = WORLD.arena && !WORLD.royale; touchPackBtn.classList.toggle('off', ring); touchMapBtn.classList.toggle('off', ring || (!WORLD.royale && !hasUtil('fieldmap'))); touchChatBtn.classList.toggle('off', !COOP.role); touchPactBtn.classList.toggle('off', !wildOn()); }
@@ -123,21 +135,23 @@ function syncMobileControls() {
   if (visible && touchAim) mobileAim();
 }
 // ---------------- fingers on the picture itself ----------------
-// A tap is a click. On a panel or the list of worlds a finger that slides scrolls, and one that lifts where it came down taps.
+// A tap is a click. On a panel, the list of worlds or any list or scrolling box of the menu kit, a finger that slides
+// scrolls (the box under it), and one that lifts where it came down taps.
 cv.addEventListener('pointerdown', e => {
   if (e.pointerType !== 'touch') return;
   e.preventDefault(); canvasTouchPointer = e.pointerId; cv.setPointerCapture(e.pointerId); setMouse(e); audioInit();
   if (AC && AC.state === 'suspended') AC.resume();
   if (G.state === 'intro') { advance(); return; }
   mouse.held = true; mouse.hp = true;
-  if (G.state === 'worlds' || (G.state === 'play' && UI.open && UI.open !== 'map')) { touchTap = { y: e.clientY, slid: false }; return; }
+  const sc = !(G.state === 'play' && UI.open === 'map') && kitScrollerAt(mouse.ux, mouse.uy);
+  if (sc || G.state === 'worlds' || (G.state === 'play' && UI.open && UI.open !== 'map')) { touchTap = { y: e.clientY, slid: false, sc }; return; }
   const taken = uiMouseDown(0); focusMobileText(UI.focus);
   if (taken || G.state !== 'play') return;
   mouse.l = true; mouse.lp = true;
 });
 cv.addEventListener('pointermove', e => {
   if (e.pointerType !== 'touch' || e.pointerId !== canvasTouchPointer) return; setMouse(e);
-  if (touchTap && abs(e.clientY - touchTap.y) > 20) { UI.scroll = max(0, UI.scroll - sign(e.clientY - touchTap.y)); touchTap.y = e.clientY; touchTap.slid = true; }
+  if (touchTap && abs(e.clientY - touchTap.y) > 20) { const d = -sign(e.clientY - touchTap.y); if (touchTap.sc) touchTap.sc.by(d); else UI.scroll = max(0, UI.scroll + d); touchTap.y = e.clientY; touchTap.slid = true; }
 });
 for (const type of ['pointerup', 'pointercancel', 'lostpointercapture']) cv.addEventListener(type, e => {
   if (e.pointerType !== 'touch' || e.pointerId !== canvasTouchPointer) return;

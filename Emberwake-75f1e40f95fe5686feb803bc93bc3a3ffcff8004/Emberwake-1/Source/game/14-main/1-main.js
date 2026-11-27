@@ -33,6 +33,7 @@ function resize() {
   VS.W = W; VS.H = H; VS.s = clamp(floor(H / 300), 2, 6); VS.ui = clamp(round(H / 250), 2, 6) >= 4 ? 3 : 2;
   // (held upright, a phone's picture is tall and narrow: by its height alone everything would be drawn too big for its width)
   if (mobileDevice) { VS.s = min(VS.s, max(2, floor(W / 190))); if (W < 1080) VS.ui = 2; }
+  VS.baseUi = VS.ui;   // (menuUi, in the menu kit, may draw a phone held upright's menus bigger than this)
   VS.vw = W / VS.s; VS.vh = H / VS.s; VS.uw = W / VS.ui; VS.uh = H / VS.ui;
   ctx.imageSmoothingEnabled = false;
   const bw = ceil(VS.vw) + 2, bh = ceil(VS.vh) + 2;[acv, actx] = mk(bw, bh);[lcv, lctx] = mk(bw, bh);[fcv, fctx] = mk(bw, bh);[gcv, gctx] = mk(bw, bh);[glcv, glctx] = mk(bw, bh); wctx = ctx;
@@ -327,7 +328,7 @@ function renderView(al) {
   if (G.state === 'play' && p && liqAt(p.x + 3, p.y + 3) === 1) { ctx.fillStyle = 'rgba(40,110,150,.16)'; ctx.fillRect(0, 0, W, H); }
   if (G.flash > .01) { ctx.fillStyle = `rgba(${G.flashCol},${min(.4, G.flash * .65)})`; ctx.fillRect(0, 0, W, H); }
   if (G.slowT > 0) { ctx.fillStyle = 'rgba(80,220,230,.06)'; ctx.fillRect(0, 0, W, H); }
-  ctx.setTransform(VS.ui, 0, 0, VS.ui, 0, 0); mouse.ux = mouse.x / VS.ui; mouse.uy = mouse.y / VS.ui;
+  menuUi(); ctx.setTransform(VS.ui, 0, 0, VS.ui, 0, 0); mouse.ux = mouse.x / VS.ui; mouse.uy = mouse.y / VS.ui;
   if (G.state === 'play') drawTags(ctx, cx, cy, al);
   drawUI(ctx);
 }
@@ -544,19 +545,21 @@ function quitToTitle() {
 function setMouse(e) { const r = cv.getBoundingClientRect(); mouse.x = (e.clientX - r.left) * (cv.width / r.width); mouse.y = (e.clientY - r.top) * (cv.height / r.height); mouse.ux = mouse.x / VS.ui; mouse.uy = mouse.y / VS.ui; }
 addEventListener('keydown', e => {
   if (e.target === mobileTextInput) return;
+  // the menu kit's keys first: Enter runs a form's main button, Tab walks its fields, Escape is its BACK (4-menu-kit.js)
+  if (kitKey(e)) return;
   const k = e.code;
   if (UI.focus && G.state !== 'play') {
     if (!e.metaKey && !e.ctrlKey) e.preventDefault();
-    if (k === 'Backspace') { FORM[UI.focus] = FORM[UI.focus].slice(0, -1); e.preventDefault(); return; }
+    if (k === 'Backspace') { FORM[UI.focus] = FORM[UI.focus].slice(0, -1); kitTyped(UI.focus); e.preventDefault(); return; }
     if (k === 'Enter' || k === 'Tab' || k === 'Escape') { UI.focus = null; e.preventDefault(); return; }
-    if (e.key && e.key.length === 1 && !e.ctrlKey && !e.metaKey) { const secret = UI.focus === 'accountPassword' || UI.focus === 'accountConfirm', lim = secret ? 64 : UI.focus === 'name' ? 24 : UI.focus === 'seed' || UI.focus === 'accountName' ? 18 : UI.focus === 'gcode' ? 6 : 12; if (FORM[UI.focus].length < lim && (secret ? !/[\u0000-\u001f]/.test(e.key) : /[A-Za-z0-9 _\-'.]/.test(e.key))) FORM[UI.focus] += UI.focus === 'nick' ? e.key.toUpperCase() : UI.focus === 'code' ? e.key.toLowerCase() : e.key; e.preventDefault(); }
+    if (e.key && e.key.length === 1 && !e.ctrlKey && !e.metaKey) { const secret = UI.focus === 'accountPassword' || UI.focus === 'accountConfirm', lim = secret ? 64 : UI.focus === 'name' ? 24 : UI.focus === 'seed' || UI.focus === 'accountName' ? 18 : UI.focus === 'gcode' ? 6 : 12; if (FORM[UI.focus].length < lim && (secret ? !/[\u0000-\u001f]/.test(e.key) : /[A-Za-z0-9 _\-'.]/.test(e.key))) { FORM[UI.focus] += UI.focus === 'nick' ? e.key.toUpperCase() : UI.focus === 'code' ? e.key.toLowerCase() : e.key; kitTyped(UI.focus); } e.preventDefault(); }
     return;
   }
   if (!e.ctrlKey && !e.metaKey && (['Tab', 'Space', 'ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'Escape', 'ShiftLeft', 'ShiftRight', 'Backspace'].includes(k) || k.startsWith('Key') || k.startsWith('Digit'))) e.preventDefault();
   if (e.repeat) return; keys[k] = true; pressed[k] = true;
   if (G.state === 'intro') { if (k === 'Enter' || k === 'Space') { audioInit(); advance(); } return; }
   if (G.state === 'brlobby') { if (k === 'Escape') { brLeave(); sfx('ui'); } return; }
-  if (G.state !== 'play') { if (k === 'Escape') { if (G.state === 'accounts') { if (!ACCOUNT.active) return; ACCOUNT.form = 'list'; ACCOUNT.loginId = null; } G.state = ['create', 'wcopy', 'wpaste'].includes(G.state) ? 'worlds' : 'title'; if (G.state === 'title' && COOP.role) coopLeave(); sfx('ui'); } return; }
+  if (G.state !== 'play') { if (k === 'Escape') menuBack(); return; }
   if (G.dialog) { if (k === 'KeyF' || k === 'Space' || k === 'Enter' || k === 'KeyE') { dialogAdvance(); pressed[k] = false; } return; }
   if (k === 'Escape' || k === 'KeyP' && !wildOn()) { if (UI.open) { closeUI(); sfx('ui'); } else toggleUI('pause'); return; }
   if ((k === 'Enter' || k === 'NumpadEnter') && chatKey()) return;
@@ -590,6 +593,8 @@ addEventListener('mouseup', e => { if (e.button === 0) { mouse.l = false; if (mo
 cv.addEventListener('contextmenu', e => e.preventDefault());
 cv.addEventListener('wheel', e => {
   e.preventDefault(); const d = sign(e.deltaY);
+  // a list or a scrolling box of the menu kit under the mouse (not the map: its wheel zooms)
+  { const s = UI.open !== 'map' && (G.state !== 'play' || UI.open) && kitScrollerAt(mouse.ux, mouse.uy); if (s) { s.by(d); return; } }
   if (G.state === 'worlds' || G.state === 'accounts') { UI.scroll = max(0, UI.scroll + d); return; }
   if (G.state === 'brform' && BR.wild && BR.menuTab !== 'queue') { BR.menuScroll = clamp(BR.menuScroll + d, 0, max(0, BR_LOOKS.length - BR.menuRows)); return; }
   if (G.state !== 'play') return;

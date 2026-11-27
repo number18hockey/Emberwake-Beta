@@ -7,7 +7,11 @@
 //  browser. Each account has its own list of worlds.
 // ============================================================
 const SAVE = { db: null, uid: null, list: [], busy: false, pending: null, status: 'local', note: '' };
-const ACCOUNT = { profiles: [], active: null, form: 'list', note: '', loginId: null, busy: false };
+// form: 'list' | 'create' | 'look'; loginId: the row chosen in the ledger; msg: {text, kind} for the board; err: a field's
+// complaint by its key; show: the password shown as typed; worlds: how many worlds each account keeps (read on entry);
+// dimT: when a wrong password dimmed the lantern
+const ACCOUNT = { profiles: [], active: null, form: 'list', msg: null, err: {}, loginId: null, busy: false, show: false, worlds: {}, dimT: 0 };
+const accountSay = (text, kind = 'err') => { ACCOUNT.msg = text ? { text, kind } : null; };
 const LS = {
   get(k) { try { return localStorage.getItem(k); } catch (e) { return null; } },
   set(k, v) { try { localStorage.setItem(k, v); return true; } catch (e) { return false; } },
@@ -22,24 +26,28 @@ function readAccountProfiles() { try { const a = JSON.parse(LS.get('ew2.accounts
 function writeAccountProfiles() { return LS.set('ew2.accounts', JSON.stringify(ACCOUNT.profiles)); }
 function accountBoot() {
   ACCOUNT.profiles = readAccountProfiles();
-  ACCOUNT.active = null; ACCOUNT.loginId = null; ACCOUNT.form = 'list'; ACCOUNT.note = ''; ACCOUNT.busy = false;
+  ACCOUNT.active = null; ACCOUNT.loginId = null; ACCOUNT.form = 'list'; ACCOUNT.msg = null; ACCOUNT.err = {}; ACCOUNT.busy = false; ACCOUNT.show = false;
   LS.del('ew2.active'); SAVE.list = [];
+  // the last account signed in on this device is chosen in the ledger, its password box ready (ew2.last holds only its id:
+  // it is no credential, and nobody is signed in until the password is given)
+  const last = LS.get('ew2.last'), p = last && ACCOUNT.profiles.find(v => v.id === last);
+  if (p) { ACCOUNT.loginId = p.id; UI.focus = !p.salt || !p.hash ? null : 'accountPassword'; }
 }
 function cleanAccountName(s) { s = String(s || '').trim().replace(/[^A-Za-z0-9 _-]/g, '').slice(0, 18); return s; }
 function accountSalt() {
-  if (!crypto || !crypto.getRandomValues) throw new Error('Secure password storage is unavailable in this browser.');
+  if (!crypto || !crypto.getRandomValues) throw new Error('Secure password storage is not available in this browser.');
   return [...crypto.getRandomValues(new Uint8Array(16))].map(b => b.toString(16).padStart(2, '0')).join('');
 }
 async function accountPasswordHash(password, saltHex) {
-  if (!crypto || !crypto.subtle || !window.TextEncoder) throw new Error('Secure password storage is unavailable in this browser.');
+  if (!crypto || !crypto.subtle || !window.TextEncoder) throw new Error('Secure password storage is not available in this browser.');
   const salt = Uint8Array.from(saltHex.match(/../g), b => parseInt(b, 16));
   const key = await crypto.subtle.importKey('raw', new TextEncoder().encode(password), 'PBKDF2', false, ['deriveBits']);
   const bits = await crypto.subtle.deriveBits({ name: 'PBKDF2', salt, iterations: 120000, hash: 'SHA-256' }, key, 256);
   return [...new Uint8Array(bits)].map(b => b.toString(16).padStart(2, '0')).join('');
 }
 function accountPasswordValid(password, confirm) {
-  if (String(password || '').length < 8) { ACCOUNT.note = 'Use a password with at least 8 characters.'; return false; }
-  if (password !== confirm) { ACCOUNT.note = 'Those passwords do not match.'; return false; }
+  if (String(password || '').length < 8) { ACCOUNT.err.accountPassword = 'Use at least 8 characters.'; kerr('accountPassword'); return false; }
+  if (password !== confirm) { ACCOUNT.err.accountConfirm = 'The two passwords are not the same.'; kerr('accountConfirm'); return false; }
   return true;
 }
 function migrateGuestWorlds() {
@@ -63,25 +71,24 @@ function migrateGuestWorlds() {
   sortWorlds();
 }
 async function accountCreate(name, password, confirm, skin, hat) {
-  name = cleanAccountName(name);
-  if (!name) { ACCOUNT.note = 'Enter an account name.'; return false; }
-  if (ACCOUNT.profiles.some(p => p.name.toLowerCase() === name.toLowerCase())) { ACCOUNT.note = 'That account name is already in use.'; return false; }
+  name = cleanAccountName(name); ACCOUNT.err = {};
+  if (!name) { ACCOUNT.err.accountName = 'Give your account a name.'; kerr('accountName'); return false; }
+  if (accountNameTaken(name)) { ACCOUNT.err.accountName = 'That name is taken in this browser. Try another.'; kerr('accountName'); return false; }
   if (!accountPasswordValid(password, confirm)) return false;
   if (ACCOUNT.busy) return false;
-  ACCOUNT.busy = true; ACCOUNT.note = '';
+  ACCOUNT.busy = true; ACCOUNT.msg = null;
   try {
     const salt = accountSalt(), hash = await accountPasswordHash(password, salt);
     const firstAccount = !ACCOUNT.profiles.some(p => p.id !== 'guest');
     const p = { id: Date.now().toString(36) + ((Math.random() * 46656) | 0).toString(36), name, skin: clamp(skin | 0, 0, SKINS.length - 1), hat: clamp(hat | 0, 0, 3), salt, hash };
     ACCOUNT.profiles.push(p);
-    if (!writeAccountProfiles()) { ACCOUNT.profiles.pop(); ACCOUNT.note = 'Could not save this account in this browser.'; return false; }
+    if (!writeAccountProfiles()) { ACCOUNT.profiles.pop(); accountSay('This browser would not save the account. Is private browsing on?'); return false; }
     accountSwitch(p.id);
     if (firstAccount) migrateGuestWorlds();
-    ACCOUNT.note = 'Account created. Saves stay in this browser unless cloud saving is available.';
-    G.state = 'title'; ACCOUNT.form = 'list'; ACCOUNT.loginId = null;
+    G.state = 'title'; ACCOUNT.form = 'list'; ACCOUNT.loginId = null; kitToast('Account made. Welcome, ' + p.name + '.');
     return true;
   } catch (e) {
-    ACCOUNT.note = e && e.message ? e.message : 'Could not create the account.';
+    accountSay(e && e.message ? e.message : 'Could not make the account.');
     return false;
   } finally { ACCOUNT.busy = false; }
 }
@@ -90,7 +97,8 @@ function accountSwitch(id) {
   ACCOUNT.active = p; LS.del('ew2.active'); G.nick = p.name; G.skin = clamp(p.skin | 0, 0, SKINS.length - 1); G.hat = clamp(p.hat | 0, 0, 3);
   // (the name shown to other Wakers follows the game's own rule for names: capitals, twelve letters)
   FORM.nick = cleanName(p.name); FORM.skin = G.skin; FORM.hat = G.hat;
-  SAVE.list = readLocalIndex(); sortWorlds(); ACCOUNT.note = 'Logged in as ' + p.name + '.';
+  SAVE.list = readLocalIndex(); sortWorlds(); ACCOUNT.msg = null; ACCOUNT.err = {}; accountWipe();
+  LS.set('ew2.last', p.id);   // (only which account it was: to choose its row next time)
   saveBoot();
   // worlds from before accounts belong to the first account: if bringing them over did not finish last time (the browser's
   // store was full), it is tried again now. It does nothing once this account has a list of its own
@@ -99,35 +107,61 @@ function accountSwitch(id) {
 }
 async function accountSetPassword(p, password, confirm) {
   if (!p || !accountPasswordValid(password, confirm) || ACCOUNT.busy) return false;
-  ACCOUNT.busy = true; ACCOUNT.note = '';
+  ACCOUNT.busy = true; ACCOUNT.msg = null;
   try {
     p.salt = accountSalt(); p.hash = await accountPasswordHash(password, p.salt); delete p.pin;
-    if (!writeAccountProfiles()) { delete p.salt; delete p.hash; ACCOUNT.note = 'Could not save this account in this browser.'; return false; }
-    accountSwitch(p.id); G.state = 'title'; ACCOUNT.form = 'list'; return true;
+    if (!writeAccountProfiles()) { delete p.salt; delete p.hash; accountSay('This browser would not save the account. Is private browsing on?'); return false; }
+    accountSwitch(p.id); G.state = 'title'; ACCOUNT.form = 'list'; kitToast('Welcome back, ' + p.name + '.'); return true;
   } catch (e) {
-    ACCOUNT.note = e && e.message ? e.message : 'Could not set the account password.';
+    accountSay(e && e.message ? e.message : 'Could not set the password.');
     return false;
   } finally { ACCOUNT.busy = false; }
 }
 async function accountLogin(p, password) {
   if (!p || ACCOUNT.busy) return false;
-  if (!p.salt || !p.hash) { ACCOUNT.note = 'Set a password for this older account to continue.'; return false; }
-  ACCOUNT.busy = true; ACCOUNT.note = '';
+  if (!p.salt || !p.hash) { accountSay('This account is from before passwords. Choose one to keep it yours.', 'warn'); return false; }
+  ACCOUNT.busy = true; ACCOUNT.msg = null;
   try {
     const hash = await accountPasswordHash(String(password || ''), p.salt);
-    if (hash !== p.hash) { ACCOUNT.note = 'Wrong password.'; return false; }
-    accountSwitch(p.id); G.state = 'title'; ACCOUNT.form = 'list'; return true;
+    if (hash !== p.hash) {
+      // the field shakes, the lantern dims, and the password goes (the box keeps the focus, ready for another try)
+      accountSay('That password is wrong. Check Caps Lock and try again.'); FORM.accountPassword = ''; if (ACCOUNT.loginId === p.id && G.state === 'accounts') UI.focus = 'accountPassword';
+      if (mobileTextInput.dataset.formKey === 'accountPassword') mobileTextInput.value = '';
+      kerr('accountPassword'); ACCOUNT.dimT = performance.now(); sfx('deny'); return false;
+    }
+    accountSwitch(p.id); G.state = 'title'; ACCOUNT.form = 'list'; kitToast('Welcome back, ' + p.name + '.'); return true;
   } catch (e) {
-    ACCOUNT.note = e && e.message ? e.message : 'Could not log in.';
+    accountSay(e && e.message ? e.message : 'Could not sign in.');
     return false;
   } finally { ACCOUNT.busy = false; }
 }
 function accountLogout() {
   if (G.state === 'play' && WORLD.id && !WORLD.arena) saveWorld(true);
   if (COOP.role) coopLeave();
-  ACCOUNT.active = null; ACCOUNT.loginId = null; ACCOUNT.form = 'list'; ACCOUNT.note = 'Signed out.';
+  const was = ACCOUNT.active;
+  ACCOUNT.active = null; ACCOUNT.loginId = was ? was.id : null; ACCOUNT.form = 'list'; accountSay('Signed out. Your worlds are saved.', 'info'); ACCOUNT.err = {}; accountWipe();
   SAVE.list = []; LS.del('ew2.active'); G.hat = 0;
   G.state = 'accounts'; UI.open = null; UI.focus = null; UI.held = null;
+}
+// a name already used by an account in this browser (names are told apart without minding capitals)
+const accountNameTaken = name => ACCOUNT.profiles.some(p => p.name.toLowerCase() === String(name).toLowerCase());
+// passwords typed into the board are forgotten: on success, on choosing another row, on leaving the board, on signing out
+function accountWipe() {
+  FORM.accountPassword = ''; FORM.accountConfirm = ''; ACCOUNT.show = false;
+  if (mobileTextInput.dataset.formKey === 'accountPassword' || mobileTextInput.dataset.formKey === 'accountConfirm') mobileTextInput.value = '';
+}
+// CREATE ACCOUNT on the board: the first field that is wrong is marked and given the focus; otherwise the account is made
+function accountCreateSubmit() {
+  if (ACCOUNT.busy) return;
+  const name = cleanAccountName(FORM.accountName), pw = FORM.accountPassword, again = FORM.accountConfirm; ACCOUNT.err = {};
+  let bad = null;
+  if (!name) { ACCOUNT.err.accountName = 'Give your account a name.'; bad = 'accountName'; }
+  else if (accountNameTaken(name)) { ACCOUNT.err.accountName = 'That name is taken in this browser. Try another.'; bad = 'accountName'; }
+  else if (pw.length < 8) { ACCOUNT.err.accountPassword = 'Use at least 8 characters.'; bad = 'accountPassword'; }
+  else if (pw !== again) { ACCOUNT.err.accountConfirm = 'The two passwords are not the same.'; bad = 'accountConfirm'; }
+  if (bad) { kerr(bad); UI.focus = bad; KIT.focus = 'field:' + bad; sfx('deny'); return; }
+  UI.focus = null; sfx('quest', 0);
+  accountCreate(name, pw, again, FORM.skin, FORM.hat);
 }
 // the account remembers the look last worn (its name stays the one it was made with: it is what you sign in as)
 function accountSaveProfile() {

@@ -626,7 +626,7 @@ function domBox(id, x, y, w, h, o = {}) {
   if (!el) {
     el = document.createElement(o.input ? 'input' : 'textarea'); el.spellcheck = false; el.autocomplete = 'off'; el.setAttribute('autocapitalize', 'off'); el.id = 'ew-' + id;
     Object.assign(el.style, { position: 'fixed', zIndex: 5, background: '#16121f', color: '#e8edf2', border: '1px solid #6a6485', fontFamily: 'Menlo, Consolas, monospace', padding: '3px 5px', resize: 'none', outline: 'none', boxSizing: 'border-box', wordBreak: 'break-all', borderRadius: '2px' });
-    el.addEventListener('keydown', e => { e.stopPropagation(); if (o.onEnter && e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); o.onEnter(el); } if (o.onEsc && e.key === 'Escape') { e.preventDefault(); o.onEsc(el); } });
+    el.addEventListener('keydown', e => { e.stopPropagation(); if (o.onEnter && e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); o.onEnter(el); } if (o.onCtrlEnter && e.key === 'Enter' && (e.ctrlKey || e.metaKey)) { e.preventDefault(); o.onCtrlEnter(el); } if (o.onEsc && e.key === 'Escape') { e.preventDefault(); o.onEsc(el); } });
     el.addEventListener('keyup', e => e.stopPropagation()); el.addEventListener('mousedown', e => e.stopPropagation());
     document.body.appendChild(el); DOMX.els.set(id, el);
   }
@@ -690,27 +690,37 @@ function drawCoopLong(c) {
   drawText(c, 'Your world keeps running while this is open. Esc closes it.', fx, y + h - 12, '#8b8fa3');
   button(c, x + w - 112, y + h - 24, 104, 12, 'BACK TO GAME CODES', () => { COOP.long = false; COOP.err = ''; sfx('ui'); });
 }
-// ---------------- joining from the title screen ----------------
+// ---------------- joining from the title screen with a long invite (the second card of THE SIGNAL BEACON) ----------------
+const LONG_TXT = { one: '1  Paste the invite code your friend sent you:', two: '2  Send this reply code back to your friend:', wifi: 'Best on the same Wi-Fi; most home internet works too.', no: 'This window cannot connect to other computers. Open Emberwake.html in Chrome, Safari or Edge to play together.' };
+const longThree = () => COOP.joinBR ? '3  When they paste it, you join their battle royale lobby.' : '3  When they paste it, you join their world' + (COOP.joinWorld ? ', ' + COOP.joinWorld : '') + '.';
+const longBoxH = () => KIT.T ? 40 : 30;
+function joinLongMake() { if (!COOP.busy) { FORM.nick = coopName(); coopAnswer(domVal('invite')); } }
+function joinLongH(w) {
+  const S = KIT.sizes, cw = w - 16, L = s => wrapC(s, cw).length * 9, st = COOP.err || COOP.note;
+  if (!rtcOK()) return 29 + L(LONG_TXT.no) + 6 + L(JOIN_PACK) + 6 + S.bh + 10;
+  return 29 + L(LONG_TXT.one) + 2 + longBoxH() + 6 + (COOP.reply ? L(LONG_TXT.two) + 2 + longBoxH() + 4 + L(longThree()) + 4 : 0) + (st || COOP.copyFail ? 20 : 0) + L(JOIN_PACK) + L(LONG_TXT.wifi) + 4 + S.bh + 10;
+}
 function drawJoinLong(c) {
-  const uw = VS.uw, uh = VS.uh, w = min(380, uw - 16), h = 256, x = round((uw - w) / 2), y = max(8, round((uh - h) / 2));
-  c.fillStyle = 'rgba(18,13,31,.55)'; c.fillRect(0, 0, uw, uh); panel(c, x, y, w, h, 'JOIN A FRIEND');
-  const fx = x + 8, fw = w - 16; let ty = y + 18;
-  drawText(c, 'NAME', fx, ty + 4, '#b9bdd0'); field(c, fx + 40, ty, 140, 'nick', 'WAKER'); skinPicker(c, fx + 190, ty - 2); ty += 34;
-  if (!rtcOK()) { ['This window cannot connect to other computers.', 'Open Emberwake.html in Chrome, Safari or Edge to play together.'].forEach((l, i) => drawText(c, l, fx, ty + i * 10, '#ffb347')); }
+  const L = joinLayout(c, joinLongH); joinYou(c, ...L.you);
+  const S = KIT.sizes, [x, y, w, h] = L.code, K = kcard(c, x, y, w, h, 'joinlong', 'A LONG INVITE', { i: 1, dom: true, foot: true }), cx = K.x + 8, cw = K.w - 16; let yy = K.by + 1;
+  const para = (s, col) => { for (const l of wrapC(s, cw)) { drawText(c, l, cx, yy, col); yy += 9; } };
+  if (!rtcOK()) { para(LONG_TXT.no, '#ffb347'); yy += 6; }
   else {
-    drawText(c, "1  Paste the invite code your friend sent you:", fx, ty, '#d8d4e6'); ty += 11;
-    domBox('invite', fx, ty, fw, 30, { ph: 'paste the invite code here' }); ty += 34;
-    if (!COOP.reply) button(c, fx, ty, 150, 15, COOP.busy ? 'ANSWERING...' : 'MAKE MY REPLY CODE', () => { if (!COOP.busy) { FORM.nick = coopName(); coopAnswer(domVal('invite')); } });
-    else {
-      drawText(c, '2  Send this reply code back to your friend:', fx, ty, '#d8d4e6'); ty += 11;
-      domBox('code', fx, ty, fw - 64, 30, { ro: true, val: COOP.reply }); button(c, fx + fw - 58, ty, 58, 15, copyLabel(), () => copyText(COOP.reply, 'code'));
-      ty += 34; drawText(c, COOP.joinBR ? '3  When they paste it, you join their battle royale lobby.' : '3  When they paste it, you join their world' + (COOP.joinWorld ? ', ' + COOP.joinWorld : '') + '.', fx, ty, '#d8d4e6');
+    para(LONG_TXT.one, '#d8d4e6'); yy += 2;
+    domBox('invite', cx, yy, cw, longBoxH(), { ph: 'paste the invite code here', onEsc: el => el.blur() }); yy += longBoxH() + 6;
+    if (COOP.reply) {
+      para(LONG_TXT.two, '#d8d4e6'); yy += 2;
+      domBox('code', cx, yy, cw, longBoxH(), { ro: true, val: COOP.reply }); yy += longBoxH() + 4;
+      para(longThree(), '#d8d4e6'); yy += 4;
     }
-    ty += 18; const st = COOP.err || COOP.note; if (COOP.copied > 0 && COOP.copyFail) copyHint(c, fx, ty); else if (st) wrapDraw(c, st, fx, ty, fw, COOP.err ? '#ff9a8a' : '#7ddc6f');
+    const st = COOP.err || COOP.note;
+    if (COOP.copied > 0 && COOP.copyFail) { copyHint(c, cx, yy); yy += 20; } else if (st) { kmsg(c, cx, yy, cw, { text: st, kind: COOP.err ? 'err' : 'ok' }); yy += 20; }
   }
-  drawText(c, 'You bring your own pack to their world; it is kept for next time.', fx, y + h - 34, '#8b8fa3');
-  drawText(c, 'Best on the same Wi-Fi; most home internet works too.', fx, y + h - 24, '#8b8fa3');
-  button(c, x + w - 70, y + h - 16, 60, 13, 'BACK', () => { COOP.long = false; coopLeave(); COOP.err = ''; sfx('ui'); });
+  para(JOIN_PACK, '#8b8fa3'); para(LONG_TXT.wifi, '#8b8fa3');
+  const bk = KIT.T ? 64 : 60, fy = K.footY + 5, mw = min(170, cw - bk - S.gap);
+  if (rtcOK() && !COOP.reply) kbutton(c, cx, fy, mw, COOP.busy ? 'ANSWERING...' : 'MAKE MY REPLY CODE', joinLongMake, { main: true, off: COOP.busy, short: COOP.busy ? 'ANSWERING...' : 'MAKE MY REPLY', hint: COOP.busy ? 'Making your reply...' : 'Answer their invite: your reply code appears below it.' });
+  else if (rtcOK()) kbutton(c, cx, fy, mw, copyLabel(), () => copyText(COOP.reply, 'code'), { main: true, hint: 'Copy your reply code, then send it to your friend.' });
+  kbutton(c, K.x + K.w - 8 - bk, fy, bk, 'BACK', menuBack, { hint: 'Back to the game code.' });
 }
 function wrapDraw(c, s, x, y, w, col) { wrapText(s, w).forEach((line, i) => drawText(c, line, x, y + i * 10, col)); }
 
@@ -729,21 +739,77 @@ async function worldPaste(text) {
   const meta = { id: d.id, name: d.name, seed: d.seed, size: d.size | 0, shape: d.shape | 0, mode: d.mode ? 1 : 0, skin: d.skin | 0, e: d.e | 0, v: d.v | 0, endless: d.endless ? 1 : 0, savedAt: d.savedAt, played: d.played | 0 };
   SAVE.list.unshift(meta); sortWorlds(); writeLocalIndex(); G.state = 'worlds'; G.menuNote = ''; COOP.err = ''; G.worldNote = 'Added ' + d.name + '.'; sfx('quest', 0);
 }
+// ---------------- THE SCRIBE'S DESK: copying a world out as text, and pasting one in (built with the menu kit) ----------------
+const SCRIBE = { sealT: -1e9, chk: { v: null, ok: null } };
+Object.assign(MENU_ART, {
+  // a scroll, an arrow leaving it (copy) or coming into it (paste)
+  scrollOut(c, x, y) { scribeScroll(c, x, y, 1); },
+  scrollIn(c, x, y) { scribeScroll(c, x, y, -1); }
+});
+function scribeScroll(c, x, y, dir) {
+  const f = ((performance.now() / 110) | 0) % 4;
+  c.fillStyle = '#e8c98a'; c.fillRect(x + 1, y + 3, 9, 10); c.fillStyle = '#b8862a'; c.fillRect(x, y + 2, 11, 2); c.fillRect(x, y + 12, 11, 2);
+  c.fillStyle = '#8a6a48'; c.fillRect(x + 3, y + 6, 5, 1); c.fillRect(x + 3, y + 8, 6, 1); c.fillRect(x + 3, y + 10, 4, 1);
+  c.fillStyle = dir > 0 ? '#7ddc6f' : '#8ff5e6'; const ax = dir > 0 ? x + 11 + (f >> 1) : x + 13 - (f >> 1);
+  c.fillRect(ax, y + 7, 4, 1); if (dir > 0) c.fillRect(ax + 3, y + 6, 1, 3); else c.fillRect(ax, y + 6, 1, 3);
+}
+// the desk behind: the map table, an inkpot and a quill
+function scribeDesk(x, W, H) {
+  plankTable(x, W, H); const y = H - 22, qx = round(W * .82);
+  x.fillStyle = '#1d1a29'; x.fillRect(qx - 10, y - 6, 8, 6); x.fillStyle = '#2b2740'; x.fillRect(qx - 9, y - 7, 6, 1);
+  x.fillStyle = '#e3d8c2'; for (let k = 0; k < 8; k++) x.fillRect(qx - 6 + k, y - 9 - k * 2, 2, 3); x.fillStyle = '#b9b0a0'; x.fillRect(qx - 6, y - 7, 1, 2);
+  x.fillStyle = '#e8c98a'; x.fillRect(round(W * .12), y - 3, 22, 3); x.fillStyle = '#b8862a'; x.fillRect(round(W * .12) - 2, y - 4, 3, 5); x.fillRect(round(W * .12) + 21, y - 4, 3, 5);
+}
+// a wax seal stamped by COPY: 2x to 1x in 200 ms, then it stays while the copy is fresh
+function scribeSeal(c, x, y) {
+  const t = performance.now() - SCRIBE.sealT; if (t > 6000) return; const s = t < 200 ? 2 - t / 200 : 1, r = round(6 * s), ga = c.globalAlpha;
+  c.globalAlpha = ga * (t > 5600 ? (6000 - t) / 400 : 1);
+  c.fillStyle = '#7a2a2e'; c.fillRect(x - r, y - r + 1, r * 2, r * 2 - 2); c.fillRect(x - r + 1, y - r, r * 2 - 2, r * 2);
+  c.fillStyle = '#c94a4e'; c.fillRect(x - r + 2, y - r + 2, r * 2 - 4, r * 2 - 4); c.fillStyle = '#ffd35a'; c.fillRect(x - 1, y - 2, 2, 4); c.fillRect(x - 2, y - 1, 4, 2);
+  c.globalAlpha = ga;
+}
+function scribeCopy() { copyText(COOP.wcode, 'wcode'); if (!COOP.copyFail) { SCRIBE.sealT = performance.now(); KIT.tapHint = { s: 'Copied. Send it to a friend.', t: performance.now() }; sfx('quest', 0); } }
+const SCRIBE_COPY = 'This text is the whole world: land, buildings, chests and your pack. Copy it, then in the other game (or a browser) choose WORLDS, PASTE A WORLD, and paste it there.';
+const SCRIBE_PASTE = 'Paste a world copied with COPY in another game’s world list. It is added to your worlds; nothing here is replaced.';
 function drawWorldCopy(c) {
-  const uw = VS.uw, uh = VS.uh, w = min(380, uw - 16), h = 176, x = round((uw - w) / 2), y = max(8, round((uh - h) / 2)), fx = x + 8, fw = w - 16;
-  c.fillStyle = 'rgba(18,13,31,.55)'; c.fillRect(0, 0, uw, uh); panel(c, x, y, w, h, 'COPY A WORLD : ' + String(COOP.wname).toUpperCase().slice(0, 18));
-  ['This text is the whole world: land, buildings, chests and your pack.', 'Copy it, then in the other game (or a browser) choose WORLDS,', 'PASTE A WORLD, and paste it there.'].forEach((l, i) => drawText(c, l, fx, y + 18 + i * 10, '#d8d4e6'));
-  if (COOP.err) wrapDraw(c, COOP.err, fx, y + 54, fw, '#ff9a8a');
-  else if (!COOP.wcode) drawText(c, 'Packing the world...', fx, y + 54, '#7ddc6f');
-  else { domBox('wcode', fx, y + 52, fw, 80, { ro: true, val: COOP.wcode }); copyHint(c, fx, y + 135); button(c, fx, y + h - 20, 90, 14, copyLabel(), () => copyText(COOP.wcode, 'wcode')); drawText(c, COOP.wcode.length < 2048 ? COOP.wcode.length + ' letters' : round(COOP.wcode.length / 1024) + ' KB of text', fx + 100, y + h - 16, '#8b8fa3'); }
-  button(c, x + w - 70, y + h - 20, 60, 14, 'BACK', () => { G.state = 'worlds'; COOP.wcode = ''; sfx('ui'); });
+  menuBackdrop(c, 'wcopy'); kview('wcopy');
+  const S = KIT.sizes, w0 = min(440, VS.uw - (menuMode() === 'narrow' ? 12 : 24)), lines = wrapC(SCRIBE_COPY, w0 - 16).length, F = menuFrame('wcopy', 440, 29 + lines * 9 + 6 + 120 + 22 + S.bh + 10);
+  menuHero(c, 'wcopy', F);
+  const K = kcard(c, F.x, F.y, F.w, F.h, 'wcopy', 'COPY A WORLD', { foot: true, i: 0, dom: true, right: fitText(String(COOP.wname || ''), F.w - 120) }), cx = K.x + 8, cw = K.w - 16; let yy = K.by + 1;
+  for (const l of wrapC(SCRIBE_COPY, cw)) { drawText(c, l, cx, yy, '#d8d4e6'); yy += 9; } yy += 6;
+  const boxH = K.footY - 16 - yy;
+  if (COOP.err) kmsg(c, cx, yy, cw, { text: COOP.err, kind: 'err' });
+  else if (!COOP.wcode) drawText(c, 'Packing the world...', cx, yy, '#7ddc6f');
+  else { domBox('wcode', cx, yy, cw, boxH, { ro: true, val: COOP.wcode }); if (COOP.copied > 0 && COOP.copyFail) copyHint(c, cx, yy + boxH + 3); else drawText(c, COOP.wcode.length < 2048 ? COOP.wcode.length + ' letters' : round(COOP.wcode.length / 1024) + ' KB of text', cx, yy + boxH + 3, '#8b8fa3'); }
+  const bk = KIT.T ? 64 : 60, fy = K.footY + 5, mw = min(120, cw - bk - S.gap - 30);
+  if (COOP.wcode && !COOP.err) { kbutton(c, cx, fy, mw, copyLabel(), scribeCopy, { main: true, hint: 'Copy the whole world to send or keep.' }); scribeSeal(c, cx + mw + 16, fy + round(S.bh / 2)); }
+  if (performance.now() - SCRIBE.sealT < 3000) khint('Copied. Send it to a friend.');
+  kbutton(c, K.x + K.w - 8 - bk, fy, bk, 'BACK', menuBack, { hint: 'Back to your worlds.' });
 }
+// is the pasted text a world? (worked out once for each new text, in the background)
+function scribeCheck(v) {
+  const C = SCRIBE.chk; if (C.v === v) return C.ok; C.v = v; C.ok = null; if (!v.trim()) return null;
+  unpackCode(v).then(o => { if (C.v === v) C.ok = !!(o && o.k === 'w' && o.d && typeof o.d === 'object' && isFinite(o.d.seed)); }); return null;
+}
+function scribeAdd() { worldPaste(domVal('wpaste')); }
 function drawWorldPaste(c) {
-  const uw = VS.uw, uh = VS.uh, w = min(380, uw - 16), h = 176, x = round((uw - w) / 2), y = max(8, round((uh - h) / 2)), fx = x + 8, fw = w - 16;
-  c.fillStyle = 'rgba(18,13,31,.55)'; c.fillRect(0, 0, uw, uh); panel(c, x, y, w, h, 'PASTE A WORLD');
-  ['Paste a world copied with COPY in another game’s world list.', 'It is added to your worlds; nothing here is replaced.'].forEach((l, i) => drawText(c, l, fx, y + 18 + i * 10, '#d8d4e6'));
-  domBox('wpaste', fx, y + 42, fw, 80, { ph: 'paste the world here' });
-  if (COOP.err) wrapDraw(c, COOP.err, fx, y + 126, fw, '#ff9a8a');
-  button(c, fx, y + h - 20, 110, 14, 'ADD THIS WORLD', () => worldPaste(domVal('wpaste')));
-  button(c, x + w - 70, y + h - 20, 60, 14, 'BACK', () => { G.state = 'worlds'; COOP.err = ''; sfx('ui'); });
+  menuBackdrop(c, 'wpaste'); kview('wpaste');
+  const S = KIT.sizes, w0 = min(440, VS.uw - (menuMode() === 'narrow' ? 12 : 24)), lines = wrapC(SCRIBE_PASTE, w0 - 16).length, F = menuFrame('wpaste', 440, 29 + lines * 9 + 6 + 120 + 24 + S.bh + 10);
+  menuHero(c, 'wpaste', F);
+  const K = kcard(c, F.x, F.y, F.w, F.h, 'wpaste', 'PASTE A WORLD', { foot: true, i: 0, dom: true }), cx = K.x + 8, cw = K.w - 16; let yy = K.by + 1;
+  for (const l of wrapC(SCRIBE_PASTE, cw)) { drawText(c, l, cx, yy, '#d8d4e6'); yy += 9; } yy += 6;
+  const boxH = K.footY - 20 - yy, el = domBox('wpaste', cx, yy, cw, boxH, { ph: 'paste the world here', onCtrlEnter: scribeAdd, onEsc: el => el.blur() }), v = el.value, ok = scribeCheck(v);
+  el.style.borderColor = !v.trim() || ok === null ? '#6a6485' : ok ? '#7ddc6f' : '#ff6b6b';
+  yy += boxH + 4;
+  if (COOP.err) kmsg(c, cx, yy, cw, { text: COOP.err, kind: 'err' });
+  else if (v.trim() && ok !== null) kmsg(c, cx, yy, cw, ok ? { text: 'That is a world. ADD THIS WORLD keeps it.', kind: 'ok' } : { text: 'That is not a whole world yet.', kind: 'warn' });
+  const bk = KIT.T ? 64 : 60, fy = K.footY + 5;
+  kbutton(c, cx, fy, min(150, cw - bk - S.gap), 'ADD THIS WORLD', scribeAdd, { main: true, hint: kb('Add it to your worlds (Ctrl+Enter).', 'Add it to your worlds.') });
+  kbutton(c, K.x + K.w - 8 - bk, fy, bk, 'BACK', menuBack, { hint: 'Back to your worlds.' });
 }
+Object.assign(MENUS, {
+  wcopy: { col: '#e8c98a', art: 'scrollOut', motes: 'dust', place: 'THE SCRIBE\'S DESK', sound: 'ui', diorama: scribeDesk, glow: { x: .5, y: .35 }, idle: 'Copy it, then paste it in the other game.' },
+  wpaste: { col: '#e8c98a', art: 'scrollIn', motes: 'dust', place: 'THE SCRIBE\'S DESK', sound: 'ui', diorama: scribeDesk, glow: { x: .5, y: .35 }, idle: kb('Paste a world, then ADD THIS WORLD (Ctrl+Enter).', 'Paste a world, then ADD THIS WORLD.'), enter() { SCRIBE.chk = { v: null, ok: null }; } },
+  // (the long invite is drawn inside THE SIGNAL BEACON, 'join'; this entry gives its card its own colour and emblem)
+  joinlong: { col: '#9fdc8f', art: 'letter', place: 'THE SIGNAL BEACON' }
+});

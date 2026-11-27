@@ -7,7 +7,13 @@ const inR = (x, y, w, h) => mouse.ux >= x && mouse.ux < x + w && mouse.uy >= y &
 const FORM = { name: '', seed: '', size: 1, shape: 0, mode: 0, skin: 0, hat: 0, nick: '', code: '', accountName: '', accountPassword: '', accountConfirm: '', brRanked: false };
 const SIZE_D = ['600 x 260 tiles', '900 x 320 tiles', '1400 x 380 tiles', '2200 x 440 tiles: days to cross'], SHAPE_D = ['every seed deals its lands in a new order', 'the Drift is crowded with islands', 'few islands, the Underdark yawns wider'], MODE_D = ['three embers, any order, nothing forced', 'every item, no monsters, build freely'];
 let HITS = [], HITS_NEXT = [];
-const hit = (x, y, w, h, fn, slot) => HITS_NEXT.push({ x, y, w, h, fn, slot: !!slot });
+// HIT_CLIP {y0, y1}: while a scrolling box is drawn (kscroll), boxes outside it are skipped and boxes partly in it are trimmed.
+// tag: the control's full name ('btn:' + label, 'field:' + key, 'row:kind:id', 'tab:' + name), for keys and tests.
+let HIT_CLIP = null;
+function hit(x, y, w, h, fn, slot, tag) {
+  if (HIT_CLIP) { const y0 = max(y, HIT_CLIP.y0), y1 = min(y + h, HIT_CLIP.y1); if (y1 <= y0) return; y = y0; h = y1 - y0; }
+  HITS_NEXT.push({ x, y, w, h, fn, slot: !!slot, tag });
+}
 function panel(c, x, y, w, h, title) {
   c.fillStyle = INK; c.fillRect(x - 1, y - 1, w + 2, h + 2); c.fillStyle = '#1d1a29'; c.fillRect(x, y, w, h);
   c.fillStyle = '#4a4460'; c.fillRect(x, y, w, 1); c.fillRect(x, y, 1, h); c.fillStyle = '#2b2740'; c.fillRect(x, y + h - 1, w, 1); c.fillRect(x + w - 1, y, 1, h);
@@ -18,7 +24,7 @@ function button(c, x, y, w, h, label, fn, o = {}) {
   c.fillStyle = o.off ? '#2b2740' : hv || on ? '#ffd35a' : '#4a4460'; c.fillRect(x, y, w, h);
   c.fillStyle = hv ? '#3a3350' : on ? '#3d3320' : '#262234'; c.fillRect(x + 1, y + 1, w - 2, h - 2);
   const sc = touchFit(label, w - 8); textC(c, label, x + w / 2, y + round((h - 8 * sc) / 2), o.off ? '#6a6485' : hv || on ? '#ffd35a' : (o.col || '#fff'), sc, drawText);
-  if (!o.off) hit(x, y, w, h, fn);
+  if (!o.off) hit(x, y, w, h, fn, false, 'btn:' + label);
 }
 function field(c, x, y, w, key, ph) {
   // (a password shows as stars, and no more of them than the box holds; on a phone a long entry shows its end)
@@ -26,7 +32,7 @@ function field(c, x, y, w, key, ph) {
   c.fillStyle = f ? '#ffd35a' : inR(x, y, w, 14) ? '#8c86a8' : '#4a4460'; c.fillRect(x, y, w, 14); c.fillStyle = INK; c.fillRect(x + 1, y + 1, w - 2, 12);
   if (v) drawText(c, v, x + 4, y + 4, '#fff'); else drawText(c, ph, x + 4, y + 4, '#6a6485');
   if (f && (performance.now() / 400 | 0) & 1) { c.fillStyle = '#ffd35a'; c.fillRect(x + 5 + (v ? textW(v) : -1), y + 3, 1, 8); }
-  hit(x, y, w, 14, () => { UI.focus = key; sfx('ui'); });
+  hit(x, y, w, 14, () => { UI.focus = key; sfx('ui'); }, false, 'field:' + key); KIT.fields.push(key);
 }
 function chooser(c, x, y, w, label, names, key, descs) {
   drawText(c, label, x, y + 4, '#b9bdd0'); const bx = x + 46, bw = w - 46;
@@ -82,7 +88,7 @@ function slotClick(i, btn) {
 }
 function uiMouseDown(btn) {
   UI.focus = null; UI.dn = btn === 0 ? { x: mouse.ux, y: mouse.uy, had: !!UI.held } : null;
-  for (let i = HITS.length - 1; i >= 0; i--) { const h = HITS[i]; if (inR(h.x, h.y, h.w, h.h)) { h.fn(btn); if (UI.open === 'stn' && UI.stn && COOP.role) COOP.stns.add(UI.stn.i); return true; } }
+  for (let i = HITS.length - 1; i >= 0; i--) { const h = HITS[i]; if (inR(h.x, h.y, h.w, h.h)) { if (h.hint) KIT.tapHint = { s: h.hint, t: performance.now() }; h.fn(btn); if (UI.open === 'stn' && UI.stn && COOP.role) COOP.stns.add(UI.stn.i); return true; } }
   if (G.state !== 'play' || G.dialog) return true;
   if (UI.open === 'inv' && UI.held) { dropHeld(); return true; }
   return !!UI.open && UI.open !== 'score';
@@ -193,173 +199,11 @@ function drawTitle(c) {
   { let h = TITLE.hint || (mobileDevice ? 'touch to move and fight' : 'mouse + keyboard'); while (h.length > 3 && textW(h) > uw - 12) h = h.slice(0, -1); textC(c, h, uw / 2, uh - 15, TITLE.hint ? '#d8d4e6' : '#8b8fa3', 1, textO); }
   const vs = 'version ' + GAME_VERSION; textS(c, vs, uw - textW(vs) - 4, uh - 10, '#6a6485');
 }
-function drawHowTo(c) {
-  const uw = VS.uw, uh = VS.uh, w = min(430, uw - 12), h = min(uh - 12, 300), x = round((uw - w) / 2), y = round((uh - h) / 2);
-  c.fillStyle = 'rgba(18,13,31,.6)'; c.fillRect(0, 0, uw, uh); panel(c, x, y, w, h, 'HOW TO PLAY');
-  const L = [['MOVING', '#ffd35a'], ['A / D  walk     SPACE or W  jump (twice, once you learn it)     SHIFT  dodge'], ['E  pack and crafting     F  use, talk     M  map     J  journal     P  menu'], ['', ''],
-    ['FIGHTING: THE BEAT', '#ffd35a'], ['LEFT MOUSE  a light blow.   RIGHT MOUSE or Q  a heavy blow.'], ['After each blow your weapon GLINTS. Strike on it: the blow bites, an ember', '#8ff5e6'], ['of TEMPO lights, and blows QUICKEN. Five in time: DRUMFIRE, hammer away.', '#8ff5e6'], ['One press too soon is HASTY, out of time. Hammer and you are RUSHED.', '#ff9a8a'], ['Holding the button does nothing. Pressing while hit gets you up sooner.', '#ff9a8a'],
-    ['A heavy blow spends every ember: at five, a CRESCENDO. In DRUMFIRE, a CRASH.'], ['CLEAN: land the sweet spot of your weapon (a blade\'s outer half, a spear\'s point).'], ['CLASH: swing into an enemy\'s blow and it is turned aside. Your next blow is the ANSWER.'], ['A foe shows ! before it strikes. Dodge THROUGH the blow, then strike: RIPOSTE.'], ['Hit foes in time and their guard BREAKS: they reel. A heavy blow then is a SUNDER.'], ['A WARDED foe turns plain blows from the front: go heavy, clean, or behind it.'], ['', ''],
-    ['THE WORLD', '#ffd35a'], ['Dig, build, craft. Find three embers below, then four gates above.'], ['Every world has three TRAITS of its own, lands with MOODS, and a year of four seasons.'], ['The journal (J) always knows what to try next.']];
-  L.forEach((l, i) => { let t = l[0]; while (t.length > 3 && textW(t) > w - 14) t = t.slice(0, -1); drawText(c, t, x + 8, y + 18 + i * 12, l[1] || '#d8d4e6'); });
-  button(c, x + w - 70, y + h - 20, 62, 15, 'BACK', () => { G.state = 'title'; sfx('ui'); });
-}
-function drawWorlds(c) {
-  const uw = VS.uw, uh = VS.uh, w = min(360, uw - 16), x = round((uw - w) / 2), y = 16, h = uh - 32;
-  c.fillStyle = 'rgba(18,13,31,.55)'; c.fillRect(0, 0, uw, uh); panel(c, x, y, w, h, 'YOUR WORLDS');
-  const st = SAVE.db ? 'saved to your Claude account' : 'saved in this browser'; drawText(c, st, x + w - textW(st) - 6, y + 3, '#8ff5e6');
-  const rowH = 35, vis = max(1, floor((h - 50) / rowH)); UI.scroll = clamp(UI.scroll, 0, max(0, SAVE.list.length - vis));
-  if (!SAVE.list.length) textC(c, 'No worlds yet. Forge your first one below.', uw / 2, y + 40, '#b9bdd0', 1, drawText);
-  for (let i = 0; i < vis; i++) {
-    const m = SAVE.list[i + UI.scroll]; if (!m) break; const ry = y + 16 + i * rowH, hv = inR(x + 4, ry, w - 8, rowH - 3);
-    c.fillStyle = hv ? '#2b2740' : '#221e30'; c.fillRect(x + 4, ry, w - 8, rowH - 3);
-    c.drawImage(SK[clamp(m.skin | 0, 0, SKINS.length - 1)].head, x + 8, ry + 6, 14, 14); if (!m.mode) for (let k = 0; k < 3; k++) { c.fillStyle = k < (m.e | 0) ? ['#ffd35a', '#8ff5e6', '#ff9a3d'][k] : '#3a3450'; c.fillRect(x + 9 + k * 4, ry + 23, 3, 2); }
-    drawText(c, String(m.name || 'World').slice(0, 24), x + 28, ry + 3, '#fff');
-    const prog = m.mode ? 'free forge' : m.v < 3 ? 'old world (will regrow)' : (m.e | 0) + ' of 3 embers';
-    { const room = w - 160, fit = t => { while (t.length > 4 && textW(t) > room) t = t.slice(0, -1); return t; }, tr = (m.land | 0) >= 4 && m.endless;
-      drawText(c, fit(`${prog} - ${fmtTime(m.played || 0)}`), x + 28, ry + 13, '#8b8fa3');
-      // the third line: what kind of world it is (its three traits), or for a world from before them, how it was made
-      drawText(c, fit(tr ? traitsOf(m.seed).map(k => TRAITS[k].n.toLowerCase()).join(', ') : `${MODE_N[m.mode ? 1 : 0]} - ${m.endless ? (GEN_RANGE_N[m.size | 0] || 'Normal') + ' range' : SIZE_N[m.size | 0] || ''} - ${SHAPE_N[m.shape | 0] || ''}`), x + 28, ry + 22, tr ? '#6fb9c9' : '#6a6485'); }
-    if (UI.confirm === m.id) {
-      drawText(c, 'delete?', x + w - 108, ry + 12, '#ff6b6b');
-      button(c, x + w - 70, ry + 8, 30, 14, 'YES', () => { deleteWorld(m.id); UI.confirm = null; sfx('brk'); }, { col: '#ff6b6b' });
-      button(c, x + w - 38, ry + 8, 30, 14, 'NO', () => { UI.confirm = null; sfx('ui'); });
-    } else {
-      button(c, x + w - 126, ry + 8, 40, 14, 'COPY', () => { worldCopy(m); sfx('ui'); });
-      button(c, x + w - 82, ry + 8, 44, 14, 'PLAY', () => { openWorld(m); sfx('quest', 0); });
-      button(c, x + w - 34, ry + 8, 26, 14, 'X', () => { UI.confirm = m.id; sfx('ui'); }, { col: '#ff9a8a' });
-    }
-  }
-  if (SAVE.list.length > vis) drawText(c, `${UI.scroll + 1}-${min(SAVE.list.length, UI.scroll + vis)} of ${SAVE.list.length}  (wheel)`, x + 6, y + h - 30, '#6a6485');
-  if (G.menuNote) drawText(c, G.menuNote, x + 6, y + h - 30, '#ff9a8a'); else if (G.worldNote) drawText(c, G.worldNote, x + 6, y + h - 30, '#7ddc6f');
-  button(c, x + 6, y + h - 20, 110, 15, '+ NEW WORLD', () => { G.state = 'create'; Object.assign(FORM, { name: 'World ' + (SAVE.list.length + 1), seed: rollSeed() }); UI.focus = 'name'; sfx('ui'); });
-  button(c, x + 122, y + h - 20, 110, 15, 'PASTE A WORLD', () => { G.state = 'wpaste'; COOP.err = ''; G.worldNote = ''; sfx('ui'); });
-  button(c, x + w - 66, y + h - 20, 60, 15, 'BACK', () => { G.state = 'title'; G.worldNote = ''; sfx('ui'); });
-  accountTag(c, x + w);
-}
+// (how to play, the worlds board and the forge are 7-places.js)
 // a seed you can say out loud, so a friend can forge the same world
 const SEED_A = ['ember', 'ashen', 'hollow', 'glass', 'cinder', 'salt', 'thorn', 'rust', 'pale', 'still', 'deep', 'wake', 'lantern', 'gloam', 'iron', 'moth'], SEED_B = ['vale', 'reach', 'moor', 'fen', 'crown', 'harbor', 'hollow', 'field', 'gate', 'well', 'spire', 'march', 'barrow', 'ford', 'rise', 'drift'];
 const rollSeed = () => fpick(SEED_A) + '-' + fpick(SEED_B) + '-' + (10 + floor(Math.random() * 90));
-function drawCreate(c) {
-  const uw = VS.uw, uh = VS.uh, w = min(300, uw - 16), h = min(310, uh - 8), x = round((uw - w) / 2), y = max(4, round((uh - h) / 2)), tall = h >= 310, o = tall ? 74 : 0;
-  c.fillStyle = 'rgba(18,13,31,.55)'; c.fillRect(0, 0, uw, uh); panel(c, x, y, w, h, 'FORGE A NEW WORLD');
-  const fx = x + 10, fw = w - 20;
-  drawText(c, 'NAME', fx, y + 22, '#b9bdd0'); field(c, fx + 46, y + 18, fw - 46, 'name', 'my world');
-  drawText(c, 'SEED', fx, y + 42, '#b9bdd0'); field(c, fx + 46, y + 38, fw - 46 - 44, 'seed', 'random (type a word or number)'); button(c, fx + fw - 40, y + 38, 40, 14, 'ROLL', () => { FORM.seed = rollSeed(); sfx('ui'); });
-  // what this seed makes: every world has a trait for its land, its life and its sky
-  if (tall) { if (FORM.seed.trim()) { drawText(c, 'THIS SEED MAKES A WORLD THAT IS', fx, y + 58, '#8b8fa3'); drawTraits(c, fx, y + 69, fw, traitsOf(seedFrom(FORM.seed)), 10, true); } else { drawText(c, 'NO SEED: ITS LAND, LIFE AND SKY WILL BE A SURPRISE.', fx, y + 62, '#8b8fa3'); drawText(c, 'Type one, or ROLL until you like what you see.', fx, y + 74, '#8b8fa3'); } }
-  chooser(c, fx, y + 60 + o, fw, 'RANGE', GEN_RANGE_N, 'size', GEN_RANGE_D);
-  chooser(c, fx, y + 92 + o, fw, 'SHAPE', SHAPE_N, 'shape', SHAPE_D);
-  chooser(c, fx, y + 124 + o, fw, 'MODE', MODE_N, 'mode', MODE_D);
-  skinPicker(c, fx, y + 158 + o);
-  button(c, x + 10, y + h - 26, 140, 18, 'FORGE WORLD', () => { UI.focus = null; createWorld({ name: FORM.name.trim() || 'World', seed: FORM.seed, size: FORM.size, shape: FORM.shape, mode: FORM.mode, skin: FORM.skin }); sfx('quest', 0); });
-  button(c, x + w - 70, y + h - 26, 60, 18, 'BACK', () => { G.state = 'worlds'; UI.focus = null; sfx('ui'); });
-}
-// ---------------- accounts ----------------
-// The first board of the game: pick an account and give its password, or make one. It lies over the same drifting
-// land as the title. Signed in, the worlds board leads back here to change the look or the account.
-function hatPicker(c, x, y, w) {
-  chooser(c, x, y, w, 'HAT', ['NO HAT', 'EMBER', 'CROWN', 'FROST'], 'hat');
-  // the chosen look with the hat on, twice the size
-  const S = SK[FORM.skin] || SK[0]; c.save(); c.translate(x + 46 + round((w - 46) / 2), y + 52); c.scale(2, 2); c.drawImage(S.head, S.hx, S.hy); drawHat(c, FORM.hat); c.restore();
-}
-function accountTag(c, right) {
-  const a = ACCOUNT.active; if (!a) return; const nw = textW(a.name) + 10;
-  button(c, right - 60, 2, 60, 12, 'SIGN OUT', () => { accountLogout(); sfx('ui'); });
-  button(c, right - 64 - nw, 2, nw, 12, a.name, () => { G.state = 'accounts'; ACCOUNT.form = 'list'; ACCOUNT.loginId = null; ACCOUNT.note = ''; UI.focus = null; UI.scroll = 0; sfx('ui'); });
-}
-function drawAccounts(c) {
-  const uw = VS.uw, uh = VS.uh, w = min(340, uw - 16), h = min(260, uh - 16), x = round((uw - w) / 2), y = max(8, round((uh - h) / 2));
-  titleDrift(performance.now());
-  c.fillStyle = 'rgba(18,13,31,.55)'; c.fillRect(0, 0, uw, uh); panel(c, x, y, w, h, 'ACCOUNTS');
-  const fx = x + 10, fw = w - 20, me = ACCOUNT.active;
-  if (ACCOUNT.form === 'create') {
-    drawText(c, 'NAME', fx, y + 22, '#b9bdd0'); field(c, fx + 46, y + 18, fw - 46, 'accountName', 'account name');
-    drawText(c, 'PASS', fx, y + 42, '#b9bdd0'); field(c, fx + 46, y + 38, fw - 46, 'accountPassword', '8 characters minimum');
-    drawText(c, 'AGAIN', fx, y + 62, '#b9bdd0'); field(c, fx + 46, y + 58, fw - 46, 'accountConfirm', 'confirm password');
-    skinPicker(c, fx, y + 78);
-    hatPicker(c, fx, y + 108, fw);
-    button(c, x + 10, y + h - 26, min(150, w - 84), 18, ACCOUNT.busy ? 'CREATING...' : 'CREATE ACCOUNT', () => {
-      UI.focus = null;
-      accountCreate(FORM.accountName, FORM.accountPassword, FORM.accountConfirm, FORM.skin, FORM.hat).then(ok => { if (ok) FORM.accountPassword = FORM.accountConfirm = ''; });
-      sfx('quest', 0);
-    }, { off: ACCOUNT.busy });
-    button(c, x + w - 70, y + h - 26, 60, 18, 'BACK', () => { ACCOUNT.form = 'list'; UI.focus = null; if (me) { FORM.skin = G.skin; FORM.hat = G.hat; } sfx('ui'); });
-  } else if (ACCOUNT.form === 'look' && me) {
-    textC(c, 'THE LOOK OF ' + me.name, uw / 2, y + 17, '#b9bdd0', 1, drawText);
-    skinPicker(c, fx, y + 34);
-    hatPicker(c, fx, y + 64, fw);
-    button(c, x + 10, y + h - 26, min(150, w - 84), 18, 'WEAR THIS', () => { G.skin = FORM.skin; G.hat = FORM.hat; accountSaveProfile(); ACCOUNT.form = 'list'; ACCOUNT.note = 'Look saved.'; sfx('quest', 0); });
-    button(c, x + w - 70, y + h - 26, 60, 18, 'BACK', () => { FORM.skin = G.skin; FORM.hat = G.hat; ACCOUNT.form = 'list'; sfx('ui'); });
-  } else {
-    textC(c, me ? 'SIGNED IN AS ' + me.name : 'SIGN IN TO CONTINUE', uw / 2, y + 17, '#b9bdd0', 1, drawText);
-    const say = wrapText('Choose an account, or create one. They stay in this browser.', w - 12); say.forEach((l, i) => textC(c, l, uw / 2, y + 28 + i * 9, '#8b8fa3', 1, drawText));
-    const rowH = 22, start = y + 29 + say.length * 9, visible = max(1, floor((h - 115 - say.length * 9) / rowH));
-    UI.scroll = clamp(UI.scroll, 0, max(0, ACCOUNT.profiles.length - visible));
-    for (let i = 0; i < visible; i++) {
-      const p = ACCOUNT.profiles[i + UI.scroll]; if (!p) break;
-      const ry = start + i * rowH, active = me && me.id === p.id;
-      c.fillStyle = active ? '#3d3320' : inR(x + 6, ry, w - 12, rowH - 4) ? '#2b2740' : '#221e30';
-      c.fillRect(x + 6, ry, w - 12, rowH - 3);
-      c.drawImage(SK[clamp(p.skin | 0, 0, SKINS.length - 1)].head, x + 10, ry + 3, 14, 14);
-      drawText(c, p.name, x + 30, ry + 6, active ? '#ffd35a' : '#fff');
-      button(c, x + w - 82, ry + 3, 74, 14, active ? 'ACTIVE' : ACCOUNT.loginId === p.id ? 'SELECTED' : 'SELECT', () => {
-        ACCOUNT.loginId = p.id; FORM.accountPassword = ''; FORM.accountConfirm = ''; UI.focus = 'accountPassword'; ACCOUNT.note = '';
-        sfx('ui');
-      }, { off: active });
-    }
-    if (ACCOUNT.profiles.length > visible) drawText(c, `${UI.scroll + 1}-${min(ACCOUNT.profiles.length, UI.scroll + visible)} of ${ACCOUNT.profiles.length} (wheel)`, x + 8, start + visible * rowH + 1, '#6a6485');
-    const selected = ACCOUNT.profiles.find(v => v.id === ACCOUNT.loginId), legacy = selected && (!selected.salt || !selected.hash);
-    if (selected && legacy) {
-      panel(c, x + 8, y + h - 104, w - 16, 76, 'SET PASSWORD');
-      field(c, x + 70, y + h - 82, 94, 'accountPassword', '8+ characters');
-      field(c, x + 70, y + h - 62, 94, 'accountConfirm', 'confirm');
-      button(c, x + w - 92, y + h - 44, 80, 14, ACCOUNT.busy ? 'SAVING...' : 'SAVE + LOG IN', () => {
-        accountSetPassword(selected, FORM.accountPassword, FORM.accountConfirm).then(ok => { if (ok) FORM.accountPassword = FORM.accountConfirm = ''; });
-        sfx('ui');
-      }, { off: ACCOUNT.busy });
-    } else if (selected) {
-      panel(c, x + 8, y + h - 80, w - 16, 52, 'PASSWORD OF ' + selected.name);
-      field(c, x + 16, y + h - 58, min(150, w - 118), 'accountPassword', 'your password');
-      button(c, x + w - 94, y + h - 58, 82, 14, ACCOUNT.busy ? 'CHECKING...' : 'LOG IN', () => {
-        accountLogin(selected, FORM.accountPassword).then(ok => { if (ok) FORM.accountPassword = ''; });
-        sfx('ui');
-      }, { off: ACCOUNT.busy });
-    }
-    const make = () => { ACCOUNT.loginId = null; ACCOUNT.form = 'create'; FORM.accountName = ''; FORM.accountPassword = ''; FORM.accountConfirm = ''; FORM.skin = 0; FORM.hat = 0; UI.focus = 'accountName'; sfx('ui'); };
-    if (me) {
-      // (a narrow window gets shorter words on the same four buttons)
-      const tight = w < 310, b1 = tight ? 40 : 104, b2 = tight ? 36 : 76;
-      button(c, x + 6, y + h - 22, b1, 16, tight ? '+ NEW' : '+ CREATE ACCOUNT', make);
-      button(c, x + 10 + b1, y + h - 22, b2, 16, tight ? 'LOOK' : 'CHANGE LOOK', () => { ACCOUNT.loginId = null; ACCOUNT.form = 'look'; ACCOUNT.note = ''; FORM.skin = G.skin; FORM.hat = G.hat; UI.focus = null; sfx('ui'); });
-      button(c, x + 14 + b1 + b2, y + h - 22, 56, 16, 'SIGN OUT', () => { accountLogout(); sfx('ui'); });
-      button(c, x + w - 42, y + h - 22, 36, 16, 'BACK', () => { G.state = 'title'; ACCOUNT.loginId = null; UI.focus = null; sfx('ui'); });
-    } else {
-      button(c, x + 6, y + h - 22, min(150, w - 12), 16, '+ CREATE ACCOUNT', make);
-      if (w >= 300) textC(c, 'PASSWORD REQUIRED', x + w - 87, y + h - 18, '#6a6485', 1, drawText);
-    }
-  }
-  if (ACCOUNT.note) textC(c, ACCOUNT.note, uw / 2, y + h + 3, '#8ff5e6', 1, textO);
-}
-function drawRingForm(c) {
-  const uw = VS.uw, uh = VS.uh, w = min(330, uw - 16), h = 244, x = round((uw - w) / 2), y = max(8, round((uh - h) / 2));
-  c.fillStyle = 'rgba(18,13,31,.55)'; c.fillRect(0, 0, uw, uh); panel(c, x, y, w, h, 'THE CINDER RING : ONLINE PVP');
-  const fx = x + 10, fw = w - 20;
-  drawText(c, 'NAME', fx, y + 22, '#b9bdd0'); field(c, fx + 46, y + 18, fw - 46, 'nick', 'WAKER');
-  skinPicker(c, fx, y + 38);
-  drawText(c, 'RING', fx, y + 70, '#b9bdd0'); field(c, fx + 46, y + 66, fw - 46, 'code', 'open  (or a private code)');
-  const L = ['First to 10 takedowns takes the ring. Alone in a ring?', 'Echoes spar with you until someone joins.', 'FRIENDS: host a ring, and your friends pick JOIN A FRIEND', 'on the title screen and type your game code. Up to 4.'];
-  L.forEach((l, i) => drawText(c, l, fx, y + 92 + i * 10, '#d8d4e6'));
-  drawText(c, NET.room ? 'claude.ai live room: everyone with the same ring code meets.' : 'claude.ai live room: not here. Game codes work anywhere.', fx, y + 136, NET.room ? '#7ddc6f' : '#8b8fa3');
-  if (netOK()) button(c, x + 10, y + h - 50, fw, 18, 'HOST A RING FOR FRIENDS (GAME CODE)', () => {
-    UI.focus = null; const nick = cleanName(FORM.nick) || 'WAKER'; FORM.nick = nick; G.state = 'loading'; G.loadMsg = 'Lighting the ring...';
-    setTimeout(() => { coopReset(); enterArena(nick, FORM.skin, 'friends', 'rtc'); }, 30); sfx('quest', 0);
-  });
-  button(c, x + 10, y + h - 26, 150, 18, NET.room ? 'ENTER THE RING' : 'PRACTICE (ECHOES)', () => {
-    UI.focus = null; const nick = cleanName(FORM.nick) || 'WAKER'; FORM.nick = nick; G.state = 'loading'; G.loadMsg = 'Entering the ring...';
-    setTimeout(() => enterArena(nick, FORM.skin, cleanCode(FORM.code) || 'open'), 30); sfx('quest', 0);
-  });
-  button(c, x + w - 70, y + h - 26, 60, 18, 'BACK', () => { G.state = 'title'; UI.focus = null; sfx('ui'); });
-}
+// (the accounts board, THE HEARTH, is 5-accounts.js; the Cinder Ring's form is 11-arena-and-royale/26-arena-menus.js)
 
 // ---------------- in-game HUD ----------------
 function drawHUD(c) {
@@ -578,20 +422,17 @@ function drawDialog(c) {
   hit(0, 0, uw, uh, () => dialogAdvance());
 }
 function drawUI(c) {
-  HITS_NEXT = []; const uw = VS.uw, uh = VS.uh, st = G.state;
+  HITS_NEXT = []; kitBegin(); const uw = VS.uw, uh = VS.uh, st = G.state;
   if (st === 'title') drawTitle(c); else if (st === 'accounts') drawAccounts(c); else if (st === 'howto') drawHowTo(c); else if (st === 'worlds') drawWorlds(c); else if (st === 'create') drawCreate(c); else if (st === 'ring') drawRingForm(c); else if (st === 'brform') drawBrForm(c); else if (st === 'bropen') drawBrOpen(c); else if (st === 'brlobby') drawBrLobby(c); else if (st === 'join') drawJoin(c); else if (st === 'wcopy') drawWorldCopy(c); else if (st === 'wpaste') drawWorldPaste(c);
-  else if (st === 'loading') { c.fillStyle = 'rgba(18,13,31,.82)'; c.fillRect(0, 0, uw, uh); textC(c, G.loadMsg || 'Loading...', uw / 2, round(uh * .45), '#fff1a8', 1, textO); const n = (performance.now() / 300 | 0) % 4; textC(c, '.'.repeat(n), uw / 2, round(uh * .45) + 12, '#ffd35a', 1, textO); }
-  else if (st === 'intro') {
-    c.fillStyle = 'rgba(18,13,31,.84)'; c.fillRect(0, 0, uw, uh);
-    const lines = INTRO[G.introI].split('\n'), y0 = round(uh * .4 - lines.length * 6); c.globalAlpha = clamp(G.introT / 40, 0, 1);
-    lines.forEach((l, i) => textC(c, l, uw / 2, y0 + i * 13, '#fff1a8', 1, textO)); c.globalAlpha = 1;
-    if (G.introT > 50) textC(c, 'click to continue', uw / 2, round(uh * .78), '#8b8fa3', 1, textS);
-  } else if (G.cine && !UI.open) { // a panel opened during a place-name card (Esc, E) is drawn, not hidden behind it
+  else if (st === 'loading') drawLoading(c);
+  else if (st === 'intro') drawIntro(c);
+  else if (G.cine && !UI.open) { // a panel opened during a place-name card (Esc, E) is drawn, not hidden behind it
     const ci = G.cine, a = clamp(min((ci.t - 30) / 25, (ci.dur - 20 - ci.t) / 25), 0, 1);
     c.globalAlpha = a; textC(c, ci.title, uw / 2, round(uh * .2), '#ffd35a', uw > 420 ? 3 : 2, textO); if (ci.sub) textC(c, ci.sub, uw / 2, round(uh * .2) + (uw > 420 ? 30 : 22), '#fff', 1, textO); c.globalAlpha = 1;
     if (ci.t > 30) textC(c, 'space to skip', uw / 2, uh - 14, '#6a6485', 1, textS);
     if (G.dialog) drawDialog(c);
   } else {
+    if (UI.open && UI.open !== 'score') menuVeil(c, UI.open);
     drawHUD(c);
     if (UI.open === 'inv') drawInv(c); else if (UI.open === 'codex') drawCodex(c); else if (UI.open === 'journal') drawJournal(c); else if (UI.open === 'pause') drawPause(c); else if (UI.open === 'coop') drawCoopPanel(c);
     else if (UI.open === 'book') drawBook(c); else if (UI.open === 'stn') drawStation(c); else if (UI.open === 'knap') drawKnap(c); else if (UI.open === 'map') drawMap(c); else if (UI.open === 'board') drawBoard(c); else if (UI.open === 'rift') drawRiftUI(c); else if (UI.open === 'echo') drawEchoUI(c); else if (UI.open === 'ending') drawEndingUI(c);
@@ -601,6 +442,7 @@ function drawUI(c) {
     if (UI.held) drawStack(c, UI.held, mouse.ux - 9, mouse.uy - 9);
     drawChatBox(c);
   }
+  kitEnd(c);
   domSweep();
   HITS = HITS_NEXT;
   // FPS MODE: a plain cross to aim by while you play; every menu keeps the cursor
