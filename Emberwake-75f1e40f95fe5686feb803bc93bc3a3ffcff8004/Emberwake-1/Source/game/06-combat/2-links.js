@@ -71,7 +71,7 @@ function applyStatus(e, k, by, o = {}) {
   else if (k === 'blind') { if (e.type === 'hollow') return false; s.blind = max(s.blind, o.d || 160); }
   else if (k === 'launched') s.launched = max(s.launched, o.d || 50);
   else if (k === 'mire') e.mire = max(e.mire | 0, o.d || 100);
-  else if (k === 'poison' || k === 'bleed') { if (e === G.p && e.ward > 0) return false; if (k === 'poison' && (e.type === 'golem' || e.type === 'mote' || e.type === 'cinderling')) return false; s[k] = max(s[k] || 0, o.d || 240); s[k + 'By'] = by; }
+  else if (k === 'poison' || k === 'bleed') { if (e === G.p && (e.ward > 0 || boonHas('ward'))) return false; if (k === 'poison' && (e.type === 'golem' || e.type === 'mote' || e.type === 'cinderling')) return false; s[k] = max(s[k] || 0, o.d || 240); s[k + 'By'] = by; }
   else if (k === 'frost') { if (e.fireproof && e.type !== 'golem') { s.burn = 0; } s.frost = max(s.frost || 0, o.d || 100); s.burn = 0; }
   return true;
 }
@@ -115,7 +115,7 @@ function tickStatus(e) {
 
 // ---------------- sidearms ----------------
 const ARMS = ['shuriken', 'hook', 'flask', 'smoke'];
-function armsOwned(f) { if (!f.isPlayer) return f.arms || []; if ((WORLD.arena && !WORLD.royale) || WORLD.mode === 1) return ARMS; return ARMS.filter(id => countItem(id) > 0); }
+function armsOwned(f) { if (!f.isPlayer) return f.arms || []; if (FFA.active && WORLD.arena && !WORLD.royale) return ffaArms(); if ((WORLD.arena && !WORLD.royale) || WORLD.mode === 1) return ARMS; return ARMS.filter(id => countItem(id) > 0); }
 function curArm(f) { const own = armsOwned(f); if (!own.length) return null; if (!own.includes(f.arm)) f.arm = own[0]; return f.arm; }
 function cycleArm(f) { const own = armsOwned(f); if (!own.length) { sfx('deny'); return; } f.arm = own[(own.indexOf(f.arm) + 1) % own.length]; G.armT = 100; sfx('ui'); }
 function throwArm(f, wx, wy) {

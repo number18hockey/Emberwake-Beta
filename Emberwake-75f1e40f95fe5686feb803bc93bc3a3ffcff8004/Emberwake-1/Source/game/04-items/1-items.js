@@ -430,12 +430,19 @@ function nearStation(tile) { const p = G.p, cx = (p.x + 3) / T, cy = (p.y + 10) 
 const FUELS = ['charcoal', 'coal', 'peat'];
 function fuelHave() { let n = 0; for (const f of FUELS) n += countItem(f); return n; }
 function fuelTake(n) { for (const f of FUELS) { const k = min(n, countItem(f)); removeItem(f, k); n -= k; } }
+function craftChecks(r) {
+  const checks = Object.keys(r.need).map(id => ({ id, kind: 'ingredient', have: countItem(id), need: r.need[id] }));
+  if (r.fuel) {
+    const reserved = id => (r.need[id] || 0) + ((r.keep || []).includes(id) ? 1 : 0);
+    const have = FUELS.reduce((n, id) => n + max(0, countItem(id) - reserved(id)), 0);
+    checks.push({ id: null, kind: 'fuel', have, need: r.fuel });
+  }
+  for (const id of r.keep || []) checks.push({ id, kind: 'kept', have: countItem(id), need: 1 });
+  return checks;
+}
 function canCraft(r) {
   if (WORLD.mode === 1) return true;
-  for (const k in r.need) if (countItem(k) < r.need[k]) return false;
-  for (const k of r.keep || []) if (!countItem(k)) return false;
-  if (r.fuel && fuelHave() < r.fuel) return false;
-  return true;
+  return craftChecks(r).every(q => q.have >= q.need);
 }
 function payCraft(r) { if (WORLD.mode === 1) return; for (const k in r.need) removeItem(k, r.need[k]); if (r.fuel) fuelTake(r.fuel); }
 function giveCraft(r, n = r.n, q) {

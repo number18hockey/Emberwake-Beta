@@ -136,7 +136,7 @@ Echoes are the computer's Wakers, and they think.
 - **They leave in time** when the closing ash would catch them on the walk out, and they choose the chest they can actually reach.
 - **They keep the beat as well as their skill allows.** A practised echo strikes on the glint, quickens its blows as far as its skill goes (the best reach DRUMFIRE), shakes off your blows, answers the openings you give it, dodges, and spends five embers on a heavy. A clumsy one still rushes some of its blows.
 
-The duelists of the Cinder Ring and the rivals in your world find their way to you by the same means.
+The FFA Arcade's echo fighters and the rivals in your world find their way to you by the same means.
 
 ## Other ways to play
 
@@ -145,6 +145,6 @@ The duelists of the Cinder Ring and the rivals in your world find their way to y
 
 Parties and open matches work from the HTML file and the Mac app, on any internet connection (the relay carries it when needed, as in *Playing together*).
 
-# The Cinder Ring
+# The FFA Arcade
 
-Also under **THE ARENAS**: a small arena with every weapon, for quick duels to ten takedowns. **HOST A RING FOR FRIENDS (GAME CODE)** gives you a code for up to three friends (they pick **JOIN A FRIEND**); on claude.ai there is an open ring as well; and you can always practise against echoes.
+Choose **FFA ARCADE** from the home screen to open ten dedicated arenas: Crystal PvP, Sword, Mace, Spear, Grappling Hook, Bow, Axe, Shield & Sword, Knockback and Random Loadout. Quick play starts with three echo bots; each mode has its own loadout, map and locally saved stats. Crystal PvP restores its arena every ten minutes. **HOST PRIVATE MATCH** gives friends a code to join from **JOIN A FRIEND**. Public online matchmaking and worldwide leaderboards are not provided by the standalone game page.

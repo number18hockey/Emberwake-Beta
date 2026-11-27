@@ -77,7 +77,7 @@ function wBrLeave() { brPayLeaving();
 // ---------------- what this computer says about itself ----------------
 function wBrSend() {
   const R = NET.R; if (!R || !R.connected()) return; BR.sentAt = performance.now();
-  const o = { v: 2, br: 1, ring: BR.code, mode: BR.matchType, n: G.nick, sk: G.skin | 0, sq: ++BR.sq, ph: BR.phase === 'lobby' ? 'L' : 'M', mi: BR.phase === 'lobby' ? '' : BR.mi, ld: 0 };
+  const o = { v: 2, br: 1, ring: BR.code, mode: BR.matchType, n: G.nick, sk: G.skin | 0, ht: G.hat | 0, tr: G.trail | 0, sq: ++BR.sq, ph: BR.phase === 'lobby' ? 'L' : 'M', mi: BR.phase === 'lobby' ? '' : BR.mi, ld: 0 };
   if (BR.phase !== 'lobby' && G.p) {
     const p = G.p, a = p.atk, W = heldOf(p);
     Object.assign(o, {
@@ -125,7 +125,7 @@ function wBrSaw(id, q, s) {
   if (!BR.mi || BR.phase === 'lobby' || q.mi !== BR.mi) { const f = NET.peers.get(id); if (f) { NET.peers.delete(id); f.gone = true; } return; }
   if (q.ld && q.ld.st === 'M' && q.ld.mi === BR.mi && !BR.lead) wBrFromLeader(id, q.ld);
   let f = NET.peers.get(id);
-  if (!f && BR.ro.includes(id)) { f = newFighter(num(s.x, 600), num(s.y, 300), { remote: true, peer: id, team: 'r:' + id, snaps: [], spawnT: 0, name: q.n, skin: q.sk, brIn: true, ward: 0, guest: q.guest }); NET.peers.set(id, f); G.fighters.push(f); }
+  if (!f && BR.ro.includes(id)) { f = newFighter(num(s.x, 600), num(s.y, 300), { remote: true, peer: id, team: 'r:' + id, snaps: [], spawnT: 0, name: q.n, skin: q.sk, hat: clamp(num(s.ht) | 0, 0, 3), trail: clamp(num(s.tr) | 0, 0, BR_TRAILS.length - 1), brIn: true, ward: 0, guest: q.guest }); NET.peers.set(id, f); G.fighters.push(f); }
   if (f && typeof s.x === 'number') {
     netApply(f, s); f.ward = clamp(num(s.wd) | 0, 0, 100); f.glide = !!s.gl; f.noHit = !!s.ob; if (typeof s.cz === 'string' && s.cz) f.cause = s.cz.replace(/[^a-z .,'-]/gi, '').slice(0, 40);
     if (Array.isArray(s.gr)) { f.gearObj = {}; GEAR_SLOTS.forEach((slot, k) => { const id = s.gr[k]; if (IT[id] && IT[id].type === 'armor' && IT[id].slot === slot) f.gearObj[slot] = { id, n: 1 }; }); f.grKey = GEAR_SLOTS.map(slot => f.gearObj[slot] ? f.gearObj[slot].id : '').join(','); f.gskin = null; }
@@ -270,7 +270,7 @@ function wBrRtcTick() {
 // the host lets a friend into the lobby
 function wBrRtcWelcome(P, m) {
   if ([...COOP.peers.values()].filter(Q => Q.ok).length >= WBR_PARTY - 1) { sendTo(P, { t: 'kick' }); return; }
-  P.name = cleanName(m.n) || P.name || 'WAKER'; P.skin = clamp(m.sk | 0, 0, SKINS.length - 1); P.ok = true; P.pres = null;
+  P.name = cleanName(m.n) || P.name || 'WAKER'; P.skin = clamp(m.sk | 0, 0, SKINS.length - 1); P.hat = clamp(m.ht | 0, 0, 3); P.trail = clamp(m.tr | 0, 0, BR_TRAILS.length - 1); P.ok = true; P.pres = null;
   sendTo(P, { t: 'wbrw', v: NETV, id: P.id, host: coopName(), code: BR.code, mode: BR.matchType }); COOP.note = ''; sfx('quest', 0); BR.rtcDirty = true;
 }
 function wBrRtcJoin(m) {

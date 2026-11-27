@@ -88,7 +88,7 @@ Links, armour, weapon styles, creatures and guardians.
 - `tempo.py` The beat: mashing must lose to timing; rushed blows, tempo, clean hits, clashes, guards, being caught; a rival that fights in time.
 - `quickening.py` The quickening: blows on the glint quicken the cadence, five start DRUMFIRE (stokes, the CRASH), one press too soon is HASTY and hammering is RUSHED, pressing while hit shakes it off. Then RUNS, ten seconds of scripted players on a husk that cannot die (on the glint, with noise, mashers, DRUMFIRE and a CRASH; every kind of weapon), and BOTS, a hundred seeded duels each against computer fighters of four skills. Its bounds are the targets the cadence was tuned to.
 - `balance.py` Balance: metal tiers climb steadily, kinds of weapon stay in one band when used well, tools hit half as hard as a sword of their metal; and the newer rules: sunder, perfect release, the answer, stamina for mashing, warded foes.
-- `ring_with_friends.py` The Cinder Ring with friends by game code, from the plain HTML file.
+- `ring_with_friends.py` A private FFA match with friends by game code, from the plain HTML file.
 - `carried_momentum.py` A blow or a dash never stops you dead: held keys keep you running through a swing, a dash flows into a run, and hands off the keys you glide to a stop.
 - `bots_find_their_way.py` Fighters the computer runs find a real way: over walls, across pits, up and down rope bridges, round what is too tall, never into a pool with no way out, never through fire; and what the searching costs with twelve at once.
 
@@ -130,6 +130,7 @@ The Ashfall: alone, with friends, online, over the relay.
 - `wilds_rules.py` The rules of the Wilds: the fall from the sky, empty hands, gathering and crafting, digging, the lava, sparse chests, a border that answers to the fallen, pacts, doors, beasts.
 - `wilds_solo.py` The Wilds alone with the echoes: the fall, gathering and crafting by echoes, the border, the fights, to the end.
 - `wilds_rewards.py` What a match in the Wilds pays: a soul for every kill, coins for a win, looks from the wheel and the shop; nothing owned is carried into a match.
+- `cosmetic_shop.py` The account cosmetic shop: rarity-priced skins, trails and hats; Souls and Coins purchases; equipping, unequipping, account persistence and multiplayer appearance fields.
 - `wilds_balance.py` The Wilds: weapons of a kind against each other, by evenly matched echoes (slow; give it a number of rounds).
 - `wilds_echoes_find_their_way.py` The echoes of the Wilds find a real way: up to a thing above them, down to one below, and through earth when digging is the only way; never into the hot rock or the lava; and what the searching costs with 31 echoes.
 - `wilds_with_friends.py` The Wilds with friends by game code: the host opens a lobby, a friend joins, and the match starts for both.

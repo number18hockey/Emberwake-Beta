@@ -126,7 +126,7 @@ function syncMobileControls() {
   // (and nothing to steer or strike with while you lie dead: the death screen is left clear)
   const play = G.state === 'play' && !G.dialog && !G.cine, over = WORLD.royale && BR.on && BR.phase === 'over', visible = play && !UI.open && !over && !(G.p && G.p.dead);
   mobileControls.classList.toggle('visible', visible); mobileControls.classList.toggle('panel', play && !!UI.open); mobileControls.setAttribute('aria-hidden', String(!play));
-  // no button for what would do nothing: there is no pack in the Cinder Ring, no map there or before you have drawn one, and nobody to talk to alone
+  // no button for what would do nothing: there is no pack in the FFA Arcade, no map there or before you have drawn one, and nobody to talk to alone
   if (visible) { const ring = WORLD.arena && !WORLD.royale; touchPackBtn.classList.toggle('off', ring); touchMapBtn.classList.toggle('off', ring || (!WORLD.royale && !hasUtil('fieldmap'))); touchChatBtn.classList.toggle('off', !COOP.role); touchPactBtn.classList.toggle('off', !wildOn()); }
   if (!visible && (stickPointer !== null || mouse.l || mouse.r)) clearMobileInput();
   // a finger still on DASH when the buttons go or you fall (a panel opens, you leave for the title) no longer holds Shift:

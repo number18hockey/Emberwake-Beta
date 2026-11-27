@@ -25,6 +25,8 @@ const TRINK = {
   fortune_charm: { n: 'Fortune Charm', mul: { drop: 1.3 }, d: 'Creatures you fell drop more.' },
   frost_charm: { n: 'Frostward Charm', res: { cold: .6 }, d: 'Cold barely bites.' },
   ash_charm: { n: 'Ashward Charm', res: { fire: .35 }, d: 'Fire and heat hurt a third less.' },
+  briar_ward: { n: 'Briar Ward', tags: ['ward'], d: 'Poison and bleeding cannot take hold while you wear it.' },
+  storm_ward: { n: 'Storm Ward', res: { shock: .5 }, d: 'Shock hurts half as much.' },
   // left behind by the guardians
   warden_eye: { n: "Warden's Eye", mul: { hdmg: 1.12 }, tags: ['glow'], d: 'Heavy blows land 12% harder, and it glows.', boss: 1 },
   glass_tear: { n: "Vesper's Tear", mul: { dodge: 1.12 }, tags: ['veil'], d: 'Dodges carry further, with a wider perfect window.', boss: 1 },
@@ -214,6 +216,8 @@ R('jewel', 'rhythm_bead', 1, { bone: 3, resin: 2, shard: 1 }); R('jewel', 'thorn
 R('jewel', 'fang_necklace', 1, { tusk: 2, twine: 2, bone: 2 }); R('jewel', 'ember_heart', 1, { ember_bar: 1, glass: 1, cinder_gland: 1 });
 R('jewel', 'fortune_charm', 1, { geode_core: 1, copper_bar: 2, glass: 1 }); R('jewel', 'frost_charm', 1, { skyglass: 1, cloth: 1, tin_bar: 1 });
 R('jewel', 'ash_charm', 1, { cinder: 4, rust_plate: 2, bronze_bar: 1 });
+R('jewel', 'briar_ward', 1, { husk_fiber: 2, resin: 2, venom: 1 });
+R('jewel', 'storm_ward', 1, { copper_bar: 2, glass_wing: 2, skyglass: 1 });
 // ---- the oven's work ----
 R('quern', 'flour', 1, { reed: 3 }); R('quern', 'flour', 2, { reed: 5, husk_fiber: 1 });
 R('oven', 'bread', 2, { flour: 2, jug_w: 1 }, { ret: { jug: 1 } }); R('oven', 'berry_pie', 1, { flour: 2, berries: 4 });

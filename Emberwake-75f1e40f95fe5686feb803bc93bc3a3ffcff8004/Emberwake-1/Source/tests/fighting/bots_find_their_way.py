@@ -1,6 +1,6 @@
 # Fighters the computer runs find a real way to where they are going (game/07-fighters/2-nav.js): over walls, across pits,
 # up and down rope bridges, round what is too tall, never into a pool they could not climb out of, never through fire.
-# Each course is built in the Cinder Ring and run twice: by the route finder, and by the old straight-line steering alone.
+# Each course is built in the FFA arena and run twice: by the route finder, and by the old straight-line steering alone.
 import asyncio, os, sys
 sys.path.insert(0, os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), 'helpers'))
 from harness import H

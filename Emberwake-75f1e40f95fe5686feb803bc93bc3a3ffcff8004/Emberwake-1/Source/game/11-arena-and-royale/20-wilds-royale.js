@@ -11,13 +11,13 @@
 //  nothing too.
 //  Online, the match leader (the first person in the lobby) runs the
 //  clock, the border and the echoes; every computer runs its own Waker
-//  and shares it as presence, exactly like the Cinder Ring.
+//  and shares it as presence, exactly like the FFA Arcade.
 //  (the island: 23-wilds-island; echoes: 24-wilds-echoes; creatures,
 //  gifts and the other cruelties of the games: 25-wilds-games)
 // ============================================================
 const WBR_MAX = 32, WBR_FILL = 32, WBR_PARTY = 8, BR_HOLD = 4 * 60, WBR_DROP = 16 * 60;
-const WBR_TIERS = ['COMMON', 'UNCOMMON', 'RARE', 'EPIC', 'LEGENDARY'], WBR_TCOL = ['#c8c4d4', '#7ddc6f', '#5aa8ff', '#c77dff', '#ffd35a'];
-const WBR_MATT = { wood: 0, flint: 0, bone: 0, stone: 0, copper: 1, bronze: 2, rust: 2, chitin: 1, iron: 2, steel: 3, glass: 3, deep: 4, ember: 4, cinder: 4, gloom: 4, prism: 4 };
+const WBR_TIERS = ['COMMON', 'UNCOMMON', 'RARE', 'EPIC', 'LEGENDARY', 'MYTHIC'], WBR_TCOL = ['#c8c4d4', '#7ddc6f', '#5aa8ff', '#c77dff', '#ffd35a', '#ff7a9e'];
+const WBR_MATT = { wood: 0, flint: 0, bone: 0, stone: 0, copper: 1, bronze: 2, rust: 2, chitin: 1, iron: 2, steel: 3, glass: 3, deep: 4, ember: 5, cinder: 4, gloom: 4, prism: 5 };
 const WBR_OLD = { sword: 1, spear: 0, fangs: 1, maul: 2, bow: 1, nunchaku: 1, kblade: 4, kmaul: 4, vpike: 3, vfangs: 3 };
 const WBR_BOTN = ['WREN', 'KESTREL', 'MARROW', 'TINDER', 'SORREL', 'FLINT', 'ROOK', 'BRAMBLE', 'EMBERLY', 'SALTWICK', 'HOLLIS', 'VESK', 'ODA', 'TALLOW', 'RUE', 'CINNA', 'THRESH', 'FINCH', 'ALDER', 'MAGS', 'PEWTER', 'QUILL', 'SEDGE', 'CLOVE', 'HAWTHORN', 'LARK', 'MOSS', 'NETTLE', 'OAKLEY', 'PIKE', 'REED', 'SABLE'];
 // The border moves when enough Wakers have fallen: [share of the field still standing, share of the island left safe, damage a second outside].
@@ -42,24 +42,61 @@ R('hand', 'twine', 1, { reed: 3 }, { wild: true });
 const BR_SKIN_NAMES = ['CINDER', 'ROSE', 'AETHER', 'MOSS', 'GLASS', 'DUNE'], BR_HAT_NAMES = ['NO HAT', 'EMBER', 'CROWN', 'FROST'];
 const BR_SKIN_COSTS = [0, 0, 100, 150, 200, 250], BR_HAT_COSTS = [0, 75, 100, 125], BR_SPIN = 10;
 const BR_LOOKS = [...BR_SKIN_NAMES.map((name, id) => ({ kind: 'skin', id, name, cost: BR_SKIN_COSTS[id] })), ...BR_HAT_NAMES.map((name, id) => ({ kind: 'hat', id, name, cost: BR_HAT_COSTS[id] }))];
-const brOwns = (p, k) => (k.kind === 'skin' ? p.skins : p.hats).includes(k.id), brWheelPool = p => BR_LOOKS.filter(k => k.cost > 0 && !brOwns(p, k));
+const BR_TRAILS = [
+  { name: 'NONE', rarity: 'COMMON', color: '#8b8fa3', cost: 0, currency: 'coins' },
+  { name: 'EMBERDUST', rarity: 'UNCOMMON', color: '#ff8a3d', cost: 15, currency: 'souls' },
+  { name: 'FROSTGLASS', rarity: 'RARE', color: '#8ff5e6', cost: 35, currency: 'souls' },
+  { name: 'DUSK WISP', rarity: 'EPIC', color: '#c77dff', cost: 65, currency: 'souls' },
+  { name: 'STARFALL', rarity: 'LEGENDARY', color: '#ffd35a', cost: 120, currency: 'souls' }
+];
+const BR_SHOP_ITEMS = [
+  ...BR_SKIN_NAMES.map((name, id) => ({ kind: 'skin', id, name, rarity: id < 2 ? 'COMMON' : ['COMMON', 'COMMON', 'UNCOMMON', 'RARE', 'EPIC', 'LEGENDARY'][id], cost: BR_SKIN_COSTS[id], currency: 'coins' })),
+  ...BR_HAT_NAMES.map((name, id) => ({ kind: 'hat', id, name, rarity: ['COMMON', 'UNCOMMON', 'RARE', 'EPIC'][id], cost: BR_HAT_COSTS[id], currency: 'coins' })),
+  ...BR_TRAILS.map((item, id) => Object.assign({ kind: 'trail', id }, item))
+];
+const brOwns = (p, k) => (k.kind === 'skin' ? p.skins : k.kind === 'hat' ? p.hats : p.trails).includes(k.id), brWheelPool = p => BR_LOOKS.filter(k => k.cost > 0 && !brOwns(p, k));
 function brProfile() {
   const key = 'ew2.br.' + (typeof accountId === 'function' ? accountId() : 'none');
   try {
     const raw = typeof LS === 'object' ? JSON.parse(LS.get(key) || '{}') : {};
     const valid = (values, maxN) => Array.isArray(values) ? [...new Set(values.map(v => num(v, -1) | 0).filter(v => v >= 0 && v < maxN))] : null;
     const skins = valid(raw.skins, SKINS.length) || [0, clamp(num(G.skin, FORM.skin) | 0, 0, SKINS.length - 1)], hats = valid(raw.hats, BR_HAT_NAMES.length) || [0, clamp(num(G.hat, FORM.hat) | 0, 0, BR_HAT_NAMES.length - 1)];
-    if (!skins.length) skins.push(0); if (!hats.length) hats.push(0);
-    const p = { xp: max(0, num(raw.xp) | 0), elo: clamp(num(raw.elo, 1000) | 0, 0, 9999), wins: max(0, num(raw.wins) | 0), matches: max(0, num(raw.matches) | 0), kills: max(0, num(raw.kills) | 0), coins: max(0, num(raw.coins) | 0), souls: max(0, num(raw.souls) | 0), skins, hats };
+    const trails = valid(raw.trails, BR_TRAILS.length) || [0];
+    if (!skins.length) skins.push(0); if (!hats.length) hats.push(0); if (!trails.length) trails.push(0);
+    const p = { xp: max(0, num(raw.xp) | 0), elo: clamp(num(raw.elo, 1000) | 0, 0, 9999), wins: max(0, num(raw.wins) | 0), matches: max(0, num(raw.matches) | 0), kills: max(0, num(raw.kills) | 0), coins: max(0, num(raw.coins) | 0), souls: max(0, num(raw.souls) | 0), skins, hats, trails, updatedAt: max(0, num(raw.updatedAt)) };
+    if (raw.equipped && typeof raw.equipped === 'object') p.equipped = { skin: clamp(num(raw.equipped.skin) | 0, 0, SKINS.length - 1), hat: clamp(num(raw.equipped.hat) | 0, 0, BR_HAT_NAMES.length - 1), trail: clamp(num(raw.equipped.trail) | 0, 0, BR_TRAILS.length - 1) };
     // (kits unlocked before matches began empty-handed: no longer used, but not thrown away)
     if (Array.isArray(raw.kits)) p.kits = raw.kits.filter(k => typeof k === 'string').slice(0, 40);
     return p;
-  } catch (e) { return { xp: 0, elo: 1000, wins: 0, matches: 0, kills: 0, coins: 0, souls: 0, skins: [0], hats: [0] }; }
+  } catch (e) { return { xp: 0, elo: 1000, wins: 0, matches: 0, kills: 0, coins: 0, souls: 0, skins: [0], hats: [0], trails: [0], updatedAt: 0 }; }
 }
-function brSaveProfile(p) {
-  const key = 'ew2.br.' + (typeof accountId === 'function' ? accountId() : 'none');
+function brSaveProfile(p, sync = true) {
+  const owner = typeof accountId === 'function' ? accountId() : 'none', key = 'ew2.br.' + owner;
+  p.updatedAt = Date.now();
   if (typeof LS === 'object' && !LS.set(key, JSON.stringify(p))) { console.warn('Could not save Battle Royale progression'); return false; }
+  if (sync && typeof SAVE === 'object' && SAVE.db && typeof dpath === 'function') {
+    try { SAVE.db.doc(dpath('br-profile', owner)).set(p).catch(() => { }); } catch (e) { }
+  }
   return true;
+}
+async function brSyncProfile(owner) {
+  if (!SAVE.db || typeof dpath !== 'function') return;
+  const db = SAVE.db, ref = db.doc(dpath('br-profile', owner));
+  try {
+    const snap = await withTimeout(ref.get(), 9000);
+    if (accountId() !== owner || SAVE.db !== db) return;
+    const local = brProfile(), remote = snap && snap.exists ? snap.data() : null;
+    if (remote && num(remote.updatedAt) > local.updatedAt) {
+      brSaveProfile(remote, false);
+      const e = brProfile().equipped;
+      if (e) {
+        G.skin = e.skin; G.hat = e.hat; G.trail = e.trail; FORM.skin = e.skin; FORM.hat = e.hat;
+        if (ACCOUNT.active) { ACCOUNT.active.skin = e.skin; ACCOUNT.active.hat = e.hat; ACCOUNT.active.trail = e.trail; writeAccountProfiles(); }
+        if (G.p) { G.p.skin = e.skin; G.p.hat = e.hat; G.p.trail = e.trail; }
+      }
+    }
+    else await withTimeout(ref.set(local), 9000);
+  } catch (e) { }
 }
 function brPassLevel() { return floor(brProfile().xp / 1000); }
 const brTitle = lv => BR_TITLES[clamp(lv | 0, 0, BR_TITLES.length - 1)];
@@ -72,15 +109,29 @@ function brSpinSoulWheel() {
   BR.menuMsg = 'THE SOUL WHEEL GIVES YOU: ' + k.name + (k.kind === 'hat' ? ' (HAT)' : ' (SKIN)') + '. Wear it from the shop.'; sfx('quest', 0); return k;
 }
 function brShopCosmetic(kind, id) {
-  const p = brProfile(), isSkin = kind === 'skin', owned = isSkin ? p.skins : p.hats, costs = isSkin ? BR_SKIN_COSTS : BR_HAT_COSTS;
-  if (costs[id] === undefined) return false;
+  const item = BR_SHOP_ITEMS.find(k => k.kind === kind && k.id === id);
+  if (!item) return false;
+  const p = brProfile(), owned = kind === 'skin' ? p.skins : kind === 'hat' ? p.hats : p.trails;
   if (!owned.includes(id)) {
-    if (p.coins < costs[id]) { BR.menuMsg = 'You need ' + costs[id] + ' coins for that.'; sfx('deny'); return false; }
-    p.coins -= costs[id]; owned.push(id);
+    if (p[item.currency] < item.cost) { BR.menuMsg = 'You need ' + item.cost + ' ' + item.currency + ' for that.'; sfx('deny'); return false; }
+    p[item.currency] -= item.cost; owned.push(id);
   }
   if (!brSaveProfile(p)) { BR.menuMsg = 'Could not save your look.'; return false; }
-  if (isSkin) FORM.skin = G.skin = id; else FORM.hat = G.hat = id;
-  accountSaveProfile(); BR.menuMsg = 'WEARING: ' + (isSkin ? BR_SKIN_NAMES[id] : BR_HAT_NAMES[id]); sfx('ui'); return true;
+  if (kind === 'skin') FORM.skin = G.skin = id;
+  else if (kind === 'hat') FORM.hat = G.hat = id;
+  else { G.trail = id; if (G.p) G.p.trail = id; }
+  p.equipped = { skin: G.skin | 0, hat: G.hat | 0, trail: G.trail | 0 };
+  brSaveProfile(p);
+  accountSaveProfile(); BR.menuMsg = 'WEARING: ' + item.name; sfx('ui'); return true;
+}
+function brUnequipCosmetic(kind) {
+  if (kind === 'skin') FORM.skin = G.skin = 0;
+  else if (kind === 'hat') FORM.hat = G.hat = 0;
+  else if (kind === 'trail') G.trail = 0;
+  else return false;
+  if (G.p) { G.p.skin = G.skin; G.p.hat = G.hat; G.p.trail = G.trail | 0; }
+  accountSaveProfile();
+  BR.menuMsg = 'COSMETIC UNEQUIPPED'; sfx('ui'); return true;
 }
 function brRewardKill() { const p = brProfile(); p.souls++; brSaveProfile(p); }
 function brRewardMatch() {
@@ -139,14 +190,29 @@ const BR_FOOD = [['berries', 2, 3], ['meat', 1, 1], ['egg', 1, 2], ['glowcap', 1
 const BR_BUNDLE = [[['stick', 2, 4], ['fiber', 2, 4]], [['rock', 2, 3], ['flint', 1, 1]], [['log', 1, 2], ['resin', 1, 1]], [['bone', 2, 3]], [['rope', 1, 1], ['torch', 1, 2]], [['copper_ore', 2, 3], ['coal', 1, 1]], [['arrow', 3, 5]], [['hide', 1, 2], ['fiber', 2, 3]]];
 const randiF = (a, b) => floor(a + Math.random() * (b - a + 1));
 const brRoll = L => L.map(([id, a, b]) => [id, randiF(a, b)]).filter(e => IT[e[0]]);
+const wBrRollRarity = c => {
+  const r = Math.random();
+  if (c && c.crown) return r < .02 ? 5 : r < .14 ? 4 : r < .4 ? 3 : r < .7 ? 2 : r < .9 ? 1 : 0;
+  if (c && c.feast) return r < .01 ? 5 : r < .1 ? 4 : r < .35 ? 3 : r < .65 ? 2 : r < .92 ? 1 : 0;
+  if (c && c.rare) return r < .18 ? 2 : r < .55 ? 3 : r < .94 ? 4 : 5;
+  return r < .42 ? 0 : r < .72 ? 1 : r < .91 ? 2 : r < .99 ? 3 : r < .999 ? 4 : 5;
+};
 // a chest holds two or three things, and almost never a weapon: weapons are made
 function wBrLoot(c) {
   const out = [], R = Math.random;
-  if (c.feast) { out.push([fpick(BR_W[R() < .75 ? 2 : 1]), 1], ['br_draught', 1], [R() < .5 ? 'br_ward' : 'br_shard', 1]); return out; }
-  if (c.crown) { if (R() < .5) out.push([fpick(BR_W[R() < .8 ? 1 : 0]), 1]); else out.push(...brRoll([['copper_ore', 3, 4], ['tin_ore', 1, 2]])); out.push([R() < .5 ? 'br_draught' : 'br_salve', 1], ['br_shard', 1]); return out.slice(0, 3); }
+  c.rarity = wBrRollRarity(c);
+  c.rarityName = WBR_TIERS[c.rarity];
+  if (c.feast) { out.push([fpick(BR_W[c.rarity >= 4 ? 2 : c.rarity >= 3 ? 1 : 0]), 1], ['br_draught', 1], [R() < .5 ? 'br_ward' : 'br_shard', 1]); return out; }
+  if (c.crown) { if (R() < .5) out.push([fpick(BR_W[c.rarity >= 4 ? 2 : c.rarity >= 3 ? 1 : 0]), 1]); else out.push(...brRoll([['copper_ore', 3, 4], ['tin_ore', 1, 2]])); out.push([R() < .5 ? 'br_draught' : 'br_salve', 1], ['br_shard', 1]); return out.slice(0, 3); }
   out.push(...brRoll(fpick(BR_BUNDLE)).slice(0, c.rare ? 2 : 1));
   if (c.rare) { const r = R(); if (r < .12) out.push([fpick(BR_W[R() < .65 ? 0 : 1]), 1]); else if (r < .34) out.push([fpick(['hide_head', 'hide_body', 'hide_legs', 'hide_feet']), 1]); else if (r < .6) out.push(['br_shard', 1]); else out.push(['br_salve', 1]); }
   else if (R() < .045) out.push([fpick(BR_W[0]), 1]); else if (R() < .4) out.push(['br_salve', 1]); else out.push(...brRoll([fpick(BR_FOOD)]));
+  const topWeaponChance = c.rarity === 5 ? .35 : c.rarity === 4 ? .12 : c.rarity === 3 ? .025 : 0;
+  if (topWeaponChance && R() < topWeaponChance) out.push([fpick(BR_W[2]), 1]);
+  const siteLoot = {
+    fortress: ['iron_ore', 1, 2], bunker: ['coal', 2, 3], village: ['berries', 2, 3], temple: ['br_shard', 1, 1], outpost: ['copper_ore', 2, 4]
+  }[c.structure];
+  if (siteLoot) out.push(brRoll([siteLoot])[0]);
   return out.filter(e => IT[e[0]]).slice(0, 3);
 }
 
@@ -194,8 +260,17 @@ function brDeep(f) {
 }
 
 // ---------------- the fall: everyone comes down somewhere else ----------------
-// the island is cut into as many strips as there are Wakers, shuffled, and each comes down somewhere in their own
-function brSlots(seed, n) { const r = mulberry32((seed ^ 0x3C6EF372) >>> 0), a = []; for (let i = 0; i < n; i++) a.push(round(50 + (i + .12 + .76 * r()) * (WBRW - 100) / n)); for (let i = n - 1; i > 0; i--) { const j = floor(r() * (i + 1)), q = a[i]; a[i] = a[j]; a[j] = q; } return a; }
+// each Waker gets a seeded, shuffled strip, with a minimum distance between landings
+function brSlots(seed, n) {
+  const r = mulberry32((seed ^ 0x3C6EF372) >>> 0), usable = WBRW - 100, width = usable / max(1, n), a = [];
+  for (let i = 0; i < n; i++) {
+    let x = 50 + (i + .25 + r() * .5) * width, tries = 0;
+    while (tries++ < 20 && a.some(q => abs(q - x) < width * .52)) x = 50 + r() * usable;
+    x = clamp(round(x), 50, WBRW - 50); a.push(x);
+  }
+  for (let i = n - 1; i > 0; i--) { const j = floor(r() * (i + 1)), q = a[i]; a[i] = a[j]; a[j] = q; }
+  return a;
+}
 function brPlaceInSky(f, k) { f.slotX = (BR.slots[k] || WBRW / 2) * T; f.x = f.px = f.slotX; f.y = f.py = 8 * T + (k % 3) * 10; f.vx = f.vy = 0; f.onGround = false; f.glide = true; f.noHit = true; f.ward = 0; for (const s of f.scarf) { s.x = s.ox = f.x + 3; s.y = s.oy = f.y + 5; } }
 // hanging in the air until the horn
 function brHover(f) { f.px = f.x; f.py = f.y; f.vx = f.vy = 0; f.y = 8 * T + ((f.botI | 0) % 3) * 10 + sin(G.time * .05 + f.slotX) * 2; tickScarf(f); }
@@ -239,7 +314,7 @@ function wBrOpenChest(c, f) {
   const px = c.x * T + 4, py = c.y * T + 2; if (near(f)) sfx('craft', 0); burst(px, py, 10, c.rare ? ['#ffd35a', '#fff1a8'] : ['#ffb347', '#c98a5a'], 1.2, 24, { glow: 1 });
   const loot = wBrLoot(c);
   // what is inside is set down where it stands
-  if (f === G.p) { loot.forEach(([id, n], k) => spawnDrop(id, n, px + (k - (loot.length - 1) / 2) * 7, py, 0, 0)); return; }
+  if (f === G.p) { brSay(`${c.rarityName} CACHE`); loot.forEach(([id, n], k) => spawnDrop(id, n, px + (k - (loot.length - 1) / 2) * 7, py, 0, 0)); return; }
   if (f && f.br) for (const [id, n] of loot) wBrBotTake(f, id, n);
 }
 // what you drop when you fall: everything you carried

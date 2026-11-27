@@ -46,16 +46,16 @@ function wDrawBrForm(c) {
     button(c, fx + third, actionY, third - 2, 17, 'HOST', () => go(() => { COOP.br = true; wBrLobbyEnter('rtc', 'friends'); }), { off: !netOK() });
     button(c, fx + third * 2, actionY, third - 2, 17, 'SOLO', () => go(() => wBrSolo()));
   } else {
-    const wheel = tab === 'wheel', rowH = wheel ? 14 : 16, listY = contentY + (tiny ? 24 : wheel ? 34 : 18), listBottom = tiny ? (wheel ? actionY - 5 : y + h - 14) : actionY - 22, rows = BR.menuRows = max(1, floor((listBottom - listY) / rowH)), N = BR_LOOKS.length, pool = brWheelPool(p);
+    const wheel = tab === 'wheel', rowH = wheel ? 14 : 16, listY = contentY + (tiny ? 24 : wheel ? 34 : 18), listBottom = tiny ? (wheel ? actionY - 5 : y + h - 14) : actionY - 22, rows = BR.menuRows = max(1, floor((listBottom - listY) / rowH)), items = wheel ? BR_LOOKS : BR_SHOP_ITEMS, N = items.length, pool = brWheelPool(p);
     BR.menuScroll = clamp(BR.menuScroll, 0, max(0, N - rows));
     if (wheel && (!tiny || !BR.menuMsg)) { const t = tiny ? `${BR_SPIN} SOULS A SPIN` : fw < 220 ? `A soul for every kill. ${BR_SPIN} souls a spin.` : `Every kill is a soul. ${BR_SPIN} souls turn the wheel, and it gives you a look you don't own.`; wrapText(t, fw).slice(0, 2).forEach((l, i) => drawText(c, l, fx, contentY + i * 9, '#d8d4e6')); }
     drawText(c, `${wheel ? 'LOOKS' : 'STYLE'} ${BR.menuScroll + 1}-${min(N, BR.menuScroll + rows)}/${N}`, fx, listY - 12, '#8b8fa3');
     button(c, fx + fw - 32, listY - 14, 14, 12, '<', () => { BR.menuScroll = max(0, BR.menuScroll - rows); }); button(c, fx + fw - 16, listY - 14, 14, 12, '>', () => { BR.menuScroll = min(max(0, N - rows), BR.menuScroll + rows); });
     c.save(); c.beginPath(); c.rect(fx, listY, fw, listBottom - listY); c.clip();
     for (let i = 0; i < rows; i++) {
-      const k = BR_LOOKS[BR.menuScroll + i]; if (!k) continue; const ry = listY + i * rowH, own = brOwns(p, k), on = k.kind === 'skin' ? G.skin === k.id : G.hat === k.id, name = `${k.kind.toUpperCase()}: ${k.name}`;
+      const k = items[BR.menuScroll + i]; if (!k) continue; const ry = listY + i * rowH, own = brOwns(p, k), on = k.kind === 'skin' ? G.skin === k.id : k.kind === 'hat' ? G.hat === k.id : G.trail === k.id, name = `${k.kind.toUpperCase()}: ${k.name}`;
       if (wheel) { const tag = own ? 'OWNED' : k.cost ? 'ON THE WHEEL' : 'FREE IN THE SHOP'; c.fillStyle = i % 2 ? '#211e2c' : '#191622'; c.fillRect(fx, ry, fw, rowH - 1); drawText(c, name, fx + 4, ry + 3, own ? '#fff' : '#8b8fa3'); textS(c, tag, fx + fw - textW(tag) - 5, ry + 3, own ? '#7ddc6f' : k.cost ? '#ffd35a' : '#8b8fa3'); }
-      else { const label = on ? 'ON' : own ? 'USE' : `BUY ${k.cost}`, bw = max(44, textW(label) + 10); drawText(c, name, fx + 3, ry + 4, '#d8d4e6'); button(c, fx + fw - bw, ry, bw, rowH - 1, label, () => brShopCosmetic(k.kind, k.id), { on }); }
+      else { const label = on ? 'ON' : own ? 'USE' : `BUY ${k.cost}`, bw = max(44, textW(label) + 10); drawText(c, name, fx + 3, ry + 4, '#d8d4e6'); button(c, fx + fw - bw, ry, bw, rowH - 1, label, () => brShopCosmetic(k.kind, k.id), { on, off: !own && p[k.currency] < k.cost }); }
     }
     c.restore();
     if (wheel) { const t = !pool.length ? 'ALL LOOKS OWNED' : tiny ? `WHEEL ${p.souls}/${BR_SPIN}` : `TURN THE WHEEL  ·  ${BR_SPIN} SOULS`; button(c, fx, actionY, fw, 17, t, () => brSpinSoulWheel(), { off: !pool.length || p.souls < BR_SPIN }); if (!tiny && pool.length && p.souls < BR_SPIN && !BR.menuMsg) drawText(c, `${BR_SPIN - p.souls} more souls needed`, fx, actionY - 12, '#8b8fa3'); }

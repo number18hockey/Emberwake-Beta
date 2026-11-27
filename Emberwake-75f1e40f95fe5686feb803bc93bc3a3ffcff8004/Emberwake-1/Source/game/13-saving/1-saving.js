@@ -27,7 +27,7 @@ function writeAccountProfiles() { return LS.set('ew2.accounts', JSON.stringify(A
 function accountBoot() {
   ACCOUNT.profiles = readAccountProfiles();
   ACCOUNT.active = null; ACCOUNT.loginId = null; ACCOUNT.form = 'list'; ACCOUNT.msg = null; ACCOUNT.err = {}; ACCOUNT.busy = false; ACCOUNT.show = false;
-  LS.del('ew2.active'); SAVE.list = [];
+  LS.del('ew2.active'); SAVE.list = []; G.trail = 0;
   // the last account signed in on this device is chosen in the ledger, its password box ready (ew2.last holds only its id:
   // it is no credential, and nobody is signed in until the password is given)
   const last = LS.get('ew2.last'), p = last && ACCOUNT.profiles.find(v => v.id === last);
@@ -80,7 +80,7 @@ async function accountCreate(name, password, confirm, skin, hat) {
   try {
     const salt = accountSalt(), hash = await accountPasswordHash(password, salt);
     const firstAccount = !ACCOUNT.profiles.some(p => p.id !== 'guest');
-    const p = { id: Date.now().toString(36) + ((Math.random() * 46656) | 0).toString(36), name, skin: clamp(skin | 0, 0, SKINS.length - 1), hat: clamp(hat | 0, 0, 3), salt, hash };
+    const p = { id: Date.now().toString(36) + ((Math.random() * 46656) | 0).toString(36), name, skin: clamp(skin | 0, 0, SKINS.length - 1), hat: clamp(hat | 0, 0, 3), trail: 0, salt, hash };
     ACCOUNT.profiles.push(p);
     if (!writeAccountProfiles()) { ACCOUNT.profiles.pop(); accountSay('This browser would not save the account. Is private browsing on?'); return false; }
     accountSwitch(p.id);
@@ -94,7 +94,7 @@ async function accountCreate(name, password, confirm, skin, hat) {
 }
 function accountSwitch(id) {
   const p = ACCOUNT.profiles.find(v => v.id === id); if (!p) return false;
-  ACCOUNT.active = p; LS.del('ew2.active'); G.nick = p.name; G.skin = clamp(p.skin | 0, 0, SKINS.length - 1); G.hat = clamp(p.hat | 0, 0, 3);
+  ACCOUNT.active = p; LS.del('ew2.active'); G.nick = p.name; G.skin = clamp(p.skin | 0, 0, SKINS.length - 1); G.hat = clamp(p.hat | 0, 0, 3); G.trail = clamp(p.trail | 0, 0, BR_TRAILS.length - 1);
   // (the name shown to other Wakers follows the game's own rule for names: capitals, twelve letters)
   FORM.nick = cleanName(p.name); FORM.skin = G.skin; FORM.hat = G.hat;
   SAVE.list = readLocalIndex(); sortWorlds(); ACCOUNT.msg = null; ACCOUNT.err = {}; accountWipe();
@@ -140,7 +140,7 @@ function accountLogout() {
   if (COOP.role) coopLeave();
   const was = ACCOUNT.active;
   ACCOUNT.active = null; ACCOUNT.loginId = was ? was.id : null; ACCOUNT.form = 'list'; accountSay('Signed out. Your worlds are saved.', 'info'); ACCOUNT.err = {}; accountWipe();
-  SAVE.list = []; LS.del('ew2.active'); G.hat = 0;
+  SAVE.list = []; LS.del('ew2.active'); G.hat = 0; G.trail = 0;
   G.state = 'accounts'; UI.open = null; UI.focus = null; UI.held = null;
 }
 // a name already used by an account in this browser (names are told apart without minding capitals)
@@ -165,9 +165,13 @@ function accountCreateSubmit() {
 }
 // the account remembers the look last worn (its name stays the one it was made with: it is what you sign in as)
 function accountSaveProfile() {
-  if (!ACCOUNT.active) return;
-  ACCOUNT.active.skin = G.skin; ACCOUNT.active.hat = G.hat;
-  writeAccountProfiles();
+  if (ACCOUNT.active) {
+    ACCOUNT.active.skin = G.skin; ACCOUNT.active.hat = G.hat; ACCOUNT.active.trail = G.trail | 0;
+    writeAccountProfiles();
+  }
+  if (typeof brProfile === 'function' && typeof brSaveProfile === 'function') {
+    const p = brProfile(); p.equipped = { skin: G.skin | 0, hat: G.hat | 0, trail: G.trail | 0 }; brSaveProfile(p);
+  }
 }
 function readLocalIndex() {
   try {
@@ -186,6 +190,7 @@ function saveBoot() {
     Promise.all([window.claude.use('user'), window.claude.use('db')]).then(async ([user, db]) => {
       if (!user || !db) return; const uid = await user.id(); if (!uid) return;
       SAVE.db = db; SAVE.uid = uid; SAVE.status = 'syncing';
+      brSyncProfile(owner); ffaSyncProfile(owner);
       try {
         const snap = await withTimeout(db.doc(dpath('index', owner)).get(), 9000);
         if (accountId() !== owner) return;

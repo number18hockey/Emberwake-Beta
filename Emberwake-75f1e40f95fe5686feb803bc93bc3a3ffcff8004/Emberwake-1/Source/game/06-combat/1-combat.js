@@ -445,9 +445,36 @@ function strike(by, e, dmg, kx, ky, o) {
   if (!e.fighter) { const r = damageEnemy(e, dmg, kx, ky, o) > 0; if (r && o.launch && !e.dead && !o.link) applyStatus(e, 'launched', by); return r; }
   const hx = o.hx === undefined ? e.x + 3 : o.hx, hy = o.hy === undefined ? e.y + 10 : o.hy;
   // (a hollow in a shared world is the host's: it goes through hurtFighter to the host, not to the arena's list of hits)
-  if (e.remote && !e.ghostH) { if (e.dead || e.spawnT > 0 || e.noHit) return false; netHit(e, dmg, kx, ky, (o.crit ? 1 : 0) | (o.bite === false ? 2 : 0), 0, by); e.flash = 6; hitFx(hx, hy, e.y, max(1, round(dmg * .8)), o, kx, by === G.p); return true; }
+  if (e.remote && !e.ghostH) { if (e.dead || e.spawnT > 0 || e.noHit) return false; const extra = o.status ? [o.status, o.statusD || 100, sign(kx)] : 0; netHit(e, dmg, kx, ky, (o.crit ? 1 : 0) | (o.bite === false ? 2 : 0), extra, by); e.flash = 6; hitFx(hx, hy, e.y, max(1, round(dmg * .8)), o, kx, by === G.p); return true; }
   const r = hurtFighter(e, dmg, by ? by.x + 3 : hx - kx, { kx, ky, by, pvp: !!(by && by.fighter), stop: o.stop, shake: o.shake, crit: o.crit, stagger: o.stagger, blunt: o.blunt, launch: o.launch, cold: o.cold, hx, hy, link: o.link, bite: o.bite, hsCut: o.hsCut });
   if (r && o.launch && !e.dead && !o.link) applyStatus(e, 'launched', by); return r;
+}
+function legendaryOnHit(a, e, dmg, hx, hy) {
+  const W = a.W, f = a.f, ability = W.legendAbility;
+  if (!WORLD.royale || !W.legendary || !ability || ability === 'quake' && !f.onGround) return;
+  const cds = f.legendaryCooldowns || (f.legendaryCooldowns = Object.create(null));
+  if ((cds[W.id] || 0) > G.time) return;
+  cds[W.id] = G.time + W.abilityCooldown;
+  if (ability === 'harvest') {
+    f.hp = min(f.maxhp, f.hp + max(3, round(dmg * .24)));
+    if (near(f)) { sparks(f.x + 3, f.y + 8, 8, 0, 1.4, ['#b49cff', '#e0c0ff', '#ffffff']); sfx('heal', 60); }
+    return;
+  }
+  const centerX = ability === 'chain' || ability === 'rift' ? e.x + e.w / 2 : f.x + f.w / 2;
+  const centerY = ability === 'chain' || ability === 'rift' ? e.y + e.h / 2 : f.y + f.h / 2;
+  const radius = ability === 'chain' ? 112 : ability === 'rift' ? 58 : ability === 'quake' ? 82 : 66;
+  const maxTargets = ability === 'chain' ? 1 : ability === 'rift' ? 2 : 3;
+  const targets = foesOf(f).filter(o => o !== e && !o.dead && !o.noHit && hypot(o.x + o.w / 2 - centerX, o.y + o.h / 2 - centerY) <= radius)
+    .sort((x, y) => hypot(x.x + x.w / 2 - centerX, x.y + x.h / 2 - centerY) - hypot(y.x + y.w / 2 - centerX, y.y + y.h / 2 - centerY)).slice(0, maxTargets);
+  const colors = ability === 'chain' ? ['#fff1a8', '#8ff5e6', '#ffffff'] : ability === 'rime' ? ['#c9fff6', '#8fd0d8', '#ffffff'] : ability === 'quake' ? ['#c9a44a', '#b08a5a', '#ffffff'] : ['#b49cff', '#e0c0ff', '#ffffff'];
+  for (const target of targets) {
+    const ratio = ability === 'chain' ? .52 : ability === 'rift' ? .3 : ability === 'rime' ? .18 : .34;
+    const kx = (sign(target.x + target.w / 2 - centerX) || a.face) * (ability === 'quake' ? 3.2 : 1.7), ky = ability === 'quake' ? -2.6 : -.8;
+    const status = ability === 'rime' ? 'frost' : null;
+    const landed = strike(f, target, max(1, round(dmg * ratio)), kx, ky, { stop: ability === 'quake' ? 4 : 2, shake: ability === 'quake' ? 2 : 0, cold: ability === 'rime', blunt: ability === 'quake', status, statusD: 100, hx: target.x + target.w / 2, hy: target.y + target.h / 2 });
+    if (landed && status && !target.remote && !target.dead) applyStatus(target, status, f, { d: 100 });
+  }
+  if (near(f)) { sparks(hx, hy, ability === 'quake' ? 16 : 10, a.face, 2.2, colors); if (ability === 'quake') { addShake(2); sfx('boom', 40); } else sfx(ability === 'chain' ? 'reflect' : 'tele', 60); }
 }
 function applyHit(a, e, hx, hy) {
   const f = a.f, m = a.m, root = e.root || e, last = a.hits.get(root);
@@ -460,7 +487,7 @@ function applyHit(a, e, hx, hy) {
   const root0 = e.root || e, sunder = !e.fighter && root0.stagT > 0 && a.btn === 'H' && !root0.sundered, whole = !e.fighter && !(root0.stagT > 0); if (sunder) { dmg *= 1.5; root0.sundered = true; }
   dmg = max(1, round(dmg * frand(.93, 1.07)));
   let kx = m.kb[0] * a.face; if (m.kind === 'spin') kx = m.kb[0] * (sign((e.x + e.w / 2) - (f.x + 3)) || a.face); kx *= a.kbm || 1;
-  if (!strike(f, e, dmg, kx, m.kb[1], { stagger: m.flow === 'down' ? max(m.stagger || 0, 45) : m.stagger, launch: TH.bite && m.launch, crit, stop: (m.stop || 0) + (lk && lk.tag ? 2 : 0) + (a.cresc ? 3 : 0), shake: m.shake, blunt: m.blunt, cold: a.W.cold, hx, hy, bite: TH.bite, pz: TH.pz * (a.pzm || 1), gb: a.btn === 'H' || edge > 0 || !!crit || sunder || !!m.big || !!a.perfect, hsCut: a.btn === 'L' ? (a.q | 0) >> 1 : 0 })) return;
+  if (!strike(f, e, dmg, kx, m.kb[1], { stagger: m.flow === 'down' ? max(m.stagger || 0, 45) : m.stagger, launch: TH.bite && m.launch, crit, stop: (m.stop || 0) + (lk && lk.tag ? 2 : 0) + (a.cresc ? 3 : 0), shake: m.shake, blunt: m.blunt, cold: a.W.cold, status: a.W.legendAbility === 'rime' ? 'frost' : null, statusD: 100, hx, hy, bite: TH.bite, pz: TH.pz * (a.pzm || 1), gb: a.btn === 'H' || edge > 0 || !!crit || sunder || !!m.big || !!a.perfect, hsCut: a.btn === 'L' ? (a.q | 0) >> 1 : 0 })) return;
   if (whole && root0.stagT > 0) quickStep(f, QK.UP_BREAK);   // this blow broke its guard
   tempoLanded(a, e, edge, dmg, hx, hy); if (sunder) tempoSunder(a, e, hx, hy); if (WORLD.royale) trAmpHit(a, e, edge, dmg, hx, hy);
   if (P0) { flowSet(a, e, lk, hx, hy); famGain(a.setName, ((a.fresh ? 1 : .4) + (lk && lk.tag ? 1 : 0)) * (e.type === 'dummy' ? .5 : 1)); if (e.type !== 'dummy') artGain(a.W); }
@@ -474,6 +501,7 @@ function applyHit(a, e, hx, hy) {
   if (P0) styleHit(a, e, dmg);
   if (P0) { if (sharp) f.sharp--; if (f.venom > 0) f.venom--; }
   if (f === G.p) comboHit(a.fresh && !a.hit); a.hit = true;
+  legendaryOnHit(a, e, dmg, hx, hy);
   if (m.pogo && !a.pogoed) { a.pogoed = true; a.pogoT = a.pt; f.vy = -4.3; f.noCut = true; f.airDash = airDashMax(f); f.updraft = true; f.dblUsed = false; }
   else if (!f.onGround && m.float) f.vy = min(f.vy, -.7);
 }

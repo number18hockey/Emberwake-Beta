@@ -5,6 +5,7 @@
 // ============================================================
 const inR = (x, y, w, h) => mouse.ux >= x && mouse.ux < x + w && mouse.uy >= y && mouse.uy < y + h;
 const FORM = { name: '', seed: '', size: 1, shape: 0, mode: 0, skin: 0, hat: 0, nick: '', code: '', accountName: '', accountPassword: '', accountConfirm: '', brRanked: false };
+const COSMETIC_SHOP = { tab: 'skin', selected: 0, scroll: 0, rows: 1 };
 const SIZE_D = ['600 x 260 tiles', '900 x 320 tiles', '1400 x 380 tiles', '2200 x 440 tiles: days to cross'], SHAPE_D = ['every seed deals its lands in a new order', 'the Drift is crowded with islands', 'few islands, the Underdark yawns wider'], MODE_D = ['three embers, any order, nothing forced', 'every item, no monsters, build freely'];
 let HITS = [], HITS_NEXT = [];
 // HIT_CLIP {y0, y1}: while a scrolling box is drawn (kscroll), boxes outside it are skipped and boxes partly in it are trimmed.
@@ -174,10 +175,10 @@ function drawTitle(c) {
          : ['BEGIN', 'forge your first world', () => { G.state = 'create'; Object.assign(FORM, { name: 'World 1', seed: rollSeed() }); UI.focus = 'name'; sfx('ui'); }, 'A new land, a cold fire, and three embers to find.', { col: '#ffd35a' }],
     ['WORLDS', 'new, load, copy', () => goWorlds(''), 'Every world you have made. Forge a new one, or paste one a friend sent.']];
   const friends = [
-    ['JOIN A FRIEND', 'type their game code', () => { G.state = 'join'; UI.focus = null; COOP.err = ''; COOP.note = ''; COOP.long = false; nick(); sfx('ui'); }, 'Step into a friend\'s world with the code they give you.'],
+    ['JOIN A FRIEND', 'world or private FFA code', () => { G.state = 'join'; UI.focus = null; COOP.err = ''; COOP.note = ''; COOP.long = false; nick(); sfx('ui'); }, 'Join a friend\'s world or private FFA match with their game code.'],
     ['HOST A WORLD', 'open one, then invite', () => goWorlds('Open a world, then press P and choose PLAY TOGETHER for a code.'), 'Open one of your worlds, press P, choose PLAY TOGETHER: friends join with the code.']];
   const arenas = [
-    ['THE CINDER RING', 'duels: first to ten', () => { G.state = 'ring'; UI.focus = null; nick(); sfx('ui'); }, 'A small arena, every weapon, quick duels. Online, with friends by code, or against echoes.'],
+    ['FFA ARCADE', '10 combat modes · 3 bots', () => { G.state = 'ring'; UI.focus = null; nick(); sfx('ui'); }, 'Ten weapon-focused arenas, three opponents in quick play, personal ratings, and private matches by code.'],
     ['THE ASHFALL TRIALS', 'outlast the field', () => { G.state = 'brform'; UI.focus = null; nick(); if (FORM.brcode === undefined) FORM.brcode = ''; sfx('ui'); }, 'Twelve Wakers, one island. Scavenge, team up, survive the nights. About twelve minutes.']];
   TITLE.hint = '';
   if (uw >= 430) {
@@ -185,25 +186,69 @@ function drawTitle(c) {
     titleCard(c, x0, cy, cw, ch, 'ALONE', '#ffd35a', 'fire', alone);
     titleCard(c, x0 + cw + gap, cy, cw, ch, 'WITH FRIENDS', '#7ddc6f', 'friends', friends);
     titleCard(c, x0 + (cw + gap) * 2, cy, cw, ch, 'THE ARENAS', '#ff6b6b', 'arena', arenas);
-    const by = min(uh - 36, cy + ch + 10), bw = min(104, floor((uw - 28) / 4) - 4), bx = round((uw - bw * 4 - 12) / 2);
+    const by = min(uh - 36, cy + ch + 10), bw = min(104, floor((uw - 44) / 5)), bx = round((uw - bw * 5 - 16) / 2);
     button(c, bx, by, bw, 14, muted ? 'SOUND: OFF' : 'SOUND: ON', () => { muted = !muted; sfx('ui'); }); if (inR(bx, by, bw, 14)) TITLE.hint = 'Sound on or off (also the O key while playing).';
     button(c, bx + bw + 4, by, bw, 14, 'DIFFICULTY: ' + DIFF().n, () => { SETTINGS.diff = SETTINGS.diff === 'easy' ? 'normal' : SETTINGS.diff === 'normal' ? 'hard' : 'easy'; saveSettings(); sfx('ui'); }); if (inR(bx + bw + 4, by, bw, 14)) TITLE.hint = 'How hard blows land on you, and how wide the timing of your own blows is.';
     button(c, bx + (bw + 4) * 2, by, bw, 14, 'CONTROLS: ' + (SETTINGS.combat === 'simple' ? 'SIMPLE' : 'FULL'), () => { SETTINGS.combat = SETTINGS.combat === 'simple' ? 'full' : 'simple'; saveSettings(); sfx('ui'); }); if (inR(bx + (bw + 4) * 2, by, bw, 14)) TITLE.hint = 'SIMPLE: aim and S choose the form. FULL: movement keys and distance change it too.';
     button(c, bx + (bw + 4) * 3, by, bw, 14, 'HOW TO PLAY', () => { G.state = 'howto'; sfx('ui'); }); if (inR(bx + (bw + 4) * 3, by, bw, 14)) TITLE.hint = 'The keys, and how a fight works.';
+    button(c, bx + (bw + 4) * 4, by, bw, 14, 'COSMETIC SHOP', () => { G.state = 'shop'; COSMETIC_SHOP.scroll = 0; sfx('ui'); });
   } else {
     // a narrow window: one plain column
     const bw = min(176, uw - 16), bx = round((uw - bw) / 2); let by = max(ly + 56, round(uh * .36));
     for (const r of [...alone, ...friends, ...arenas]) { button(c, bx, by, bw, 16, r[0], r[2], r[4] || {}); if (inR(bx, by, bw, 16)) TITLE.hint = r[3]; by += 19; }
+    button(c, bx, by, bw, 14, 'COSMETIC SHOP', () => { G.state = 'shop'; COSMETIC_SHOP.scroll = 0; sfx('ui'); }); by += 16;
     button(c, bx, by, bw, 14, 'HOW TO PLAY', () => { G.state = 'howto'; sfx('ui'); });
   }
   { let h = TITLE.hint || (mobileDevice ? 'touch to move and fight' : 'mouse + keyboard'); while (h.length > 3 && textW(h) > uw - 12) h = h.slice(0, -1); textC(c, h, uw / 2, uh - 15, TITLE.hint ? '#d8d4e6' : '#8b8fa3', 1, textO); }
   const vs = 'version ' + GAME_VERSION; textS(c, vs, uw - textW(vs) - 4, uh - 10, '#6a6485');
 }
+function drawCosmeticShop(c) {
+  const uw = VS.uw, uh = VS.uh, w = min(440, uw - 12), h = min(360, uh - 12), x = round((uw - w) / 2), y = max(6, round((uh - h) / 2)), p = brProfile();
+  c.fillStyle = 'rgba(18,13,31,.68)'; c.fillRect(0, 0, uw, uh); panel(c, x, y, w, h, 'THE COSMETIC SHOP');
+  const fx = x + 8, fw = w - 16, cats = [['skin', 'SKINS'], ['trail', 'TRAILS'], ['hat', 'HATS']], tabY = y + 15, tabW = fw / cats.length;
+  for (let i = 0; i < cats.length; i++) button(c, fx + i * tabW, tabY, tabW - 3, 14, cats[i][1], () => { COSMETIC_SHOP.tab = cats[i][0]; COSMETIC_SHOP.scroll = 0; sfx('ui'); }, { on: COSMETIC_SHOP.tab === cats[i][0] });
+  const wallet = `${p.coins} COINS   ·   ${p.souls} SOULS`; drawText(c, wallet, fx, y + 34, '#8ff5e6');
+  const all = BR_SHOP_ITEMS.filter(k => k.kind === COSMETIC_SHOP.tab), tabX = fx, listY = y + 47, bottom = y + h - 25, listW = floor(fw * .56), rowH = min(18, max(12, floor((bottom - listY) / min(6, all.length || 1))));
+  const rows = COSMETIC_SHOP.rows = max(1, floor((bottom - listY) / rowH));
+  COSMETIC_SHOP.scroll = clamp(COSMETIC_SHOP.scroll, 0, max(0, all.length - rows));
+  const selected = all.findIndex(k => k.id === COSMETIC_SHOP.selected);
+  if (selected < 0 && all.length) COSMETIC_SHOP.selected = all[0].id;
+  for (let i = 0; i < rows; i++) {
+    const k = all[COSMETIC_SHOP.scroll + i]; if (!k) continue;
+    const ry = listY + i * rowH, active = k.id === COSMETIC_SHOP.selected, own = brOwns(p, k), rarityCol = ({ COMMON: '#c8c4d4', UNCOMMON: '#7ddc6f', RARE: '#5aa8ff', EPIC: '#c77dff', LEGENDARY: '#ffd35a' })[k.rarity];
+    c.fillStyle = active ? '#3d3320' : i % 2 ? '#211e2c' : '#191622'; c.fillRect(tabX, ry, listW - 3, rowH - 1);
+    const name = `${k.id === 0 && k.kind === 'trail' ? 'TRAIL' : k.name}`;
+    textS(c, name, tabX + 4, ry + max(2, round((rowH - 8) / 2)), own ? '#fff' : '#d8d4e6', min(1, (listW - 62) / max(1, textW(name))));
+    textS(c, own ? 'OWNED' : k.cost ? `${k.cost}${k.currency === 'souls' ? 'S' : 'C'}` : 'FREE', tabX + listW - textW(own ? 'OWNED' : k.cost ? `${k.cost}${k.currency === 'souls' ? 'S' : 'C'}` : 'FREE') - 7, ry + max(2, round((rowH - 8) / 2)), rarityCol);
+    hit(tabX, ry, listW - 3, rowH, () => { COSMETIC_SHOP.selected = k.id; sfx('ui'); });
+  }
+  const k = all.find(item => item.id === COSMETIC_SHOP.selected) || all[0], px = fx + listW + 4, pw = fw - listW - 4, py = listY;
+  c.fillStyle = '#191622'; c.fillRect(px, py, pw, bottom - py);
+  if (k) {
+    const own = brOwns(p, k), wearing = k.kind === 'skin' ? G.skin === k.id : k.kind === 'hat' ? G.hat === k.id : G.trail === k.id, col = ({ COMMON: '#c8c4d4', UNCOMMON: '#7ddc6f', RARE: '#5aa8ff', EPIC: '#c77dff', LEGENDARY: '#ffd35a' })[k.rarity];
+    const skin = k.kind === 'skin' ? k.id : G.skin, hat = k.kind === 'hat' ? k.id : G.hat, trail = k.kind === 'trail' ? k.id : G.trail;
+    c.save(); c.translate(px + pw / 2, py + 45); c.scale(3, 3); c.drawImage(SK[skin] ? SK[skin].head : SK[0].head, SK[skin] ? SK[skin].hx : SK[0].hx, SK[skin] ? SK[skin].hy : SK[0].hy); drawHat(c, hat); c.restore();
+    const trailItem = BR_TRAILS[trail] || BR_TRAILS[0]; c.fillStyle = trailItem.color; c.globalAlpha = trail ? .35 : .12;
+    for (let i = 0; i < 4; i++) { const pulse = (i + G.time) % 4; c.fillRect(px + pw / 2 - 15 - pulse * 2, py + 67 + i * 3, 2 + (i % 2), 2); }
+    c.globalAlpha = 1;
+    textC(c, k.name, px + pw / 2, py + 79, '#fff1a8', min(1, pw / max(1, textW(k.name))), drawText);
+    textC(c, k.rarity, px + pw / 2, py + 92, col, min(1, pw / max(1, textW(k.rarity))), drawText);
+    const desc = k.kind === 'trail' ? 'A light-only running trail.' : 'A look, with no change to your strength.';
+    textC(c, desc, px + pw / 2, py + 106, '#8b8fa3', min(1, pw / max(1, textW(desc))), drawText);
+    const label = wearing ? k.id === 0 ? 'WEARING' : 'UNEQUIP' : own ? 'EQUIP' : `BUY ${k.cost} ${k.currency.toUpperCase()}`;
+    button(c, px + 2, bottom - 19, pw - 4, 16, label, () => {
+      if (wearing) brUnequipCosmetic(k.kind);
+      else brShopCosmetic(k.kind, k.id);
+    }, { off: (wearing && k.id === 0) || (!own && p[k.currency] < k.cost), on: wearing });
+  } else textC(c, 'No cosmetics available.', px + pw / 2, py + 30, '#8b8fa3', 1, drawText);
+  if (BR.menuMsg) textS(c, BR.menuMsg, fx, bottom - 20, '#ffd35a', min(1, (fw - 76) / max(1, textW(BR.menuMsg))));
+  button(c, x + w - 60, y + h - 20, 52, 14, 'BACK', () => { G.state = 'title'; sfx('ui'); });
+}
 // (how to play, the worlds board and the forge are 7-places.js)
 // a seed you can say out loud, so a friend can forge the same world
 const SEED_A = ['ember', 'ashen', 'hollow', 'glass', 'cinder', 'salt', 'thorn', 'rust', 'pale', 'still', 'deep', 'wake', 'lantern', 'gloam', 'iron', 'moth'], SEED_B = ['vale', 'reach', 'moor', 'fen', 'crown', 'harbor', 'hollow', 'field', 'gate', 'well', 'spire', 'march', 'barrow', 'ford', 'rise', 'drift'];
 const rollSeed = () => fpick(SEED_A) + '-' + fpick(SEED_B) + '-' + (10 + floor(Math.random() * 90));
-// (the accounts board, THE HEARTH, is 5-accounts.js; the Cinder Ring's form is 11-arena-and-royale/26-arena-menus.js)
+// (the accounts board, THE HEARTH, is 5-accounts.js; the FFA Arcade's form, drawRingForm, is 11-arena-and-royale/26-arena-menus.js)
 
 // ---------------- in-game HUD ----------------
 function drawHUD(c) {
@@ -214,7 +259,7 @@ function drawHUD(c) {
   if ((!A || wild) && WORLD.mode !== 1) { const f = G.food / 100; bar(c, 15, 20, 72, 2, f, f < .25 && (G.time >> 4) & 1 ? '#ff9a8a' : '#e0a050', '#7a4a1a'); if (f < .3) textO(c, f <= 0 ? 'STARVING' : 'HUNGRY', 91, 16, '#e0a050'); }
   if (p.riposte > 0 && (G.time >> 2) & 1) textO(c, 'RIPOSTE READY', 15, 22, '#8ff5e6');
   else if (!UI.open && WORLD.royale) { if (wild && !SETTINGS.fpsMode && !mobileDevice && !(BR.t > 60 * 60 || G.note || p.dead)) textS(c, '[LMB] hit / dig  [F] open  [E] pack  [B] recipes  [K] knap  [H] heal  [P] pact  [M] map', 4, 35, '#8b8fa3'); }
-  else if (!UI.open && !SETTINGS.fpsMode && !mobileDevice) textS(c, A ? '[TAB] scores  [C] forms  [P] menu  1-6 weapons  [R] sidearm [T] swap' : '[E] pack  [K] knap  [F] use  [J] journal  [P] menu', 4, 25, '#8b8fa3');
+  else if (!UI.open && !SETTINGS.fpsMode && !mobileDevice) textS(c, A ? (FFA.active ? FFA.mode === 'crystal' ? '[TAB] scores  [F] place / detonate crystal  [P] menu' : FFA.mode === 'shield' ? '[TAB] scores  [G] guard  [P] menu' : '[TAB] scores  [C] forms  [P] menu  1-6 weapons  [R] sidearm' : '[TAB] scores  [C] forms  [P] menu  1-6 weapons  [R] sidearm [T] swap') : '[E] pack  [K] knap  [F] use  [J] journal  [P] menu', 4, 25, '#8b8fa3');
   if (!SETTINGS.fpsMode && !A && G.jNew && (G.time >> 4) & 1) textS(c, 'NEW JOURNAL ENTRY [J]', 4, 32, '#ffd35a');
   if (!SETTINGS.fpsMode) { drawBless(c); drawMealHud(c); drawGadgetHud(c); }
   drawCoopHud(c);
@@ -272,15 +317,19 @@ function drawObjective(c) {
   if (at !== null && at !== undefined) { const d = at * T - p.x, m = round(abs(d) / T); textS(c, m < 8 ? 'you are here' : d > 0 ? `→ ${m} paces east` : `← ${m} paces west`, qx + 6, 17 + oy + min(3, lines.length) * 9, '#8ff5e6'); }
   drawMileWay(c, uw, 6 + oy + qh);
 }
-function ringStatusText() { if (NET.via === 'rtc') return (netHost() ? 'GAME CODE ' + sigSpaced(COOP.gcode || '......') + ' : ' : (COOP.hostName || 'HOST') + '\'S RING : ') + (NET.peers.size + 1) + ' WAKER' + (NET.peers.size ? 'S' : ''); return NET.status === 'online' ? `ONLINE : ${NET.peers.size + 1} WAKER${NET.peers.size ? 'S' : ''}` : NET.status === 'connecting' ? 'CONNECTING...' : 'OFFLINE : PRACTICE'; }
+function ringStatusText() { if (NET.via === 'rtc') return (netHost() ? 'PRIVATE CODE ' + sigSpaced(COOP.gcode || '......') + ' : ' : (COOP.hostName || 'HOST') + '\'S FFA : ') + (NET.peers.size + 1) + ' WAKER' + (NET.peers.size ? 'S' : ''); return NET.status === 'online' ? `ONLINE : ${NET.peers.size + 1} WAKER${NET.peers.size ? 'S' : ''}` : NET.status === 'connecting' ? 'CONNECTING...' : 'OFFLINE : PRACTICE'; }
 function drawRingStatus(c) {
   const uw = VS.uw, list = [...G.fighters].filter(f => !f.npc).sort((a, b) => b.kills - a.kills || a.deaths - b.deaths);
   const w = 120, x = uw - w - 4; let y = 4;
   c.fillStyle = 'rgba(18,13,31,.62)'; c.fillRect(x, y, w, 13 + min(5, list.length) * 9); c.fillStyle = NET.status === 'online' ? '#7ddc6f' : '#ffb347'; c.fillRect(x, y, 2, 13 + min(5, list.length) * 9);
-  textS(c, NET.via === 'rtc' ? 'RING: FRIENDS' : `RING ${NET.code.toUpperCase()}`, x + 6, y + 3, '#ffd35a'); drawText(c, NET.status === 'online' ? 'live' : NET.status === 'connecting' ? '...' : 'solo', x + w - 24, y + 3, NET.status === 'online' ? '#7ddc6f' : '#ffb347');
-  list.slice(0, 5).forEach((f, i) => { const yy = y + 13 + i * 9, me = f === G.p; drawText(c, (me ? '> ' : '') + f.name, x + 6, yy, me ? '#ffd35a' : f.echoBot ? '#b9bdd0' : '#8ff5e6'); drawText(c, String(f.kills), x + w - 8 - textW(f.kills), yy, '#fff'); });
-  textC(c, ringStatusText(), uw / 2, 4, NET.status === 'online' ? '#7ddc6f' : '#ffb347', 1, textO);
+  textS(c, ffaModeLabel(), x + 6, y + 3, '#ffd35a'); drawText(c, NET.status === 'online' ? 'live' : NET.status === 'connecting' ? '...' : 'solo', x + w - 24, y + 3, NET.status === 'online' ? '#7ddc6f' : '#ffb347');
+  list.slice(0, 5).forEach((f, i) => { const yy = y + 13 + i * 9, me = f === G.p; drawText(c, (me ? '> ' : '') + f.name, x + 6, yy, me ? '#ffd35a' : f.echoBot ? '#b9bdd0' : '#8ff5e6'); drawText(c, `${f.kills}/${f.deaths}`, x + w - 8 - textW(`${f.kills}/${f.deaths}`), yy, '#fff'); });
+  textC(c, NET.via === 'rtc' ? 'PRIVATE FFA  ·  CODE ' + sigSpaced(COOP.gcode || '......') : `FFA  ·  ${NET.peers.size + 1} WAKERS`, uw / 2, 4, NET.status === 'online' ? '#7ddc6f' : '#ffb347', 1, textO);
   if (NET.roundOver) textC(c, 'next round in ' + ceil(NET.roundOver / 60), uw / 2, 14, '#fff', 1, textO);
+  if (FFA.mode === 'crystal' && FFA.resetAt) {
+    const left = max(0, ceil((FFA.resetAt - Date.now()) / 1000)), reset = `ARENA RESET ${String(floor(left / 60)).padStart(2, '0')}:${String(left % 60).padStart(2, '0')}`;
+    textC(c, reset, uw / 2, 14 + (NET.roundOver ? 9 : 0), '#c9fff6', 1, textO);
+  }
 }
 function drawKillFeed(c) {
   const uw = VS.uw; let y = WORLD.royale ? 30 : 4 + 13 + min(5, G.fighters.length) * 9 + 6;
@@ -293,9 +342,9 @@ function drawKillFeed(c) {
 }
 function drawScore(c) {
   const uw = VS.uw, uh = VS.uh, list = [...G.fighters].sort((a, b) => b.kills - a.kills || a.deaths - b.deaths), w = min(260, uw - 16), h = 34 + list.length * 11, x = round((uw - w) / 2), y = round((uh - h) / 2) - 10;
-  panel(c, x, y, w, h, `THE CINDER RING : ${NET.code.toUpperCase()} : ROUND ${NET.rd + 1}`);
-  drawText(c, 'WAKER', x + 8, y + 16, '#8b8fa3'); drawText(c, 'TAKEDOWNS', x + w - 110, y + 16, '#8b8fa3'); drawText(c, 'FALLS', x + w - 44, y + 16, '#8b8fa3');
-  list.forEach((f, i) => { const yy = y + 28 + i * 11, me = f === G.p; if (me) { c.fillStyle = '#2b2740'; c.fillRect(x + 4, yy - 2, w - 8, 10); } drawText(c, f.name + (f.echoBot ? '  (echo)' : f.remote ? '' : '  (you)'), x + 8, yy, me ? '#ffd35a' : f.echoBot ? '#b9bdd0' : '#8ff5e6'); drawText(c, String(f.kills), x + w - 80, yy, '#fff'); drawText(c, String(f.deaths), x + w - 34, yy, '#fff'); });
+  panel(c, x, y, w, h, `${ffaModeLabel()} : ${NET.code.toUpperCase()} : ROUND ${NET.rd + 1}`);
+  drawText(c, 'WAKER', x + 8, y + 16, '#8b8fa3'); drawText(c, 'K', x + w - 122, y + 16, '#8b8fa3'); drawText(c, 'D', x + w - 82, y + 16, '#8b8fa3'); drawText(c, 'K/D', x + w - 48, y + 16, '#8b8fa3');
+  list.forEach((f, i) => { const yy = y + 28 + i * 11, me = f === G.p, kd = f.deaths ? (f.kills / f.deaths).toFixed(1) : f.kills.toFixed(1); if (me) { c.fillStyle = '#2b2740'; c.fillRect(x + 4, yy - 2, w - 8, 10); } drawText(c, f.name + (f.echoBot ? '  (bot)' : f.remote ? '' : '  (you)'), x + 8, yy, me ? '#ffd35a' : f.echoBot ? '#b9bdd0' : '#8ff5e6'); drawText(c, String(f.kills), x + w - 122, yy, '#fff'); drawText(c, String(f.deaths), x + w - 82, yy, '#fff'); drawText(c, kd, x + w - 48, yy, '#fff'); });
   drawText(c, ringStatusText(), x + 8, y + h - 10, '#7ddc6f');
 }
 function drawInv(c) {
@@ -387,11 +436,11 @@ function drawJournal(c) {
 }
 function drawPause(c) {
   const A = WORLD.arena, big = !A && !DIM && WT_ON && WT_KEYS.length > 0 && VS.uh >= 300, w = min(A ? 340 : 392, VS.uw - 16), h = A ? 158 : big ? 290 : 240, x = round((VS.uw - w) / 2), y = round((VS.uh - h) / 2);
-  panel(c, x, y, w, h, A ? (WORLD.royale ? (BR.wild ? 'THE WILDS : MENU' : 'THE ASHFALL : MENU') : 'THE CINDER RING : MENU') : `${WORLD.name.toUpperCase()} : PAUSED`); hit(x, y, w, h, () => { });
+  panel(c, x, y, w, h, A ? (WORLD.royale ? (BR.wild ? 'THE WILDS : MENU' : 'THE ASHFALL : MENU') : 'FFA ARCADE : MENU') : `${WORLD.name.toUpperCase()} : PAUSED`); hit(x, y, w, h, () => { });
   if (!A && !DIM) { const s = yearLine(); drawText(c, s, x + w - textW(s) - 6, y + 3, SEASON().col); }
   if (big) { drawText(c, 'THIS WORLD IS', x + 8, y + 194, '#8b8fa3'); drawTraits(c, x + 8, y + 205, w - 16); }
   button(c, x + 8, y + 18, 70, 15, 'RESUME', () => { closeUI(); sfx('ui'); });
-  button(c, x + 84, y + 18, 96, 15, A ? (WORLD.royale ? (BR.via !== 'solo' ? 'TO THE LOBBY' : 'LEAVE MATCH') : 'LEAVE RING') : 'SAVE & QUIT', () => { closeUI(); if (WORLD.royale && BR.on && BR.via !== 'solo') brBackToLobby(); else quitToTitle(); sfx('ui'); });
+  button(c, x + 84, y + 18, 96, 15, A ? (WORLD.royale ? (BR.via !== 'solo' ? 'TO THE LOBBY' : 'LEAVE MATCH') : 'LEAVE FFA') : 'SAVE & QUIT', () => { closeUI(); if (WORLD.royale && BR.on && BR.via !== 'solo') brBackToLobby(); else quitToTitle(); sfx('ui'); });
   button(c, x + 186, y + 18, 84, 15, muted ? 'SOUND: OFF' : 'SOUND: ON', () => { muted = !muted; sfx('ui'); });
   if (!A) button(c, x + 276, y + 18, 46, 15, 'SAVE', () => { saveWorld(); sfx('craft'); });
   if (wildOn() && BR.teammate) button(c, x + w - 66, y + h - 19, 58, 15, 'LEAVE PACT', () => { brBreakPact(false); closeUI(); });
@@ -423,7 +472,7 @@ function drawDialog(c) {
 }
 function drawUI(c) {
   HITS_NEXT = []; kitBegin(); const uw = VS.uw, uh = VS.uh, st = G.state;
-  if (st === 'title') drawTitle(c); else if (st === 'accounts') drawAccounts(c); else if (st === 'howto') drawHowTo(c); else if (st === 'worlds') drawWorlds(c); else if (st === 'create') drawCreate(c); else if (st === 'ring') drawRingForm(c); else if (st === 'brform') drawBrForm(c); else if (st === 'bropen') drawBrOpen(c); else if (st === 'brlobby') drawBrLobby(c); else if (st === 'join') drawJoin(c); else if (st === 'wcopy') drawWorldCopy(c); else if (st === 'wpaste') drawWorldPaste(c);
+  if (st === 'title') drawTitle(c); else if (st === 'shop') drawCosmeticShop(c); else if (st === 'accounts') drawAccounts(c); else if (st === 'howto') drawHowTo(c); else if (st === 'worlds') drawWorlds(c); else if (st === 'create') drawCreate(c); else if (st === 'ring') drawRingForm(c); else if (st === 'brform') drawBrForm(c); else if (st === 'bropen') drawBrOpen(c); else if (st === 'brlobby') drawBrLobby(c); else if (st === 'join') drawJoin(c); else if (st === 'wcopy') drawWorldCopy(c); else if (st === 'wpaste') drawWorldPaste(c);
   else if (st === 'loading') drawLoading(c);
   else if (st === 'intro') drawIntro(c);
   else if (G.cine && !UI.open) { // a panel opened during a place-name card (Esc, E) is drawn, not hidden behind it

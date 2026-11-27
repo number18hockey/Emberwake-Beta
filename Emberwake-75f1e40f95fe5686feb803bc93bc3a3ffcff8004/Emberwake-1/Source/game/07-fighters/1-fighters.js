@@ -21,14 +21,14 @@ function newFighter(x, y, o) {
     inv: 0, iDodge: 0, dodgeT: 0, dodgeCd: 0, dodgeDir: 1, dodgeGrace: 0, dodgeGround: true, dbuf: 0, airDash: 1, updraft: true, dblUsed: false, perfected: false,
     state: 'normal', atk: null, buf: null, coyote: 0, jbuf: 0, runPh: 0, landT: 0, hurtT: 0, riposte: 0, lastMove: null, chainT: 0, hist: [], toolT: 0, mineX: -1, mineY: -1, mineP: 0,
     placeCd: 0, dead: false, deadT: 0, healCd: 0, regenT: 0, sHold: 0, noCut: false, ghostReq: false, scarf: [], skin: 0, hat: 0, team: 'p', name: '', wid: 'sword', flash: 0, taken: 0, takenT: 0,
-    kills: 0, deaths: 0, foes: [], atkN: 0, quick: 0, quickT: 0, rollT: 0, rollOut: 0, stoke: 0, tapAt: -99, shN: 0, shLast: -99
+    kills: 0, deaths: 0, foes: [], atkN: 0, trail: 0, quick: 0, quickT: 0, rollT: 0, rollOut: 0, stoke: 0, tapAt: -99, shN: 0, shLast: -99
   };
   Object.assign(f, o);
   for (let i = 0; i < 7; i++) f.scarf.push({ x: x + 3, y: y + 5, ox: x + 3, oy: y + 5 });
   return f;
 }
 function newPlayer() {
-  const sx = SPOTS.camp ? SPOTS.camp.x - 6 : SPAWN_X, sy = SPOTS.camp ? SPOTS.camp.y : heights[SPAWN_X]; const p = newFighter(sx * T + 1, (sy - 3) * T, { isPlayer: true, skin: G.skin || 0, hat: G.hat || 0, name: G.nick || 'You' });
+  const sx = SPOTS.camp ? SPOTS.camp.x - 6 : SPAWN_X, sy = SPOTS.camp ? SPOTS.camp.y : heights[SPAWN_X]; const p = newFighter(sx * T + 1, (sy - 3) * T, { isPlayer: true, skin: G.skin || 0, hat: G.hat || 0, trail: G.trail || 0, name: G.nick || 'You' });
   while (boxHits(p.x, p.y, p.w, p.h)) p.y -= T; p.py = p.y; return p;
 }
 function reviveFighter(f, x, y) {
@@ -58,7 +58,9 @@ function hurtFighter(f, dmg, fromX, o = {}) {
   if (f.inv > (o.net ? 30 : o.link ? 999 : 0)) return false;
   if (f.state === 'link' && !o.link) return false;
   if (tryClash(f, dmg, fromX, o)) return false;
-  const wild = wildOn(), pvp = !!o.pvp, armored = f.atk && f.atk.m.armor && f.atk.phase < 2, caught = caughtOpen(f, o), soft = pvp && o.bite === false;
+  const guarded = FFA.active && FFA.mode === 'shield' && f === G.p && keys.KeyG && f.stam >= 12 && sign(fromX - (f.x + 3)) === f.face;
+  if (guarded) { f.stam -= 12; f.riposte = max(f.riposte || 0, 40); dmg *= .35; }
+  const wild = wildOn(), pvp = !!o.pvp, armored = f.atk && f.atk.m.armor && f.atk.phase < 2, caught = caughtOpen(f, o), soft = pvp && (o.bite === false || guarded);
   if (caught) dmg *= 1.25;
   const gp = f === G.p && gearOn(); if (gp) { dmg = gearDamage(dmg, o); if ((gearHas('kindled') || gearHas('molten')) && o.by && o.by !== f && !o.by.dead && o.by.hp !== undefined && !o.by.fighter) applyStatus(o.by, 'burn', f, { d: 90 }); }
   // a guardian's fight hits harder than the open road
@@ -75,7 +77,7 @@ function hurtFighter(f, dmg, fromX, o = {}) {
   else if (gp && dmg < 9 && gearHas('anvil')) { f.inv = 40; fsx(f, 'hit2', 0); sparks(f.x + 3, f.y + 8, 3, 0, 1.2); }
   else if (!armored) {
     const d = sign((f.x + 3) - fromX) || -f.face;
-    const pz = (gp ? gearMul('poise') : 1) * (soft ? .45 : 1); f.vx = (o.kx !== undefined ? o.kx * .85 : d * 2.7) * pz; if (!soft) { f.vy = (o.ky !== undefined ? min(o.ky, -1.2) : -2.3) * (.4 + .6 * pz); f.onGround = false; }
+    const pz = (gp ? gearMul('poise') : 1) * (guarded ? .12 : soft ? .45 : 1); f.vx = (o.kx !== undefined ? o.kx * .85 : d * 2.7) * pz; if (!soft) { f.vy = (o.ky !== undefined ? min(o.ky, -1.2) : -2.3) * (.4 + .6 * pz); f.onGround = false; }
     f.hurtT = soft ? 5 : pvp ? clamp(o.stagger ? 24 : 11 + (o.stop || 2), 10, 26) : 13; f.inv = pvp ? 7 : 50; f.shN = 0; f.shLast = -99;
     if (o.link) f.inv = 0; else if (pvp && ++f.taken >= 4) { f.inv = 50; f.taken = 0; f.vx *= 1.4; sparks(f.x + 3, f.y + 10, 10, 0, 2, FROST); }
     f.takenT = 70; if (!(soft && f.atk && f.atk.phase === 1)) { f.atk = null; f.state = 'normal'; f.lastMove = null; f.chainT = 0; f.glintT = 0; } f.buf = null;
@@ -214,7 +216,7 @@ function tickPlayer() {
   tickFighter(p, I);
   if (WORLD.royale) brAfter(p, I);
   if (p.dead) { if (!WORLD.royale && p.deadT > (WORLD.arena ? 150 : 190)) respawnPlayer(); return; }
-  const wild = wildOn(); if (WORLD.arena && !wild) return;
+  const wild = wildOn(); if (WORLD.arena && !wild) { ffaCrystalAction(); return; }
   // ---- tools, blocks, consumables (in the Wilds you dig, build and throw as anywhere, but its own keys heal and open things) ----
   toolTick(p, I);
   const hi = heldItem(); if (hi && hi.type === 'weapon') G.lastWeapon = G.sel;
@@ -415,9 +417,50 @@ function fighterPose(f, al) {
 const TORCH_HELD = { held: null, grip: [2, 5] };
 // what the rig shows: a tool the belt brought to hand mid-swing, else what you hold
 function visHeld(f) { if (f.isPlayer && (f.toolT > 0 || f.toolCharge > 0) && f.swingTool && f.swingTool.held && !f.atk) return f.swingTool; if (f.isPlayer && (f.toolT > 0 || f.toolCharge > 0) && !f.atk && f.swingTool === HAND) return null; if (f === G.p) return f.atk && f.atk.W ? f.atk.W : heldItem() || heldOf(f); return heldOf(f); }
+function drawBrTrail(x, f, trail) {
+  const speed = hypot(f.vx || 0, f.vy || 0);
+  if (!f.trail || !trail || speed <= .6) return;
+  const d = -f.face, phase = G.time * .18 + (f.runPh || 0) * .35, strength = clamp((speed - .35) / 2.2, .35, 1);
+  const ribbon = (color, width, offset, wave) => {
+    x.globalAlpha = strength * .7; x.strokeStyle = color; x.lineWidth = width; x.lineCap = 'round';
+    x.beginPath(); x.moveTo(d * 3, -8 + offset);
+    x.bezierCurveTo(d * 10, -12 + offset + sin(phase + wave) * 2, d * 21, -3 + offset + sin(phase + wave + 1) * 3, d * 32, -8 + offset + sin(phase + wave + 2) * 2);
+    x.stroke();
+  };
+  x.save();
+  if (f.trail === 1) {
+    ribbon('#ff7a2a', 2.2, 0, 0); ribbon('#ffd35a', 1, 1, 1.7);
+  } else if (f.trail === 2) {
+    ribbon('#4fd8c8', 2, -1, 0); ribbon('#c9fff6', 1, 2, 2.2); ribbon('#8ff5e6', 1, -4, 4.1);
+  } else if (f.trail === 3) {
+    ribbon('#8f55d8', 2.4, 0, 0); ribbon('#e0d2ff', 1, -2, 2.6);
+  } else if (f.trail === 4) {
+    ribbon('#ffb52e', 2.5, 0, 0); ribbon('#fff1a8', 1.2, 1, 2); ribbon('#ffffff', .8, -3, 4);
+  }
+  for (let i = 0; i < (f.trail === 2 ? 8 : 6); i++) {
+    const q = ((G.time * .13 + i * .19 + (f.runPh || 0) * .015) % 1 + 1) % 1;
+    const px = d * (4 + q * 29), py = -8 + sin(phase + i * 2.1) * (2 + q * 3), fade = strength * (1 - q) * (.65 + .35 * sin(phase * 2 + i));
+    x.globalAlpha = fade;
+    if (f.trail === 1) {
+      x.fillStyle = i % 3 ? '#ff8a3d' : '#fff1a8'; x.fillRect(round(px), round(py), i % 3 ? 2 : 1, i % 3 ? 2 : 1);
+      if (i % 3 === 0) { x.fillStyle = '#ffd35a'; x.fillRect(round(px), round(py + 2), 1, 2); }
+    } else if (f.trail === 2) {
+      x.fillStyle = i % 2 ? '#c9fff6' : '#8ff5e6'; x.fillRect(round(px), round(py), 2, 2);
+      x.fillRect(round(px + (i % 2 ? 1 : -1)), round(py - 2), 1, 2); x.fillRect(round(px + (i % 2 ? 1 : -1)), round(py + 2), 1, 2);
+    } else if (f.trail === 3) {
+      x.save(); x.translate(round(px), round(py)); x.rotate(PI / 4); x.fillStyle = i % 2 ? '#c77dff' : '#e0d2ff'; x.fillRect(-1, -1, 3, 3); x.restore();
+    } else if (f.trail === 4) {
+      x.fillStyle = i % 2 ? '#ffd35a' : '#ffffff'; x.fillRect(round(px - 2), round(py), 5, 1); x.fillRect(round(px), round(py - 2), 1, 5);
+      x.fillRect(round(px - 1), round(py - 1), 3, 3);
+    }
+  }
+  x.restore();
+}
 function drawFighterRig(x, f, al, rx, ry) {
   const P = fighterPose(f, al), it = visHeld(f), S = f === G.p ? gearSkin(SK[f.skin] || SK[0], f.skin) : f.coop && f.gearObj ? gearSkinOf(f) : SK[f.skin] || SK[0];
   P.hat = f.hat || 0;
+  const trail = BR_TRAILS[f.trail | 0];
+  drawBrTrail(x, f, trail);
   if (S.scarf) { const sc = f.scarf; for (let i = 1; i < sc.length; i++) seg(x, sc[i - 1].x - rx, sc[i - 1].y - ry, sc[i].x - rx, sc[i].y - ry, i < 3 ? 2.4 : 2, S.scarf[i % 2]); }
   let wp = null, wp2 = null; if (it) { if (it.held || it.chuks) { wp = it; if (it.dual) wp2 = it; } else if (it.id === 'torch') { TORCH_HELD.held = SPR.i_torch; wp = TORCH_HELD; } }
   x.save(); x.scale(f.face, 1); drawRig(x, P, S, wp, wp2); x.restore();

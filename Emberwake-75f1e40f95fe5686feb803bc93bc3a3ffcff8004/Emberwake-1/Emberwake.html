@@ -1086,7 +1086,7 @@ let FORGE_X = 0, FORGE_Y = 0, SKY_X = 0, SKY_Y = 0, MINE_X = 0, MINE_Y = 0, road
 const SIZES = [[600, 260], [900, 320], [1400, 380], [2200, 440]], SIZE_N = ['Small', 'Medium', 'Large', 'Vast'], SHAPE_N = ['Balanced', 'Skylands', 'Hollows'], MODE_N = ['Journey', 'Free Forge'];
 const WORLD = { id: '', name: '', seed: 0, size: 1, shape: 0, mode: 0, arena: false };
 const ARENA_SPAWNS = [[18, 58], [131, 58], [75, 48], [44, 43], [105, 43], [75, 38]];
-const BIOME = { reach: 'STILLGLASS REACH', moor: 'EMBERFELT MOOR', mosswood: 'MOSSWOOD', willowmere: 'WILLOWMERE', scoria: 'RUSTFALL', ash: 'ASHEN HOLLOW', drift: 'THE DRIFT', under: 'THE UNDERDARK', deep: 'THE DEEP', ring: 'THE CINDER RING', village: 'HEARTHHOLD' };
+const BIOME = { reach: 'STILLGLASS REACH', moor: 'EMBERFELT MOOR', mosswood: 'MOSSWOOD', willowmere: 'WILLOWMERE', scoria: 'RUSTFALL', ash: 'ASHEN HOLLOW', drift: 'THE DRIFT', under: 'THE UNDERDARK', deep: 'THE DEEP', ring: 'THE FFA ARCADE', village: 'HEARTHHOLD' };
 // visual layers and set pieces, rebuilt from the seed every time a world loads
 const STRUCTS = [], PROPS = [], FGP = [], VENTS = [], SPOTS = {}, LANDMARKS = [], ISLES = [];
 let PROPB = new Map(), FGPB = new Map();
@@ -1559,17 +1559,41 @@ function buildDrift() {
   ISLES.slice(1).sort((p, q) => p.cx - q.cx).forEach((s, i) => { if (i % 2) return; const x = s.cx + (i % 4 ? 1 : -1) * (s.a + 4); if (x > 6 && x < WW - 7 && heights[x] - s.cy > 16) vent(x, s.cy - 7); });
 }
 
-function genArena() {
+function genArena(mode) {
   SEED = 4242; rng = mulberry32(SEED); WORLD.arena = true; resetWorld(150, 68);
   const fy = 60; SPAWN_X = 75; SHRINE_X = SHRINE2_X = GATE_X = -9999; BASE_Y = fy; DEEP_Y = 9999; DRIFT_Y = -99; VIL_Y = -999;
   for (let x = 0; x < WW; x++) {
     heights[x] = fy;
-    for (let y = fy; y < WH; y++) tiles[y * WW + x] = y >= WH - 3 ? BEDROCK : y < fy + 2 ? BRICK : STONE;
+    for (let y = fy; y < WH; y++) tiles[y * WW + x] = y >= WH - 3 ? (mode === 'knockback' ? AIR : BEDROCK) : y < fy + 2 ? BRICK : STONE;
     for (let y = 8; y < fy; y++) { if (x < 3 || x >= WW - 3) tiles[y * WW + x] = BEDROCK; else if (x % 14 < 2 && y > fy - 26 || (y > fy - 28 && y <= fy - 26)) walls[y * WW + x] = W_RUIN; }
   }
   const plat = (x0, x1, y) => { for (let x = x0; x <= x1; x++) tiles[y * WW + x] = PLATFORM; };
   const block = (x0, x1, y0, y1) => { for (let x = x0; x <= x1; x++) for (let y = y0; y <= y1; y++) tiles[y * WW + x] = BRICK; };
   plat(16, 36, 53); plat(113, 133, 53); plat(48, 58, 55); plat(91, 101, 55); block(61, 88, 50, 51); plat(36, 52, 46); plat(97, 113, 46); plat(66, 83, 41); plat(20, 31, 39); plat(118, 129, 39);
+  if (mode === 'crystal') {
+    plat(48, 101, 55); block(69, 80, 51, 53);
+    for (const [x, y] of [[56, 54], [95, 54], [64, 50], [85, 50], [74, 40]]) setTile(x, y, CRYSTAL);
+  } else if (mode === 'mace') {
+    plat(42, 59, 49); plat(90, 107, 49); plat(65, 84, 36); block(70, 79, 45, 50);
+  } else if (mode === 'spear') {
+    for (let x = 61; x <= 88; x++) for (let y = 50; y <= 51; y++) tiles[y * WW + x] = AIR;
+    plat(27, 44, 49); plat(105, 122, 49); plat(57, 92, 56);
+  } else if (mode === 'grapple') {
+    block(37, 41, 31, 53); block(108, 112, 31, 53); plat(25, 52, 37); plat(97, 124, 37); plat(59, 90, 32);
+  } else if (mode === 'bow') {
+    block(43, 48, 47, 52); block(101, 106, 47, 52); plat(24, 39, 38); plat(111, 126, 38); plat(58, 91, 45);
+  } else if (mode === 'axe') {
+    for (let x = 20; x <= 129; x++) for (let y = 34; y <= 46; y++) tiles[y * WW + x] = AIR;
+    block(67, 82, 49, 53); plat(48, 61, 55); plat(88, 101, 55);
+  } else if (mode === 'shield') {
+    block(37, 41, 45, 54); block(108, 112, 45, 54); block(69, 80, 48, 52);
+    plat(49, 60, 44); plat(89, 100, 44);
+  } else if (mode === 'knockback') {
+    for (let x = 3; x < WW - 3; x++) for (let y = fy; y < WH - 3; y++) tiles[y * WW + x] = AIR;
+    plat(59, 90, 48); plat(29, 46, 54); plat(103, 120, 54); plat(69, 80, 38);
+  } else if (mode === 'random') {
+    plat(36, 54, 46); plat(95, 113, 46); block(72, 77, 47, 53);
+  }
   for (const [x, y] of [[14, 52], [42, 52], [70, 44], [79, 44], [107, 52], [135, 52], [28, 34], [121, 34], [56, 52], [93, 52]]) setTile(x, y, TORCH);
   MODS_ON = false;
 }
@@ -5010,12 +5034,19 @@ function nearStation(tile) { const p = G.p, cx = (p.x + 3) / T, cy = (p.y + 10) 
 const FUELS = ['charcoal', 'coal', 'peat'];
 function fuelHave() { let n = 0; for (const f of FUELS) n += countItem(f); return n; }
 function fuelTake(n) { for (const f of FUELS) { const k = min(n, countItem(f)); removeItem(f, k); n -= k; } }
+function craftChecks(r) {
+  const checks = Object.keys(r.need).map(id => ({ id, kind: 'ingredient', have: countItem(id), need: r.need[id] }));
+  if (r.fuel) {
+    const reserved = id => (r.need[id] || 0) + ((r.keep || []).includes(id) ? 1 : 0);
+    const have = FUELS.reduce((n, id) => n + max(0, countItem(id) - reserved(id)), 0);
+    checks.push({ id: null, kind: 'fuel', have, need: r.fuel });
+  }
+  for (const id of r.keep || []) checks.push({ id, kind: 'kept', have: countItem(id), need: 1 });
+  return checks;
+}
 function canCraft(r) {
   if (WORLD.mode === 1) return true;
-  for (const k in r.need) if (countItem(k) < r.need[k]) return false;
-  for (const k of r.keep || []) if (!countItem(k)) return false;
-  if (r.fuel && fuelHave() < r.fuel) return false;
-  return true;
+  return craftChecks(r).every(q => q.have >= q.need);
 }
 function payCraft(r) { if (WORLD.mode === 1) return; for (const k in r.need) removeItem(k, r.need[k]); if (r.fuel) fuelTake(r.fuel); }
 function giveCraft(r, n = r.n, q) {
@@ -5086,6 +5117,13 @@ const WLIST = [['shortsword', 'copper'], ['shortsword', 'bronze'], ['shortsword'
   ['daggers', 'flint'], ['daggers', 'bone'], ['daggers', 'iron'], ['kama', 'bronze'], ['kama', 'iron'], ['claws', 'bone'], ['claws', 'steel'], ['claws', 'chitin'], ['sai', 'glass'],
   ['club', 'wood'], ['club', 'stone'], ['club', 'bone'], ['mace', 'copper'], ['mace', 'bronze'], ['mace', 'rust'], ['warhammer', 'deep'], ['battleaxe', 'flint'], ['battleaxe', 'bronze'], ['battleaxe', 'iron'], ['greataxe', 'steel'], ['greataxe', 'ember'],
   ['shortbow', 'wood'], ['recurve', 'bone'], ['longbow', 'wood'], ['longbow', 'glass'], ['longbow', 'ember'], ['nunchaku', 'bone'], ['nunchaku', 'steel'], ['flail', 'iron'], ['flail', 'ember'], ['chainwhip', 'glass']];
+const BR_LEGENDARY_RECIPES = [
+  { id: 'voidblade', set: 'sword', need: { iron_ore: 12, coal: 3, bone: 2 } },
+  { id: 'stormpiercer', set: 'spear', need: { copper_ore: 9, tin_ore: 4, coal: 3 } },
+  { id: 'rimecaller', set: 'sword', need: { iron_ore: 12, coal: 3, bone: 4 } },
+  { id: 'soulreaper', set: 'fangs', need: { copper_ore: 9, tin_ore: 4, bone: 3, fiber: 6 } },
+  { id: 'earthshatter', set: 'maul', need: { iron_ore: 15, coal: 3, rock: 4 } }
+];
 const NUN0 = { st: '#8a6a48', cap: '#c9a44a', l1: '#e8edf2', l2: '#7f8898', end: 'stick', n: 3 };
 function bowSpr(h, M, curl) {
   const w = 9; const [c, x] = mk(w, h);
@@ -5128,6 +5166,18 @@ function buildWeapons() {
   // the old weapons get recipes of their own and their trait flags
   IT.spear.desc = 'Fire-hardened stalkwood. Long reach. Thrusts, vaults and sweeps.'; IT.fangs.desc = 'Sunmetal twin blades. Fast, close, relentless.'; IT.maul.desc = 'Hollow iron, slow and enormous. Heavy forms shrug off blows.';
   R('bench', 'spear', 1, { stick: 3, twine: 1, log: 1 }); R('bench', 'bow', 1, { log: 2, twine: 2, cinder: 3 }); R('bench', 'nunchaku', 1, { stick: 2, chain: 1 }); R('anvil', 'fangs', 1, { copper_bar: 2, stick: 1 }, { lvl: 1, q: 1 }); R('anvil', 'maul', 1, { iron_bar: 4, leather: 1 }, { lvl: 2, q: 1 });
+  const legends = {
+    voidblade: { base: 'steel_sword', name: 'Voidblade', dmg: 21, ability: 'rift', cooldown: 8 * 60, desc: 'Rift Rend: a void arc lashes a nearby foe every 8 seconds.' },
+    stormpiercer: { base: 'steel_spear', name: 'Stormpiercer', dmg: 20, ability: 'chain', cooldown: 7 * 60, desc: 'Chain Lightning: a strike jumps to a nearby foe every 7 seconds.' },
+    rimecaller: { base: 'steel_greatsword', name: 'Rimecaller', dmg: 24, ability: 'rime', cooldown: 9 * 60, frost: 1, cold: true, desc: 'Winter Pulse: chills nearby foes every 9 seconds.' },
+    soulreaper: { base: 'iron_kama', name: 'Soulreaper', dmg: 20, ability: 'harvest', cooldown: 10 * 60, steal: .06, desc: 'Soul Harvest: a landed blow restores health every 10 seconds.' },
+    earthshatter: { base: 'deep_warhammer', name: 'Earthshatter', dmg: 25, ability: 'quake', cooldown: 9 * 60, stag: 1, desc: 'Faultline: a grounded blow shakes nearby foes every 9 seconds.' }
+  };
+  for (const recipe of BR_LEGENDARY_RECIPES) {
+    const L = legends[recipe.id], base = IT[L.base];
+    defI(recipe.id, Object.assign({}, base, { id: recipe.id, name: L.name, dmg: L.dmg, tier: 'ember', legendary: true, relic: true, legendAbility: L.ability, abilityCooldown: L.cooldown, desc: `${base.desc} ${L.desc}` }, L.frost ? { frost: L.frost, cold: L.cold } : {}, L.steal ? { steal: L.steal } : {}, L.stag ? { stag: L.stag } : {}));
+    R('anvil', recipe.id, 1, recipe.need, { lvl: 2, q: 1, wild: true });
+  }
   for (const id of ['vpike', 'vfangs']) { IT[id].frost = 1; IT[id].icon = rotIcon(IT[id].held); } IT.kmaul.burn = 1; IT.kblade.burn = 1;
   defI('fists', { name: 'Bare Hands', type: 'weapon', set: 'brawl', dmg: 5, len: 4, held: null, grip: [0, 0], dual: false, stack: 1, fist: true, desc: 'Jab, cross, hook, uppercut. Click a creature to punch it, whatever you hold.', icon: null });
 }
@@ -5386,6 +5436,8 @@ const TRINK = {
   fortune_charm: { n: 'Fortune Charm', mul: { drop: 1.3 }, d: 'Creatures you fell drop more.' },
   frost_charm: { n: 'Frostward Charm', res: { cold: .6 }, d: 'Cold barely bites.' },
   ash_charm: { n: 'Ashward Charm', res: { fire: .35 }, d: 'Fire and heat hurt a third less.' },
+  briar_ward: { n: 'Briar Ward', tags: ['ward'], d: 'Poison and bleeding cannot take hold while you wear it.' },
+  storm_ward: { n: 'Storm Ward', res: { shock: .5 }, d: 'Shock hurts half as much.' },
   // left behind by the guardians
   warden_eye: { n: "Warden's Eye", mul: { hdmg: 1.12 }, tags: ['glow'], d: 'Heavy blows land 12% harder, and it glows.', boss: 1 },
   glass_tear: { n: "Vesper's Tear", mul: { dodge: 1.12 }, tags: ['veil'], d: 'Dodges carry further, with a wider perfect window.', boss: 1 },
@@ -5575,6 +5627,8 @@ R('jewel', 'rhythm_bead', 1, { bone: 3, resin: 2, shard: 1 }); R('jewel', 'thorn
 R('jewel', 'fang_necklace', 1, { tusk: 2, twine: 2, bone: 2 }); R('jewel', 'ember_heart', 1, { ember_bar: 1, glass: 1, cinder_gland: 1 });
 R('jewel', 'fortune_charm', 1, { geode_core: 1, copper_bar: 2, glass: 1 }); R('jewel', 'frost_charm', 1, { skyglass: 1, cloth: 1, tin_bar: 1 });
 R('jewel', 'ash_charm', 1, { cinder: 4, rust_plate: 2, bronze_bar: 1 });
+R('jewel', 'briar_ward', 1, { husk_fiber: 2, resin: 2, venom: 1 });
+R('jewel', 'storm_ward', 1, { copper_bar: 2, glass_wing: 2, skyglass: 1 });
 // ---- the oven's work ----
 R('quern', 'flour', 1, { reed: 3 }); R('quern', 'flour', 2, { reed: 5, husk_fiber: 1 });
 R('oven', 'bread', 2, { flour: 2, jug_w: 1 }, { ret: { jug: 1 } }); R('oven', 'berry_pie', 1, { flour: 2, berries: 4 });
@@ -7522,9 +7576,36 @@ function hitFx(hx, hy, top, dmg, o, kx, involved) {
 function strike(by, e, dmg, kx, ky, o) {
   if (!e.fighter) { const r = damageEnemy(e, dmg, kx, ky, o) > 0; if (r && o.launch && !e.dead && !o.link) applyStatus(e, 'launched', by); return r; }
   const hx = o.hx === undefined ? e.x + 3 : o.hx, hy = o.hy === undefined ? e.y + 10 : o.hy;
-  if (e.remote) { if (e.dead || e.spawnT > 0 || e.noHit) return false; netHit(e, dmg, kx, ky, o.crit, 0, by); e.flash = 6; hitFx(hx, hy, e.y, max(1, round(dmg * .8)), o, kx, by === G.p); return true; }
+  if (e.remote) { if (e.dead || e.spawnT > 0 || e.noHit) return false; const extra = o.status ? [o.status, o.statusD || 100, sign(kx)] : 0; netHit(e, dmg, kx, ky, o.crit, extra, by); e.flash = 6; hitFx(hx, hy, e.y, max(1, round(dmg * .8)), o, kx, by === G.p); return true; }
   const r = hurtFighter(e, dmg, by ? by.x + 3 : hx - kx, { kx, ky, by, pvp: !!(by && by.fighter), stop: o.stop, shake: o.shake, crit: o.crit, stagger: o.stagger, blunt: o.blunt, launch: o.launch, cold: o.cold, hx, hy, link: o.link, bite: o.bite });
   if (r && o.launch && !e.dead && !o.link) applyStatus(e, 'launched', by); return r;
+}
+function legendaryOnHit(a, e, dmg, hx, hy) {
+  const W = a.W, f = a.f, ability = W.legendAbility;
+  if (!WORLD.royale || !W.legendary || !ability || ability === 'quake' && !f.onGround) return;
+  const cds = f.legendaryCooldowns || (f.legendaryCooldowns = Object.create(null));
+  if ((cds[W.id] || 0) > G.time) return;
+  cds[W.id] = G.time + W.abilityCooldown;
+  if (ability === 'harvest') {
+    f.hp = min(f.maxhp, f.hp + max(3, round(dmg * .24)));
+    if (near(f)) { sparks(f.x + 3, f.y + 8, 8, 0, 1.4, ['#b49cff', '#e0c0ff', '#ffffff']); sfx('heal', 60); }
+    return;
+  }
+  const centerX = ability === 'chain' || ability === 'rift' ? e.x + e.w / 2 : f.x + f.w / 2;
+  const centerY = ability === 'chain' || ability === 'rift' ? e.y + e.h / 2 : f.y + f.h / 2;
+  const radius = ability === 'chain' ? 112 : ability === 'rift' ? 58 : ability === 'quake' ? 82 : 66;
+  const maxTargets = ability === 'chain' ? 1 : ability === 'rift' ? 2 : 3;
+  const targets = foesOf(f).filter(o => o !== e && !o.dead && !o.noHit && hypot(o.x + o.w / 2 - centerX, o.y + o.h / 2 - centerY) <= radius)
+    .sort((x, y) => hypot(x.x + x.w / 2 - centerX, x.y + x.h / 2 - centerY) - hypot(y.x + y.w / 2 - centerX, y.y + y.h / 2 - centerY)).slice(0, maxTargets);
+  const colors = ability === 'chain' ? ['#fff1a8', '#8ff5e6', '#ffffff'] : ability === 'rime' ? ['#c9fff6', '#8fd0d8', '#ffffff'] : ability === 'quake' ? ['#c9a44a', '#b08a5a', '#ffffff'] : ['#b49cff', '#e0c0ff', '#ffffff'];
+  for (const target of targets) {
+    const ratio = ability === 'chain' ? .52 : ability === 'rift' ? .3 : ability === 'rime' ? .18 : .34;
+    const kx = (sign(target.x + target.w / 2 - centerX) || a.face) * (ability === 'quake' ? 3.2 : 1.7), ky = ability === 'quake' ? -2.6 : -.8;
+    const status = ability === 'rime' ? 'frost' : null;
+    const landed = strike(f, target, max(1, round(dmg * ratio)), kx, ky, { stop: ability === 'quake' ? 4 : 2, shake: ability === 'quake' ? 2 : 0, cold: ability === 'rime', blunt: ability === 'quake', status, statusD: 100, hx: target.x + target.w / 2, hy: target.y + target.h / 2 });
+    if (landed && status && !target.remote && !target.dead) applyStatus(target, status, f, { d: 100 });
+  }
+  if (near(f)) { sparks(hx, hy, ability === 'quake' ? 16 : 10, a.face, 2.2, colors); if (ability === 'quake') { addShake(2); sfx('boom', 40); } else sfx(ability === 'chain' ? 'reflect' : 'tele', 60); }
 }
 function applyHit(a, e, hx, hy) {
   const f = a.f, m = a.m, root = e.root || e, last = a.hits.get(root);
@@ -7537,7 +7618,7 @@ function applyHit(a, e, hx, hy) {
   const root0 = e.root || e, sunder = !e.fighter && root0.stagT > 0 && a.btn === 'H' && !root0.sundered; if (sunder) { dmg *= 1.5; root0.sundered = true; }
   dmg = max(1, round(dmg * frand(.93, 1.07)));
   let kx = m.kb[0] * a.face; if (m.kind === 'spin') kx = m.kb[0] * (sign((e.x + e.w / 2) - (f.x + 3)) || a.face); kx *= a.kbm || 1;
-  if (!strike(f, e, dmg, kx, m.kb[1], { stagger: m.flow === 'down' ? max(m.stagger || 0, 45) : m.stagger, launch: TH.bite && m.launch, crit, stop: (m.stop || 0) + (lk && lk.tag ? 2 : 0) + (a.cresc ? 3 : 0), shake: m.shake, blunt: m.blunt, cold: a.W.cold, hx, hy, bite: TH.bite, pz: TH.pz * (a.pzm || 1), gb: a.btn === 'H' || edge > 0 || !!crit || sunder || !!m.big || !!a.perfect })) return;
+  if (!strike(f, e, dmg, kx, m.kb[1], { stagger: m.flow === 'down' ? max(m.stagger || 0, 45) : m.stagger, launch: TH.bite && m.launch, crit, stop: (m.stop || 0) + (lk && lk.tag ? 2 : 0) + (a.cresc ? 3 : 0), shake: m.shake, blunt: m.blunt, cold: a.W.cold, status: a.W.legendAbility === 'rime' ? 'frost' : null, statusD: 100, hx, hy, bite: TH.bite, pz: TH.pz * (a.pzm || 1), gb: a.btn === 'H' || edge > 0 || !!crit || sunder || !!m.big || !!a.perfect })) return;
   tempoLanded(a, e, edge, dmg, hx, hy); if (sunder) tempoSunder(a, e, hx, hy); if (WORLD.royale) trAmpHit(a, e, edge, dmg, hx, hy);
   if (P0) { flowSet(a, e, lk, hx, hy); famGain(a.setName, ((a.fresh ? 1 : .4) + (lk && lk.tag ? 1 : 0)) * (e.type === 'dummy' ? .5 : 1)); if (e.type !== 'dummy') artGain(a.W); }
   if (a.W.burn && !e.dead) applyStatus(e, 'burn', f, { d: 110 });
@@ -7550,6 +7631,7 @@ function applyHit(a, e, hx, hy) {
   if (P0) styleHit(a, e, dmg);
   if (P0) { if (sharp) f.sharp--; if (f.venom > 0) f.venom--; }
   if (f === G.p) comboHit(a.fresh && !a.hit); a.hit = true;
+  legendaryOnHit(a, e, dmg, hx, hy);
   if (m.pogo && !a.pogoed) { a.pogoed = true; a.pogoT = a.pt; f.vy = -4.3; f.noCut = true; f.airDash = airDashMax(f); f.updraft = true; f.dblUsed = false; }
   else if (!f.onGround && m.float) f.vy = min(f.vy, -.7);
 }
@@ -7701,7 +7783,7 @@ function applyStatus(e, k, by, o = {}) {
   else if (k === 'blind') { if (e.type === 'hollow') return false; s.blind = max(s.blind, o.d || 160); }
   else if (k === 'launched') s.launched = max(s.launched, o.d || 50);
   else if (k === 'mire') e.mire = max(e.mire | 0, o.d || 100);
-  else if (k === 'poison' || k === 'bleed') { if (e === G.p && e.ward > 0) return false; if (k === 'poison' && (e.type === 'golem' || e.type === 'mote' || e.type === 'cinderling')) return false; s[k] = max(s[k] || 0, o.d || 240); s[k + 'By'] = by; }
+  else if (k === 'poison' || k === 'bleed') { if (e === G.p && (e.ward > 0 || boonHas('ward'))) return false; if (k === 'poison' && (e.type === 'golem' || e.type === 'mote' || e.type === 'cinderling')) return false; s[k] = max(s[k] || 0, o.d || 240); s[k + 'By'] = by; }
   else if (k === 'frost') { if (e.fireproof && e.type !== 'golem') { s.burn = 0; } s.frost = max(s.frost || 0, o.d || 100); s.burn = 0; }
   return true;
 }
@@ -7745,7 +7827,7 @@ function tickStatus(e) {
 
 // ---------------- sidearms ----------------
 const ARMS = ['shuriken', 'hook', 'flask', 'smoke'];
-function armsOwned(f) { if (!f.isPlayer) return f.arms || []; if ((WORLD.arena && !WORLD.royale) || WORLD.mode === 1) return ARMS; return ARMS.filter(id => countItem(id) > 0); }
+function armsOwned(f) { if (!f.isPlayer) return f.arms || []; if (FFA.active && WORLD.arena && !WORLD.royale) return ffaArms(); if ((WORLD.arena && !WORLD.royale) || WORLD.mode === 1) return ARMS; return ARMS.filter(id => countItem(id) > 0); }
 function curArm(f) { const own = armsOwned(f); if (!own.length) return null; if (!own.includes(f.arm)) f.arm = own[0]; return f.arm; }
 function cycleArm(f) { const own = armsOwned(f); if (!own.length) { sfx('deny'); return; } f.arm = own[(own.indexOf(f.arm) + 1) % own.length]; G.armT = 100; sfx('ui'); }
 function throwArm(f, wx, wy) {
@@ -8911,14 +8993,14 @@ function newFighter(x, y, o) {
     inv: 0, iDodge: 0, dodgeT: 0, dodgeCd: 0, dodgeDir: 1, dodgeGrace: 0, dodgeGround: true, dbuf: 0, airDash: 1, updraft: true, dblUsed: false, perfected: false,
     state: 'normal', atk: null, buf: null, coyote: 0, jbuf: 0, runPh: 0, landT: 0, hurtT: 0, riposte: 0, lastMove: null, chainT: 0, hist: [], toolT: 0, mineX: -1, mineY: -1, mineP: 0,
     placeCd: 0, dead: false, deadT: 0, healCd: 0, regenT: 0, sHold: 0, noCut: false, ghostReq: false, scarf: [], skin: 0, hat: 0, team: 'p', name: '', wid: 'sword', flash: 0, taken: 0, takenT: 0,
-    kills: 0, deaths: 0, foes: [], atkN: 0
+    kills: 0, deaths: 0, foes: [], atkN: 0, trail: 0
   };
   Object.assign(f, o);
   for (let i = 0; i < 7; i++) f.scarf.push({ x: x + 3, y: y + 5, ox: x + 3, oy: y + 5 });
   return f;
 }
 function newPlayer() {
-  const sx = SPOTS.camp ? SPOTS.camp.x - 6 : SPAWN_X, sy = SPOTS.camp ? SPOTS.camp.y : heights[SPAWN_X]; const p = newFighter(sx * T + 1, (sy - 3) * T, { isPlayer: true, skin: G.skin || 0, hat: G.hat || 0, name: G.nick || 'You' });
+  const sx = SPOTS.camp ? SPOTS.camp.x - 6 : SPAWN_X, sy = SPOTS.camp ? SPOTS.camp.y : heights[SPAWN_X]; const p = newFighter(sx * T + 1, (sy - 3) * T, { isPlayer: true, skin: G.skin || 0, hat: G.hat || 0, trail: G.trail || 0, name: G.nick || 'You' });
   while (boxHits(p.x, p.y, p.w, p.h)) p.y -= T; p.py = p.y; return p;
 }
 function reviveFighter(f, x, y) {
@@ -8948,7 +9030,9 @@ function hurtFighter(f, dmg, fromX, o = {}) {
   if (f.inv > (o.net ? 30 : o.link ? 999 : 0)) return false;
   if (f.state === 'link' && !o.link) return false;
   if (tryClash(f, dmg, fromX, o)) return false;
-  const wild = wildOn(), pvp = !!o.pvp, armored = f.atk && f.atk.m.armor && f.atk.phase < 2, caught = caughtOpen(f, o), soft = pvp && o.bite === false;
+  const guarded = FFA.active && FFA.mode === 'shield' && f === G.p && keys.KeyG && f.stam >= 12 && sign(fromX - (f.x + 3)) === f.face;
+  if (guarded) { f.stam -= 12; f.riposte = max(f.riposte || 0, 40); dmg *= .35; }
+  const wild = wildOn(), pvp = !!o.pvp, armored = f.atk && f.atk.m.armor && f.atk.phase < 2, caught = caughtOpen(f, o), soft = pvp && (o.bite === false || guarded);
   if (caught) dmg *= 1.25;
   const gp = f === G.p && gearOn(); if (gp) { dmg = gearDamage(dmg, o); if ((gearHas('kindled') || gearHas('molten')) && o.by && o.by !== f && !o.by.dead && o.by.hp !== undefined && !o.by.fighter) applyStatus(o.by, 'burn', f, { d: 90 }); }
   // a guardian's fight hits harder than the open road
@@ -8965,7 +9049,7 @@ function hurtFighter(f, dmg, fromX, o = {}) {
   else if (gp && dmg < 9 && gearHas('anvil')) { f.inv = 40; fsx(f, 'hit2', 0); sparks(f.x + 3, f.y + 8, 3, 0, 1.2); }
   else if (!armored) {
     const d = sign((f.x + 3) - fromX) || -f.face;
-    const pz = (gp ? gearMul('poise') : 1) * (soft ? .45 : 1); f.vx = (o.kx !== undefined ? o.kx * .85 : d * 2.7) * pz; if (!soft) { f.vy = (o.ky !== undefined ? min(o.ky, -1.2) : -2.3) * (.4 + .6 * pz); f.onGround = false; }
+    const pz = (gp ? gearMul('poise') : 1) * (guarded ? .12 : soft ? .45 : 1); f.vx = (o.kx !== undefined ? o.kx * .85 : d * 2.7) * pz; if (!soft) { f.vy = (o.ky !== undefined ? min(o.ky, -1.2) : -2.3) * (.4 + .6 * pz); f.onGround = false; }
     f.hurtT = soft ? 5 : pvp ? clamp(o.stagger ? 24 : 11 + (o.stop || 2), 10, 26) : 13; f.inv = pvp ? 7 : 50;
     if (o.link) f.inv = 0; else if (pvp && ++f.taken >= 4) { f.inv = 50; f.taken = 0; f.vx *= 1.4; sparks(f.x + 3, f.y + 10, 10, 0, 2, FROST); }
     f.takenT = 70; if (!(soft && f.atk && f.atk.phase === 1)) { f.atk = null; f.state = 'normal'; f.lastMove = null; f.chainT = 0; f.glintT = 0; } f.buf = null;
@@ -9100,7 +9184,7 @@ function tickPlayer() {
   tickFighter(p, I);
   if (WORLD.royale) brAfter(p, I);
   if (p.dead) { if (!WORLD.royale && p.deadT > (WORLD.arena ? 150 : 190)) respawnPlayer(); return; }
-  const wild = wildOn(); if (WORLD.arena && !wild) return;
+  const wild = wildOn(); if (WORLD.arena && !wild) { ffaCrystalAction(); return; }
   // ---- tools, blocks, consumables (in the Wilds you dig, build and throw as anywhere, but its own keys heal and open things) ----
   toolTick(p, I);
   const hi = heldItem(); if (hi && hi.type === 'weapon') G.lastWeapon = G.sel;
@@ -9294,9 +9378,50 @@ function fighterPose(f, al) {
 const TORCH_HELD = { held: null, grip: [2, 5] };
 // what the rig shows: a tool the belt brought to hand mid-swing, else what you hold
 function visHeld(f) { if (f.isPlayer && (f.toolT > 0 || f.toolCharge > 0) && f.swingTool && f.swingTool.held && !f.atk) return f.swingTool; if (f.isPlayer && (f.toolT > 0 || f.toolCharge > 0) && !f.atk && f.swingTool === HAND) return null; if (f === G.p) return f.atk && f.atk.W ? f.atk.W : heldItem() || heldOf(f); return heldOf(f); }
+function drawBrTrail(x, f, trail) {
+  const speed = hypot(f.vx || 0, f.vy || 0);
+  if (!f.trail || !trail || speed <= .6) return;
+  const d = -f.face, phase = G.time * .18 + (f.runPh || 0) * .35, strength = clamp((speed - .35) / 2.2, .35, 1);
+  const ribbon = (color, width, offset, wave) => {
+    x.globalAlpha = strength * .7; x.strokeStyle = color; x.lineWidth = width; x.lineCap = 'round';
+    x.beginPath(); x.moveTo(d * 3, -8 + offset);
+    x.bezierCurveTo(d * 10, -12 + offset + sin(phase + wave) * 2, d * 21, -3 + offset + sin(phase + wave + 1) * 3, d * 32, -8 + offset + sin(phase + wave + 2) * 2);
+    x.stroke();
+  };
+  x.save();
+  if (f.trail === 1) {
+    ribbon('#ff7a2a', 2.2, 0, 0); ribbon('#ffd35a', 1, 1, 1.7);
+  } else if (f.trail === 2) {
+    ribbon('#4fd8c8', 2, -1, 0); ribbon('#c9fff6', 1, 2, 2.2); ribbon('#8ff5e6', 1, -4, 4.1);
+  } else if (f.trail === 3) {
+    ribbon('#8f55d8', 2.4, 0, 0); ribbon('#e0d2ff', 1, -2, 2.6);
+  } else if (f.trail === 4) {
+    ribbon('#ffb52e', 2.5, 0, 0); ribbon('#fff1a8', 1.2, 1, 2); ribbon('#ffffff', .8, -3, 4);
+  }
+  for (let i = 0; i < (f.trail === 2 ? 8 : 6); i++) {
+    const q = ((G.time * .13 + i * .19 + (f.runPh || 0) * .015) % 1 + 1) % 1;
+    const px = d * (4 + q * 29), py = -8 + sin(phase + i * 2.1) * (2 + q * 3), fade = strength * (1 - q) * (.65 + .35 * sin(phase * 2 + i));
+    x.globalAlpha = fade;
+    if (f.trail === 1) {
+      x.fillStyle = i % 3 ? '#ff8a3d' : '#fff1a8'; x.fillRect(round(px), round(py), i % 3 ? 2 : 1, i % 3 ? 2 : 1);
+      if (i % 3 === 0) { x.fillStyle = '#ffd35a'; x.fillRect(round(px), round(py + 2), 1, 2); }
+    } else if (f.trail === 2) {
+      x.fillStyle = i % 2 ? '#c9fff6' : '#8ff5e6'; x.fillRect(round(px), round(py), 2, 2);
+      x.fillRect(round(px + (i % 2 ? 1 : -1)), round(py - 2), 1, 2); x.fillRect(round(px + (i % 2 ? 1 : -1)), round(py + 2), 1, 2);
+    } else if (f.trail === 3) {
+      x.save(); x.translate(round(px), round(py)); x.rotate(PI / 4); x.fillStyle = i % 2 ? '#c77dff' : '#e0d2ff'; x.fillRect(-1, -1, 3, 3); x.restore();
+    } else if (f.trail === 4) {
+      x.fillStyle = i % 2 ? '#ffd35a' : '#ffffff'; x.fillRect(round(px - 2), round(py), 5, 1); x.fillRect(round(px), round(py - 2), 1, 5);
+      x.fillRect(round(px - 1), round(py - 1), 3, 3);
+    }
+  }
+  x.restore();
+}
 function drawFighterRig(x, f, al, rx, ry) {
   const P = fighterPose(f, al), it = visHeld(f), S = f === G.p ? gearSkin(SK[f.skin] || SK[0], f.skin) : f.coop && f.gearObj ? gearSkinOf(f) : SK[f.skin] || SK[0];
   P.hat = f.hat || 0;
+  const trail = BR_TRAILS[f.trail | 0];
+  drawBrTrail(x, f, trail);
   if (S.scarf) { const sc = f.scarf; for (let i = 1; i < sc.length; i++) seg(x, sc[i - 1].x - rx, sc[i - 1].y - ry, sc[i].x - rx, sc[i].y - ry, i < 3 ? 2.4 : 2, S.scarf[i % 2]); }
   let wp = null, wp2 = null; if (it) { if (it.held || it.chuks) { wp = it; if (it.dual) wp2 = it; } else if (it.id === 'torch') { TORCH_HELD.held = SPR.i_torch; wp = TORCH_HELD; } }
   x.save(); x.scale(f.face, 1); drawRig(x, P, S, wp, wp2); x.restore();
@@ -11451,7 +11576,7 @@ const JOURNAL = {
   vesper2: ['The Still Ember', 'Vesper yielded, and the second ember settled behind your ribs with a cold you can feel in your teeth. Your feet have learned to push off the air twice: dodge two times before you land.'],
   wick2: ['What Wick Knows', 'Wick knew Vesper once. She kept a fire too, before hers went out. He thinks she might not be wrong about the Hollow. He thinks you should keep going anyway.'],
   gate: ['The Furnace Gate', 'In Rustfall, a door taller than any stalk is set into the hillside. Three sockets. Two of them hum when you come near. Something on the other side has been waiting a very long time.'],
-  ring: ['The Cinder Ring', 'A coliseum where Wakers sparred, once. The echoes that wait there are memories of every Waker who ever fought in it. Other Wakers can reach it too, from wherever they woke.'],
+  ring: ['The FFA Arcade', 'Ten arenas put Wakers against echo fighters, each with a different weapon and way to win. Other Wakers can join a private match by code.'],
   village: ['Hearthhold', 'The last village that still keeps its lamps lit. A dojo, a smithy, a watchtower, a well, and a fire in the square that has not gone out in living memory.'],
   juno: ['Juno', 'Juno runs the dojo. She does not care which weapon you carry. She cares what happens between two of them: the star that pins, the chain that follows.'],
   bram: ['Bram', 'The smith. Bald, bearded, busy. His family worked the Drowned Forge before the Keeper took it, and he has never once gone down to look.'],
@@ -11500,7 +11625,7 @@ const LEADS = {
   spire: { title: 'The Broken Spire', text: 'An old watchtower stands on the western moor. Something is carved at the top.', at: () => SPOTS.spire && SPOTS.spire.x, done: () => G.flags.spireRead },
   gate: { title: 'The Furnace Gate', text: 'A door in Rustfall with three sockets. It wants all three embers.', at: () => GATE_X, done: () => G.flags.gateOpen },
   links: { title: 'Links', text: 'Juno says a pinned, hooked, burning, blinded or launched foe can be finished with the right weapon. Find three links.', done: () => G.linksKnown.size >= 3 },
-  ring: { title: 'The Cinder Ring', text: 'Wakers spar in the Cinder Ring, against echoes or each other. Enter it from the title screen.', done: () => false },
+  ring: { title: 'The FFA Arcade', text: 'Ten weapon-focused arenas await. Enter the FFA Arcade from the title screen to practise with echo fighters or host a private match.', done: () => false },
   tools: { title: 'Bare hands', text: 'You woke with nothing. Pebbles and flint lie about; grass gives fiber, bushes give sticks. Knap a blade [K], twist twine, bind them.', done: () => !!(G.flags.crafted_flint_axe || G.flags.crafted_flint_pick) },
   food: { title: 'An empty stomach', text: 'Berries off the bushes, hares and thornbacks for meat. Raw meat feeds you; seared on a campfire it feeds you far better.', done: () => !!(G.flags.ate_cmeat || G.flags.ate_stew || G.flags.ate_jerky) },
   styles: { title: 'Five forms', text: 'Every weapon has five styles on V. Juno shows you the first; drills at a practice post teach the rest. Land one and swap [X] to your off hand for a pair finisher.', done: () => Object.keys(G.mast || {}).some(t => styleLevel(t) >= 5) },
@@ -11545,7 +11670,7 @@ const SCRIPTS = {
   },
   wick_keeper: { lines: [['WICK', 'You went all the way down. And you came back up with fire that does not burn you.'], ['WICK', 'Bram will want to hear about the forge. He will pretend he does not.']], end() { G.flags.wickTold3 = true; G.dirty = true; } },
   wick_three: { lines: [['WICK', 'All three. I did not think I would see it. I am not sure I wanted to.'], ['WICK', 'The Furnace Gate is in Rustfall, far east. Whatever happens when it opens, it happens because you chose it.']], end() { learn('gate'); G.pin = 'gate'; } },
-  wick_forge: { lines: [['WICK', 'A free forge, then. No embers to chase, just stone to shape and stalks to cut.'], ['WICK', 'The shrine, the mirror and the Drowned Forge still answer, if you want a fight. So does the Cinder Ring, where Wakers spar with each other.']], end() { G.flags.metWick = true; for (const id of ['warden', 'vesper', 'keeper', 'juno', 'bram', 'ring']) learn(id, true); unlock('ring'); } },
+  wick_forge: { lines: [['WICK', 'A free forge, then. No embers to chase, just stone to shape and stalks to cut.'], ['WICK', 'The shrine, the mirror and the Drowned Forge still answer, if you want a fight. The FFA Arcade has ten arenas, each with its own way to fight.']], end() { G.flags.metWick = true; for (const id of ['warden', 'vesper', 'keeper', 'juno', 'bram', 'ring']) learn(id, true); unlock('ring'); } },
   juno_intro: {
     lines: [['JUNO', 'You walk like a Waker. Loud. Come in, then.'], ['JUNO', 'Weapons are not the interesting part. What happens between them is.'],
     ['JUNO', 'You made that yourself? Then you are worth teaching. Take these. A Rattlechain, and star knives. [R] throws a star. It carries whatever it hits into the nearest wall and nails it there.'],
@@ -12052,6 +12177,7 @@ BOSSES.matriarch.leads = ['g_frost'];
 // ============================================================
 const inR = (x, y, w, h) => mouse.ux >= x && mouse.ux < x + w && mouse.uy >= y && mouse.uy < y + h;
 const FORM = { name: '', seed: '', size: 1, shape: 0, mode: 0, skin: 0, hat: 0, nick: '', code: '', accountName: '', accountPassword: '', accountConfirm: '', brRanked: false };
+const COSMETIC_SHOP = { tab: 'skin', selected: 0, scroll: 0, rows: 1 };
 const SIZE_D = ['600 x 260 tiles', '900 x 320 tiles', '1400 x 380 tiles', '2200 x 440 tiles: days to cross'], SHAPE_D = ['every seed deals its lands in a new order', 'the Drift is crowded with islands', 'few islands, the Underdark yawns wider'], MODE_D = ['three embers, any order, nothing forced', 'every item, no monsters, build freely'];
 let HITS = [], HITS_NEXT = [];
 const hit = (x, y, w, h, fn, slot) => HITS_NEXT.push({ x, y, w, h, fn, slot: !!slot });
@@ -12215,10 +12341,10 @@ function drawTitle(c) {
          : ['BEGIN', 'forge your first world', () => { G.state = 'create'; Object.assign(FORM, { name: 'World 1', seed: rollSeed() }); UI.focus = 'name'; sfx('ui'); }, 'A new land, a cold fire, and three embers to find.', { col: '#ffd35a' }],
     ['WORLDS', 'new, load, copy', () => goWorlds(''), 'Every world you have made. Forge a new one, or paste one a friend sent.']];
   const friends = [
-    ['JOIN A FRIEND', 'type their game code', () => { G.state = 'join'; UI.focus = null; COOP.err = ''; COOP.note = ''; COOP.long = false; nick(); sfx('ui'); }, 'Step into a friend\'s world with the code they give you.'],
+    ['JOIN A FRIEND', 'world or private FFA code', () => { G.state = 'join'; UI.focus = null; COOP.err = ''; COOP.note = ''; COOP.long = false; nick(); sfx('ui'); }, 'Join a friend\'s world or private FFA match with their game code.'],
     ['HOST A WORLD', 'open one, then invite', () => goWorlds('Open a world, then press P and choose PLAY TOGETHER for a code.'), 'Open one of your worlds, press P, choose PLAY TOGETHER: friends join with the code.']];
   const arenas = [
-    ['THE CINDER RING', 'duels: first to ten', () => { G.state = 'ring'; UI.focus = null; nick(); sfx('ui'); }, 'A small arena, every weapon, quick duels. Online, with friends by code, or against echoes.'],
+    ['FFA ARCADE', '10 combat modes · 3 bots', () => { G.state = 'ring'; UI.focus = null; nick(); sfx('ui'); }, 'Ten weapon-focused arenas, three opponents in quick play, personal ratings, and private matches by code.'],
     ['THE ASHFALL TRIALS', 'outlast the field', () => { G.state = 'brform'; UI.focus = null; nick(); if (FORM.brcode === undefined) FORM.brcode = ''; sfx('ui'); }, 'Twelve Wakers, one island. Scavenge, team up, survive the nights. About twelve minutes.']];
   TITLE.hint = '';
   if (uw >= 430) {
@@ -12226,19 +12352,63 @@ function drawTitle(c) {
     titleCard(c, x0, cy, cw, ch, 'ALONE', '#ffd35a', 'fire', alone);
     titleCard(c, x0 + cw + gap, cy, cw, ch, 'WITH FRIENDS', '#7ddc6f', 'friends', friends);
     titleCard(c, x0 + (cw + gap) * 2, cy, cw, ch, 'THE ARENAS', '#ff6b6b', 'arena', arenas);
-    const by = min(uh - 36, cy + ch + 10), bw = min(104, floor((uw - 28) / 4) - 4), bx = round((uw - bw * 4 - 12) / 2);
+    const by = min(uh - 36, cy + ch + 10), bw = min(104, floor((uw - 44) / 5)), bx = round((uw - bw * 5 - 16) / 2);
     button(c, bx, by, bw, 14, muted ? 'SOUND: OFF' : 'SOUND: ON', () => { muted = !muted; sfx('ui'); }); if (inR(bx, by, bw, 14)) TITLE.hint = 'Sound on or off (also the O key while playing).';
     button(c, bx + bw + 4, by, bw, 14, 'DIFFICULTY: ' + DIFF().n, () => { SETTINGS.diff = SETTINGS.diff === 'easy' ? 'normal' : SETTINGS.diff === 'normal' ? 'hard' : 'easy'; saveSettings(); sfx('ui'); }); if (inR(bx + bw + 4, by, bw, 14)) TITLE.hint = 'How hard blows land on you, and how wide the timing of your own blows is.';
     button(c, bx + (bw + 4) * 2, by, bw, 14, 'CONTROLS: ' + (SETTINGS.combat === 'simple' ? 'SIMPLE' : 'FULL'), () => { SETTINGS.combat = SETTINGS.combat === 'simple' ? 'full' : 'simple'; saveSettings(); sfx('ui'); }); if (inR(bx + (bw + 4) * 2, by, bw, 14)) TITLE.hint = 'SIMPLE: aim and S choose the form. FULL: movement keys and distance change it too.';
     button(c, bx + (bw + 4) * 3, by, bw, 14, 'HOW TO PLAY', () => { G.state = 'howto'; sfx('ui'); }); if (inR(bx + (bw + 4) * 3, by, bw, 14)) TITLE.hint = 'The keys, and how a fight works.';
+    button(c, bx + (bw + 4) * 4, by, bw, 14, 'COSMETIC SHOP', () => { G.state = 'shop'; COSMETIC_SHOP.scroll = 0; sfx('ui'); });
   } else {
     // a narrow window: one plain column
     const bw = min(176, uw - 16), bx = round((uw - bw) / 2); let by = max(ly + 56, round(uh * .36));
     for (const r of [...alone, ...friends, ...arenas]) { button(c, bx, by, bw, 16, r[0], r[2], r[4] || {}); if (inR(bx, by, bw, 16)) TITLE.hint = r[3]; by += 19; }
+    button(c, bx, by, bw, 14, 'COSMETIC SHOP', () => { G.state = 'shop'; COSMETIC_SHOP.scroll = 0; sfx('ui'); }); by += 16;
     button(c, bx, by, bw, 14, 'HOW TO PLAY', () => { G.state = 'howto'; sfx('ui'); });
   }
   { let h = TITLE.hint || (mobileDevice ? 'touch to move and fight' : 'mouse + keyboard'); while (h.length > 3 && textW(h) > uw - 12) h = h.slice(0, -1); textC(c, h, uw / 2, uh - 15, TITLE.hint ? '#d8d4e6' : '#8b8fa3', 1, textO); }
   const vs = 'version ' + GAME_VERSION; textS(c, vs, uw - textW(vs) - 4, uh - 10, '#6a6485');
+}
+function drawCosmeticShop(c) {
+  const uw = VS.uw, uh = VS.uh, w = min(440, uw - 12), h = min(360, uh - 12), x = round((uw - w) / 2), y = max(6, round((uh - h) / 2)), p = brProfile();
+  c.fillStyle = 'rgba(18,13,31,.68)'; c.fillRect(0, 0, uw, uh); panel(c, x, y, w, h, 'THE COSMETIC SHOP');
+  const fx = x + 8, fw = w - 16, cats = [['skin', 'SKINS'], ['trail', 'TRAILS'], ['hat', 'HATS']], tabY = y + 15, tabW = fw / cats.length;
+  for (let i = 0; i < cats.length; i++) button(c, fx + i * tabW, tabY, tabW - 3, 14, cats[i][1], () => { COSMETIC_SHOP.tab = cats[i][0]; COSMETIC_SHOP.scroll = 0; sfx('ui'); }, { on: COSMETIC_SHOP.tab === cats[i][0] });
+  const wallet = `${p.coins} COINS   ·   ${p.souls} SOULS`; drawText(c, wallet, fx, y + 34, '#8ff5e6');
+  const all = BR_SHOP_ITEMS.filter(k => k.kind === COSMETIC_SHOP.tab), tabX = fx, listY = y + 47, bottom = y + h - 25, listW = floor(fw * .56), rowH = min(18, max(12, floor((bottom - listY) / min(6, all.length || 1))));
+  const rows = COSMETIC_SHOP.rows = max(1, floor((bottom - listY) / rowH));
+  COSMETIC_SHOP.scroll = clamp(COSMETIC_SHOP.scroll, 0, max(0, all.length - rows));
+  const selected = all.findIndex(k => k.id === COSMETIC_SHOP.selected);
+  if (selected < 0 && all.length) COSMETIC_SHOP.selected = all[0].id;
+  for (let i = 0; i < rows; i++) {
+    const k = all[COSMETIC_SHOP.scroll + i]; if (!k) continue;
+    const ry = listY + i * rowH, active = k.id === COSMETIC_SHOP.selected, own = brOwns(p, k), rarityCol = ({ COMMON: '#c8c4d4', UNCOMMON: '#7ddc6f', RARE: '#5aa8ff', EPIC: '#c77dff', LEGENDARY: '#ffd35a' })[k.rarity];
+    c.fillStyle = active ? '#3d3320' : i % 2 ? '#211e2c' : '#191622'; c.fillRect(tabX, ry, listW - 3, rowH - 1);
+    const name = `${k.id === 0 && k.kind === 'trail' ? 'TRAIL' : k.name}`;
+    textS(c, name, tabX + 4, ry + max(2, round((rowH - 8) / 2)), own ? '#fff' : '#d8d4e6', min(1, (listW - 62) / max(1, textW(name))));
+    textS(c, own ? 'OWNED' : k.cost ? `${k.cost}${k.currency === 'souls' ? 'S' : 'C'}` : 'FREE', tabX + listW - textW(own ? 'OWNED' : k.cost ? `${k.cost}${k.currency === 'souls' ? 'S' : 'C'}` : 'FREE') - 7, ry + max(2, round((rowH - 8) / 2)), rarityCol);
+    hit(tabX, ry, listW - 3, rowH, () => { COSMETIC_SHOP.selected = k.id; sfx('ui'); });
+  }
+  const k = all.find(item => item.id === COSMETIC_SHOP.selected) || all[0], px = fx + listW + 4, pw = fw - listW - 4, py = listY;
+  c.fillStyle = '#191622'; c.fillRect(px, py, pw, bottom - py);
+  if (k) {
+    const own = brOwns(p, k), wearing = k.kind === 'skin' ? G.skin === k.id : k.kind === 'hat' ? G.hat === k.id : G.trail === k.id, col = ({ COMMON: '#c8c4d4', UNCOMMON: '#7ddc6f', RARE: '#5aa8ff', EPIC: '#c77dff', LEGENDARY: '#ffd35a' })[k.rarity];
+    const skin = k.kind === 'skin' ? k.id : G.skin, hat = k.kind === 'hat' ? k.id : G.hat, trail = k.kind === 'trail' ? k.id : G.trail;
+    c.save(); c.translate(px + pw / 2, py + 45); c.scale(3, 3); c.drawImage(SK[skin] ? SK[skin].head : SK[0].head, SK[skin] ? SK[skin].hx : SK[0].hx, SK[skin] ? SK[skin].hy : SK[0].hy); drawHat(c, hat); c.restore();
+    const trailItem = BR_TRAILS[trail] || BR_TRAILS[0]; c.fillStyle = trailItem.color; c.globalAlpha = trail ? .35 : .12;
+    for (let i = 0; i < 4; i++) { const pulse = (i + G.time) % 4; c.fillRect(px + pw / 2 - 15 - pulse * 2, py + 67 + i * 3, 2 + (i % 2), 2); }
+    c.globalAlpha = 1;
+    textC(c, k.name, px + pw / 2, py + 79, '#fff1a8', min(1, pw / max(1, textW(k.name))), drawText);
+    textC(c, k.rarity, px + pw / 2, py + 92, col, min(1, pw / max(1, textW(k.rarity))), drawText);
+    const desc = k.kind === 'trail' ? 'A light-only running trail.' : 'A look, with no change to your strength.';
+    textC(c, desc, px + pw / 2, py + 106, '#8b8fa3', min(1, pw / max(1, textW(desc))), drawText);
+    const label = wearing ? k.id === 0 ? 'WEARING' : 'UNEQUIP' : own ? 'EQUIP' : `BUY ${k.cost} ${k.currency.toUpperCase()}`;
+    button(c, px + 2, bottom - 19, pw - 4, 16, label, () => {
+      if (wearing) brUnequipCosmetic(k.kind);
+      else brShopCosmetic(k.kind, k.id);
+    }, { off: (wearing && k.id === 0) || (!own && p[k.currency] < k.cost), on: wearing });
+  } else textC(c, 'No cosmetics available.', px + pw / 2, py + 30, '#8b8fa3', 1, drawText);
+  if (BR.menuMsg) textS(c, BR.menuMsg, fx, bottom - 20, '#ffd35a', min(1, (fw - 76) / max(1, textW(BR.menuMsg))));
+  button(c, x + w - 60, y + h - 20, 52, 14, 'BACK', () => { G.state = 'title'; sfx('ui'); });
 }
 function drawHowTo(c) {
   const uw = VS.uw, uh = VS.uh, w = min(430, uw - 12), h = min(uh - 12, 300), x = round((uw - w) / 2), y = round((uh - h) / 2);
@@ -12388,24 +12558,7 @@ function drawAccounts(c) {
   if (ACCOUNT.note) textC(c, ACCOUNT.note, uw / 2, y + h + 3, '#8ff5e6', 1, textO);
 }
 function drawRingForm(c) {
-  const uw = VS.uw, uh = VS.uh, w = min(330, uw - 16), h = 244, x = round((uw - w) / 2), y = max(8, round((uh - h) / 2));
-  c.fillStyle = 'rgba(18,13,31,.55)'; c.fillRect(0, 0, uw, uh); panel(c, x, y, w, h, 'THE CINDER RING : ONLINE PVP');
-  const fx = x + 10, fw = w - 20;
-  drawText(c, 'NAME', fx, y + 22, '#b9bdd0'); field(c, fx + 46, y + 18, fw - 46, 'nick', 'WAKER');
-  skinPicker(c, fx, y + 38);
-  drawText(c, 'RING', fx, y + 70, '#b9bdd0'); field(c, fx + 46, y + 66, fw - 46, 'code', 'open  (or a private code)');
-  const L = ['First to 10 takedowns takes the ring. Alone in a ring?', 'Echoes spar with you until someone joins.', 'FRIENDS: host a ring, and your friends pick JOIN A FRIEND', 'on the title screen and type your game code. Up to 4.'];
-  L.forEach((l, i) => drawText(c, l, fx, y + 92 + i * 10, '#d8d4e6'));
-  drawText(c, NET.room ? 'claude.ai live room: everyone with the same ring code meets.' : 'claude.ai live room: not here. Game codes work anywhere.', fx, y + 136, NET.room ? '#7ddc6f' : '#8b8fa3');
-  if (netOK()) button(c, x + 10, y + h - 50, fw, 18, 'HOST A RING FOR FRIENDS (GAME CODE)', () => {
-    UI.focus = null; const nick = cleanName(FORM.nick) || 'WAKER'; FORM.nick = nick; G.state = 'loading'; G.loadMsg = 'Lighting the ring...';
-    setTimeout(() => { coopReset(); enterArena(nick, FORM.skin, 'friends', 'rtc'); }, 30); sfx('quest', 0);
-  });
-  button(c, x + 10, y + h - 26, 150, 18, NET.room ? 'ENTER THE RING' : 'PRACTICE (ECHOES)', () => {
-    UI.focus = null; const nick = cleanName(FORM.nick) || 'WAKER'; FORM.nick = nick; G.state = 'loading'; G.loadMsg = 'Entering the ring...';
-    setTimeout(() => enterArena(nick, FORM.skin, cleanCode(FORM.code) || 'open'), 30); sfx('quest', 0);
-  });
-  button(c, x + w - 70, y + h - 26, 60, 18, 'BACK', () => { G.state = 'title'; UI.focus = null; sfx('ui'); });
+  drawFFAMenu(c);
 }
 
 // ---------------- in-game HUD ----------------
@@ -12417,7 +12570,7 @@ function drawHUD(c) {
   if ((!A || wild) && WORLD.mode !== 1) { const f = G.food / 100; bar(c, 15, 20, 72, 2, f, f < .25 && (G.time >> 4) & 1 ? '#ff9a8a' : '#e0a050', '#7a4a1a'); if (f < .3) textO(c, f <= 0 ? 'STARVING' : 'HUNGRY', 91, 16, '#e0a050'); }
   if (p.riposte > 0 && (G.time >> 2) & 1) textO(c, 'RIPOSTE READY', 15, 22, '#8ff5e6');
   else if (!UI.open && WORLD.royale) { if (wild && !SETTINGS.fpsMode && !mobileDevice && !(BR.t > 60 * 60 || G.note || p.dead)) textS(c, '[LMB] hit / dig  [F] open  [E] pack  [B] recipes  [K] knap  [H] heal  [P] pact  [M] map', 4, 35, '#8b8fa3'); }
-  else if (!UI.open && !SETTINGS.fpsMode && !mobileDevice) textS(c, A ? '[TAB] scores  [C] forms  [P] menu  1-6 weapons  [R] sidearm [T] swap' : '[E] pack  [K] knap  [F] use  [J] journal  [P] menu', 4, 25, '#8b8fa3');
+  else if (!UI.open && !SETTINGS.fpsMode && !mobileDevice) textS(c, A ? (FFA.active ? FFA.mode === 'crystal' ? '[TAB] scores  [F] place / detonate crystal  [P] menu' : FFA.mode === 'shield' ? '[TAB] scores  [G] guard  [P] menu' : '[TAB] scores  [C] forms  [P] menu  1-6 weapons  [R] sidearm' : '[TAB] scores  [C] forms  [P] menu  1-6 weapons  [R] sidearm [T] swap') : '[E] pack  [K] knap  [F] use  [J] journal  [P] menu', 4, 25, '#8b8fa3');
   if (!SETTINGS.fpsMode && !A && G.jNew && (G.time >> 4) & 1) textS(c, 'NEW JOURNAL ENTRY [J]', 4, 32, '#ffd35a');
   if (!SETTINGS.fpsMode) { drawBless(c); drawMealHud(c); drawGadgetHud(c); }
   drawCoopHud(c);
@@ -12475,15 +12628,19 @@ function drawObjective(c) {
   if (at !== null && at !== undefined) { const d = at * T - p.x, m = round(abs(d) / T); textS(c, m < 8 ? 'you are here' : d > 0 ? `→ ${m} paces east` : `← ${m} paces west`, qx + 6, 17 + oy + min(3, lines.length) * 9, '#8ff5e6'); }
   drawMileWay(c, uw, 6 + oy + qh);
 }
-function ringStatusText() { if (NET.via === 'rtc') return (netHost() ? 'GAME CODE ' + sigSpaced(COOP.gcode || '......') + ' : ' : (COOP.hostName || 'HOST') + '\'S RING : ') + (NET.peers.size + 1) + ' WAKER' + (NET.peers.size ? 'S' : ''); return NET.status === 'online' ? `ONLINE : ${NET.peers.size + 1} WAKER${NET.peers.size ? 'S' : ''}` : NET.status === 'connecting' ? 'CONNECTING...' : 'OFFLINE : PRACTICE'; }
+function ringStatusText() { if (NET.via === 'rtc') return (netHost() ? 'PRIVATE CODE ' + sigSpaced(COOP.gcode || '......') + ' : ' : (COOP.hostName || 'HOST') + '\'S FFA : ') + (NET.peers.size + 1) + ' WAKER' + (NET.peers.size ? 'S' : ''); return NET.status === 'online' ? `ONLINE : ${NET.peers.size + 1} WAKER${NET.peers.size ? 'S' : ''}` : NET.status === 'connecting' ? 'CONNECTING...' : 'OFFLINE : PRACTICE'; }
 function drawRingStatus(c) {
   const uw = VS.uw, list = [...G.fighters].filter(f => !f.npc).sort((a, b) => b.kills - a.kills || a.deaths - b.deaths);
   const w = 120, x = uw - w - 4; let y = 4;
   c.fillStyle = 'rgba(18,13,31,.62)'; c.fillRect(x, y, w, 13 + min(5, list.length) * 9); c.fillStyle = NET.status === 'online' ? '#7ddc6f' : '#ffb347'; c.fillRect(x, y, 2, 13 + min(5, list.length) * 9);
-  textS(c, NET.via === 'rtc' ? 'RING: FRIENDS' : `RING ${NET.code.toUpperCase()}`, x + 6, y + 3, '#ffd35a'); drawText(c, NET.status === 'online' ? 'live' : NET.status === 'connecting' ? '...' : 'solo', x + w - 24, y + 3, NET.status === 'online' ? '#7ddc6f' : '#ffb347');
-  list.slice(0, 5).forEach((f, i) => { const yy = y + 13 + i * 9, me = f === G.p; drawText(c, (me ? '> ' : '') + f.name, x + 6, yy, me ? '#ffd35a' : f.echoBot ? '#b9bdd0' : '#8ff5e6'); drawText(c, String(f.kills), x + w - 8 - textW(f.kills), yy, '#fff'); });
-  textC(c, ringStatusText(), uw / 2, 4, NET.status === 'online' ? '#7ddc6f' : '#ffb347', 1, textO);
+  textS(c, ffaModeLabel(), x + 6, y + 3, '#ffd35a'); drawText(c, NET.status === 'online' ? 'live' : NET.status === 'connecting' ? '...' : 'solo', x + w - 24, y + 3, NET.status === 'online' ? '#7ddc6f' : '#ffb347');
+  list.slice(0, 5).forEach((f, i) => { const yy = y + 13 + i * 9, me = f === G.p; drawText(c, (me ? '> ' : '') + f.name, x + 6, yy, me ? '#ffd35a' : f.echoBot ? '#b9bdd0' : '#8ff5e6'); drawText(c, `${f.kills}/${f.deaths}`, x + w - 8 - textW(`${f.kills}/${f.deaths}`), yy, '#fff'); });
+  textC(c, NET.via === 'rtc' ? 'PRIVATE FFA  ·  CODE ' + sigSpaced(COOP.gcode || '......') : `FFA  ·  ${NET.peers.size + 1} WAKERS`, uw / 2, 4, NET.status === 'online' ? '#7ddc6f' : '#ffb347', 1, textO);
   if (NET.roundOver) textC(c, 'next round in ' + ceil(NET.roundOver / 60), uw / 2, 14, '#fff', 1, textO);
+  if (FFA.mode === 'crystal' && FFA.resetAt) {
+    const left = max(0, ceil((FFA.resetAt - Date.now()) / 1000)), reset = `ARENA RESET ${String(floor(left / 60)).padStart(2, '0')}:${String(left % 60).padStart(2, '0')}`;
+    textC(c, reset, uw / 2, 14 + (NET.roundOver ? 9 : 0), '#c9fff6', 1, textO);
+  }
 }
 function drawKillFeed(c) {
   const uw = VS.uw; let y = WORLD.royale ? 30 : 4 + 13 + min(5, G.fighters.length) * 9 + 6;
@@ -12496,9 +12653,9 @@ function drawKillFeed(c) {
 }
 function drawScore(c) {
   const uw = VS.uw, uh = VS.uh, list = [...G.fighters].sort((a, b) => b.kills - a.kills || a.deaths - b.deaths), w = min(260, uw - 16), h = 34 + list.length * 11, x = round((uw - w) / 2), y = round((uh - h) / 2) - 10;
-  panel(c, x, y, w, h, `THE CINDER RING : ${NET.code.toUpperCase()} : ROUND ${NET.rd + 1}`);
-  drawText(c, 'WAKER', x + 8, y + 16, '#8b8fa3'); drawText(c, 'TAKEDOWNS', x + w - 110, y + 16, '#8b8fa3'); drawText(c, 'FALLS', x + w - 44, y + 16, '#8b8fa3');
-  list.forEach((f, i) => { const yy = y + 28 + i * 11, me = f === G.p; if (me) { c.fillStyle = '#2b2740'; c.fillRect(x + 4, yy - 2, w - 8, 10); } drawText(c, f.name + (f.echoBot ? '  (echo)' : f.remote ? '' : '  (you)'), x + 8, yy, me ? '#ffd35a' : f.echoBot ? '#b9bdd0' : '#8ff5e6'); drawText(c, String(f.kills), x + w - 80, yy, '#fff'); drawText(c, String(f.deaths), x + w - 34, yy, '#fff'); });
+  panel(c, x, y, w, h, `${ffaModeLabel()} : ${NET.code.toUpperCase()} : ROUND ${NET.rd + 1}`);
+  drawText(c, 'WAKER', x + 8, y + 16, '#8b8fa3'); drawText(c, 'K', x + w - 122, y + 16, '#8b8fa3'); drawText(c, 'D', x + w - 82, y + 16, '#8b8fa3'); drawText(c, 'K/D', x + w - 48, y + 16, '#8b8fa3');
+  list.forEach((f, i) => { const yy = y + 28 + i * 11, me = f === G.p, kd = f.deaths ? (f.kills / f.deaths).toFixed(1) : f.kills.toFixed(1); if (me) { c.fillStyle = '#2b2740'; c.fillRect(x + 4, yy - 2, w - 8, 10); } drawText(c, f.name + (f.echoBot ? '  (bot)' : f.remote ? '' : '  (you)'), x + 8, yy, me ? '#ffd35a' : f.echoBot ? '#b9bdd0' : '#8ff5e6'); drawText(c, String(f.kills), x + w - 122, yy, '#fff'); drawText(c, String(f.deaths), x + w - 82, yy, '#fff'); drawText(c, kd, x + w - 48, yy, '#fff'); });
   drawText(c, ringStatusText(), x + 8, y + h - 10, '#7ddc6f');
 }
 function drawInv(c) {
@@ -12590,11 +12747,11 @@ function drawJournal(c) {
 }
 function drawPause(c) {
   const A = WORLD.arena, big = !A && !DIM && WT_ON && WT_KEYS.length > 0 && VS.uh >= 300, w = min(A ? 340 : 392, VS.uw - 16), h = A ? 158 : big ? 290 : 240, x = round((VS.uw - w) / 2), y = round((VS.uh - h) / 2);
-  panel(c, x, y, w, h, A ? (WORLD.royale ? (BR.wild ? 'THE WILDS : MENU' : 'THE ASHFALL : MENU') : 'THE CINDER RING : MENU') : `${WORLD.name.toUpperCase()} : PAUSED`); hit(x, y, w, h, () => { });
+  panel(c, x, y, w, h, A ? (WORLD.royale ? (BR.wild ? 'THE WILDS : MENU' : 'THE ASHFALL : MENU') : 'FFA ARCADE : MENU') : `${WORLD.name.toUpperCase()} : PAUSED`); hit(x, y, w, h, () => { });
   if (!A && !DIM) { const s = yearLine(); drawText(c, s, x + w - textW(s) - 6, y + 3, SEASON().col); }
   if (big) { drawText(c, 'THIS WORLD IS', x + 8, y + 194, '#8b8fa3'); drawTraits(c, x + 8, y + 205, w - 16); }
   button(c, x + 8, y + 18, 70, 15, 'RESUME', () => { closeUI(); sfx('ui'); });
-  button(c, x + 84, y + 18, 96, 15, A ? (WORLD.royale ? (BR.via !== 'solo' ? 'TO THE LOBBY' : 'LEAVE MATCH') : 'LEAVE RING') : 'SAVE & QUIT', () => { closeUI(); if (WORLD.royale && BR.on && BR.via !== 'solo') brBackToLobby(); else quitToTitle(); sfx('ui'); });
+  button(c, x + 84, y + 18, 96, 15, A ? (WORLD.royale ? (BR.via !== 'solo' ? 'TO THE LOBBY' : 'LEAVE MATCH') : 'LEAVE FFA') : 'SAVE & QUIT', () => { closeUI(); if (WORLD.royale && BR.on && BR.via !== 'solo') brBackToLobby(); else quitToTitle(); sfx('ui'); });
   button(c, x + 186, y + 18, 84, 15, muted ? 'SOUND: OFF' : 'SOUND: ON', () => { muted = !muted; sfx('ui'); });
   if (!A) button(c, x + 276, y + 18, 46, 15, 'SAVE', () => { saveWorld(); sfx('craft'); });
   if (wildOn() && BR.teammate) button(c, x + w - 66, y + h - 19, 58, 15, 'LEAVE PACT', () => { brBreakPact(false); closeUI(); });
@@ -12626,7 +12783,7 @@ function drawDialog(c) {
 }
 function drawUI(c) {
   HITS_NEXT = []; const uw = VS.uw, uh = VS.uh, st = G.state;
-  if (st === 'title') drawTitle(c); else if (st === 'accounts') drawAccounts(c); else if (st === 'howto') drawHowTo(c); else if (st === 'worlds') drawWorlds(c); else if (st === 'create') drawCreate(c); else if (st === 'ring') drawRingForm(c); else if (st === 'brform') drawBrForm(c); else if (st === 'bropen') drawBrOpen(c); else if (st === 'brlobby') drawBrLobby(c); else if (st === 'join') drawJoin(c); else if (st === 'wcopy') drawWorldCopy(c); else if (st === 'wpaste') drawWorldPaste(c);
+  if (st === 'title') drawTitle(c); else if (st === 'shop') drawCosmeticShop(c); else if (st === 'accounts') drawAccounts(c); else if (st === 'howto') drawHowTo(c); else if (st === 'worlds') drawWorlds(c); else if (st === 'create') drawCreate(c); else if (st === 'ring') drawRingForm(c); else if (st === 'brform') drawBrForm(c); else if (st === 'bropen') drawBrOpen(c); else if (st === 'brlobby') drawBrLobby(c); else if (st === 'join') drawJoin(c); else if (st === 'wcopy') drawWorldCopy(c); else if (st === 'wpaste') drawWorldPaste(c);
   else if (st === 'loading') { c.fillStyle = 'rgba(18,13,31,.82)'; c.fillRect(0, 0, uw, uh); textC(c, G.loadMsg || 'Loading...', uw / 2, round(uh * .45), '#fff1a8', 1, textO); const n = (performance.now() / 300 | 0) % 4; textC(c, '.'.repeat(n), uw / 2, round(uh * .45) + 12, '#ffd35a', 1, textO); }
   else if (st === 'intro') {
     c.fillStyle = 'rgba(18,13,31,.84)'; c.fillRect(0, 0, uw, uh);
@@ -12802,12 +12959,8 @@ function drawStation(c) {
     const e = list[k + UI.scroll]; if (!e) break; const r = e.r, x = L.x, y = L.y + k * 19, hov = inR(x, y, L.w, 18), outId = r.out || Object.keys(r.need)[0];
     if (hov) { c.fillStyle = '#2b2740'; c.fillRect(x, y, L.w, 18); }
     slotBox(c, x, y, false, hov && e.can); c.globalAlpha = e.can ? 1 : .4; drawStack(c, { id: outId, n: r.out ? r.n : 1 }, x, y); c.globalAlpha = 1;
-    drawText(c, r.out ? IT[r.out].name : 'Sift ' + IT[outId].name.toLowerCase(), x + 21, y + 1, e.can ? '#fff' : '#8b8fa3');
-    let nx = x + 21; const parts = Object.keys(r.need).map(q => [`${r.need[q]} ${IT[q].name}`, countItem(q) >= r.need[q] || WORLD.mode === 1]);
-    if (r.fuel) parts.push([`${r.fuel} fuel`, fuelHave() >= r.fuel || WORLD.mode === 1]); for (const q of r.keep || []) parts.push([`(${IT[q].name})`, hasItem(q) || WORLD.mode === 1]);
-    if (!e.lvlOk) parts.unshift(['needs ' + LVL_NEED[S.kind === 'armr' ? 'armr' : S.kind === 'pot' ? 'pot' : 'anvil'][e.r.lvl], false]);
-    for (const [s, ok] of parts) { if (nx > x + L.w - 8) break; nx += drawText(c, s, nx, y + 10, ok ? '#7ddc6f' : '#e2483b') + 4; }
-    if (hov) { tip = r.out ? itemTip(IT[r.out]) : [['Shake out of it:', '#ffd35a'], [r.loot.map(l => IT[l[0]].name).join(', '), '#b9bdd0']]; if (r.temp && !craftEasy()) tip.push([`needs heat ${r.temp}${r.shut ? ', damper shut' : ''}`, '#ff8a3d']); if (r.t) tip.push([`takes ${round(r.t / 60)}s`, '#8ff5e6']); if (r.band) tip.push([`heat band ${r.band}`, '#ff8a3d']); }
+    drawRecipeRow(c, r, x, y, L.w, e.lvlOk);
+    if (hov) tip = recipeTip(r, e.lvlOk);
     hit(x, y, L.w, 18, () => pickRecipe(e, S, st));
   }
   if (list.length > rows) drawText(c, `${UI.scroll + 1}-${min(list.length, UI.scroll + rows)}/${list.length} wheel`, L.x + L.w - 70, B.y + B.h - 9, '#6a6485');
@@ -13219,6 +13372,51 @@ function stnFilter(c, L, list) {
   button(c, L.x + (cats.length > 2 ? half + 2 : 0), L.y, half, 10, UI.stnCan ? 'CAN MAKE: ON' : 'CAN MAKE: OFF', () => { UI.stnCan = !UI.stnCan; UI.scroll = 0; sfx('ui'); }, { on: !!UI.stnCan });
   return F0;
 }
+function recipeLevelOk(r) {
+  if (!r.lvl) return true;
+  if (r.st === 'anvil') return anvilNear() >= r.lvl;
+  if (r.st === 'pot') {
+    const lvl = nearStation(MOON_CAULDRON) ? 3 : nearStation(BREW_STAND) ? 2 : nearStation(CAULDRON) ? 1 : 0;
+    return lvl >= r.lvl;
+  }
+  return true;
+}
+function recipeTip(r, lvlOk = true) {
+  const outId = r.out || Object.keys(r.need)[0], lines = r.out ? itemTip(IT[r.out]) : [['Sift ' + IT[outId].name.toLowerCase(), '#ffd35a']];
+  if (!r.out && r.loot) lines.push(['Possible: ' + r.loot.map(l => IT[l[0]].name).join(', '), '#b9bdd0']);
+  const checks = craftChecks(r), status = (WORLD.mode === 1 || (lvlOk && checks.every(q => q.have >= q.need))) ? 'READY TO CRAFT' : !lvlOk ? 'MISSING LEVEL REQUIREMENT' : 'MISSING MATERIALS';
+  lines.unshift([status, status === 'READY TO CRAFT' ? '#7ddc6f' : '#e2483b']);
+  for (const q of checks) {
+    const name = q.kind === 'fuel' ? 'fuel units' : IT[q.id].name + (q.kind === 'kept' ? ' (kept)' : '');
+    for (const l of wrapText(`${q.have}/${q.need} ${name}`, 180)) lines.push([l, q.have >= q.need ? '#7ddc6f' : '#e2483b']);
+  }
+  if (r.lvl) {
+    const levels = LVL_NEED[r.st === 'armr' ? 'armr' : r.st === 'pot' ? 'pot' : 'anvil'];
+    lines.push([`${lvlOk ? 'Level met:' : 'Needs:'} ${levels[r.lvl]}`, lvlOk ? '#7ddc6f' : '#e2483b']);
+  }
+  if (r.temp && !craftEasy()) lines.push([`needs heat ${r.temp}${r.shut ? ', damper shut' : ''}`, '#ff8a3d']);
+  if (r.t) lines.push([`takes ${round(r.t / 60)}s`, '#8ff5e6']);
+  if (r.band) lines.push([`heat band ${r.band}`, '#ff8a3d']);
+  return lines;
+}
+function drawRecipeRow(c, r, x, y, w, lvlOk = true) {
+  const checks = craftChecks(r), can = WORLD.mode === 1 || (lvlOk && checks.every(q => q.have >= q.need));
+  const status = can ? 'READY' : !lvlOk ? 'NEEDS LEVEL' : 'MISSING', statusCol = can ? '#7ddc6f' : '#e2483b';
+  const outId = r.out || Object.keys(r.need)[0], label = r.out ? IT[r.out].name : 'Sift ' + IT[outId].name.toLowerCase();
+  const sx = x + w - textW(status) - 4;
+  c.save(); c.beginPath(); c.rect(x + 21, y, max(0, sx - x - 24), 9); c.clip();
+  drawText(c, label, x + 21, y + 1, can ? '#fff' : '#8b8fa3'); c.restore();
+  drawText(c, status, sx, y + 1, statusCol);
+  let nx = x + 21; const right = x + w - 5;
+  for (let i = 0; i < checks.length; i++) {
+    const q = checks[i], name = q.kind === 'fuel' ? 'fuel' : IT[q.id].name + (q.kind === 'kept' ? ' kept' : '');
+    const text = `${q.have}/${q.need} ${name}`, color = q.have >= q.need || WORLD.mode === 1 ? '#7ddc6f' : '#e2483b';
+    const width = textW(text);
+    if (nx + width > right) { drawText(c, `+${checks.length - i}`, nx, y + 10, '#8b8fa3'); break; }
+    drawText(c, text, nx, y + 10, color); nx += width + 4;
+  }
+  if (r.lvl && !lvlOk && nx + 22 < right) drawText(c, 'level', nx, y + 10, '#e2483b');
+}
 // where a station's recipe row sits on screen (in UI units), for whoever wants to click it
 function stnRowXY(kind, t, pick) {
   const B = stnBox(), L = { x: B.x + 4, y: B.y + 15, w: min(160, B.w * .46 | 0) }, F0 = stnFilterOf(stnList(kind, t)), k = F0.list.findIndex(pick);
@@ -13242,15 +13440,14 @@ function drawBook(c) {
   const br = B.item && RECIPES.find(r => r.out === B.item);
   if (br) { const s = 'Build one at the ' + benchName(br.st) + ': ' + Object.keys(br.need).map(k => br.need[k] + ' ' + IT[k].name.toLowerCase()).join(', ') + '.'; for (const l of wrapText(s, rw)) { drawText(c, l, rx, ry, '#8ff5e6'); ry += 9; } }
   ry += 3;
-  const list = RECIPES.map((r, i) => ({ r, i })).filter(e => e.r.st === B.st && recipeHere(e.r) && (e.r.lvl !== 3 || G.flags.seen1 || WORLD.mode === 1)).map(e => ({ r: e.r, can: canCraft(e.r) })).sort((a, b) => b.can - a.can);
+  const list = RECIPES.map((r, i) => ({ r, i })).filter(e => e.r.st === B.st && recipeHere(e.r) && (e.r.lvl !== 3 || G.flags.seen1 || WORLD.mode === 1)).map(e => ({ r: e.r, lvlOk: recipeLevelOk(e.r), can: canCraft(e.r) && recipeLevelOk(e.r) })).sort((a, b) => b.can - a.can);
   const rows = max(1, floor((y + h - 12 - ry) / 19)); UI.scroll = clamp(UI.scroll, 0, max(0, list.length - rows));
   for (let k = 0; k < rows; k++) {
     const e = list[k + UI.scroll]; if (!e) break; const r = e.r, yy = ry + k * 19, hov = inR(rx, yy, rw, 18), outId = r.out || Object.keys(r.need)[0];
     if (hov) { c.fillStyle = '#2b2740'; c.fillRect(rx, yy, rw, 18); }
     slotBox(c, rx, yy, false, hov && e.can); c.globalAlpha = e.can ? 1 : .45; drawStack(c, { id: outId, n: r.out ? r.n : 1 }, rx, yy); c.globalAlpha = 1;
-    drawText(c, (r.out ? IT[r.out].name : 'Sift ' + IT[outId].name.toLowerCase()) + (r.lvl ? '  (' + LVL_NEED[r.st === 'armr' ? 'armr' : r.st === 'pot' ? 'pot' : 'anvil'][r.lvl] + ')' : ''), rx + 21, yy + 1, e.can ? '#fff' : '#8b8fa3');
-    let nx = rx + 21; for (const q in r.need) { if (nx > rx + rw - 12) { drawText(c, '...', nx, yy + 10, '#8b8fa3'); break; } const hv = countItem(q); nx += drawText(c, `${r.need[q]} ${IT[q].name}`, nx, yy + 10, hv >= r.need[q] || WORLD.mode === 1 ? '#7ddc6f' : '#e2483b') + 4; }
-    if (hov) tip = r.out ? itemTip(IT[r.out]) : [['Shake out of it:', '#ffd35a'], [r.loot.map(l => IT[l[0]].name).join(', '), '#b9bdd0']];
+    drawRecipeRow(c, r, rx, yy, rw, e.lvlOk);
+    if (hov) tip = recipeTip(r, e.lvlOk);
   }
   if (!list.length) drawText(c, 'Nothing yet.', rx, ry, '#8b8fa3');
   else { const s = `${list.length} recipes${list.length > rows ? `: ${UI.scroll + 1}-${min(list.length, UI.scroll + rows)}, wheel scrolls` : ''}`; drawText(c, s, x + w - 6 - textW(s), y + h - 10, '#6a6485'); }
@@ -13273,18 +13470,10 @@ function drawTrinketRow(c, x, y) {
 }
 
 // ============================================================
-//  The Cinder Ring, online. Two ways in:
-//  - on claude.ai, the page's live room: everyone who enters the same
-//    ring code fights in one arena;
-//  - anywhere (the HTML file, the Mac app), a game code: one person hosts
-//    a ring and up to three friends join it with JOIN A FRIEND. The host's
-//    computer passes everyone's Waker on to the others.
-//  Either way Each browser simulates its own
-//  Waker and shares it through the page's live room as presence:
-//  position, pose, the move in progress, and the hits it landed.
-//  The person who was hit applies the hit (so a perfect dodge on
-//  your screen really dodges). Nothing is stored; closing the page
-//  leaves the ring. Alone in a ring? Echoes spar with you instead.
+//  The FFA Arcade: quick play and private game-code matches.
+//  Each browser simulates its own Waker and shares position, pose,
+//  moves and hits with the other players. The person who was hit
+//  applies the hit, so a perfect dodge on your screen really dodges.
 // ============================================================
 const NET = { room: null, R: null, status: 'off', code: 'open', me: '', peers: new Map(), seen: new Map(), hitSeq: 0, shotSeq: 0, hits: [], shots: [], rd: 0, roundOver: 0, winner: '', deathN: 0, kb: ['', 0], unsubs: [], joinTok: 0 };
 const RING_WEAPONS = ['sword', 'spear', 'fangs', 'maul', 'bow', 'nunchaku'], ECHO_WEAPONS = ['sword', 'sword', 'spear', 'spear', 'fangs', 'fangs', 'maul', 'bow', 'nunchaku', 'nunchaku'], SHOT_TYPES = ['arrow', 'bomb', 'knife', 'javelin', 'wave', 'star', 'hook', 'flask', 'pellet'], ARM_SHOTS = ['star', 'hook', 'flask', 'pellet'];
@@ -13324,17 +13513,17 @@ function netPeers(list) {
     here.add(pe.peer);
     let f = NET.peers.get(pe.peer);
     if (!f) {
-      f = newFighter(num(s.x, 600), num(s.y, 300), { remote: true, peer: pe.peer, team: 'r:' + pe.peer, snaps: [], spawnT: 40, name: cleanName(s.n) || 'WAKER', skin: clamp(num(s.sk) | 0, 0, SKINS.length - 1), guest: !!pe.guest });
-      NET.peers.set(pe.peer, f); G.fighters.push(f); G.kfeed.unshift({ a: '', b: f.name, txt: 'entered the ring', t: 0 }); sfx('quest', 0);
+      f = newFighter(num(s.x, 600), num(s.y, 300), { remote: true, peer: pe.peer, team: 'r:' + pe.peer, snaps: [], spawnT: 40, name: cleanName(s.n) || 'WAKER', skin: clamp(num(s.sk) | 0, 0, SKINS.length - 1), hat: clamp(num(s.ht) | 0, 0, 3), trail: clamp(num(s.tr) | 0, 0, BR_TRAILS.length - 1), guest: !!pe.guest });
+      NET.peers.set(pe.peer, f); G.fighters.push(f); G.kfeed.unshift({ a: '', b: f.name, txt: 'entered the FFA match', t: 0 }); sfx('quest', 0);
     }
     if (pe.presence !== f.lastPres) { f.lastPres = pe.presence; netApply(f, s); }
   }
-  for (const [peer, f] of NET.peers) if (!here.has(peer)) { NET.peers.delete(peer); f.gone = true; G.kfeed.unshift({ a: '', b: f.name, txt: 'left the ring', t: 0 }); burst(f.x + 3, f.y + 10, 20, SPARK, 2, 40, { glow: 1 }); }
+  for (const [peer, f] of NET.peers) if (!here.has(peer)) { ffaSyncPeerCrystals(f, []); NET.peers.delete(peer); f.gone = true; G.kfeed.unshift({ a: '', b: f.name, txt: 'left the FFA match', t: 0 }); burst(f.x + 3, f.y + 10, 20, SPARK, 2, 40, { glow: 1 }); }
   if (G.fighters.some(f => f.gone)) G.fighters = G.fighters.filter(f => !f.gone);
 }
 function netApply(f, s) {
   const now = performance.now();
-  f.name = cleanName(s.n) || 'WAKER'; f.skin = clamp(num(s.sk) | 0, 0, SKINS.length - 1); f.wid = WORLD.royale ? (IT[s.w] && IT[s.w].type === 'weapon' ? s.w : 'fists') : RING_WEAPONS.includes(s.w) ? s.w : 'sword';
+  f.name = cleanName(s.n) || 'WAKER'; f.skin = clamp(num(s.sk) | 0, 0, SKINS.length - 1); if (s.ht !== undefined) f.hat = clamp(num(s.ht) | 0, 0, 3); if (s.tr !== undefined) f.trail = clamp(num(s.tr) | 0, 0, BR_TRAILS.length - 1); f.wid = WORLD.royale ? (IT[s.w] && IT[s.w].type === 'weapon' ? s.w : 'fists') : FFA.active ? (IT[s.w] && IT[s.w].type === 'weapon' ? s.w : ffaWeaponIds()[0]) : RING_WEAPONS.includes(s.w) ? s.w : 'sword';
   const snap = {
     t: now, x: clamp(num(s.x, f.x), 0, WW * T), y: clamp(num(s.y, f.y), 0, WH * T), vx: clamp(num(s.vx), -9, 9), vy: clamp(num(s.vy), -9, 9), face: s.f < 0 ? -1 : 1, g: !!s.g, st: num(s.st) | 0, dd: s.dd < 0 ? -1 : 1,
     m: typeof s.m === 'string' ? s.m : '', an: num(s.an) | 0, mp: clamp(num(s.mp) | 0, 0, 2), mt: clamp(num(s.mt), 0, 200), ma: clamp(num(s.ma), -3.2, 3.2), md: clamp(num(s.md, 40), 0, 900), mc: clamp(num(s.mc) | 0, 0, 60), mf: s.mf < 0 ? -1 : 1, rp: !!s.rp, sp: !!s.sp
@@ -13342,6 +13531,9 @@ function netApply(f, s) {
   f.snaps.push(snap); if (f.snaps.length > 40) f.snaps.shift();
   { const sx = Array.isArray(s.sx) ? s.sx : [0, 0, 0, 0], st = stOf(f); st.pin = sx[0] ? 30 : 0; st.pinS = sx[0] ? clamp((sx[0] | 0) - 2, -1, 1) : 0; st.burn = sx[1] ? 30 : 0; st.blind = sx[2] ? 30 : 0; st.hook = sx[3] ? 30 : 0; st.hookBy = null; f.linking = !!s.lk; }
   f.hp = clamp(num(s.hp, 100), 0, 100); f.kills = clamp(num(s.k) | 0, 0, 999); f.deaths = clamp(num(s.d) | 0, 0, 9999); f.rd = num(s.rd) | 0;
+  if (FFA.active && typeof s.fm === 'string' && FFA_MODES.some(m => m.id === s.fm)) FFA.mode = s.fm;
+  if (FFA.active && FFA.mode === 'crystal' && num(s.fr) > 0) FFA.resetAt = FFA.resetAt ? min(FFA.resetAt, num(s.fr)) : num(s.fr);
+  if (FFA.active && FFA.mode === 'crystal') ffaSyncPeerCrystals(f, s.cx);
   const hs = Array.isArray(s.hs) ? s.hs.slice(0, 12) : [], ps = Array.isArray(s.ps) ? s.ps.slice(0, 10) : [];
   let seen = NET.seen.get(f.peer);
   if (!seen) { seen = { hit: max(-1, ...hs.map(h => Array.isArray(h) ? num(h[1], -1) : -1)), shot: max(-1, ...ps.map(q => Array.isArray(q) ? num(q[0], -1) : -1)), kb: Array.isArray(s.kb) ? num(s.kb[1]) : 0 }; NET.seen.set(f.peer, seen); }
@@ -13374,7 +13566,8 @@ function netTakeHit(from, h) {
 function netDeathSeen(victim, killerPeer) {
   if (WORLD.royale) return brDeathSeen(victim, killerPeer);
   const killer = killerPeer && killerPeer === NET.me ? G.p : NET.peers.get(killerPeer);
-  if (killer === G.p) { G.p.kills++; sfx('newmove', 0); G.banner = { text: 'TAKEN DOWN', sub: victim.name, t: 120 }; comboHit(true); }
+  if (killer === G.p) { G.p.kills++; ffaRecord('kill'); sfx('newmove', 0); G.banner = { text: 'TAKEN DOWN', sub: victim.name, t: 120 }; comboHit(true); }
+  if (victim === G.p) ffaRecord('death');
   G.kfeed.unshift({ a: killer ? killer.name : '', b: victim.name, t: 0, me: killer === G.p ? 1 : 0 });
   burst(victim.x + 3, victim.y + 10, 30, SPARK, 3, 50, { glow: 1, g: .02 });
 }
@@ -13388,8 +13581,9 @@ function netSend() {
   const R = NET.R; if (!R || !R.connected()) return;
   const p = G.p, a = p.atk, W = heldOf(p);
   R.presence({
-    v: 1, ring: NET.code, n: G.nick, sk: G.skin, w: W && RING_WEAPONS.includes(W.id) ? W.id : 'sword', x: r1(p.x), y: r1(p.y), vx: r2(p.vx), vy: r2(p.vy), f: p.face, g: p.onGround ? 1 : 0,
-    st: p.dead ? 4 : p.state === 'dodge' ? 2 : p.hurtT > 0 ? 3 : a ? 1 : 0, dd: p.dodgeDir, hp: max(0, round(p.hp)), k: p.kills, d: p.deaths, rd: NET.rd,
+    v: 1, ring: NET.code, n: G.nick, sk: G.skin, ht: G.hat | 0, tr: G.trail | 0, w: W && (FFA.active ? ffaWeaponIds().includes(W.id) : RING_WEAPONS.includes(W.id)) ? W.id : 'sword', x: r1(p.x), y: r1(p.y), vx: r2(p.vx), vy: r2(p.vy), f: p.face, g: p.onGround ? 1 : 0,
+    st: p.dead ? 4 : p.state === 'dodge' ? 2 : p.hurtT > 0 ? 3 : a ? 1 : 0, dd: p.dodgeDir, hp: max(0, round(p.hp)), k: p.kills, d: p.deaths, rd: NET.rd, fm: FFA.active ? FFA.mode : '', fr: FFA.active ? FFA.resetAt : 0,
+    cx: FFA.active && FFA.mode === 'crystal' ? FFA.crystals.filter(q => q.owner === (NET.me || 'local')).map(q => [q.tx, q.surface]) : [],
     m: a ? a.id : '', an: p.atkN, mp: a ? a.phase : 0, mt: a ? a.pt : 0, ma: a ? r2(a.aimA) : 0, md: a ? round(a.dist) : 0, mc: a ? a.charge : 0, mf: a ? a.face : p.face, rp: p.riposte > 0 ? 1 : 0, sp: p.inv > 30 ? 1 : 0,
     hs: NET.hits, ps: NET.shots, kb: NET.kb, sx: p.st ? [p.st.pin > 0 ? (p.st.pinS || 0) + 2 : 0, p.st.burn > 0 ? 1 : 0, p.st.blind > 0 ? 1 : 0, p.st.hook > 0 || p.st.reel > 0 ? 1 : 0] : 0, lk: p.state === 'link' ? 1 : 0
   }).catch(() => { });
@@ -13424,21 +13618,24 @@ function tickRemote(f) {
 }
 
 // ---------------- the arena itself ----------------
-function enterArena(nick, skin, code, via) {
-  if (BR.on) brLeave(); netLeave(); if (COOP.role && via !== 'rtc') coopLeave(); NET.via = via || 'room'; WORLD.guest = false; WORLD.id = ''; WORLD.mode = 0; genArena(); freshSession();
-  G.nick = nick; G.skin = skin; NET.rd = 0; NET.roundOver = 0; NET.deathN = 0; NET.kb = ['', 0]; G.echoT = 60;
-  inv = new Array(INV_N).fill(null); RING_WEAPONS.forEach((id, i) => inv[i] = { id, n: 1 });
+function enterArena(nick, skin, code, via, ffaId) {
+  if (BR.on) brLeave(); netLeave(); if (COOP.role && via !== 'rtc') coopLeave(); NET.via = via || 'room'; ffaStart(ffaId || FFA.selected, NET.via); WORLD.guest = false; WORLD.id = ''; WORLD.mode = 0; genArena(FFA.mode); freshSession();
+  G.nick = nick; G.skin = skin; NET.rd = 0; NET.roundOver = 0; NET.deathN = 0; NET.kb = ['', 0]; G.echoT = 0;
+  inv = new Array(INV_N).fill(null);
   G.p = newPlayer(); G.fighters = [G.p]; G.npcs = []; G.clock = .57; arenaRespawn(G.p); G.p.inv = 60;
+  for (let i = 0; i < 3; i++) spawnEcho();
   snapCam(); G.state = 'play';
-  if (via === 'rtc') { ringRtcStart(code || 'friends'); G.banner = { text: 'THE CINDER RING', sub: netHost() ? 'friends pick JOIN A FRIEND and type your game code' : 'you are in ' + (COOP.hostName || 'your host') + '\'s ring', t: 0 }; return; }
-  G.banner = { text: 'THE CINDER RING', sub: NET.room ? 'ring code: ' + (code || 'open') : 'practice with the echoes', t: 0 };
-  netJoin(code || 'open');
+  if (via === 'rtc') { COOP.ffaMode = FFA.mode; ringRtcStart(code || 'friends'); G.banner = { text: FFA.mode.toUpperCase() + ' FFA', sub: netHost() ? 'private match · share your game code' : 'you are in ' + (COOP.hostName || 'your host') + '\'s private match', t: 0 }; return; }
+  G.banner = { text: FFA.mode.toUpperCase() + ' FFA', sub: NET.room ? 'quick play · finding Wakers' : 'quick play · 3 bots', t: 0 };
+  netJoin(code || 'ffa-' + FFA.mode);
 }
 function arenaRespawn(f) {
-  let best = ARENA_SPAWNS[0], bd = -1;
-  for (const s of ARENA_SPAWNS) { let d = 1e9; for (const o of G.fighters) if (o !== f && !o.dead) d = min(d, hypot(o.x / T - s[0], o.y / T - s[1])); d += Math.random() * 6; if (d > bd) { bd = d; best = s; } }
+  const spawns = FFA.active && FFA.mode === 'knockback' ? [[36, 54], [113, 54], [75, 48], [29, 54], [120, 54], [75, 38]] : ARENA_SPAWNS;
+  let best = spawns[0], bd = -1;
+  for (const s of spawns) { let d = 1e9; for (const o of G.fighters) if (o !== f && !o.dead) d = min(d, hypot(o.x / T - s[0], o.y / T - s[1])); d += Math.random() * 6; if (d > bd) { bd = d; best = s; } }
   reviveFighter(f, best[0] * T + 1, best[1] * T - 21); f.inv = 90;
-  if (f === G.p) snapCam(); else { f.wid = fpick(ECHO_WEAPONS); f.arms = [fpick(ARMS), fpick(ARMS)]; }
+  if (FFA.active) ffaEquip(f);
+  if (f === G.p) snapCam(); else if (!FFA.active) { f.wid = fpick(ECHO_WEAPONS); f.arms = [fpick(ARMS), fpick(ARMS)]; }
   burst(f.x + 3, f.y + 10, 24, SPARK, 2.4, 40, { glow: 1 });
 }
 function spawnEcho() {
@@ -13450,10 +13647,11 @@ function arenaDeath(f, by) {
   if (WORLD.royale) return brDeath(f, by);
   if (f === G.p) {
     NET.deathN++; NET.kb = [by && by.remote ? by.peer : '', NET.deathN];
+    ffaRecord('death');
     if (by && !by.remote && by !== G.p) by.kills++;
     G.kfeed.unshift({ a: by && by !== G.p ? by.name : '', b: G.p.name, t: 0, me: 2 });
   } else if (!f.remote) {
-    if (by === G.p) { G.p.kills++; G.banner = { text: 'TAKEN DOWN', sub: f.name, t: 120 }; } else if (by && !by.remote) by.kills++;
+    if (by === G.p) { G.p.kills++; ffaRecord('kill'); G.banner = { text: 'TAKEN DOWN', sub: f.name, t: 120 }; } else if (by && !by.remote) by.kills++;
     G.kfeed.unshift({ a: by ? by.name : '', b: f.name, t: 0, me: by === G.p ? 1 : 0 }); f.respawnT = 140;
   }
   if (G.kfeed.length > 6) G.kfeed.length = 6;
@@ -13461,17 +13659,18 @@ function arenaDeath(f, by) {
 function resetRound() {
   NET.roundOver = 0; NET.winner = '';
   for (const f of G.fighters) if (!f.remote) { f.kills = 0; f.deaths = 0; if (f !== G.p || f.dead) arenaRespawn(f); }
-  G.banner = { text: 'ROUND ' + (NET.rd + 1), sub: 'first to ' + KILLS_TO_WIN + ' takes the ring', t: 0 };
+  G.banner = { text: 'ROUND ' + (NET.rd + 1), sub: 'first to ' + KILLS_TO_WIN + ' wins the match', t: 0 };
 }
 function arenaTick() {
   if (WORLD.royale) return brTick();
+  ffaTick();
   const humans = NET.peers.size, echoes = G.fighters.filter(f => f.echoBot);
-  if (humans === 0) { if (echoes.length < 3 && --G.echoT <= 0) { spawnEcho(); G.echoT = 100; } }
-  else if (echoes.length) { const e = echoes[0]; e.gone = true; burst(e.x + 3, e.y + 10, 30, SPARK, 2.6, 40, { glow: 1 }); G.fighters = G.fighters.filter(f => !f.gone); if (echoes.length === 1) say('Another Waker has entered the ring. The echoes step aside.'); }
+  if (humans === 0 || FFA.active && !FFA.private) { if (echoes.length < 3 && --G.echoT <= 0) { spawnEcho(); G.echoT = 100; } }
+  else if (echoes.length) { const e = echoes[0]; e.gone = true; burst(e.x + 3, e.y + 10, 30, SPARK, 2.6, 40, { glow: 1 }); G.fighters = G.fighters.filter(f => !f.gone); if (echoes.length === 1) say('Another Waker has entered the match. The echoes step aside.'); }
   for (const f of G.fighters) if (f.echoBot && f.dead && --f.respawnT <= 0) arenaRespawn(f);
   if (!NET.roundOver) {
     let win = null; for (const f of G.fighters) if (f.kills >= KILLS_TO_WIN && (!f.remote || f.rd === NET.rd)) win = f;
-    if (win) { NET.roundOver = 330; NET.winner = win.name; G.banner = { text: win === G.p ? 'YOU TAKE THE RING' : win.name + ' TAKES THE RING', sub: 'next round soon', t: 0 }; sfx('quest', 0); G.flash = .4; G.flashCol = '255,211,90'; }
+    if (win) { NET.roundOver = 330; NET.winner = win.name; if (win === G.p && FFA.winRound !== NET.rd) { FFA.winRound = NET.rd; ffaRecord('win'); } G.banner = { text: win === G.p ? 'YOU WIN THE MATCH' : win.name + ' WINS THE MATCH', sub: 'next round soon', t: 0 }; sfx('quest', 0); G.flash = .4; G.flashCol = '255,211,90'; }
   } else if (--NET.roundOver === 0) { NET.rd++; resetRound(); }
   if (NET.via === 'rtc') { brRtcTick(); if (netHost()) sigHost('ring'); }
   if (G.time % 3 === 0) netSend();
@@ -13485,11 +13684,11 @@ function arenaTick() {
 //  places are filled by echoes (computer players).
 //  Online, the match leader (the first person in the lobby) runs the
 //  storm clock and the echoes; every computer runs its own Waker and
-//  shares it as presence, exactly like the Cinder Ring.
+//  shares it as presence, exactly like the FFA Arcade.
 // ============================================================
 const BRW = 800, BRH = 140, BRSKY = 17, BR_MAX = 12, BR_FILL = 12;
-const BR_TIERS = ['COMMON', 'UNCOMMON', 'RARE', 'EPIC', 'LEGENDARY'], BR_TCOL = ['#c8c4d4', '#7ddc6f', '#5aa8ff', '#c77dff', '#ffd35a'];
-const BR_MATT = { wood: 0, flint: 0, bone: 0, stone: 0, copper: 1, bronze: 1, rust: 2, chitin: 2, iron: 2, steel: 3, glass: 3, deep: 4, ember: 4 };
+const BR_TIERS = ['COMMON', 'UNCOMMON', 'RARE', 'EPIC', 'LEGENDARY', 'MYTHIC'], BR_TCOL = ['#c8c4d4', '#7ddc6f', '#5aa8ff', '#c77dff', '#ffd35a', '#ff7a9e'];
+const BR_MATT = { wood: 0, flint: 0, bone: 0, stone: 0, copper: 1, bronze: 1, rust: 2, chitin: 2, iron: 2, steel: 3, glass: 3, deep: 4, ember: 5 };
 const BR_OLD = { sword: 0, spear: 0, fangs: 1, maul: 2, bow: 1, nunchaku: 1, kblade: 4, kmaul: 4, vpike: 3, vfangs: 3 };
 const BR_BIOMES = ['moor', 'thorn', 'dunes', 'reach', 'ash'];
 const BR_SURF = { moor: [GRASS, DIRT], thorn: [GRASS, DIRT], dunes: [SAND, SANDSTONE], reach: [SNOW, STONE], ash: [ASH, STONE] };
@@ -13506,7 +13705,7 @@ const BR = {
   dlSeen: new Set(), dl: null, place: 0, spec: null, specT: 0, overT: 0, winner: '', winMe: false, pois: [], segs: BR_BIOMES.slice(), segW: BRW / 5, mapCv: null,
   note: '', noteT: 0, chan: null, inStorm: false, poiNow: '', mapOpen: false, total: 0, lastAlive: 0, lobbyT: 0, err: '',
   // the Wilds (the third arena: 20-wilds-royale.js and on) keeps its own extra state here
-  wild: false, wildLand: false, matchType: 'unranked', rewarded: false, ring: { n: 0, at: 0 }, lastFall: 0, caves: [], nests: [], lakes: [], segX: [], bio: null, lastTeams: 0, pactWith: '', pactFrom: '', pactFromT: 0, teammate: '', pactSeen: false, leaveT: 0, dropsOut: [], dropSeq: 0, dropSeen: new Map(), tookOut: [], tookSeq: 0, tookSeen: new Map(), tileOut: new Map(), applying: false, fallen: [], fallenT: 0, show: null, gifts: [], giftAt: 0, feast: 0, hazard: null, hounds: 0, bounty: null, mobT: 0, botMobT: 0, menuTab: 'queue', menuScroll: 0, menuRows: 1, menuMsg: ''
+  wild: false, wildLand: false, matchType: 'unranked', rewarded: false, ring: { n: 0, at: 0 }, lastFall: 0, caves: [], nests: [], lakes: [], segX: [], bio: null, structures: [], lastTeams: 0, pactWith: '', pactFrom: '', pactFromT: 0, teammate: '', pactSeen: false, leaveT: 0, dropsOut: [], dropSeq: 0, dropSeen: new Map(), tookOut: [], tookSeq: 0, tookSeen: new Map(), tileOut: new Map(), applying: false, fallen: [], fallenT: 0, show: null, gifts: [], giftAt: 0, feast: 0, hazard: null, hounds: 0, bounty: null, mobT: 0, botMobT: 0, menuTab: 'queue', menuScroll: 0, menuRows: 1, menuMsg: ''
 };
 const brOn = () => WORLD.royale && BR.on;
 // true only inside a match of the Wilds (the third arena): everything the Wilds changes in the shared game asks this first
@@ -13516,7 +13715,7 @@ const brTag = f => !f ? '' : f === G.p ? (NET.me || 'me') : f.botTag || f.peer |
 // ---------------- loot ----------------
 const brTier = id => { const it = IT[id]; if (!it || it.type !== 'weapon' || it.fist) return -1; return it.tier ? (BR_MATT[it.tier] ?? -1) : (BR_OLD[id] ?? -1); };
 let BR_POOL = null;
-function brPool() { if (BR_POOL) return BR_POOL; BR_POOL = [[], [], [], [], []]; for (const id in IT) { const k = brTier(id); if (k >= 0 && !IT[id].relic) BR_POOL[k].push(id); } return BR_POOL; }
+function brPool() { if (BR_POOL) return BR_POOL; BR_POOL = [[], [], [], [], [], []]; for (const id in IT) { const k = brTier(id); if (k >= 0 && !IT[id].relic) BR_POOL[k].push(id); } return BR_POOL; }
 function brItems() {
   const v = (a, b, c, d, e) => ({ a, b, c, d, e });
   defI('br_salve', { name: 'Ember Salve', type: 'brheal', heal: 25, cap: 100, use: 70, stack: 6, icon: icon('vial', v('#ffd3a0', '#ff8a3d', '#c94a1e', '#5a2010', '#fff1a8')), desc: 'Heals 25. Takes a moment to rub in.' });
@@ -13525,9 +13724,9 @@ function brItems() {
   defI('br_ward', { name: 'Greatward Flask', type: 'brheal', ward: 50, cap: 100, use: 160, stack: 3, icon: icon('vial', v('#e0f4ff', '#5aa8ff', '#2a62c0', '#14305a', '#ffffff')), desc: '+50 ward, up to 100.' });
   trItems(); trKitItems(); wBrItems();
 }
-function brRollTier(rare) { const r = Math.random(); return rare ? (r < .3 ? 2 : r < .78 ? 3 : 4) : (r < .4 ? 0 : r < .7 ? 1 : r < .89 ? 2 : r < .975 ? 3 : 4); }
+function brRollTier(rare) { const r = Math.random(); return rare ? (r < .22 ? 2 : r < .58 ? 3 : r < .94 ? 4 : 5) : (r < .42 ? 0 : r < .72 ? 1 : r < .91 ? 2 : r < .99 ? 3 : r < .999 ? 4 : 5); }
 function brLoot(rare) {
-  const P = brPool(), k = brRollTier(rare), pool = P[k].length ? P[k] : P[0], out = [[fpick(pool), 1]];
+  const P = brPool(), k = brRollTier(rare), pool = P[k].length ? P[k] : P.slice(0, k).reverse().find(p => p.length) || P[0], out = [[fpick(pool), 1]];
   const n = rare ? 2 : 1 + (Math.random() < .55 ? 1 : 0);
   for (let i = 0; i < n; i++) {
     const r = Math.random();
@@ -14118,7 +14317,7 @@ function brLeave() { if (BR.wild) return wBrLeave();
 // ---------------- what this computer says about itself ----------------
 function brSend() { if (BR.wild) return wBrSend();
   const R = NET.R; if (!R || !R.connected()) return; BR.sentAt = performance.now();
-  const o = { v: 3, br: 1, ring: BR.code, n: G.nick, sk: G.skin | 0, sq: ++BR.sq, ph: BR.phase === 'lobby' ? 'L' : 'M', mi: BR.phase === 'lobby' ? '' : BR.mi, ld: 0, tw: BR.wish | 0, pt: BR.party || '' };
+  const o = { v: 3, br: 1, ring: BR.code, n: G.nick, sk: G.skin | 0, ht: G.hat | 0, tr: G.trail | 0, sq: ++BR.sq, ph: BR.phase === 'lobby' ? 'L' : 'M', mi: BR.phase === 'lobby' ? '' : BR.mi, ld: 0, tw: BR.wish | 0, pt: BR.party || '' };
   if (BR.phase !== 'lobby' && G.p) {
     const p = G.p, a = p.atk, W = heldOf(p);
     Object.assign(o, {
@@ -14166,7 +14365,7 @@ function brSaw(id, q, s) {
   if (!BR.mi || BR.phase === 'lobby' || q.mi !== BR.mi) { const f = NET.peers.get(id); if (f) { NET.peers.delete(id); f.gone = true; } return; }
   if (q.ld && q.ld.st === 'M' && q.ld.mi === BR.mi && !BR.lead) brFromLeader(id, q.ld);
   let f = NET.peers.get(id);
-  if (!f && BR.ro.includes(id)) { f = newFighter(num(s.x, 600), num(s.y, 300), { remote: true, peer: id, team: trTeam(id), snaps: [], spawnT: 0, name: q.n, skin: q.sk, brIn: true, ward: 0, guest: q.guest }); NET.peers.set(id, f); G.fighters.push(f); }
+  if (!f && BR.ro.includes(id)) {   f = newFighter(num(s.x, 600), num(s.y, 300), { remote: true, peer: id, team: trTeam(id), snaps: [], spawnT: 0, name: q.n, skin: q.sk, hat: clamp(num(s.ht) | 0, 0, 3), trail: clamp(num(s.tr) | 0, 0, BR_TRAILS.length - 1), brIn: true, ward: 0, guest: q.guest }); NET.peers.set(id, f); G.fighters.push(f); }
   if (f && typeof s.x === 'number') {
     netApply(f, s); f.ward = clamp(num(s.wd) | 0, 0, 100); f.glide = !!s.gl; f.onBarge = !!s.ob; f.noHit = !!s.ob;
     f.tempo = clamp(num(s.tp) | 0, 0, 5); f.perks = typeof s.pk === 'string' ? s.pk.split(',').filter(k => TR_PERKS[k]).slice(0, 6) : [];
@@ -14279,7 +14478,7 @@ function brRtcTick() {
   for (const P of COOP.peers.values()) if (!P.open && !P.ok && P.connT && now - P.connT > 25000) { COOP.peers.delete(P.id); try { P.pc.close(); } catch (e) { } COOP.note = ''; COOP.err = 'Could not reach ' + P.name + '. Try again with a new invite; on the same Wi-Fi it almost always works.'; }
   if (netGuest() && NET.R && NET.R.mine && now - (BR.rtcPing || 0) > 2000) { BR.rtcPing = now; const H = COOP.peers.get('h'); if (H && H.open) sendTo(H, { t: 'bp', p: NET.R.mine }, 'bp'); }
 }
-// the Cinder Ring over game codes: the same presence room, with the ring's own presences in it
+// the FFA Arcade over game codes: the same presence room, with the match's own presences in it
 function ringRtcStart(code) {
   if (!COOP.role) { COOP.role = 'host'; COOP.me = 'h'; COOP.hostName = coopName(); }
   COOP.br = true; COOP.ring = true; NET.code = code; NET.status = 'online'; NET.me = netGuest() ? COOP.me : '0h';
@@ -14294,14 +14493,14 @@ function ringRtcEnd() {
 // the host lets a friend into the lobby
 function brRtcWelcome(P, m) { if (BR.wild) return wBrRtcWelcome(P, m);
   if ([...COOP.peers.values()].filter(Q => Q.ok).length >= brMaxG()) { sendTo(P, { t: 'kick' }); return; }
-  P.name = cleanName(m.n) || P.name || 'WAKER'; P.skin = clamp(m.sk | 0, 0, SKINS.length - 1); P.ok = true; P.pres = null;
-  sendTo(P, { t: 'brw', v: NETV, id: P.id, host: coopName(), code: COOP.ring ? NET.code : BR.code, mode: COOP.ring ? 'ring' : 'br', pt: BR.party || COOP.gcode || '' }); COOP.note = ''; sfx('quest', 0); BR.rtcDirty = true;
+  P.name = cleanName(m.n) || P.name || 'WAKER'; P.skin = clamp(m.sk | 0, 0, SKINS.length - 1); P.hat = clamp(m.ht | 0, 0, 3); P.trail = clamp(m.tr | 0, 0, BR_TRAILS.length - 1); P.ok = true; P.pres = null;
+  sendTo(P, { t: 'brw', v: NETV, id: P.id, host: coopName(), code: COOP.ring ? NET.code : BR.code, mode: COOP.ring ? 'ring' : 'br', ffa: COOP.ring && FFA.active ? FFA.mode : '', pt: BR.party || COOP.gcode || '' }); COOP.note = ''; sfx('quest', 0); BR.rtcDirty = true;
   if (COOP.ring) G.kfeed.unshift({ a: '', b: P.name, txt: 'is on the way in', t: 0 });
 }
 function brRtcJoin(m) {
   COOP.me = String(m.id || 'g?'); COOP.joined = true; COOP.br = true; COOP.hostName = cleanName(m.host) || COOP.hostName;
   const HP = COOP.peers.get('h'); if (HP) { HP.ok = true; HP.name = COOP.hostName || HP.name; }
-  if (m.mode === 'ring') { COOP.ring = true; COOP.reply = ''; COOP.code = ''; COOP.note = ''; const nick = coopName(); G.nick = nick; enterArena(nick, FORM.skin | 0, typeof m.code === 'string' ? cleanCode(m.code) || 'friends' : 'friends', 'rtc'); sfx('quest', 0); return; }
+  if (m.mode === 'ring') { COOP.ring = true; COOP.reply = ''; COOP.code = ''; COOP.note = ''; const nick = coopName(); G.nick = nick; const mode = FFA_MODES.some(q => q.id === m.ffa) ? m.ffa : 'sword'; COOP.ffaMode = mode; enterArena(nick, FORM.skin | 0, typeof m.code === 'string' ? cleanCode(m.code) || 'friends' : 'friends', 'rtc', mode); sfx('quest', 0); return; }
   G.nick = coopName(); G.skin = FORM.skin | 0; COOP.reply = ''; COOP.code = ''; COOP.note = '';
   // walking in with a code makes you one of the host's party; arriving from the open board, you keep the party you came with
   if (BR.joinOpen) BR.joinOpen = false; else BR.party = typeof m.pt === 'string' ? m.pt.toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 8) : '';
@@ -15189,6 +15388,228 @@ function drawBrOpen(c) {
 }
 
 // ============================================================
+//  The FFA arcade: ten weapon-focused ring variants, local records,
+//  and the shared private-match flow.
+// ============================================================
+const FFA_MODES = [
+  { id: 'crystal', name: 'CRYSTAL PVP', desc: 'Place, blast, and out-position.', color: '#c77dff', weapons: ['steel_sword', 'iron_sword'], arms: ['flask'], map: 'crystal' },
+  { id: 'sword', name: 'SWORD FFA', desc: 'Combos, timing, and footwork.', color: '#ff8a3d', weapons: ['bronze_sword', 'iron_sword', 'steel_sword'], arms: ['shuriken'], map: 'sword' },
+  { id: 'mace', name: 'MACE FFA', desc: 'Rise high. Land heavy.', color: '#ffd35a', weapons: ['copper_mace', 'rust_mace', 'deep_warhammer'], arms: ['shuriken'], map: 'mace' },
+  { id: 'spear', name: 'SPEAR FFA', desc: 'Own the lane. Strike at reach.', color: '#8ff5e6', weapons: ['spear', 'iron_spear', 'steel_halberd'], arms: ['javelin'], map: 'spear' },
+  { id: 'grapple', name: 'GRAPPLE FFA', desc: 'Hook in, swing, reposition.', color: '#7ddc6f', weapons: ['sword', 'iron_sword'], arms: ['hook'], map: 'grapple' },
+  { id: 'bow', name: 'BOW FFA', desc: 'Aim ahead. Make every shot count.', color: '#5aa8ff', weapons: ['bow', 'wood_shortbow', 'bone_recurve'], arms: ['shuriken'], map: 'bow' },
+  { id: 'axe', name: 'AXE FFA', desc: 'Slow swings. Brutal close-range hits.', color: '#e2483b', weapons: ['battleaxe', 'iron_battleaxe', 'steel_greataxe'], arms: ['shuriken'], map: 'axe' },
+  { id: 'shield', name: 'SHIELD & SWORD', desc: 'Guard, wait, then counterattack.', color: '#b9bdd0', weapons: ['bronze_sword', 'iron_sword'], arms: ['smoke'], map: 'shield' },
+  { id: 'knockback', name: 'KNOCKBACK', desc: 'Send rivals off the floating ring.', color: '#ff6b6b', weapons: ['club', 'maul', 'nunchaku'], arms: ['hook'], map: 'knockback' },
+  { id: 'random', name: 'RANDOM LOADOUT', desc: 'A new balanced kit each respawn.', color: '#fff1a8', weapons: ['sword', 'spear', 'fangs', 'maul', 'bow', 'nunchaku', 'iron_sword', 'iron_spear', 'copper_mace', 'iron_battleaxe'], arms: ['shuriken', 'hook', 'flask', 'smoke'], map: 'random' }
+];
+const FFA = { selected: 'crystal', mode: 'crystal', active: false, private: false, resetAt: 0, resetN: 0, winRound: -1, crystals: [], crystalCd: 0, cloudTimer: 0 };
+const ffaMode = id => FFA_MODES.find(m => m.id === id) || FFA_MODES[0];
+const ffaStatsKey = owner => 'ew2.ffa.' + owner;
+
+function ffaStats() {
+  const owner = typeof accountId === 'function' ? accountId() : 'guest';
+  try {
+    const raw = typeof LS === 'object' ? JSON.parse(LS.get(ffaStatsKey(owner)) || '{}') : {};
+    const modes = {};
+    for (const m of FFA_MODES) {
+      const s = raw.modes && raw.modes[m.id] || {};
+      modes[m.id] = { kills: max(0, num(s.kills) | 0), deaths: max(0, num(s.deaths) | 0), wins: max(0, num(s.wins) | 0), matches: max(0, num(s.matches) | 0), elo: clamp(num(s.elo, 1000) | 0, 0, 9999) };
+    }
+    return { modes, updatedAt: max(0, num(raw.updatedAt)) };
+  } catch (e) {
+    return { modes: Object.fromEntries(FFA_MODES.map(m => [m.id, { kills: 0, deaths: 0, wins: 0, matches: 0, elo: 1000 }])), updatedAt: 0 };
+  }
+}
+function ffaSaveStats(data = ffaStats(), sync = true) {
+  const owner = typeof accountId === 'function' ? accountId() : 'guest', key = ffaStatsKey(owner);
+  data.updatedAt = Date.now();
+  if (typeof LS === 'object' && !LS.set(key, JSON.stringify(data))) { console.warn('Could not save FFA progression in this browser.'); return false; }
+  if (sync && SAVE.db && typeof dpath === 'function') {
+    clearTimeout(FFA.cloudTimer);
+    FFA.cloudTimer = setTimeout(() => {
+      if (!SAVE.db || accountId() !== owner) return;
+      SAVE.db.doc(dpath('ffa-profile', owner)).set(data).catch(e => console.warn('Could not sync FFA progression:', e));
+    }, 800);
+  }
+  return true;
+}
+async function ffaSyncProfile(owner) {
+  if (!SAVE.db || typeof dpath !== 'function') return;
+  const db = SAVE.db, ref = db.doc(dpath('ffa-profile', owner));
+  try {
+    const snap = await withTimeout(ref.get(), 9000);
+    if (accountId() !== owner || SAVE.db !== db) return;
+    const local = ffaStats(), remote = snap && snap.exists ? snap.data() : null;
+    if (remote && num(remote.updatedAt) > local.updatedAt && remote.modes && typeof remote.modes === 'object') ffaSaveStats(remote, false);
+    else await withTimeout(ref.set(local), 9000);
+  } catch (e) { console.warn('Could not load cloud FFA progression:', e); }
+}
+function ffaModeStats(id = FFA.mode) { return ffaStats().modes[id] || { kills: 0, deaths: 0, wins: 0, matches: 0, elo: 1000 }; }
+function ffaRecord(type) {
+  if (!FFA.active || !G.p) return;
+  const data = ffaStats(), stat = data.modes[FFA.mode];
+  if (type === 'kill') {
+    stat.kills++; stat.elo = min(9999, stat.elo + 2);
+    if (typeof brProfile === 'function' && typeof brSaveProfile === 'function') { const p = brProfile(); p.souls++; brSaveProfile(p); }
+  } else if (type === 'death') {
+    stat.deaths++; stat.elo = max(0, stat.elo - 1);
+  } else if (type === 'match') {
+    stat.matches++;
+    if (typeof brProfile === 'function' && typeof brSaveProfile === 'function') { const p = brProfile(); p.coins++; brSaveProfile(p); }
+  }
+  else if (type === 'win') {
+    stat.wins++; stat.elo = min(9999, stat.elo + 12);
+    if (typeof brProfile === 'function' && typeof brSaveProfile === 'function') { const p = brProfile(); p.coins += 3; brSaveProfile(p); }
+  } else return;
+  ffaSaveStats(data);
+}
+function ffaWeaponIds(id = FFA.mode) {
+  const mode = ffaMode(id);
+  const available = mode.weapons.filter(item => IT[item] && IT[item].type === 'weapon');
+  return available.length ? available : ['sword'];
+}
+function ffaArms(id = FFA.mode) {
+  const mode = ffaMode(id);
+  return mode.arms.filter(item => IT[item] && IT[item].type === 'arm');
+}
+function ffaEquip(f) {
+  const weapons = ffaWeaponIds(), item = fpick(weapons);
+  if (f === G.p) {
+    inv = new Array(INV_N).fill(null);
+    const kit = FFA.mode === 'random' ? [item] : weapons.slice(0, 5);
+    kit.forEach((id, i) => { if (i < hotN()) inv[i] = { id, n: 1 }; });
+    G.sel = 0;
+    f.arm = ffaArms()[0] || null;
+    if (FFA.mode === 'bow' && IT.arrow) inv[5] = { id: 'arrow', n: 40 };
+  } else {
+    f.wid = item;
+    f.arms = ffaArms();
+  }
+}
+function ffaStart(mode, via = 'solo') {
+  const selected = ffaMode(mode).id;
+  FFA.selected = selected; FFA.mode = selected; FFA.private = via === 'rtc'; FFA.active = true; FFA.resetN = 0; FFA.winRound = -1;
+  FFA.resetAt = selected === 'crystal' ? Date.now() + 10 * 60 * 1000 : 0; FFA.crystals.length = 0; FFA.crystalCd = 0;
+  ffaRecord('match');
+}
+function ffaResetArena() {
+  FFA.crystals.length = 0;
+  genArena(FFA.mode);
+  G.drops.length = 0; G.projs.length = 0; G.smokes.length = 0; G.parts.length = 0;
+  for (const f of G.fighters) if (!f.remote) arenaRespawn(f);
+  FFA.resetN++; FFA.resetAt = Date.now() + 10 * 60 * 1000;
+  G.banner = { text: 'CRYSTAL ARENA RESET', sub: 'arena restored · fighters returned to spawn', t: 0 };
+  sfx('quest', 0);
+}
+function ffaTick() {
+  if (FFA.crystalCd > 0) FFA.crystalCd--;
+  if (!FFA.active || FFA.mode !== 'crystal' || !FFA.resetAt || Date.now() < FFA.resetAt) return;
+  ffaResetArena();
+}
+function ffaCrystalAction() {
+  if (!FFA.active || FFA.mode !== 'crystal' || UI.open || G.dialog || !pressed.KeyF || FFA.crystalCd > 0) return;
+  const p = G.p, owner = NET.me || 'local', near = FFA.crystals.findIndex(c => c.owner === owner && hypot(c.x - p.x, c.y - p.y) < 96);
+  if (near >= 0) {
+    const crystal = FFA.crystals.splice(near, 1)[0];
+    for (const [tx, ty, old] of crystal.cells) setTile(tx, ty, old);
+    burst(crystal.x, crystal.y, 36, ['#c77dff', '#8ff5e6', '#fff1a8'], 3, 60, { glow: 1, g: -.02 });
+    for (const f of G.fighters) {
+      if (f.dead || f.gone) continue;
+      const d = hypot(f.x + 3 - crystal.x, f.y + f.h / 2 - crystal.y);
+      if (d > 92) continue;
+      const dmg = max(6, round(28 * (1 - d / 120)));
+      const kx = sign(f.x + 3 - crystal.x) * (4 - d / 40);
+      if (f.remote) netHit(f, dmg, kx, -3, true, null, p);
+      else hurtFighter(f, dmg, crystal.x, { kx, ky: -3, by: p, pvp: true, crit: true });
+    }
+    FFA.crystalCd = 18; sfx('boom', 0); return;
+  }
+  if (FFA.crystals.length >= 3) { say('Three crystals are already set. Detonate one with [F].'); return; }
+  const tx = clamp(floor((p.x + 3 + p.face * 22) / T), 3, WW - 4);
+  let surface = clamp(floor((p.y + p.h) / T), 1, WH - 5);
+  while (surface < WH - 4 && tileAt(tx, surface) === AIR) surface++;
+  surface--;
+  const cells = [[tx, surface - 1], [tx, surface - 2], [tx, surface - 3]];
+  if (cells.some(([cx, cy]) => cy < 1 || tileAt(cx, cy) !== AIR)) { say('There is no room to place a crystal here.'); return; }
+  for (let i = 0; i < cells.length; i++) {
+    const [cx, cy] = cells[i]; cells[i].push(tiles[cy * WW + cx]); setTile(cx, cy, i === 2 ? CRYSTAL : BRICK);
+  }
+  FFA.crystals.push({ x: tx * T + 4, y: (surface - 2) * T, tx, surface, owner, cells });
+  FFA.crystalCd = 24; sfx('place', 0);
+}
+function ffaSyncPeerCrystals(f, source) {
+  if (!FFA.active || FFA.mode !== 'crystal' || !Array.isArray(source)) return;
+  const data = source.slice(0, 3).filter(q => Array.isArray(q) && q.length >= 2).map(q => [clamp(num(q[0]) | 0, 3, WW - 4), clamp(num(q[1]) | 0, 4, WH - 5)]);
+  const key = JSON.stringify(data);
+  if (f.ffaCrystalKey === key) return;
+  const old = FFA.crystals.filter(c => c.owner === f.peer);
+  for (const c of old) for (const [tx, ty, tile] of c.cells) setTile(tx, ty, tile);
+  FFA.crystals = FFA.crystals.filter(c => c.owner !== f.peer);
+  for (const [tx, surface] of data) {
+    const cells = [[tx, surface - 1], [tx, surface - 2], [tx, surface - 3]];
+    if (cells.some(([cx, cy]) => cy < 1 || tileAt(cx, cy) !== AIR)) continue;
+    for (let i = 0; i < cells.length; i++) { const [cx, cy] = cells[i]; cells[i].push(tiles[cy * WW + cx]); setTile(cx, cy, i === 2 ? CRYSTAL : BRICK); }
+    FFA.crystals.push({ x: tx * T + 4, y: (surface - 2) * T, tx, surface, owner: f.peer, cells });
+  }
+  f.ffaCrystalKey = key;
+}
+function ffaModeLabel(id = FFA.mode) { return ffaMode(id).name; }
+
+function ffaEnter(mode, privateMatch = false) {
+  const selected = ffaMode(mode).id;
+  UI.focus = null;
+  const nick = cleanName(FORM.nick) || 'WAKER'; FORM.nick = nick; G.nick = nick; G.skin = FORM.skin | 0;
+  FFA.selected = selected;
+  G.state = 'loading'; G.loadMsg = privateMatch ? 'Opening your private FFA...' : 'Entering the FFA arena...';
+  setTimeout(() => {
+    if (privateMatch) { coopReset(); COOP.ffaMode = selected; enterArena(nick, FORM.skin, 'friends', 'rtc', selected); }
+    else enterArena(nick, FORM.skin, 'ffa-' + selected, 'room', selected);
+  }, 30);
+  sfx('quest', 0);
+}
+function ffaQuickPlay() {
+  const mode = fpick(FFA_MODES);
+  ffaEnter(mode.id);
+}
+function drawFFAMenu(c) {
+  const uw = VS.uw, uh = VS.uh, w = min(620, uw - 12), h = min(320, uh - 10), x = round((uw - w) / 2), y = max(5, round((uh - h) / 2));
+  c.fillStyle = 'rgba(18,13,31,.7)'; c.fillRect(0, 0, uw, uh); panel(c, x, y, w, h, 'THE FFA ARCADE  ·  10 MODES');
+  const fx = x + 8, fw = w - 16, mode = ffaMode(FFA.selected), skinY = y + 20;
+  drawText(c, 'NAME', fx, skinY + 4, '#b9bdd0'); field(c, fx + 40, skinY, min(160, fw - 145), 'nick', 'WAKER'); skinPicker(c, x + w - 130, skinY - 2);
+
+  const colGap = 6, cardW = floor((fw - colGap) / 2), cardH = 22, listY = y + 43;
+  for (let i = 0; i < FFA_MODES.length; i++) {
+    const m = FFA_MODES[i], col = i < 5 ? 0 : 1, row = i % 5, cx = fx + col * (cardW + colGap), cy = listY + row * 23;
+    const selected = m.id === FFA.selected;
+    c.fillStyle = selected ? '#3a3020' : 'rgba(32,27,45,.92)'; c.fillRect(cx, cy, cardW, cardH);
+    c.fillStyle = selected ? m.color : '#4a4460'; c.fillRect(cx, cy, 2, cardH);
+    c.fillStyle = m.color; c.fillRect(cx + 6, cy + 6, 8, 8); c.fillStyle = INK; c.fillRect(cx + 8, cy + 8, 4, 4);
+    drawText(c, m.name, cx + 19, cy + 3, selected ? '#fff1a8' : '#fff');
+    let desc = m.desc; while (desc.length > 4 && textW(desc) > cardW - 25) desc = desc.slice(0, -1);
+    drawText(c, desc, cx + 19, cy + 12, '#8b8fa3');
+    const count = '3 BOTS'; drawText(c, count, cx + cardW - textW(count) - 4, cy + 3, '#7ddc6f');
+    hit(cx, cy, cardW, cardH, () => { FFA.selected = m.id; sfx('ui'); });
+  }
+  const stats = ffaModeStats(mode.id), ratio = stats.deaths ? (stats.kills / stats.deaths).toFixed(2) : stats.kills.toFixed(2);
+  const infoY = listY + 5 * 23 + 4;
+  drawText(c, `${mode.name}   ${mode.desc}`, fx, infoY, mode.color);
+  drawText(c, `K ${stats.kills}  D ${stats.deaths}  W ${stats.wins}  MATCHES ${stats.matches}  K/D ${ratio}  ELO ${stats.elo}`, fx, infoY + 10, '#d8d4e6');
+  const best = FFA_MODES.map(m => ({ name: m.name, elo: ffaModeStats(m.id).elo })).sort((a, b) => b.elo - a.elo)[0];
+  drawText(c, `PERSONAL LEADERBOARD  ·  TOP ${best.name} ${best.elo} ELO  ·  QUICK PLAY picks a random mode`, fx, infoY + 20, '#8b8fa3');
+  const milestones = [stats.kills >= 10 && '10 KILLS', stats.wins >= 1 && 'FIRST WIN', stats.matches >= 10 && '10 MATCHES'].filter(Boolean);
+  drawText(c, `MILESTONES  ·  ${milestones.length ? milestones.join('  ·  ') : 'First win, 10 kills, 10 matches'}`, fx, infoY + 30, '#ffd35a');
+  const actionY = y + h - 38;
+  button(c, fx, actionY, floor((fw - 8) / 2), 16, 'PLAY ' + mode.name, () => ffaEnter(mode.id), { col: mode.color });
+  button(c, fx + floor((fw - 8) / 2) + 8, actionY, floor((fw - 8) / 2), 16, 'QUICK PLAY  ·  RANDOM MODE', ffaQuickPlay, { col: '#ffd35a' });
+  if (netOK()) {
+    button(c, fx, actionY + 19, floor((fw - 8) / 2), 15, 'HOST PRIVATE MATCH  ·  CODE', () => ffaEnter(mode.id, true), { col: '#8ff5e6' });
+    drawText(c, 'Friends: title screen → JOIN A FRIEND → enter your code.', fx + floor((fw - 8) / 2) + 8, actionY + 23, '#8b8fa3');
+  } else drawText(c, 'Private matches need WebRTC. Practice is ready offline with 3 bots.', fx, actionY + 23, '#8b8fa3');
+  button(c, x + w - 66, y + h - 18, 58, 13, 'BACK', () => { G.state = 'title'; UI.focus = null; sfx('ui'); });
+}
+
+// ============================================================
 //  THE WILDS: what stands on the island's ground between the trees:
 //  bushes, boulders, logs, stumps, cacti, reeds, old ribs, glass
 //  spikes and cave mushrooms. Painted the first time an island is
@@ -15225,13 +15646,13 @@ function buildWildProps() {
 //  nothing too.
 //  Online, the match leader (the first person in the lobby) runs the
 //  clock, the border and the echoes; every computer runs its own Waker
-//  and shares it as presence, exactly like the Cinder Ring.
+//  and shares it as presence, exactly like the FFA Arcade.
 //  (the island: 23-wilds-island; echoes: 24-wilds-echoes; creatures,
 //  gifts and the other cruelties of the games: 25-wilds-games)
 // ============================================================
 const WBR_MAX = 32, WBR_FILL = 32, WBR_PARTY = 8, BR_HOLD = 4 * 60, WBR_DROP = 16 * 60;
-const WBR_TIERS = ['COMMON', 'UNCOMMON', 'RARE', 'EPIC', 'LEGENDARY'], WBR_TCOL = ['#c8c4d4', '#7ddc6f', '#5aa8ff', '#c77dff', '#ffd35a'];
-const WBR_MATT = { wood: 0, flint: 0, bone: 0, stone: 0, copper: 1, bronze: 2, rust: 2, chitin: 1, iron: 2, steel: 3, glass: 3, deep: 4, ember: 4, cinder: 4, gloom: 4, prism: 4 };
+const WBR_TIERS = ['COMMON', 'UNCOMMON', 'RARE', 'EPIC', 'LEGENDARY', 'MYTHIC'], WBR_TCOL = ['#c8c4d4', '#7ddc6f', '#5aa8ff', '#c77dff', '#ffd35a', '#ff7a9e'];
+const WBR_MATT = { wood: 0, flint: 0, bone: 0, stone: 0, copper: 1, bronze: 2, rust: 2, chitin: 1, iron: 2, steel: 3, glass: 3, deep: 4, ember: 5, cinder: 4, gloom: 4, prism: 5 };
 const WBR_OLD = { sword: 1, spear: 0, fangs: 1, maul: 2, bow: 1, nunchaku: 1, kblade: 4, kmaul: 4, vpike: 3, vfangs: 3 };
 const WBR_BOTN = ['WREN', 'KESTREL', 'MARROW', 'TINDER', 'SORREL', 'FLINT', 'ROOK', 'BRAMBLE', 'EMBERLY', 'SALTWICK', 'HOLLIS', 'VESK', 'ODA', 'TALLOW', 'RUE', 'CINNA', 'THRESH', 'FINCH', 'ALDER', 'MAGS', 'PEWTER', 'QUILL', 'SEDGE', 'CLOVE', 'HAWTHORN', 'LARK', 'MOSS', 'NETTLE', 'OAKLEY', 'PIKE', 'REED', 'SABLE'];
 // The border moves when enough Wakers have fallen: [share of the field still standing, share of the island left safe, damage a second outside].
@@ -15256,24 +15677,61 @@ R('hand', 'twine', 1, { reed: 3 }, { wild: true });
 const BR_SKIN_NAMES = ['CINDER', 'ROSE', 'AETHER', 'MOSS', 'GLASS', 'DUNE'], BR_HAT_NAMES = ['NO HAT', 'EMBER', 'CROWN', 'FROST'];
 const BR_SKIN_COSTS = [0, 0, 100, 150, 200, 250], BR_HAT_COSTS = [0, 75, 100, 125], BR_SPIN = 10;
 const BR_LOOKS = [...BR_SKIN_NAMES.map((name, id) => ({ kind: 'skin', id, name, cost: BR_SKIN_COSTS[id] })), ...BR_HAT_NAMES.map((name, id) => ({ kind: 'hat', id, name, cost: BR_HAT_COSTS[id] }))];
-const brOwns = (p, k) => (k.kind === 'skin' ? p.skins : p.hats).includes(k.id), brWheelPool = p => BR_LOOKS.filter(k => k.cost > 0 && !brOwns(p, k));
+const BR_TRAILS = [
+  { name: 'NONE', rarity: 'COMMON', color: '#8b8fa3', cost: 0, currency: 'coins' },
+  { name: 'EMBERDUST', rarity: 'UNCOMMON', color: '#ff8a3d', cost: 15, currency: 'souls' },
+  { name: 'FROSTGLASS', rarity: 'RARE', color: '#8ff5e6', cost: 35, currency: 'souls' },
+  { name: 'DUSK WISP', rarity: 'EPIC', color: '#c77dff', cost: 65, currency: 'souls' },
+  { name: 'STARFALL', rarity: 'LEGENDARY', color: '#ffd35a', cost: 120, currency: 'souls' }
+];
+const BR_SHOP_ITEMS = [
+  ...BR_SKIN_NAMES.map((name, id) => ({ kind: 'skin', id, name, rarity: id < 2 ? 'COMMON' : ['COMMON', 'COMMON', 'UNCOMMON', 'RARE', 'EPIC', 'LEGENDARY'][id], cost: BR_SKIN_COSTS[id], currency: 'coins' })),
+  ...BR_HAT_NAMES.map((name, id) => ({ kind: 'hat', id, name, rarity: ['COMMON', 'UNCOMMON', 'RARE', 'EPIC'][id], cost: BR_HAT_COSTS[id], currency: 'coins' })),
+  ...BR_TRAILS.map((item, id) => Object.assign({ kind: 'trail', id }, item))
+];
+const brOwns = (p, k) => (k.kind === 'skin' ? p.skins : k.kind === 'hat' ? p.hats : p.trails).includes(k.id), brWheelPool = p => BR_LOOKS.filter(k => k.cost > 0 && !brOwns(p, k));
 function brProfile() {
   const key = 'ew2.br.' + (typeof accountId === 'function' ? accountId() : 'none');
   try {
     const raw = typeof LS === 'object' ? JSON.parse(LS.get(key) || '{}') : {};
     const valid = (values, maxN) => Array.isArray(values) ? [...new Set(values.map(v => num(v, -1) | 0).filter(v => v >= 0 && v < maxN))] : null;
     const skins = valid(raw.skins, SKINS.length) || [0, clamp(num(G.skin, FORM.skin) | 0, 0, SKINS.length - 1)], hats = valid(raw.hats, BR_HAT_NAMES.length) || [0, clamp(num(G.hat, FORM.hat) | 0, 0, BR_HAT_NAMES.length - 1)];
-    if (!skins.length) skins.push(0); if (!hats.length) hats.push(0);
-    const p = { xp: max(0, num(raw.xp) | 0), elo: clamp(num(raw.elo, 1000) | 0, 0, 9999), wins: max(0, num(raw.wins) | 0), matches: max(0, num(raw.matches) | 0), kills: max(0, num(raw.kills) | 0), coins: max(0, num(raw.coins) | 0), souls: max(0, num(raw.souls) | 0), skins, hats };
+    const trails = valid(raw.trails, BR_TRAILS.length) || [0];
+    if (!skins.length) skins.push(0); if (!hats.length) hats.push(0); if (!trails.length) trails.push(0);
+    const p = { xp: max(0, num(raw.xp) | 0), elo: clamp(num(raw.elo, 1000) | 0, 0, 9999), wins: max(0, num(raw.wins) | 0), matches: max(0, num(raw.matches) | 0), kills: max(0, num(raw.kills) | 0), coins: max(0, num(raw.coins) | 0), souls: max(0, num(raw.souls) | 0), skins, hats, trails, updatedAt: max(0, num(raw.updatedAt)) };
+    if (raw.equipped && typeof raw.equipped === 'object') p.equipped = { skin: clamp(num(raw.equipped.skin) | 0, 0, SKINS.length - 1), hat: clamp(num(raw.equipped.hat) | 0, 0, BR_HAT_NAMES.length - 1), trail: clamp(num(raw.equipped.trail) | 0, 0, BR_TRAILS.length - 1) };
     // (kits unlocked before matches began empty-handed: no longer used, but not thrown away)
     if (Array.isArray(raw.kits)) p.kits = raw.kits.filter(k => typeof k === 'string').slice(0, 40);
     return p;
-  } catch (e) { return { xp: 0, elo: 1000, wins: 0, matches: 0, kills: 0, coins: 0, souls: 0, skins: [0], hats: [0] }; }
+  } catch (e) { return { xp: 0, elo: 1000, wins: 0, matches: 0, kills: 0, coins: 0, souls: 0, skins: [0], hats: [0], trails: [0], updatedAt: 0 }; }
 }
-function brSaveProfile(p) {
-  const key = 'ew2.br.' + (typeof accountId === 'function' ? accountId() : 'none');
+function brSaveProfile(p, sync = true) {
+  const owner = typeof accountId === 'function' ? accountId() : 'none', key = 'ew2.br.' + owner;
+  p.updatedAt = Date.now();
   if (typeof LS === 'object' && !LS.set(key, JSON.stringify(p))) { console.warn('Could not save Battle Royale progression'); return false; }
+  if (sync && typeof SAVE === 'object' && SAVE.db && typeof dpath === 'function') {
+    try { SAVE.db.doc(dpath('br-profile', owner)).set(p).catch(() => { }); } catch (e) { }
+  }
   return true;
+}
+async function brSyncProfile(owner) {
+  if (!SAVE.db || typeof dpath !== 'function') return;
+  const db = SAVE.db, ref = db.doc(dpath('br-profile', owner));
+  try {
+    const snap = await withTimeout(ref.get(), 9000);
+    if (accountId() !== owner || SAVE.db !== db) return;
+    const local = brProfile(), remote = snap && snap.exists ? snap.data() : null;
+    if (remote && num(remote.updatedAt) > local.updatedAt) {
+      brSaveProfile(remote, false);
+      const e = brProfile().equipped;
+      if (e) {
+        G.skin = e.skin; G.hat = e.hat; G.trail = e.trail; FORM.skin = e.skin; FORM.hat = e.hat;
+        if (ACCOUNT.active) { ACCOUNT.active.skin = e.skin; ACCOUNT.active.hat = e.hat; ACCOUNT.active.trail = e.trail; writeAccountProfiles(); }
+        if (G.p) { G.p.skin = e.skin; G.p.hat = e.hat; G.p.trail = e.trail; }
+      }
+    }
+    else await withTimeout(ref.set(local), 9000);
+  } catch (e) { }
 }
 function brPassLevel() { return floor(brProfile().xp / 1000); }
 const brTitle = lv => BR_TITLES[clamp(lv | 0, 0, BR_TITLES.length - 1)];
@@ -15286,15 +15744,29 @@ function brSpinSoulWheel() {
   BR.menuMsg = 'THE SOUL WHEEL GIVES YOU: ' + k.name + (k.kind === 'hat' ? ' (HAT)' : ' (SKIN)') + '. Wear it from the shop.'; sfx('quest', 0); return k;
 }
 function brShopCosmetic(kind, id) {
-  const p = brProfile(), isSkin = kind === 'skin', owned = isSkin ? p.skins : p.hats, costs = isSkin ? BR_SKIN_COSTS : BR_HAT_COSTS;
-  if (costs[id] === undefined) return false;
+  const item = BR_SHOP_ITEMS.find(k => k.kind === kind && k.id === id);
+  if (!item) return false;
+  const p = brProfile(), owned = kind === 'skin' ? p.skins : kind === 'hat' ? p.hats : p.trails;
   if (!owned.includes(id)) {
-    if (p.coins < costs[id]) { BR.menuMsg = 'You need ' + costs[id] + ' coins for that.'; sfx('deny'); return false; }
-    p.coins -= costs[id]; owned.push(id);
+    if (p[item.currency] < item.cost) { BR.menuMsg = 'You need ' + item.cost + ' ' + item.currency + ' for that.'; sfx('deny'); return false; }
+    p[item.currency] -= item.cost; owned.push(id);
   }
   if (!brSaveProfile(p)) { BR.menuMsg = 'Could not save your look.'; return false; }
-  if (isSkin) FORM.skin = G.skin = id; else FORM.hat = G.hat = id;
-  accountSaveProfile(); BR.menuMsg = 'WEARING: ' + (isSkin ? BR_SKIN_NAMES[id] : BR_HAT_NAMES[id]); sfx('ui'); return true;
+  if (kind === 'skin') FORM.skin = G.skin = id;
+  else if (kind === 'hat') FORM.hat = G.hat = id;
+  else { G.trail = id; if (G.p) G.p.trail = id; }
+  p.equipped = { skin: G.skin | 0, hat: G.hat | 0, trail: G.trail | 0 };
+  brSaveProfile(p);
+  accountSaveProfile(); BR.menuMsg = 'WEARING: ' + item.name; sfx('ui'); return true;
+}
+function brUnequipCosmetic(kind) {
+  if (kind === 'skin') FORM.skin = G.skin = 0;
+  else if (kind === 'hat') FORM.hat = G.hat = 0;
+  else if (kind === 'trail') G.trail = 0;
+  else return false;
+  if (G.p) { G.p.skin = G.skin; G.p.hat = G.hat; G.p.trail = G.trail | 0; }
+  accountSaveProfile();
+  BR.menuMsg = 'COSMETIC UNEQUIPPED'; sfx('ui'); return true;
 }
 function brRewardKill() { const p = brProfile(); p.souls++; brSaveProfile(p); }
 function brRewardMatch() {
@@ -15346,14 +15818,29 @@ const BR_FOOD = [['berries', 2, 3], ['meat', 1, 1], ['egg', 1, 2], ['glowcap', 1
 const BR_BUNDLE = [[['stick', 2, 4], ['fiber', 2, 4]], [['rock', 2, 3], ['flint', 1, 1]], [['log', 1, 2], ['resin', 1, 1]], [['bone', 2, 3]], [['rope', 1, 1], ['torch', 1, 2]], [['copper_ore', 2, 3], ['coal', 1, 1]], [['arrow', 3, 5]], [['hide', 1, 2], ['fiber', 2, 3]]];
 const randiF = (a, b) => floor(a + Math.random() * (b - a + 1));
 const brRoll = L => L.map(([id, a, b]) => [id, randiF(a, b)]).filter(e => IT[e[0]]);
+const wBrRollRarity = c => {
+  const r = Math.random();
+  if (c && c.crown) return r < .02 ? 5 : r < .14 ? 4 : r < .4 ? 3 : r < .7 ? 2 : r < .9 ? 1 : 0;
+  if (c && c.feast) return r < .01 ? 5 : r < .1 ? 4 : r < .35 ? 3 : r < .65 ? 2 : r < .92 ? 1 : 0;
+  if (c && c.rare) return r < .18 ? 2 : r < .55 ? 3 : r < .94 ? 4 : 5;
+  return r < .42 ? 0 : r < .72 ? 1 : r < .91 ? 2 : r < .99 ? 3 : r < .999 ? 4 : 5;
+};
 // a chest holds two or three things, and almost never a weapon: weapons are made
 function wBrLoot(c) {
   const out = [], R = Math.random;
-  if (c.feast) { out.push([fpick(BR_W[R() < .75 ? 2 : 1]), 1], ['br_draught', 1], [R() < .5 ? 'br_ward' : 'br_shard', 1]); return out; }
-  if (c.crown) { if (R() < .5) out.push([fpick(BR_W[R() < .8 ? 1 : 0]), 1]); else out.push(...brRoll([['copper_ore', 3, 4], ['tin_ore', 1, 2]])); out.push([R() < .5 ? 'br_draught' : 'br_salve', 1], ['br_shard', 1]); return out.slice(0, 3); }
+  c.rarity = wBrRollRarity(c);
+  c.rarityName = WBR_TIERS[c.rarity];
+  if (c.feast) { out.push([fpick(BR_W[c.rarity >= 4 ? 2 : c.rarity >= 3 ? 1 : 0]), 1], ['br_draught', 1], [R() < .5 ? 'br_ward' : 'br_shard', 1]); return out; }
+  if (c.crown) { if (R() < .5) out.push([fpick(BR_W[c.rarity >= 4 ? 2 : c.rarity >= 3 ? 1 : 0]), 1]); else out.push(...brRoll([['copper_ore', 3, 4], ['tin_ore', 1, 2]])); out.push([R() < .5 ? 'br_draught' : 'br_salve', 1], ['br_shard', 1]); return out.slice(0, 3); }
   out.push(...brRoll(fpick(BR_BUNDLE)).slice(0, c.rare ? 2 : 1));
   if (c.rare) { const r = R(); if (r < .12) out.push([fpick(BR_W[R() < .65 ? 0 : 1]), 1]); else if (r < .34) out.push([fpick(['hide_head', 'hide_body', 'hide_legs', 'hide_feet']), 1]); else if (r < .6) out.push(['br_shard', 1]); else out.push(['br_salve', 1]); }
   else if (R() < .045) out.push([fpick(BR_W[0]), 1]); else if (R() < .4) out.push(['br_salve', 1]); else out.push(...brRoll([fpick(BR_FOOD)]));
+  const topWeaponChance = c.rarity === 5 ? .35 : c.rarity === 4 ? .12 : c.rarity === 3 ? .025 : 0;
+  if (topWeaponChance && R() < topWeaponChance) out.push([fpick(BR_W[2]), 1]);
+  const siteLoot = {
+    fortress: ['iron_ore', 1, 2], bunker: ['coal', 2, 3], village: ['berries', 2, 3], temple: ['br_shard', 1, 1], outpost: ['copper_ore', 2, 4]
+  }[c.structure];
+  if (siteLoot) out.push(brRoll([siteLoot])[0]);
   return out.filter(e => IT[e[0]]).slice(0, 3);
 }
 
@@ -15401,8 +15888,17 @@ function brDeep(f) {
 }
 
 // ---------------- the fall: everyone comes down somewhere else ----------------
-// the island is cut into as many strips as there are Wakers, shuffled, and each comes down somewhere in their own
-function brSlots(seed, n) { const r = mulberry32((seed ^ 0x3C6EF372) >>> 0), a = []; for (let i = 0; i < n; i++) a.push(round(50 + (i + .12 + .76 * r()) * (WBRW - 100) / n)); for (let i = n - 1; i > 0; i--) { const j = floor(r() * (i + 1)), q = a[i]; a[i] = a[j]; a[j] = q; } return a; }
+// each Waker gets a seeded, shuffled strip, with a minimum distance between landings
+function brSlots(seed, n) {
+  const r = mulberry32((seed ^ 0x3C6EF372) >>> 0), usable = WBRW - 100, width = usable / max(1, n), a = [];
+  for (let i = 0; i < n; i++) {
+    let x = 50 + (i + .25 + r() * .5) * width, tries = 0;
+    while (tries++ < 20 && a.some(q => abs(q - x) < width * .52)) x = 50 + r() * usable;
+    x = clamp(round(x), 50, WBRW - 50); a.push(x);
+  }
+  for (let i = n - 1; i > 0; i--) { const j = floor(r() * (i + 1)), q = a[i]; a[i] = a[j]; a[j] = q; }
+  return a;
+}
 function brPlaceInSky(f, k) { f.slotX = (BR.slots[k] || WBRW / 2) * T; f.x = f.px = f.slotX; f.y = f.py = 8 * T + (k % 3) * 10; f.vx = f.vy = 0; f.onGround = false; f.glide = true; f.noHit = true; f.ward = 0; for (const s of f.scarf) { s.x = s.ox = f.x + 3; s.y = s.oy = f.y + 5; } }
 // hanging in the air until the horn
 function brHover(f) { f.px = f.x; f.py = f.y; f.vx = f.vy = 0; f.y = 8 * T + ((f.botI | 0) % 3) * 10 + sin(G.time * .05 + f.slotX) * 2; tickScarf(f); }
@@ -15446,7 +15942,7 @@ function wBrOpenChest(c, f) {
   const px = c.x * T + 4, py = c.y * T + 2; if (near(f)) sfx('craft', 0); burst(px, py, 10, c.rare ? ['#ffd35a', '#fff1a8'] : ['#ffb347', '#c98a5a'], 1.2, 24, { glow: 1 });
   const loot = wBrLoot(c);
   // what is inside is set down where it stands
-  if (f === G.p) { loot.forEach(([id, n], k) => spawnDrop(id, n, px + (k - (loot.length - 1) / 2) * 7, py, 0, 0)); return; }
+  if (f === G.p) { brSay(`${c.rarityName} CACHE`); loot.forEach(([id, n], k) => spawnDrop(id, n, px + (k - (loot.length - 1) / 2) * 7, py, 0, 0)); return; }
   if (f && f.br) for (const [id, n] of loot) wBrBotTake(f, id, n);
 }
 // what you drop when you fall: everything you carried
@@ -15706,7 +16202,7 @@ function wBrLeave() {
 // ---------------- what this computer says about itself ----------------
 function wBrSend() {
   const R = NET.R; if (!R || !R.connected()) return; BR.sentAt = performance.now();
-  const o = { v: 1, br: 1, ring: BR.code, mode: BR.matchType, n: G.nick, sk: G.skin | 0, sq: ++BR.sq, ph: BR.phase === 'lobby' ? 'L' : 'M', mi: BR.phase === 'lobby' ? '' : BR.mi, ld: 0 };
+  const o = { v: 1, br: 1, ring: BR.code, mode: BR.matchType, n: G.nick, sk: G.skin | 0, ht: G.hat | 0, tr: G.trail | 0, sq: ++BR.sq, ph: BR.phase === 'lobby' ? 'L' : 'M', mi: BR.phase === 'lobby' ? '' : BR.mi, ld: 0 };
   if (BR.phase !== 'lobby' && G.p) {
     const p = G.p, a = p.atk, W = heldOf(p);
     Object.assign(o, {
@@ -15754,7 +16250,7 @@ function wBrSaw(id, q, s) {
   if (!BR.mi || BR.phase === 'lobby' || q.mi !== BR.mi) { const f = NET.peers.get(id); if (f) { NET.peers.delete(id); f.gone = true; } return; }
   if (q.ld && q.ld.st === 'M' && q.ld.mi === BR.mi && !BR.lead) wBrFromLeader(id, q.ld);
   let f = NET.peers.get(id);
-  if (!f && BR.ro.includes(id)) { f = newFighter(num(s.x, 600), num(s.y, 300), { remote: true, peer: id, team: 'r:' + id, snaps: [], spawnT: 0, name: q.n, skin: q.sk, brIn: true, ward: 0, guest: q.guest }); NET.peers.set(id, f); G.fighters.push(f); }
+  if (!f && BR.ro.includes(id)) { f = newFighter(num(s.x, 600), num(s.y, 300), { remote: true, peer: id, team: 'r:' + id, snaps: [], spawnT: 0, name: q.n, skin: q.sk, hat: clamp(num(s.ht) | 0, 0, 3), trail: clamp(num(s.tr) | 0, 0, BR_TRAILS.length - 1), brIn: true, ward: 0, guest: q.guest }); NET.peers.set(id, f); G.fighters.push(f); }
   if (f && typeof s.x === 'number') {
     netApply(f, s); f.ward = clamp(num(s.wd) | 0, 0, 100); f.glide = !!s.gl; f.noHit = !!s.ob; if (typeof s.cz === 'string' && s.cz) f.cause = s.cz.replace(/[^a-z .,'-]/gi, '').slice(0, 40);
     if (Array.isArray(s.gr)) { f.gearObj = {}; GEAR_SLOTS.forEach((slot, k) => { const id = s.gr[k]; if (IT[id] && IT[id].type === 'armor' && IT[id].slot === slot) f.gearObj[slot] = { id, n: 1 }; }); f.grKey = GEAR_SLOTS.map(slot => f.gearObj[slot] ? f.gearObj[slot].id : '').join(','); f.gskin = null; }
@@ -15898,7 +16394,7 @@ function wBrRtcTick() {
 // the host lets a friend into the lobby
 function wBrRtcWelcome(P, m) {
   if ([...COOP.peers.values()].filter(Q => Q.ok).length >= WBR_PARTY - 1) { sendTo(P, { t: 'kick' }); return; }
-  P.name = cleanName(m.n) || P.name || 'WAKER'; P.skin = clamp(m.sk | 0, 0, SKINS.length - 1); P.ok = true; P.pres = null;
+  P.name = cleanName(m.n) || P.name || 'WAKER'; P.skin = clamp(m.sk | 0, 0, SKINS.length - 1); P.hat = clamp(m.ht | 0, 0, 3); P.trail = clamp(m.tr | 0, 0, BR_TRAILS.length - 1); P.ok = true; P.pres = null;
   sendTo(P, { t: 'wbrw', v: NETV, id: P.id, host: coopName(), code: BR.code, mode: BR.matchType }); COOP.note = ''; sfx('quest', 0); BR.rtcDirty = true;
 }
 function wBrRtcJoin(m) {
@@ -15969,16 +16465,16 @@ function wDrawBrForm(c) {
     button(c, fx + third, actionY, third - 2, 17, 'HOST', () => go(() => { COOP.br = true; wBrLobbyEnter('rtc', 'friends'); }), { off: !netOK() });
     button(c, fx + third * 2, actionY, third - 2, 17, 'SOLO', () => go(() => wBrSolo()));
   } else {
-    const wheel = tab === 'wheel', rowH = wheel ? 14 : 16, listY = contentY + (tiny ? 24 : wheel ? 34 : 18), listBottom = tiny ? (wheel ? actionY - 5 : y + h - 14) : actionY - 22, rows = BR.menuRows = max(1, floor((listBottom - listY) / rowH)), N = BR_LOOKS.length, pool = brWheelPool(p);
+    const wheel = tab === 'wheel', rowH = wheel ? 14 : 16, listY = contentY + (tiny ? 24 : wheel ? 34 : 18), listBottom = tiny ? (wheel ? actionY - 5 : y + h - 14) : actionY - 22, rows = BR.menuRows = max(1, floor((listBottom - listY) / rowH)), items = wheel ? BR_LOOKS : BR_SHOP_ITEMS, N = items.length, pool = brWheelPool(p);
     BR.menuScroll = clamp(BR.menuScroll, 0, max(0, N - rows));
     if (wheel && (!tiny || !BR.menuMsg)) { const t = tiny ? `${BR_SPIN} SOULS A SPIN` : fw < 220 ? `A soul for every kill. ${BR_SPIN} souls a spin.` : `Every kill is a soul. ${BR_SPIN} souls turn the wheel, and it gives you a look you don't own.`; wrapText(t, fw).slice(0, 2).forEach((l, i) => drawText(c, l, fx, contentY + i * 9, '#d8d4e6')); }
     drawText(c, `${wheel ? 'LOOKS' : 'STYLE'} ${BR.menuScroll + 1}-${min(N, BR.menuScroll + rows)}/${N}`, fx, listY - 12, '#8b8fa3');
     button(c, fx + fw - 32, listY - 14, 14, 12, '<', () => { BR.menuScroll = max(0, BR.menuScroll - rows); }); button(c, fx + fw - 16, listY - 14, 14, 12, '>', () => { BR.menuScroll = min(max(0, N - rows), BR.menuScroll + rows); });
     c.save(); c.beginPath(); c.rect(fx, listY, fw, listBottom - listY); c.clip();
     for (let i = 0; i < rows; i++) {
-      const k = BR_LOOKS[BR.menuScroll + i]; if (!k) continue; const ry = listY + i * rowH, own = brOwns(p, k), on = k.kind === 'skin' ? G.skin === k.id : G.hat === k.id, name = `${k.kind.toUpperCase()}: ${k.name}`;
+      const k = items[BR.menuScroll + i]; if (!k) continue; const ry = listY + i * rowH, own = brOwns(p, k), on = k.kind === 'skin' ? G.skin === k.id : k.kind === 'hat' ? G.hat === k.id : G.trail === k.id, name = `${k.kind.toUpperCase()}: ${k.name}`;
       if (wheel) { const tag = own ? 'OWNED' : k.cost ? 'ON THE WHEEL' : 'FREE IN THE SHOP'; c.fillStyle = i % 2 ? '#211e2c' : '#191622'; c.fillRect(fx, ry, fw, rowH - 1); drawText(c, name, fx + 4, ry + 3, own ? '#fff' : '#8b8fa3'); textS(c, tag, fx + fw - textW(tag) - 5, ry + 3, own ? '#7ddc6f' : k.cost ? '#ffd35a' : '#8b8fa3'); }
-      else { const label = on ? 'ON' : own ? 'USE' : `BUY ${k.cost}`, bw = max(44, textW(label) + 10); drawText(c, name, fx + 3, ry + 4, '#d8d4e6'); button(c, fx + fw - bw, ry, bw, rowH - 1, label, () => brShopCosmetic(k.kind, k.id), { on }); }
+      else { const label = on ? 'ON' : own ? 'USE' : `BUY ${k.cost}`, bw = max(44, textW(label) + 10); drawText(c, name, fx + 3, ry + 4, '#d8d4e6'); button(c, fx + fw - bw, ry, bw, rowH - 1, label, () => brShopCosmetic(k.kind, k.id), { on, off: !own && p[k.currency] < k.cost }); }
     }
     c.restore();
     if (wheel) { const t = !pool.length ? 'ALL LOOKS OWNED' : tiny ? `WHEEL ${p.souls}/${BR_SPIN}` : `TURN THE WHEEL  ·  ${BR_SPIN} SOULS`; button(c, fx, actionY, fw, 17, t, () => brSpinSoulWheel(), { off: !pool.length || p.souls < BR_SPIN }); if (!tiny && pool.length && p.souls < BR_SPIN && !BR.menuMsg) drawText(c, `${BR_SPIN - p.souls} more souls needed`, fx, actionY - 12, '#8b8fa3'); }
@@ -16211,7 +16707,11 @@ function wBrDropGlow(w, d, x, y) { const k = wBrTier(d.id); if (k < 1) return; w
 //  turns to fire. Everything comes from the match's seed, so every
 //  computer raises the same island.
 // ============================================================
-const WBRW = 3500, WBRH = 286, BR_GROUND = 92, BR_HOT = 238, BR_LAVA = 264;
+// 3500 paces x 8 game units = 28000 game units. 3750 paces brings the horizontal
+// field to exactly 30000 game units while preserving the proven vertical/depth model.
+const WBRW = 3750, WBRH = 286, BR_GROUND = 92, BR_HOT = 238, BR_LAVA = 264;
+const WBR_MAP_UNITS = WBRW * 8;
+const BR_STRUCTURE_TYPES = ['fortress', 'bunker', 'village', 'temple', 'outpost'];
 const WBR_BIOMES = ['moor', 'mosswood', 'willowmere', 'thorn', 'fen', 'dunes', 'scoria', 'reach', 'ash'];
 const WBR_SURF = { moor: [GRASS, DIRT], mosswood: [GRASS, DIRT], willowmere: [GRASS, MUD], thorn: [GRASS, DIRT], fen: [MUD, PEAT], dunes: [SAND, SANDSTONE], scoria: [SAND, SANDSTONE], reach: [SNOW, STONE], ash: [ASH, STONE] };
 const WBR_WALL = { moor: W_DIRT, mosswood: W_DIRT, willowmere: W_DIRT, thorn: W_DIRT, fen: W_DIRT, dunes: W_SAND, scoria: W_SAND, reach: W_STONE, ash: W_ASH };
@@ -16256,7 +16756,7 @@ function wBrChest(x, y, rare, o = {}) {
   if (!inW(x, y) || tiles[y * WW + x] !== AIR && !(TP[tiles[y * WW + x]].decor && !TP[tiles[y * WW + x]].dyn) || !TP[tileAt(x, y + 1)].solid && tileAt(x, y + 1) !== PLATFORM) return null;
   for (const c of BR.chests) if (abs(c.x - x) < 4 && abs(c.y - y) < 4) return null;
   tiles[y * WW + x] = AIR;
-  const c = { i: BR.chests.length, x, y, rare: !!rare, cave: !!o.cave, high: !!o.high, crown: !!o.crown, feast: !!o.feast, open: false, t: 0 }; BR.chests.push(c); return c;
+  const c = { i: BR.chests.length, x, y, rare: !!rare, cave: !!o.cave, high: !!o.high, crown: !!o.crown, feast: !!o.feast, structure: o.structure || '', open: false, t: 0 }; BR.chests.push(c); return c;
 }
 // the island's own crowns: mangroves in the fen, pines on the reach, maples on the scoria, palms on the dunes (the open world grows only oak and willow)
 const wCrownFor = (b, kind, r) => b === 'mosswood' ? (r < .72 ? CROWN.oak : kind) : b === 'willowmere' ? (r < .75 ? CROWN.willow : kind) : b === 'fen' ? (r < .7 ? CROWN.mangrove : kind) : b === 'reach' ? (r < .42 ? CROWN.pine : kind) : b === 'scoria' ? (r < .55 ? CROWN.maple : kind) : b === 'dunes' ? CROWN.palm : kind;
@@ -16290,7 +16790,7 @@ function wGenRoyale(seed) {
   buildWildProps(); SEED = seed >>> 0; rng = mulberry32(SEED); DIM = 0; resetWorld(WBRW, WBRH); WORLD.arena = true; WORLD.royale = true; WORLD.endless = 0; BR.wildLand = true;
   SPAWN_X = WBRW >> 1; SHRINE_X = SHRINE2_X = MINE_X = FORGE_X = GATE_X = SKY_X = BLADE_X = SPIRE_X = REACH_X = RUST_X = -100000; SHRINE_Y = SHRINE2_Y = GATE_Y = MINE_Y = FORGE_Y = SKY_Y = 0;
   BASE_Y = BR_GROUND; DEEP_Y = 9999; DRIFT_Y = -99; VIL_Y = -999; brDealLands();
-  BR.chests = []; BR.pois = []; BR.caves = []; BR.nests = []; BR.lakes = [];
+  BR.chests = []; BR.pois = []; BR.caves = []; BR.nests = []; BR.lakes = []; BR.structures = [];
   // the lie of the land: each land's own shape, melting into the next; cliffs at the world's two ends
   const raw = new Float32Array(WBRW);
   for (let x = 0; x < WBRW; x++) { let s = 0; for (const [b, w] of brSegWeights(x, 110)) s += w * LFN[b](x) * (b === 'reach' ? .44 : b === 'scoria' ? .7 : .62); let h = BR_GROUND + (fbm(x * .0023, 3.3, 3) - .5) * 44 + s; const e = min(x, WBRW - 1 - x); if (e < 18) h -= (18 - e) * 3.2; raw[x] = h < 56 ? 56 - sqrt(56 - h) * 1.6 : min(h, 128); }
@@ -16362,6 +16862,7 @@ function wGenRoyale(seed) {
     for (let q = x; q <= x + 12; q++) if (q !== x + 6) { tiles[py * WW + q] = PLATFORM; for (let y = py - 4; y < py; y++) if (TP[tiles[y * WW + q]].stalk) tiles[y * WW + q] = AIR; } if (k % 3 === 0) wBrChest(x + 3, py - 1, false, { high: true }); reserve(x - 1, x + 13, 1);
   }
   brWilds(lakeAtX);
+  wBrDistributeStructures(lakeAtX);
   for (let x = 0; x < WBRW; x++) SKYL[x] = heights[x] + 3;
   for (const [x, tr] of [...treeTops]) if (!TP[tileAt(x, tr.y)].stalk) treeTops.delete(x);
   for (const q of PROPS) bucketAdd(PROPB, q); for (const q of FGP) bucketAdd(FGPB, q);
@@ -16399,7 +16900,7 @@ function brWilds(lakeAtX) {
     // the small things you can gather by hand
     if (shore) { if (r < .55) tiles[i] = REED; else if (r < .6) propC(WILD.reeds[randi(0, 1)], x, gy, { lit: 1 }); continue; }
     if (b === 'dunes') tiles[i] = r < .05 ? BONES : r < .1 ? PEBBLE : r < .17 ? DEADBUSH : r < .2 ? STICKS : AIR;
-    else if (b === 'scoria') tiles[i] = r < .1 ? PEBBLE : r < .16 ? DEADBUSH : r < .2 ? STICKS : r < .22 ? BERRY : AIR;
+    else if (b === 'scoria') tiles[i] = r < .1 ? PEBBLE : r < .16 ? DEADBUSH : r < .22 ? STICKS : r < .38 ? TALLGRASS : r < .42 ? BERRY : AIR;
     else if (b === 'ash') tiles[i] = r < .06 ? BONES : r < .12 ? PEBBLE : r < .2 ? DEADBUSH : r < .24 ? STICKS : AIR;
     else if (b === 'reach') tiles[i] = r < .07 ? CRYSTAL : r < .12 ? PEBBLE : r < .16 ? STICKS : r < .24 ? DEADBUSH : r < .26 ? BERRY : AIR;
     else if (b === 'fen') tiles[i] = r < .34 ? REED : r < .4 ? STICKS : r < .44 ? BERRY : r < .48 ? PEBBLE : r < .5 ? GLOWCAP : AIR;
@@ -16497,6 +16998,51 @@ function wBrPOI(b, cx, name) {
   }
   reserve(cx - 30, cx + 30, 2);
 }
+// the island carries a fixed five kinds of small structure in every match:
+// Five landmark types are spread across the field, so the Crown is not the only destination.
+function wBrDistributeStructures(lakeAtX) {
+  BR.structures = [];
+  for (let k = 0; k < 30; k++) {
+    const type = BR_STRUCTURE_TYPES[k % BR_STRUCTURE_TYPES.length];
+    let cx = -1;
+    for (let tries = 0; tries < 12 && cx < 0; tries++) {
+      const x = round((k + .5) * WBRW / 30 + rand(-68, 68));
+      if (x < 45 || x > WBRW - 46 || lakeAtX[x] || RESV[x]) continue;
+      const gy = heights[x];
+      if (abs(heights[x - 1] - gy) > 2 || abs(heights[x + 1] - gy) > 2) continue;
+      if (BR.pois.some(q => abs(q.x - x) < 65) || BR.structures.some(s => abs(s.x - x) < 62)) continue;
+      cx = x;
+    }
+    if (cx < 0) continue;
+    const gy = heights[cx];
+    wBrFlat(cx - 7, cx + 7, gy, wBrBio(cx));
+    if (type === 'fortress') {
+      for (const ox of [-8, 8]) for (let y = gy - 9; y < gy; y++) tiles[y * WW + cx + ox] = CINDERBRICK;
+      for (let x = cx - 8; x <= cx + 8; x++) if (abs(x - cx) > 1) tiles[(gy - 9) * WW + x] = BRICK;
+      for (let y = gy - 5; y < gy; y++) { tiles[y * WW + cx - 4] = BRICK; tiles[y * WW + cx + 4] = BRICK; }
+    } else if (type === 'bunker') {
+      brDig(cx, gy + 8, 9, 6, W_STONE, .16);
+      for (let x = cx - 8; x <= cx + 8; x++) tiles[(gy + 2) * WW + x] = CINDERBRICK;
+      for (let y = gy + 2; y < gy + 8; y++) { tiles[y * WW + cx - 8] = BRICK; tiles[y * WW + cx + 8] = BRICK; }
+      for (let y = gy + 1; y < gy + 8; y++) if (tileAt(cx, y) === AIR) tiles[y * WW + cx] = LADDER;
+    } else if (type === 'village') {
+      house(cx - 6, gy, 8, 5, 3, { door: 2 });
+      house(cx + 3, gy, 6, 5, 2, { door: 2 });
+      dyn(cx + 8, gy - 1, BENCH);
+    } else if (type === 'temple') {
+      for (const ox of [-7, -3, 3, 7]) for (let y = gy - 8; y < gy; y++) tiles[y * WW + cx + ox] = CINDERBRICK;
+      for (let x = cx - 7; x <= cx + 7; x++) tiles[(gy - 8) * WW + x] = BRICK;
+      for (let x = cx - 7; x <= cx + 7; x++) tiles[(gy - 1) * WW + x] = PLATFORM;
+    } else {
+      for (const ox of [-5, 5]) for (let y = gy - 11; y < gy; y++) tiles[y * WW + cx + ox] = BEAM;
+      for (let x = cx - 6; x <= cx + 6; x++) tiles[(gy - 11) * WW + x] = PLATFORM;
+      for (let y = gy - 10; y < gy - 3; y++) if (tileAt(cx, y) === AIR) tiles[y * WW + cx] = LADDER;
+    }
+    if (k % 5 === 0) wBrChest(cx + (type === 'village' ? 8 : k % 10 ? 3 : -3), type === 'bunker' ? gy + 1 : gy - 1, k % 15 === 0, { structure: type, high: type === 'outpost' });
+    BR.structures.push({ x: cx, y: gy, type, kind: 'structure' });
+    reserve(cx - 10, cx + 10, 1);
+  }
+}
 // a small picture of the whole island for the map and the strip along the top
 function wBrMapArt() {
   const s = 2, c = document.createElement('canvas'); c.width = ceil(WBRW / s); c.height = ceil(WBRH / s); const x = c.getContext('2d'), im = x.createImageData(c.width, c.height), d = im.data, hex = {}; const rgbOf = h => hex[h] || (hex[h] = [parseInt(h.slice(1, 3), 16), parseInt(h.slice(3, 5), 16), parseInt(h.slice(5, 7), 16)]);
@@ -16517,7 +17063,7 @@ function wBrNewBot(i, skill) {
 }
 function wBrSkill() { const d = SETTINGS.diff; return d === 'hard' ? frand(.5, .78) : d === 'normal' ? frand(.36, .6) : frand(.24, .46); }
 // how good a thing is to fight with, for an echo choosing
-const brWorth = id => { const W = IT[id]; return !W || W.fist || W.type !== 'weapon' ? 0 : 1 + wBrTier(id) * .9 + brDmgOf(W) * .05; };
+const brWorth = id => { const W = IT[id]; return !W || W.fist || W.type !== 'weapon' ? 0 : 1 + wBrTier(id) * .9 + brDmgOf(W) * .05 + (W.legendary ? .25 : 0); };
 function wBrBotTake(f, id, n) {
   const it = IT[id], br = f.br; if (!it || !br) return;
   if (it.type === 'weapon') { if (it.set === 'bow' && br.arrows < 4) { br.bag[id] = 1; return; } if (brWorth(id) > brWorth(f.wid)) { br.backup = f.wid; f.wid = id; } }
@@ -16533,14 +17079,35 @@ const BR_MAKE = [
   { id: 'stone_club', need: { stick: 1, rock: 2, fiber: 3 } }, { id: 'flint_spear', need: { flint: 1, stick: 2, fiber: 3 } }, { id: 'flint_daggers', need: { flint: 2, stick: 1, fiber: 6 } }, { id: 'bone_club', need: { bone: 3, fiber: 3 } }, { id: 'bone_spear', need: { bone: 2, stick: 2, fiber: 3 } },
   { id: 'flint_battleaxe', need: { flint: 4, stick: 2, fiber: 6 } }, { id: 'bone_cleaver', need: { bone: 4, stick: 1, fiber: 3 } }, { id: 'bone_nunchaku', need: { bone: 2, fiber: 9 } },
   { id: 'copper_shortsword', need: { copper_ore: 6, stick: 1, coal: 1 }, forge: 1 }, { id: 'copper_spear', need: { copper_ore: 9, stick: 2, coal: 1 }, forge: 1 }, { id: 'copper_mace', need: { copper_ore: 9, stick: 1, coal: 1 }, forge: 1 },
-  { id: 'bronze_sword', need: { copper_ore: 9, tin_ore: 3, stick: 1, coal: 1 }, forge: 1 }, { id: 'bronze_spear', need: { copper_ore: 9, tin_ore: 3, stick: 2, coal: 1 }, forge: 1 }, { id: 'iron_sword', need: { iron_ore: 12, stick: 1, coal: 2 }, forge: 1 }, { id: 'iron_spear', need: { iron_ore: 12, stick: 2, coal: 2 }, forge: 1 }
+  { id: 'bronze_sword', need: { copper_ore: 9, tin_ore: 3, stick: 1, coal: 1 }, forge: 1 }, { id: 'bronze_spear', need: { copper_ore: 9, tin_ore: 3, stick: 2, coal: 1 }, forge: 1 }, { id: 'iron_sword', need: { iron_ore: 12, stick: 1, coal: 2 }, forge: 1 }, { id: 'iron_spear', need: { iron_ore: 12, stick: 2, coal: 2 }, forge: 1 },
+  ...BR_LEGENDARY_RECIPES.map(r => ({ id: r.id, need: r.need, forge: 1, legendary: true }))
 ];
+const brLegendaryOpen = () => BR.ring.n >= 2 || BR.lastAlive <= 10;
+function brLegendaryTarget(f) {
+  if (!f || !f.br || !brLegendaryOpen()) return null;
+  const br = f.br;
+  if (br.legendaryTarget) return BR_LEGENDARY_RECIPES.find(r => r.id === br.legendaryTarget) || null;
+  let choice;
+  if (f.hp < 65) choice = BR_LEGENDARY_RECIPES.find(r => r.id === 'soulreaper');
+  else {
+    const liked = BR_LEGENDARY_RECIPES.filter(r => r.set === br.likes);
+    choice = liked.length ? liked[f.botI % liked.length] : BR_LEGENDARY_RECIPES[f.botI % BR_LEGENDARY_RECIPES.length];
+  }
+  if (BR.ring.n >= 4 && f.hp >= 65 && (br.bold > .6 || BR.lastAlive <= 4)) choice = BR_LEGENDARY_RECIPES.find(r => r.id === 'earthshatter');
+  br.legendaryTarget = choice.id;
+  return choice;
+}
 const brHas = (bag, need) => { for (const k in need) if ((bag[k] || 0) < need[k]) return false; return true; };
 const brPay = (bag, need) => { for (const k in need) bag[k] -= need[k]; };
 function brForgeNear(f, r = 24) { for (const o of tileObjs.values()) if ((o.id === ANVIL || o.id === ANVIL2) && abs(o.x * T - f.x) < r * T && abs(o.y * T - f.y) < 22 * T) return o; return null; }
 function brBotCraft(f) {
-  const br = f.br, bag = br.bag, forge = brForgeNear(f); let best = null, bs = brWorth(f.wid) + .12 + (IT[f.wid] && IT[f.wid].set === br.likes ? .4 : 0);
-  for (const m of BR_MAKE) { if (m.forge && !forge || !IT[m.id] || !brHas(bag, m.need)) continue; const s = brWorth(m.id) + (IT[m.id].set === br.likes ? .4 : 0); if (s > bs) { bs = s; best = m; } }
+  const br = f.br, bag = br.bag, forge = brForgeNear(f), target = brLegendaryTarget(f); let best = null, bs = brWorth(f.wid) + .12 + (IT[f.wid] && IT[f.wid].set === br.likes ? .4 : 0);
+  if (IT[f.wid] && IT[f.wid].legendary) bs += 1.5;
+  for (const m of BR_MAKE) {
+    if (m.id === f.wid || m.forge && !forge || !IT[m.id] || !brHas(bag, m.need) || m.legendary && (!target || target.id !== m.id)) continue;
+    const s = brWorth(m.id) + (IT[m.id].set === br.likes ? .4 : 0) + (m.legendary ? 1.5 + min(.5, BR.ring.n * .1) : 0);
+    if (s > bs) { bs = s; best = m; }
+  }
   if (best) { brPay(bag, best.need); br.backup = f.wid === 'fists' ? null : f.wid; f.wid = best.id; if (best.arrows) br.arrows += best.arrows; br.made = (br.made | 0) + 1; if (near(f)) { sfx('craft', 60); sparks(f.x + 3, f.y + 10, 8, 0, 1.6); } return true; }
   // with something to fight with, tools next: a pick for ore, an axe for wood
   if (f.wid !== 'fists' && !br.pick && brHas(bag, { flint: 2, stick: 1, fiber: 3 })) { brPay(bag, { flint: 2, stick: 1, fiber: 3 }); br.pick = 1; return true; }
@@ -16660,10 +17227,11 @@ function brClimbOut(f, I) {
 const brInZone = (x, pad = 30) => { const z = BR.storm; if (brInHazard(x, pad)) return false; return !z || (x > z.L + pad && x < z.R - pad && (!(z.warn || z.moving) || (x > z.nL + pad && x < z.nR - pad))); };
 function brSkipped(br, x) { const t = br.skip.get(x); if (t === undefined) return false; if (BR.t > t) { br.skip.delete(x); return false; } return true; }
 function brGatherGoal(f) {
-  const br = f.br, bag = br.bag, cx = floor((f.x + 3) / T), want = new Set(), armed = f.wid !== 'fists', lim = armed ? 4 : 2;
+  const br = f.br, bag = br.bag, cx = floor((f.x + 3) / T), want = new Set(), armed = f.wid !== 'fists', lim = armed ? 4 : 2, legendary = brLegendaryTarget(f);
   if ((bag.stick || 0) < lim + 1) for (const t of [STICKS, BUSH, DEADBUSH, BERRY]) want.add(t); if ((bag.fiber || 0) < lim * 3) for (const t of [TALLGRASS, FLOWER, REED, DEADBUSH]) want.add(t); if ((bag.rock || 0) < 3 || (bag.flint || 0) < lim) want.add(PEBBLE); if ((bag.bone || 0) < 4) want.add(BONES); if (f.hp < 90 || (bag.berries || 0) < 3) { want.add(BERRY); want.add(GLOWCAP); }
+  if (legendary && (bag.bone || 0) < (legendary.need.bone || 0)) want.add(BONES);
   if (br.axe && (bag.log || 0) < 2) for (let d = 2; d < 60; d++) for (const s of [br.dir, -br.dir]) { const x = cx + s * d; if (treeTops.has(x) && !brSkipped(br, x) && brInZone(x * T) && TP[tileAt(x, heights[x] - 1)].stalk) return { kind: 'chop', x, y: heights[x] - 1 }; }
-  if (br.pick && Math.random() < .5) { let best = null, bd = 99; for (let x = max(6, cx - 34); x <= min(WBRW - 7, cx + 34); x++) for (let y = heights[x] + 1; y < heights[x] + 8; y++) { const t = tileAt(x, y); if ((t === COPPER || t === TIN || t === COAL || t === IRON) && !brSkipped(br, x) && abs(x - cx) < bd && brInZone(x * T)) { bd = abs(x - cx); best = { kind: 'mine', x, y }; } } if (best) return best; }
+  if (br.pick && Math.random() < .5) { let best = null, bd = 99; const needed = legendary ? Object.entries(legendary.need).filter(([id, n]) => (bag[id] || 0) < n).map(([id]) => ({ copper_ore: COPPER, tin_ore: TIN, coal: COAL, iron_ore: IRON })[id]).filter(Boolean) : []; for (let x = max(6, cx - 34); x <= min(WBRW - 7, cx + 34); x++) for (let y = heights[x] + 1; y < heights[x] + 8; y++) { const t = tileAt(x, y); if ((needed.length ? needed.includes(t) : [COPPER, TIN, COAL, IRON].includes(t)) && !brSkipped(br, x) && abs(x - cx) < bd && brInZone(x * T)) { bd = abs(x - cx); best = { kind: 'mine', x, y }; } } if (best) return best; }
   if (want.size) for (let d = 0; d < 110; d++) for (const s of d ? [br.dir, -br.dir] : [1]) { const x = cx + s * d; if (x < 8 || x > WBRW - 9 || brSkipped(br, x) || !brInZone(x * T)) continue; const y = heights[x] - 1, t = tileAt(x, y); if (want.has(t)) return { kind: 'pick', x, y, t }; }
   return null;
 }
@@ -16672,7 +17240,19 @@ function brChestGoal(f, reach) {
   for (const c of BR.chests) { if (c.open || c.hid || c.cave || brSkipped(br, c.x)) continue; const x = c.x * T + 4, dx = abs(x - cx); if (dx > reach || !brInZone(x)) continue; const dy = (c.y + 1) * T - fy; if (dy < -8 * T) continue; const d = dx + abs(dy) * 2; if (d < bd) { bd = d; best = c; } }
   return best ? { kind: 'chest', x: best.x, y: best.y, c: best } : null;
 }
-function brForgeGoal(f) { const bag = f.br.bag; if (!BR_MAKE.some(m => m.forge && brHas(bag, m.need) && brWorth(m.id) > brWorth(f.wid) + .12)) return null; let best = null, bd = 260; for (const o of tileObjs.values()) if (o.id === ANVIL && abs(o.y - heights[clamp(o.x, 0, WBRW - 1)]) < 12) { const d = abs(o.x - f.x / T); if (d < bd && brInZone(o.x * T)) { bd = d; best = o; } } return best ? { kind: 'forge', x: best.x, y: best.y } : null; }
+function brForgeGoal(f) { const bag = f.br.bag, target = brLegendaryTarget(f), current = brWorth(f.wid) + (IT[f.wid] && IT[f.wid].legendary ? 1.5 + min(.5, BR.ring.n * .1) : 0); if (!BR_MAKE.some(m => m.forge && (!m.legendary || target && target.id === m.id) && m.id !== f.wid && brHas(bag, m.need) && brWorth(m.id) + (m.legendary ? 1.5 + min(.5, BR.ring.n * .1) : 0) > current + .12)) return null; let best = null, bd = 260; for (const o of tileObjs.values()) if (o.id === ANVIL && abs(o.y - heights[clamp(o.x, 0, WBRW - 1)]) < 12) { const d = abs(o.x - f.x / T); if (d < bd && brInZone(o.x * T)) { bd = d; best = o; } } return best ? { kind: 'forge', x: best.x, y: best.y } : null; }
+function brLegendaryGoal(f) {
+  const recipe = brLegendaryTarget(f); if (!recipe) return null;
+  if (f.wid === recipe.id) return null;
+  const br = f.br, missing = Object.entries(recipe.need).filter(([id, n]) => (br.bag[id] || 0) < n);
+  if (!missing.length) return brForgeGoal(f);
+  const oreTile = { iron_ore: IRON, copper_ore: COPPER, tin_ore: TIN, coal: COAL };
+  if (br.pick) {
+    const wanted = missing.map(([id]) => oreTile[id]).filter(t => t !== undefined);
+    if (wanted.length) { const cx = floor((f.x + 3) / T); let best = null, bd = 99; for (let x = max(6, cx - 34); x <= min(WBRW - 7, cx + 34); x++) for (let y = heights[x] + 1; y < heights[x] + 8; y++) { const t = tileAt(x, y); if (wanted.includes(t) && !brSkipped(br, x) && abs(x - cx) < bd && brInZone(x * T)) { bd = abs(x - cx); best = { kind: 'mine', x, y }; } } if (best) return best; }
+  }
+  return brGatherGoal(f);
+}
 function brHuntGoal(f) {
   // nobody knows where everyone is, but smoke, birds and noise say roughly where someone is
   let best = null, bd = BR.ring.n >= 3 ? 1e9 : 2600; for (const o of G.fighters) { if (o === f || !o.brIn || o.dead || o.team === f.team || o.noHit) continue; const d = abs(o.x - f.x) * (o === G.p ? 1 : 1.05) + frand(700); if (d < bd) { bd = d; best = o; } }
@@ -16680,6 +17260,7 @@ function brHuntGoal(f) {
 }
 function brPlan(f) {
   const br = f.br, armed = f.wid !== 'fists', z = BR.storm, r = Math.random(); if (br.dirT > 0) br.dirT -= 40;
+  const legendary = brLegendaryGoal(f); if (legendary && r < (BR.ring.n >= 4 ? .78 : .58)) return legendary;
   if (!armed) { const c = brChestGoal(f, 200), g = brGatherGoal(f); if (c && (!g || r < .4)) return c; if (g) return g; }
   else {
     const late = BR.ring.n >= 2 || BR.lastAlive <= 10, early = BR.t < 60 * 60 * 3; const forge = brForgeGoal(f); if (forge) return forge;
@@ -16926,7 +17507,7 @@ async function iceDone(pc, ms) {
 // a direct line (WebRTC) when the networks allow it; otherwise the relay (3-relay.js)
 function wireDC(P, dc) {
   P.dc = dc;
-  dc.onopen = () => { P.open = true; P.heard = performance.now(); if (netGuest() && !P.ok) sendTo(P, { t: 'hello', v: NETV, n: coopName(), sk: G.skin | 0, ht: G.hat | 0 }); };
+  dc.onopen = () => { P.open = true; P.heard = performance.now(); if (netGuest() && !P.ok) sendTo(P, { t: 'hello', v: NETV, n: coopName(), sk: G.skin | 0, ht: G.hat | 0, tr: G.trail | 0 }); };
   dc.onclose = () => { if (P.dc === dc) P.dc = null; if (rlyFallback(P)) return; P.open = false; coopLost(P); };
   dc.onmessage = e => { P.heard = performance.now(); try { onRaw(P, e.data); } catch (err) { console.warn('coop', err); } };
 }
@@ -17035,7 +17616,7 @@ function onMsg(P, m, raw) {
   if (!H && COOP.entering && m.t !== 'bye' && m.t !== 'kick') { COOP.backlog.push([P, m, raw]); return; }
   if ((COOP.br || m.t === 'brw' || m.t === 'wbrw') && brRtcMsg(P, m)) return;
   switch (m.t) {
-    case 'hello': if (H && !P.ok && COOP.br) { brRtcWelcome(P, m); return; } if (!H || P.ok) return; P.name = cleanName(m.n) || P.name || 'WAKER'; P.skin = clamp(m.sk | 0, 0, SKINS.length - 1); P.hat = clamp(m.ht | 0, 0, 3); hostWelcome(P); return;
+    case 'hello': if (H && !P.ok && COOP.br) { brRtcWelcome(P, m); return; } if (!H || P.ok) return; P.name = cleanName(m.n) || P.name || 'WAKER'; P.skin = clamp(m.sk | 0, 0, SKINS.length - 1); P.hat = clamp(m.ht | 0, 0, 3); P.trail = clamp(m.tr | 0, 0, BR_TRAILS.length - 1); hostWelcome(P); return;
     case 'welcome': if (H || COOP.joined) return; guestEnter(m); return;
     case 'me': {
       const id = H ? P.id : m.id; if (!id || id === COOP.me) return; const Q = H ? P : COOP.peers.get(id) || peerFor(id, m);
@@ -17144,13 +17725,13 @@ function fighterState(f, me) {
   const a = f.atk, held = me ? (visHeld(f) || null) : IT[f.wid];
   const o = { x: r1(f.x), y: r1(f.y), vx: r2(f.vx), vy: r2(f.vy), f: f.face, g: f.onGround ? 1 : 0, st: f.dead ? 4 : f.state === 'dodge' ? 2 : f.hurtT > 0 ? 3 : a ? 1 : 0, hp: max(0, round(f.hp)), mhp: round(f.maxhp || 100),
     w: held && held.id ? held.id : '', m: a ? a.id : '', wa: a && a.W ? a.W.id : '', an: f.atkN | 0, mp: a ? a.phase : 0, mt: a ? r1(a.pt) : 0, ma: a ? r2(a.aimA || 0) : 0, md: a ? round(a.dist || 40) : 0, mc: a ? a.charge | 0 : 0, mf: a ? a.face : f.face, tp: f.tempo | 0,
-    tt: f.toolT | 0, tc: f.toolCharge | 0, tw: f.swingTool ? (f.swingTool === HAND ? 'hand' : f.swingTool.id || '') : '', tk: r2(f.toolK || 0), tn: f.throwT | 0, iv: f.inv > 0 || f.iDodge > 0 ? 1 : 0, dd: f.dodgeDir | 0, n: f.name || '', sk: f.skin | 0 };
+    tt: f.toolT | 0, tc: f.toolCharge | 0, tw: f.swingTool ? (f.swingTool === HAND ? 'hand' : f.swingTool.id || '') : '', tk: r2(f.toolK || 0), tn: f.throwT | 0, iv: f.inv > 0 || f.iDodge > 0 ? 1 : 0, dd: f.dodgeDir | 0, n: f.name || '', sk: f.skin | 0, ht: f.hat | 0, tr: f.trail | 0 };
   if (f.hat) o.ht = f.hat | 0;   // (only said when there is one: a hat is chosen before the journey and never changes on the way)
   if (me) { o.gr = GEAR_SLOTS.map(s => G.gear && G.gear[s] ? G.gear[s].id : '').join(','); o.d = DIM; if (G.away) o.aw = 1; }
   o.ts = round(performance.now()); return o;
 }
 function makeRemote(Q, s) {
-  const f = newFighter(num(s.x, G.p ? G.p.x : 0), num(s.y, G.p ? G.p.y : 0), { remote: true, coop: true, peer: Q.id, team: 'p', name: cleanName(s.n) || Q.name || 'WAKER', skin: clamp(s.sk | 0, 0, SKINS.length - 1), hat: clamp(s.ht | 0, 0, 3), snaps: [], spawnT: 30 });
+  const f = newFighter(num(s.x, G.p ? G.p.x : 0), num(s.y, G.p ? G.p.y : 0), { remote: true, coop: true, peer: Q.id, team: 'p', name: cleanName(s.n) || Q.name || 'WAKER', skin: clamp(s.sk | 0, 0, SKINS.length - 1), hat: clamp(s.ht | 0, 0, 3), trail: clamp(s.tr | 0, 0, BR_TRAILS.length - 1), snaps: [], spawnT: 30 });
   f.wid = ''; Q.f = f; G.fighters.push(f); return f;
 }
 function pushSnap(f, s) {
@@ -17164,7 +17745,7 @@ function pushSnap(f, s) {
     for (const q of S) if (isFinite(q.ts)) q.t = q.ts + f.toff; s.t = s.ts + f.toff; f.delay = clamp((f.gap || 50) + 1.5 * f.jit + 35, 85, 650);
   } else s.t = now;
   S.push(s); if (S.length > 30) S.shift(); f.away = !!s.aw;
-  if (s.n && !f.hollow) f.name = cleanName(s.n) || f.name; if (s.sk !== undefined) f.skin = clamp(s.sk | 0, 0, f.hollow ? 11 : SKINS.length - 1); if (s.ht !== undefined) f.hat = clamp(s.ht | 0, 0, 3);
+  if (s.n && !f.hollow) f.name = cleanName(s.n) || f.name; if (s.sk !== undefined) f.skin = clamp(s.sk | 0, 0, f.hollow ? 11 : SKINS.length - 1); if (s.ht !== undefined) f.hat = clamp(s.ht | 0, 0, 3); if (s.tr !== undefined) f.trail = clamp(s.tr | 0, 0, BR_TRAILS.length - 1);
   f.hp = num(s.hp, f.hp); f.maxhp = num(s.mhp, f.maxhp || 100); f.inDim = s.d;
   if (s.gr !== undefined && s.gr !== f.grKey) { f.grKey = s.gr; const ids = String(s.gr).split(','); f.gearObj = {}; GEAR_SLOTS.forEach((k, i) => { if (IT[ids[i]] && IT[ids[i]].type === 'armor') f.gearObj[k] = { id: ids[i], n: 1 }; }); f.gskin = null; }
 }
@@ -17440,7 +18021,7 @@ function coopTick() {
   if (COOP.t % 120 === 60 && UI.open === 'stn' && UI.stn && COOP.myLock === UI.stn.i) netLock(UI.stn.i, true);
   if (COOP.br) return;
   if (G.state !== 'play' || !G.p) return;
-  if (COOP.t % 3 === 0) { const s = fighterState(G.p, true); s.n = coopName(); s.sk = G.skin | 0; sendAll({ t: 'me', id: COOP.me, s }, null, 'me:' + COOP.me); }
+  if (COOP.t % 3 === 0) { const s = fighterState(G.p, true); s.n = coopName(); s.sk = G.skin | 0; s.ht = G.hat | 0; s.tr = G.trail | 0; sendAll({ t: 'me', id: COOP.me, s }, null, 'me:' + COOP.me); }
   if (COOP.t % 3 === 1) flushTiles(); if (COOP.t % 6 === 2 && COOP.stns.size) { flushTiles(); flushStns(); }
   if (netHost()) {
     if (COOP.t % 5 === 0) for (const P of COOP.peers.values()) if (P.ok && !P.ghostPeer) sendFoes(P);
@@ -18128,7 +18709,7 @@ function writeAccountProfiles() { return LS.set('ew2.accounts', JSON.stringify(A
 function accountBoot() {
   ACCOUNT.profiles = readAccountProfiles();
   ACCOUNT.active = null; ACCOUNT.loginId = null; ACCOUNT.form = 'list'; ACCOUNT.note = ''; ACCOUNT.busy = false;
-  LS.del('ew2.active'); SAVE.list = [];
+  LS.del('ew2.active'); SAVE.list = []; G.trail = 0;
 }
 function cleanAccountName(s) { s = String(s || '').trim().replace(/[^A-Za-z0-9 _-]/g, '').slice(0, 18); return s; }
 function accountSalt() {
@@ -18177,7 +18758,7 @@ async function accountCreate(name, password, confirm, skin, hat) {
   try {
     const salt = accountSalt(), hash = await accountPasswordHash(password, salt);
     const firstAccount = !ACCOUNT.profiles.some(p => p.id !== 'guest');
-    const p = { id: Date.now().toString(36) + ((Math.random() * 46656) | 0).toString(36), name, skin: clamp(skin | 0, 0, SKINS.length - 1), hat: clamp(hat | 0, 0, 3), salt, hash };
+    const p = { id: Date.now().toString(36) + ((Math.random() * 46656) | 0).toString(36), name, skin: clamp(skin | 0, 0, SKINS.length - 1), hat: clamp(hat | 0, 0, 3), trail: 0, salt, hash };
     ACCOUNT.profiles.push(p);
     if (!writeAccountProfiles()) { ACCOUNT.profiles.pop(); ACCOUNT.note = 'Could not save this account in this browser.'; return false; }
     accountSwitch(p.id);
@@ -18192,7 +18773,7 @@ async function accountCreate(name, password, confirm, skin, hat) {
 }
 function accountSwitch(id) {
   const p = ACCOUNT.profiles.find(v => v.id === id); if (!p) return false;
-  ACCOUNT.active = p; LS.del('ew2.active'); G.nick = p.name; G.skin = clamp(p.skin | 0, 0, SKINS.length - 1); G.hat = clamp(p.hat | 0, 0, 3);
+  ACCOUNT.active = p; LS.del('ew2.active'); G.nick = p.name; G.skin = clamp(p.skin | 0, 0, SKINS.length - 1); G.hat = clamp(p.hat | 0, 0, 3); G.trail = clamp(p.trail | 0, 0, BR_TRAILS.length - 1);
   // (the name shown to other Wakers follows the game's own rule for names: capitals, twelve letters)
   FORM.nick = cleanName(p.name); FORM.skin = G.skin; FORM.hat = G.hat;
   SAVE.list = readLocalIndex(); sortWorlds(); ACCOUNT.note = 'Logged in as ' + p.name + '.';
@@ -18231,14 +18812,18 @@ function accountLogout() {
   if (G.state === 'play' && WORLD.id && !WORLD.arena) saveWorld(true);
   if (COOP.role) coopLeave();
   ACCOUNT.active = null; ACCOUNT.loginId = null; ACCOUNT.form = 'list'; ACCOUNT.note = 'Signed out.';
-  SAVE.list = []; LS.del('ew2.active'); G.hat = 0;
+  SAVE.list = []; LS.del('ew2.active'); G.hat = 0; G.trail = 0;
   G.state = 'accounts'; UI.open = null; UI.focus = null; UI.held = null;
 }
 // the account remembers the look last worn (its name stays the one it was made with: it is what you sign in as)
 function accountSaveProfile() {
-  if (!ACCOUNT.active) return;
-  ACCOUNT.active.skin = G.skin; ACCOUNT.active.hat = G.hat;
-  writeAccountProfiles();
+  if (ACCOUNT.active) {
+    ACCOUNT.active.skin = G.skin; ACCOUNT.active.hat = G.hat; ACCOUNT.active.trail = G.trail | 0;
+    writeAccountProfiles();
+  }
+  if (typeof brProfile === 'function' && typeof brSaveProfile === 'function') {
+    const p = brProfile(); p.equipped = { skin: G.skin | 0, hat: G.hat | 0, trail: G.trail | 0 }; brSaveProfile(p);
+  }
 }
 function readLocalIndex() {
   try {
@@ -18257,6 +18842,7 @@ function saveBoot() {
     Promise.all([window.claude.use('user'), window.claude.use('db')]).then(async ([user, db]) => {
       if (!user || !db) return; const uid = await user.id(); if (!uid) return;
       SAVE.db = db; SAVE.uid = uid; SAVE.status = 'syncing';
+      brSyncProfile(owner); ffaSyncProfile(owner);
       try {
         const snap = await withTimeout(db.doc(dpath('index', owner)).get(), 9000);
         if (accountId() !== owner) return;
@@ -19071,7 +19657,8 @@ cv.addEventListener('contextmenu', e => e.preventDefault());
 cv.addEventListener('wheel', e => {
   e.preventDefault(); const d = sign(e.deltaY);
   if (G.state === 'worlds' || G.state === 'accounts') { UI.scroll = max(0, UI.scroll + d); return; }
-  if (G.state === 'brform' && BR.wild && BR.menuTab !== 'queue') { BR.menuScroll = clamp(BR.menuScroll + d, 0, max(0, BR_LOOKS.length - BR.menuRows)); return; }
+  if (G.state === 'shop') { COSMETIC_SHOP.scroll = clamp(COSMETIC_SHOP.scroll + d, 0, max(0, BR_SHOP_ITEMS.filter(k => k.kind === COSMETIC_SHOP.tab).length - COSMETIC_SHOP.rows)); return; }
+  if (G.state === 'brform' && BR.wild && BR.menuTab !== 'queue') { BR.menuScroll = clamp(BR.menuScroll + d, 0, max(0, (BR.menuTab === 'wheel' ? BR_LOOKS : BR_SHOP_ITEMS).length - BR.menuRows)); return; }
   if (G.state !== 'play') return;
   if (UI.open === 'map') mapZoom(d);
   else if (UI.open) UI.scroll = max(0, UI.scroll + d * (UI.open === 'inv' ? 1 : 2));
@@ -19362,7 +19949,7 @@ function syncMobileControls() {
   if (!mobileDevice) return; // (a mouse's clicks and keys are its own business)
   const play = G.state === 'play' && !G.dialog && !G.cine, visible = play && !UI.open;
   mobileControls.classList.toggle('visible', visible); mobileControls.classList.toggle('panel', play && !!UI.open); mobileControls.setAttribute('aria-hidden', String(!play));
-  // no button for what would do nothing: there is no pack in the Cinder Ring, no map there or before you have drawn one, and nobody to talk to alone
+  // no button for what would do nothing: there is no pack in the FFA Arcade, no map there or before you have drawn one, and nobody to talk to alone
   if (visible) { const ring = WORLD.arena && !WORLD.royale; touchPackBtn.classList.toggle('off', ring); touchMapBtn.classList.toggle('off', ring || (!WORLD.royale && !hasUtil('fieldmap'))); touchChatBtn.classList.toggle('off', !COOP.role); touchPactBtn.classList.toggle('off', !wildOn()); }
   if (!visible && (stickPointer !== null || mouse.l || mouse.r)) clearMobileInput();
   // a finger still on DASH when the buttons go or you fall (a panel opens, you leave for the title) no longer holds Shift:

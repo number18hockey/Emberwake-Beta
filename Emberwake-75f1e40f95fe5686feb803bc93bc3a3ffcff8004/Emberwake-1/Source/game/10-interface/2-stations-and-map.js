@@ -115,12 +115,8 @@ function drawStation(c) {
     const e = list[k + UI.scroll]; if (!e) break; const r = e.r, x = L.x, y = L.y + k * 19, hov = inR(x, y, L.w, 18), outId = r.out || Object.keys(r.need)[0];
     if (hov) { c.fillStyle = '#2b2740'; c.fillRect(x, y, L.w, 18); }
     slotBox(c, x, y, false, hov && e.can); c.globalAlpha = e.can ? 1 : .4; drawStack(c, { id: outId, n: r.out ? r.n : 1 }, x, y); c.globalAlpha = 1;
-    drawText(c, r.out ? IT[r.out].name : 'Sift ' + IT[outId].name.toLowerCase(), x + 21, y + 1, e.can ? '#fff' : '#8b8fa3');
-    let nx = x + 21; const parts = Object.keys(r.need).map(q => [`${r.need[q]} ${IT[q].name}`, countItem(q) >= r.need[q] || WORLD.mode === 1]);
-    if (r.fuel) parts.push([`${r.fuel} fuel`, fuelHave() >= r.fuel || WORLD.mode === 1]); for (const q of r.keep || []) parts.push([`(${IT[q].name})`, hasItem(q) || WORLD.mode === 1]);
-    if (!e.lvlOk) parts.unshift(['needs ' + LVL_NEED[S.kind === 'armr' ? 'armr' : S.kind === 'pot' ? 'pot' : 'anvil'][e.r.lvl], false]);
-    for (const [s, ok] of parts) { if (nx > x + L.w - 8) break; nx += drawText(c, s, nx, y + 10, ok ? '#7ddc6f' : '#e2483b') + 4; }
-    if (hov) { tip = r.out ? itemTip(IT[r.out]) : [['Shake out of it:', '#ffd35a'], [r.loot.map(l => IT[l[0]].name).join(', '), '#b9bdd0']]; if (r.temp && !craftEasy()) tip.push([`needs heat ${r.temp}${r.shut ? ', damper shut' : ''}`, '#ff8a3d']); if (r.t) tip.push([`takes ${round(r.t / 60)}s`, '#8ff5e6']); if (r.band) tip.push([`heat band ${r.band}`, '#ff8a3d']); }
+    drawRecipeRow(c, r, x, y, L.w, e.lvlOk);
+    if (hov) tip = recipeTip(r, e.lvlOk);
     hit(x, y, L.w, 18, () => pickRecipe(e, S, st));
   }
   if (list.length > rows) drawText(c, `${UI.scroll + 1}-${min(list.length, UI.scroll + rows)}/${list.length} wheel`, L.x + L.w - 70, B.y + B.h - 9, '#6a6485');

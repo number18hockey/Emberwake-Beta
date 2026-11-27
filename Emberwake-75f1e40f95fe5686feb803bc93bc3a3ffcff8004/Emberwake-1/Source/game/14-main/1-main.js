@@ -488,7 +488,7 @@ function frameStep(now) {
     G.time++; if (G.state !== 'play') { G.clock = (G.clock + 1 / 20000) % 1; atmoTick(); } updateSun(); tickParts(); const c = G.cam; c.px = c.x; c.py = c.y;
     if (G.state !== 'play' && G.state !== 'intro') { c.x += .3; if (WORLD.endless) { streamTo(c.x + VS.vw / 2); if (c.x > (SPAWN_X + 600) * T) c.x = c.px = (SPAWN_X - 200) * T; } else if (c.x > WW * T - VS.vw - 2) c.x = c.px = 0; const hx = clamp(floor((c.x + VS.vw / 2) / T), 0, WW - 1); c.y += (camY(heights[hx] * T - VS.vh * .62) - c.y) * .02; c.x = camX(c.x); }
     if (G.state === 'intro') G.introT++;
-    if (G.state === 'title') BR.wild = false;   // the Wilds is left behind with its screens: from the home page everything is the Trials' and the Ring's again
+    if (G.state === 'title') BR.wild = false;   // the Wilds is left behind with its screens: from the home page everything is the Trials' and the FFA Arcade's again
     if (BR.on && G.state === 'brlobby') brLobbyTick(); openTick();
     G.shake *= .86; G.flash *= .88; acc = 1;
     if (WORLD.arena && G.state === 'play' && G.time % 3 === 0) netSend();
@@ -596,7 +596,8 @@ cv.addEventListener('wheel', e => {
   // a list or a scrolling box of the menu kit under the mouse (not the map: its wheel zooms)
   { const s = UI.open !== 'map' && (G.state !== 'play' || UI.open) && kitScrollerAt(mouse.ux, mouse.uy); if (s) { s.by(d); return; } }
   if (G.state === 'worlds' || G.state === 'accounts') { UI.scroll = max(0, UI.scroll + d); return; }
-  if (G.state === 'brform' && BR.wild && BR.menuTab !== 'queue') { BR.menuScroll = clamp(BR.menuScroll + d, 0, max(0, BR_LOOKS.length - BR.menuRows)); return; }
+  if (G.state === 'shop') { COSMETIC_SHOP.scroll = clamp(COSMETIC_SHOP.scroll + d, 0, max(0, BR_SHOP_ITEMS.filter(k => k.kind === COSMETIC_SHOP.tab).length - COSMETIC_SHOP.rows)); return; }
+  if (G.state === 'brform' && BR.wild && BR.menuTab !== 'queue') { BR.menuScroll = clamp(BR.menuScroll + d, 0, max(0, (BR.menuTab === 'wheel' ? BR_LOOKS : BR_SHOP_ITEMS).length - BR.menuRows)); return; }
   if (G.state !== 'play') return;
   if (UI.open === 'map') mapZoom(d);
   else if (UI.open) UI.scroll = max(0, UI.scroll + d * (UI.open === 'inv' ? 1 : 2));

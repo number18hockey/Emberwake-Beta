@@ -17,10 +17,12 @@ async def main():
     h = await H().start(mode='none')
     try:
         await h.ev(SETUP.replace('@SEED', '4021'))
-        island = await h.ev("({ w: WW, h: WH, lands: new Set(BR.segs).size, chests: BR.chests.length, caves: BR.caves.length, places: BR.pois.length, trees: treeTops.size, pack: inv.filter(Boolean).length, slots: [INV_N, hotN()], bots: [...BR.bots.values()].map(f => f.wid + ':' + Object.keys(f.br.bag).length).filter(s => s !== 'fists:0').length, sky: G.fighters.every(f => f.y < 20 * T && f.glide), spread: new Set(G.fighters.map(f => Math.floor(f.x / T / 100))).size })")
+        island = await h.ev("({ w: WW, h: WH, units: WBR_MAP_UNITS, lands: new Set(BR.segs).size, chests: BR.chests.length, caves: BR.caves.length, places: BR.pois.length, structures: BR.structures.length, structureNames: [...new Set(BR.structures.map(s => s.type))].sort(), slotMin: Math.min(...BR.slots.map((x,i,a) => i ? Math.abs(x-a[i-1]) : 1e9).filter(x => x < 1e9)), slotSpread: new Set(BR.slots.map(x => Math.floor(x / 125))).size, trees: treeTops.size, pack: inv.filter(Boolean).length, slots: [INV_N, hotN()], bots: [...BR.bots.values()].map(f => f.wid + ':' + Object.keys(f.br.bag).length).filter(s => s !== 'fists:0').length, sky: G.fighters.every(f => f.y < 20 * T && f.glide), spread: new Set(G.fighters.map(f => Math.floor(f.x / T / 100))).size })")
         print('island:', island)
-        assert island['w'] == 3500, 'the island should be 3500 paces across'
+        assert island['w'] == 3750 and island['units'] == 30000, 'the island should be 3750 paces / 30000 game units across'
         assert island['lands'] == 9 and island['caves'] >= 12, 'nine kinds of land, and caves with places of their own'
+        assert 20 <= island['structures'] <= 30 and island['structureNames'] == ['bunker', 'fortress', 'outpost', 'temple', 'village'], 'the five requested landmarks should distribute about 30 sites'
+        assert island['slotSpread'] >= 24, 'player drops should spread across the island'
         assert island['chests'] <= 60, 'chests should be few'
         assert island['pack'] == 0 and island['bots'] == 0, 'nobody should start with anything'
         assert island['slots'] == [20, 10], 'a crafter needs a full pack and hotbar'
@@ -33,13 +35,31 @@ async def main():
         print('fall:', hold, 'landed', await h.ev("[Math.round(G.p.x / T), !G.p.glide, Math.round(G.p.hp), G.p.noHit]"))
         assert await h.ev("!G.p.glide && !G.p.noHit && G.p.hp === 100"), 'you should glide down unhurt'
 
-        loot = await h.ev("""(() => { const all = [], out = { most: 0, weapons: 0, bows: 0, speed: 0, n: 0 };
-          for (let k = 0; k < 60; k++) for (const c of BR.chests) { const l = wBrLoot(c); out.n++; out.most = Math.max(out.most, l.length); if (!c.feast && !c.crown) for (const [id] of l) { if (IT[id].type === 'weapon') out.weapons++; if (id === 'bow') out.bows++; } }
-          const c = BR.chests.find(c => !c.hid && !c.open); put(G.p, c.x, c.y - 2); G.drops.length = 0; wBrOpenChest(c, G.p); out.drops = G.drops.length; out.speed = Math.max(0, ...G.drops.map(d => Math.hypot(d.vx, d.vy))); out.pct = +(out.weapons / out.n * 100).toFixed(1); return out; })()""")
+        loot = await h.ev("""(() => { const out = { most: 0, weapons: 0, bows: 0, speed: 0, n: 0, rarities: new Set(), special: 0 };
+          for (let k = 0; k < 60; k++) for (const c of BR.chests) { const l = wBrLoot(c); out.n++; out.rarities.add(c.rarityName); out.most = Math.max(out.most, l.length); if (c.crown || c.feast || c.cave || c.structure) out.special++; if (!c.feast && !c.crown) for (const [id] of l) { if (IT[id].type === 'weapon') out.weapons++; if (id === 'bow') out.bows++; } }
+          const c = BR.chests.find(c => !c.hid && !c.open); put(G.p, c.x, c.y - 2); G.drops.length = 0; wBrOpenChest(c, G.p); out.drops = G.drops.length; out.speed = Math.max(0, ...G.drops.map(d => Math.hypot(d.vx, d.vy))); out.pct = +(out.weapons / out.n * 100).toFixed(1);
+          const oldRandom = Math.random, values = [0, .7, .9, .98, .997, .9995];
+          try {
+            out.tierCoverage = values.map(value => { Math.random = () => value; return WBR_TIERS[wBrRollRarity(null)]; });
+            out.ashfallTierCoverage = values.map(value => { Math.random = () => value; return BR_TIERS[brRollTier(false)]; });
+            Math.random = () => .5;
+            out.structureLoot = [['fortress', 'iron_ore'], ['bunker', 'coal'], ['village', 'berries'], ['temple', 'br_shard'], ['outpost', 'copper_ore']]
+              .map(([structure, item]) => [structure, wBrLoot({ structure }).some(([id]) => id === item)]);
+            const rolls = [.9995, ...Array(20).fill(0)]; Math.random = () => rolls.shift() ?? 0;
+            const mythic = {}; const mythicLoot = wBrLoot(mythic);
+            out.mythicHasTopWeapon = mythic.rarity === 5 && mythicLoot.some(([id]) => BR_W[2].includes(id));
+          } finally { Math.random = oldRandom; }
+          out.rarities = [...out.rarities]; return out; })()""")
         print('loot:', loot)
         assert loot['most'] <= 3, 'a chest holds at most three things'
         assert loot['pct'] < 12 and loot['bows'] == 0, 'a weapon in a chest should be rare, and never a Dawnstring Bow'
         assert loot['speed'] < .6, 'what is in a chest is set down, not thrown'
+        tiers = ['COMMON', 'UNCOMMON', 'RARE', 'EPIC', 'LEGENDARY', 'MYTHIC']
+        assert loot['rarities'] and set(loot['rarities']).issubset(tiers)
+        assert loot['tierCoverage'] == tiers and loot['ashfallTierCoverage'] == tiers, 'both arenas should retain Legendary and include Mythic'
+        assert all(present for _, present in loot['structureLoot']), 'each landmark should award its matching resource'
+        assert loot['mythicHasTopWeapon'], 'Mythic caches should be able to award a top-tier weapon'
+        assert loot['special'] > 0, 'caves, crowns, feasts and structure sites should offer special loot'
 
         # gather by hand: a click on grass, sticks and pebbles
         await h.ev("quiet(); put(G.p, 1200); bare(1200); G.drops.length = 0; inv.fill(null); setTile(1202, heights[1202] - 1, STICKS); setTile(1198, heights[1198] - 1, PEBBLE); 0")

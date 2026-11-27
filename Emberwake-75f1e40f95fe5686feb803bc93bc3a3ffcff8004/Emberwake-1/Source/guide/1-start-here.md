@@ -1,6 +1,6 @@
 # Start here
 
-Emberwake is a 2D pixel-art open-world game in the spirit of Terraria. Dig, build, craft and fight across an endless world and seven other worlds beneath and above it, alone or with up to three friends. Fighting is about timing: blows in time come faster and faster, and only then do quick hands pay. There are two arenas too: quick duels in the Cinder Ring, and the Ashfall Trials, a survival match for twelve, or for thirty-two in the Wilds. No internet is needed to play alone.
+Emberwake is a 2D pixel-art open-world game. Dig, build, craft and fight across an endless world and seven other worlds beneath and above it, alone or with up to three friends. Fighting is about timing, not mashing: blows in time come faster and faster, and only then do quick hands pay. The FFA Arcade (it took the place of the Cinder Ring) has ten weapon-focused arenas, for practice against three echo bots or for private matches with friends by code. The Ashfall Trials, a survival match for twelve, and the Wilds, a survival match for thirty-two, are arenas of their own. No internet is needed to play alone.
 
 ![The home screen: alone, with friends, the arenas](pictures/title.jpg)
 
