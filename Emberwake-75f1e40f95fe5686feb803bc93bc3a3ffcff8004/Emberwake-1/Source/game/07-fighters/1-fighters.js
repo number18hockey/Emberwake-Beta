@@ -406,15 +406,50 @@ function fighterPose(f, al) {
 const TORCH_HELD = { held: null, grip: [2, 5] };
 // what the rig shows: a tool the belt brought to hand mid-swing, else what you hold
 function visHeld(f) { if (f.isPlayer && (f.toolT > 0 || f.toolCharge > 0) && f.swingTool && f.swingTool.held && !f.atk) return f.swingTool; if (f.isPlayer && (f.toolT > 0 || f.toolCharge > 0) && !f.atk && f.swingTool === HAND) return null; if (f === G.p) return f.atk && f.atk.W ? f.atk.W : heldItem() || heldOf(f); return heldOf(f); }
+function drawBrTrail(x, f, trail) {
+  const speed = hypot(f.vx || 0, f.vy || 0);
+  if (!f.trail || !trail || speed <= .6) return;
+  const d = -f.face, phase = G.time * .18 + (f.runPh || 0) * .35, strength = clamp((speed - .35) / 2.2, .35, 1);
+  const ribbon = (color, width, offset, wave) => {
+    x.globalAlpha = strength * .7; x.strokeStyle = color; x.lineWidth = width; x.lineCap = 'round';
+    x.beginPath(); x.moveTo(d * 3, -8 + offset);
+    x.bezierCurveTo(d * 10, -12 + offset + sin(phase + wave) * 2, d * 21, -3 + offset + sin(phase + wave + 1) * 3, d * 32, -8 + offset + sin(phase + wave + 2) * 2);
+    x.stroke();
+  };
+  x.save();
+  if (f.trail === 1) {
+    ribbon('#ff7a2a', 2.2, 0, 0); ribbon('#ffd35a', 1, 1, 1.7);
+  } else if (f.trail === 2) {
+    ribbon('#4fd8c8', 2, -1, 0); ribbon('#c9fff6', 1, 2, 2.2); ribbon('#8ff5e6', 1, -4, 4.1);
+  } else if (f.trail === 3) {
+    ribbon('#8f55d8', 2.4, 0, 0); ribbon('#e0d2ff', 1, -2, 2.6);
+  } else if (f.trail === 4) {
+    ribbon('#ffb52e', 2.5, 0, 0); ribbon('#fff1a8', 1.2, 1, 2); ribbon('#ffffff', .8, -3, 4);
+  }
+  for (let i = 0; i < (f.trail === 2 ? 8 : 6); i++) {
+    const q = ((G.time * .13 + i * .19 + (f.runPh || 0) * .015) % 1 + 1) % 1;
+    const px = d * (4 + q * 29), py = -8 + sin(phase + i * 2.1) * (2 + q * 3), fade = strength * (1 - q) * (.65 + .35 * sin(phase * 2 + i));
+    x.globalAlpha = fade;
+    if (f.trail === 1) {
+      x.fillStyle = i % 3 ? '#ff8a3d' : '#fff1a8'; x.fillRect(round(px), round(py), i % 3 ? 2 : 1, i % 3 ? 2 : 1);
+      if (i % 3 === 0) { x.fillStyle = '#ffd35a'; x.fillRect(round(px), round(py + 2), 1, 2); }
+    } else if (f.trail === 2) {
+      x.fillStyle = i % 2 ? '#c9fff6' : '#8ff5e6'; x.fillRect(round(px), round(py), 2, 2);
+      x.fillRect(round(px + (i % 2 ? 1 : -1)), round(py - 2), 1, 2); x.fillRect(round(px + (i % 2 ? 1 : -1)), round(py + 2), 1, 2);
+    } else if (f.trail === 3) {
+      x.save(); x.translate(round(px), round(py)); x.rotate(PI / 4); x.fillStyle = i % 2 ? '#c77dff' : '#e0d2ff'; x.fillRect(-1, -1, 3, 3); x.restore();
+    } else if (f.trail === 4) {
+      x.fillStyle = i % 2 ? '#ffd35a' : '#ffffff'; x.fillRect(round(px - 2), round(py), 5, 1); x.fillRect(round(px), round(py - 2), 1, 5);
+      x.fillRect(round(px - 1), round(py - 1), 3, 3);
+    }
+  }
+  x.restore();
+}
 function drawFighterRig(x, f, al, rx, ry) {
   const P = fighterPose(f, al), it = visHeld(f), S = f === G.p ? gearSkin(SK[f.skin] || SK[0], f.skin) : f.coop && f.gearObj ? gearSkinOf(f) : SK[f.skin] || SK[0];
   P.hat = f.hat || 0;
   const trail = BR_TRAILS[f.trail | 0];
-  if (f.trail && trail && hypot(f.vx || 0, f.vy || 0) > .6) {
-    x.save(); x.globalAlpha = .8; x.fillStyle = trail.color;
-    for (let i = 0; i < 4; i++) { const drift = (G.time + i * 3) % 8; x.fillRect(-f.face * (7 + i * 3 + drift), -4 + i * 4, i < 2 ? 2 : 1, 2); }
-    x.restore();
-  }
+  drawBrTrail(x, f, trail);
   if (S.scarf) { const sc = f.scarf; for (let i = 1; i < sc.length; i++) seg(x, sc[i - 1].x - rx, sc[i - 1].y - ry, sc[i].x - rx, sc[i].y - ry, i < 3 ? 2.4 : 2, S.scarf[i % 2]); }
   let wp = null, wp2 = null; if (it) { if (it.held || it.chuks) { wp = it; if (it.dual) wp2 = it; } else if (it.id === 'torch') { TORCH_HELD.held = SPR.i_torch; wp = TORCH_HELD; } }
   x.save(); x.scale(f.face, 1); drawRig(x, P, S, wp, wp2); x.restore();
