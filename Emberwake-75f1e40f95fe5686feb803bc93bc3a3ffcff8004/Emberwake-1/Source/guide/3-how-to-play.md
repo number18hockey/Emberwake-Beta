@@ -47,9 +47,11 @@ The **workshops** turn raw things into materials: the kiln (brick, glass, charco
 
 Only one of the first two burns in you at a time: drink another and it takes the place of the first. The time left shows with your boons.
 
-**The mirror** stands up beside you with the weapon you hold. It repeats your last few steps, then fights with a mind of its own. It hits more lightly than you do and can be beaten down. You can have one mirror at a time, and after it goes home it needs a minute before it will come again.
+**The mirror** stands up beside you with the weapon you hold. It repeats your last few steps, then fights with a mind of its own. It hits more lightly than you do and can be beaten down. You can have one mirror at a time, and it will not come again until a minute after you called it: it stays forty seconds, so that is twenty seconds after it goes home.
 
 The brews want things from the two new lands (see *No two worlds alike*): a **willow feather** for Quickstep, **willow eggs** for Emberheart, a **moonseed** for the Doublesoul Draught. Two eggs, salt and berries at the Hearth Oven make a **Willow Omelet**, a **HEARTY** meal. The recipe book (**B**) has every recipe.
+
+Feathers can be had in any world: besides the willow hen, the **galewisp** that walks in a thunderstorm leaves them. **Eggs and moonseed cannot.** Eggs come only from the willow hen and a moonseed only from the moss deer, and those two live only in the Mosswood and the Willowmere. These two lands are in worlds forged in this version, and in worlds brought over from the version that had accounts. An older world has neither land, so the Emberheart Brew, the Doublesoul Draught and the Willow Omelet cannot be made there: do not hunt for eggs or moonseed in it.
 
 ## Things to place
 
@@ -209,7 +211,7 @@ Every world you forge from now on has a character of its own, worked out from it
 | Weather | Out in it |
 | --- | --- |
 | **Rain** | you go a little slower and the ground is slick; creatures see a little less far; small clinging flames die quickly (a flask's strip of burning ground burns its full time), and the rain washes the flames off anyone who is burning |
-| **A thunderstorm** | all that rain does, and a bolt **sets fire** to what it strikes (a lightning rod takes the bolt to earth instead) |
+| **A thunderstorm** | all that rain does, and it has a **wind**, which blows the way the rain leans: arrows and anything thrown or spat drift on it, a run with it is a little quicker and a run against it slower, and it leans on you while you are in the air. A bolt **sets fire** to what it strikes; it likes a tall **tree**, and a struck tree comes down more often than not (a lightning rod takes the bolt to earth instead) |
 | **Snow** | you go slower, the ground is slick, and your breath comes back more slowly |
 | **Ashfall** | a little slower, and short of breath |
 | **The Long Fog** | creatures see about half as far |
@@ -222,7 +224,7 @@ Every world you forge from now on has a character of its own, worked out from it
 | --- | --- | --- |
 | **Puddling** | rain, a thunderstorm | sinks into a puddle, slides under you and bursts up; it leaves your legs **mired** and slow |
 | **Stormcaller** | a thunderstorm | a drifting bell of cloud; it marks the ground, then lightning strikes there. Step off the mark |
-| **Galewisp** | a thunderstorm | a walking whirl that flings you off your feet |
+| **Galewisp** | a thunderstorm | a walking whirl that flings you off your feet; it wanders down the wind, and leaves **feathers** |
 | **Mistwraith** | the Long Fog | barely there until it is beside you; its touch **blinds** |
 | **Rimefang** | snow | circles, crouches and pounces; it leaves you stiff with cold |
 | **Dustmaw** | ashfall | swims through the ground and leaps |

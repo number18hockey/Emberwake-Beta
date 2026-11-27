@@ -224,6 +224,7 @@ function thunderTick(e) {
   const ptx = floor((p.x + 3) / T); let rod = null; for (const o of tileObjs.values()) if (o.id === LROD && abs(o.x - ptx) < 90 && (!rod || abs(o.x - ptx) < abs(rod.x - ptx))) rod = o;
   if (rod && Math.random() < .8) { strikeAt(rod.x * T + 4, rod.y * T, false, { rod: 1, warn: 30 }); return; }
   let best = ptx + randi(-30, 30); for (let k = 0; k < 6; k++) { const x = ptx + randi(-40, 40); if (heights[x] < heights[best]) best = x; }
+  best = wxBoltTree(best, ptx);
   strikeAt(best * T + 4, groundAt(best) * T, realmAt(ptx, floor((p.y + 10) / T)) === 'surface' && !gearHas('stormborn'), { dmg: 22 });
 }
 // ---------------- drawing the new missiles ----------------

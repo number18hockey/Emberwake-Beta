@@ -49,13 +49,16 @@ function migrateGuestWorlds() {
   try { worlds = JSON.parse(oldIndex); } catch (e) { return; }
   if (!Array.isArray(worlds)) return;
   SAVE.list = worlds.filter(m => m && typeof m.id === 'string');
+  // the account's list is written first: a world leaves its old place only once the list that names it is safely kept.
+  // (Where the list could not be written nothing has been done for good, and the next sign-in tries again.)
+  const listed = LS.set(profileKey('index'), JSON.stringify(SAVE.list));
   for (const m of SAVE.list) {
     const mine = profilePath(accountId(), 'w.' + m.id), from = LS.get(profilePath('guest', 'w.' + m.id)) ? profilePath('guest', 'w.' + m.id) : 'ew2.w.' + m.id, raw = LS.get(from);
     // a copy that does not fit in the browser's store beside the old one is moved across instead (and put back if even that fails:
     // loadWorldData still finds a world under its old key)
-    if (raw !== null && LS.get(mine) === null && !LS.set(mine, raw)) { LS.del(from); if (!LS.set(mine, raw)) LS.set(from, raw); }
+    if (raw !== null && LS.get(mine) === null && !LS.set(mine, raw) && listed) { LS.del(from); if (!LS.set(mine, raw)) LS.set(from, raw); }
   }
-  writeLocalIndex(); sortWorlds();
+  sortWorlds();
 }
 async function accountCreate(name, password, confirm, skin, hat) {
   name = cleanAccountName(name);
@@ -87,6 +90,9 @@ function accountSwitch(id) {
   FORM.nick = cleanName(p.name); FORM.skin = G.skin; FORM.hat = G.hat;
   SAVE.list = readLocalIndex(); sortWorlds(); ACCOUNT.note = 'Logged in as ' + p.name + '.';
   saveBoot();
+  // worlds from before accounts belong to the first account: if bringing them over did not finish last time (the browser's
+  // store was full), it is tried again now. It does nothing once this account has a list of its own
+  if (ACCOUNT.profiles.find(v => v.id !== 'guest') === p) migrateGuestWorlds();
   return true;
 }
 async function accountSetPassword(p, password, confirm) {
@@ -215,7 +221,10 @@ async function loadWorldData(id) {
 }
 function deleteWorld(id) {
   const owner = accountId();
-  const m = SAVE.list.find(l => l.id === id); SAVE.list = SAVE.list.filter(l => l.id !== id); writeLocalIndex(); LS.del(profileKey('w.' + id)); if (accountId() === 'guest') LS.del('ew2.w.' + id);
+  const m = SAVE.list.find(l => l.id === id); SAVE.list = SAVE.list.filter(l => l.id !== id);
+  // (a world from before accounts that never got a copy of its own in this account still lives under its old key: that is the one
+  // to remove. The world goes first and the list is written after it, so that in a full store the list has the room just freed)
+  if (accountId() === 'guest' || LS.get(profileKey('w.' + id)) === null) LS.del('ew2.w.' + id); LS.del(profileKey('w.' + id)); writeLocalIndex();
   const worlds = SAVE.list.map(l => Object.assign({}, l));
   if (SAVE.db && m) (async () => {
     try {

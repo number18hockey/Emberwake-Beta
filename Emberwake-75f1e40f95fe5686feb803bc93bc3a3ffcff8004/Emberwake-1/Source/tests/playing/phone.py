@@ -1,7 +1,7 @@
 # A phone, held both ways: typing a world's name, the stick, the buttons, a finger on the world and on the panels,
 # in a world of your own and in a match of the Ashfall Trials.
 # And on a computer, where the touch controls must leave the mouse and the keys alone and show nothing.
-# (The pact button's part of this test returns with the Wilds.)
+# (The phone in a match of the Wilds, with its PACT button, is phone_in_the_wilds.py.)
 import asyncio, io, os, sys
 sys.path.insert(0, os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), 'helpers'))
 from where import GAME_URL, CHROME, shot

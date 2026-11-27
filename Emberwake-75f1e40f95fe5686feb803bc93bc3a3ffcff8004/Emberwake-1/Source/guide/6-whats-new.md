@@ -14,6 +14,7 @@ This version joins two that had grown apart. One had the Trials, the four worlds
 - **Phones and tablets.** Touch controls appear by themselves: a stick, **JUMP**, **USE**, **LIGHT** and **HEAVY**, with buttons for the pack, the map, a quick heal, the menu and chat. The beat is the same under a thumb. See *Controls: On a phone or tablet*.
 - **You keep your run.** Hold a direction through a blow or a dodge and you keep most of your pace instead of stopping dead. Hands off, you glide to a stop. A blow thrown from standing is exactly as it was.
 - **Weather is felt.** Rain and snow slow you in the open and make the ground slick, snow and ash steal your breath, and creatures see less far in rain and fog. A roof, a ledge or a cave shelters you from all of it.
+- **A thunderstorm has a wind.** It blows the way the rain leans: arrows and thrown things drift on it, and a run with it is quicker than one against it. Lightning likes a tall tree, and a struck tree often comes down.
 - **Six creatures of the weather:** the puddling, the stormcaller, the galewisp, the mistwraith, the rimefang and the dustmaw. Each comes out only in its own weather and goes when it does.
 - **Fire clings:** a flask broken against a wall or under a roof also burns there, in small moving flames, and one that bursts high in the air rains burning drops. Rain puts these small flames out sooner, and a bolt of lightning can start one. A flask's strip of burning ground is just as it was.
 - **Eating takes a moment**, and a blow interrupts it (you keep the food).

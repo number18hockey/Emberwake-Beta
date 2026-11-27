@@ -11,7 +11,7 @@
 const WXMOBS = { rain: ['puddling'], storm: ['puddling', 'stormcaller', 'stormcaller', 'galewisp'], fog: ['mistwraith'], snow: ['rimefang'], ash: ['dustmaw'] };
 const WXMOB = new Set(['puddling', 'stormcaller', 'galewisp', 'mistwraith', 'rimefang', 'dustmaw']);
 Object.assign(DROPS, {
-  puddling: [['clay', .7, 1, 2], ['glowcap', .5, 1, 1], ['lurker_oil', .3, 1, 1]], stormcaller: [['skysilk', 1, 1, 3], ['shard', .6, 1, 2], ['membrane', .6, 1, 1]], galewisp: [['skysilk', 1, 1, 2], ['fiber', .8, 2, 4]],
+  puddling: [['clay', .7, 1, 2], ['glowcap', .5, 1, 1], ['lurker_oil', .3, 1, 1]], stormcaller: [['skysilk', 1, 1, 3], ['shard', .6, 1, 2], ['membrane', .6, 1, 1]], galewisp: [['feather', 1, 2, 4], ['fiber', .8, 2, 4], ['skysilk', .4, 1, 1]],
   mistwraith: [['husk_fiber', 1, 1, 3], ['bone', .6, 1, 2], ['shard', .3, 1, 1]], rimefang: [['hide', 1, 1, 2], ['meat', 1, 1, 2], ['bone', .7, 1, 2], ['tusk', .3, 1, 1]], dustmaw: [['scale', .8, 1, 2], ['bone', .8, 1, 3], ['venom', .3, 1, 1]]
 });
 function buildWeatherMobs() {
@@ -59,7 +59,7 @@ mob('stormcaller', { w: 15, h: 9, hp: 64, dmg: 15, fly: true, contact: false, na
 }, (e, x, y, o) => drawEnt(32, 16, 16, c => { const hot = e.state === 'mark' && (e.t >> 2) & 1; c.drawImage(MOBSPR[hot || (G.time >> 4) & 1 ? 'storm1' : 'storm0'], -7, -5 + round(sin(G.time * .07 + (e.seed || 0)) * 1)); }, x + e.w / 2, y + e.h / 2, { flash: o.flash || (e.state === 'mark' && e.t > 34 && (e.t >> 1) & 1), unlit: e.state === 'mark' }));
 // ---- galewisp ----
 mob('galewisp', { w: 9, h: 11, hp: 40, dmg: 8, contact: false, kbRes: .4, name: 'Galewisp', canStep: true }, (e, p, dx, dy, dist) => {
-  grav(e, .16, 3); const chase = dist < 260 && !p.dead; e.dir = chase ? sign(dx) || 1 : e.dir || 1; e.vx = approach(e.vx, e.dir * (chase ? 1.9 : 1), .07); e.ph += .4;
+  grav(e, .16, 3); const chase = dist < 260 && !p.dead; e.dir = chase ? sign(dx) || 1 : sign(wxWind()) || e.dir || 1; e.vx = approach(e.vx, e.dir * (chase ? 1.9 : 1), .07); e.ph += .4;
   if (e.hitWall && e.onGround) { e.vy = -3.6; if (!chase && Math.random() < .3) e.dir *= -1; } if (e.t % 3 === 0) P(e.x + e.w / 2 + cos(e.t * .5) * 8, e.y + frand(e.h), sin(e.t * .5) * -1, -.6, 16, fpick(['#f4fbff', '#c4dcea', '#8d8794']), { g: -.01, fr: .95 });
   for (const d of G.drops) { const ex = e.x + 4 - d.x, ey = e.y - d.y; if (abs(ex) < 34 && abs(ey) < 30 && d.delay <= 0) { d.vx += sign(ex) * .12; d.vy -= .16; d.rest = 0; } }
   if (!p.dead && overlap(e, p, 2) && (e.hitT | 0) < G.time) { e.hitT = G.time + 55; if (hitP(e, e.dmg, { kx: e.dir * 2.8, ky: -5.4 })) { p.onGround = false; sfx('spin', 0); } }

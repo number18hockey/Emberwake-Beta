@@ -1,6 +1,7 @@
 # What the weather does: rain, snow, a thunderstorm, the long fog and ashfall each slow you, make the ground slick,
 # take your breath or hide you; a roof or the underground keeps all of it off; rain puts fire out (the flames that cling to rock: a strip of burning ground
-# keeps its time) and lightning starts one;
+# keeps its time) and lightning starts one, likes a tall tree and can bring it down; a thunderstorm has a wind (and no other sky has): it bends
+# an arrow, shoves whoever is in the air, helps a run with it and hinders one against it, and blows the same way for a host and their guests;
 # and each kind brings its own rare creatures, which leave when it ends. Under a clear sky nothing changes at all.
 # Saves a picture of the six creatures.
 import asyncio, os, sys
@@ -58,6 +59,44 @@ async def main():
         print('shelter:', roof)
         assert roof == {'open': False, 'openSpeed': .84, 'under': True, 'underAll': True, 'wetOut': True, 'wetUnder': False, 'below': True}, 'a roof or the underground should keep the weather off you'
 
+        # ---- the wind of a thunderstorm ----
+        wind = await h.ev("""(() => { const p = G.p, gy = flat(), tx = floor(p.x / T), x0 = tx * T, out = {};
+          // no wind at all under any other sky, nor in an arena, in the Wilds, in another world or on the title
+          const at = k => { setSky(k); p.shel = false; return wxWind(); };
+          out.none = ['clear', 'rain', 'snow', 'fog', 'ashfall'].map(at); out.storm = at('thunder');
+          WORLD.arena = true; const a = wxWind(); WORLD.royale = true; const bw = BR.wild; BR.wild = true; const w = wxWind(); BR.wild = bw; WORLD.royale = false; WORLD.arena = false; DIM = 1; const d = wxWind(); DIM = 0; const st = G.state; G.state = 'title'; const t = wxWind(); G.state = st; out.elsewhere = [a, w, d, t];
+          const arrow = k => { sky(k, 20); G.projs.length = 0; G.projs.push({ type: 'arrow', x: x0, y: gy * T - 200, px: x0, py: gy * T - 200, vx: 0, vy: 0, r: 2, dmg: 1, kb: [0, 0], life: 300, t: 0, owner: p, g: .1 });
+            let x = x0; for (let i = 0; i < 40 && G.projs.length; i++) { calm(); G.enemies.length = 0; tick(); if (G.projs[0]) x = G.projs[0].x; } G.projs.length = 0; return +(x - x0).toFixed(2); };
+          // someone in the air: the shove itself in one tick of weather, and how far a leap with the wind and against it carries
+          const shove = k => { flat(); sky(k, 20); p.y = p.py = gy * T - p.h - 40; p.vx = p.vy = 0; p.onGround = false; tickWeatherWays(); const v = p.vx; p.vx = 0; return +v.toFixed(4); };
+          const leap1 = key => { flat(); for (const q in keys) keys[q] = false; for (let i = 0; i < 4; i++) { calm(); tick(); } const xs = p.x; keys[key] = keys.Space = pressed.Space = true; calm(); tick(); pressed.Space = false; let n = 0; while ((!p.onGround || n < 6) && n++ < 200) { calm(); G.enemies.length = 0; tick(); } keys[key] = keys.Space = false; return +abs(p.x - xs).toFixed(2); };
+          const leap = k => { flat(); sky(k, 20); return [leap1('KeyA'), leap1('KeyD')]; };
+          const run = k => { flat(); sky(k, 20); const l = walk('KeyA', 50); flat(); sky(k, 2); return [l, walk('KeyD', 50)]; };
+          for (const k of ['clear', 'rain', 'thunder']) out[k] = { arrow: arrow(k), shove: shove(k), leap: leap(k), run: run(k) };
+          // a roof keeps it off a jumper and off a pair of legs
+          flat(); for (let x = tx - 6; x <= tx + 6; x++) setTile(x, gy - 14, STONE); sky('thunder', 20); out.roofLegs = [wxSpeed(p, -1), wxSpeed(p, 1)]; out.roofed = p.shel; p.y = p.py = gy * T - p.h - 40; p.vx = p.vy = 0; p.onGround = false; tickWeatherWays(); out.roofShove = p.vx; p.vx = 0; for (let x = tx - 46; x <= tx + 46; x++) setTile(x, gy - 14, AIR);
+          // it blows the way the storm's own rain leans, the same all through the storm, and a guest who is sent the host's sky feels the same wind
+          flat(); G.parts.length = 0; const signs = new Set(); for (let i = 0; i < 200; i++) { calm(); G.enemies.length = 0; tick(); signs.add(sign(wxWind())); } out.signs = [...signs];
+          const drop = G.parts.find(q => q.col === '#8a9ad0'); out.rainLeans = drop ? sign(drop.vx) : 0;
+          const host = wxWind(), m = JSON.parse(JSON.stringify(worldState())), keep = [G.ev, G.time, G.clock, G.days, G.wx, WORLD.seed];
+          G.ev = null; G.time += 12345; WORLD.seed = (WORLD.seed ^ 0x5bd1) >>> 0; onWorld(m); out.hostGuest = [host, wxWind()]; [G.ev, G.time, G.clock, G.days, G.wx, WORLD.seed] = keep;
+          flat(); setSky('clear'); return out; })()""")
+        print('wind under a clear sky, rain, snow, fog, ashfall:', wind['none'], ' in a thunderstorm:', wind['storm'], ' in a storm but in an arena / the Wilds / another world / on the title:', wind['elsewhere'])
+        for k in ('clear', 'rain', 'thunder'): print('%-8s' % k, 'an arrow let go in still air drifts; the shove on someone in the air; a leap and a run, to the left and to the right:', wind[k])
+        print('under a roof in a storm, legs with and against it:', wind['roofLegs'], ' the shove on someone in the air:', wind['roofShove'])
+        print('the wind through 200 ticks of one storm blows:', wind['signs'], ' the storm rain leans:', wind['rainLeans'], ' host and guest feel:', wind['hostGuest'])
+        assert wind['none'] == [0, 0, 0, 0, 0] and wind['elsewhere'] == [0, 0, 0, 0] and wind['storm'] != 0, 'only a thunderstorm in the Waking Lands has a wind'
+        for k in ('clear', 'rain'):
+            assert wind[k]['arrow'] == 0 and wind[k]['shove'] == 0 and wind[k]['leap'][0] == wind[k]['leap'][1] and wind[k]['run'][0] == wind[k]['run'][1], 'without a thunderstorm nothing is blown about: ' + k
+        st = wind['thunder']
+        assert abs(st['arrow']) > 2 and st['arrow'] * wind['storm'] > 0, 'a storm should bend an arrow down the wind'
+        assert st['shove'] * wind['storm'] > 0 and st['leap'][0] != st['leap'][1] and (st['leap'][0] > st['leap'][1]) == (wind['storm'] < 0), 'a storm should push whoever is in the air: a leap with the wind carries farther than one against it'
+        assert st['run'][0] != st['run'][1] and (st['run'][0] > st['run'][1]) == (wind['storm'] < 0), 'a run with the wind should be faster than one against it'
+        assert max(st['run']) < wind['clear']['run'][0], 'and the storm still slows both'
+        assert wind['roofed'] and wind['roofLegs'] == [1, 1] and wind['roofShove'] == 0, 'a roof should keep the wind off'
+        assert wind['signs'] == [wind['rainLeans']] and wind['rainLeans'] != 0, 'the wind should blow one way through a storm: the way its rain leans'
+        assert wind['hostGuest'][0] == wind['hostGuest'][1] != 0, 'host and guest should feel the same wind'
+
         # ---- rain against fire ----
         fire = await h.ev("""(() => { const p = G.p, gy = flat(), tx = floor(p.x / T), out = {}; p.x = p.px = (tx - 20) * T;
           const burn = (k, x) => { sky(k, 2); firesOut(); lightFire(x, gy * T - 2, 13, 170, null); let n = 0; while (FACE_FIRES.length && n < 400) { calm(); G.enemies.length = 0; tick(); n++; } return n; };
@@ -79,6 +118,21 @@ async def main():
           setSky('thunder'); firesOut(); G.thunT = 30; let lit = 0; for (let i = 0; i < 1500 && !lit; i++) { calm(1); G.thunT = Math.min(G.thunT, 60); G.enemies.length = 0; tick(); lit = FACE_FIRES.length; } out.byItself = lit > 0; firesOut(); G.dhaz.length = 0; return out; })()""")
         print('fires lit by a bolt in a thunderstorm, on a lightning rod, and by a bolt out of a clear sky:', bolt)
         assert bolt['storm'] == 1 and bolt['rod'] == 0 and bolt['clear'] == 0 and bolt['byItself'], 'a thunderstorm bolt should start a fire, a rod should take it to earth'
+
+        # ---- a bolt likes a tall tree, and a struck tree comes down more often than not ----
+        tree = await h.ev("""(() => { const p = G.p, gy = flat(), tx = floor(p.x / T), out = {}, X = tx + 12;
+          for (const k of [...treeTops.keys()]) if (abs(k - tx) < 60) treeTops.delete(k);
+          out.noTree = [...Array(60)].every(() => wxBoltTree(tx + 3, tx) === tx + 3);
+          const plant = () => { for (let y = gy - 6; y < gy; y++) setTile(X, y, TRUNK); treeTops.set(X, { y: gy - 6, kind: 0, v: 0, ph: 0 }); }, stands = () => TP[tileAt(X, gy - 1)].stalk && treeTops.has(X);
+          plant(); let aimed = 0; for (let i = 0; i < 200; i++) if (wxBoltTree(tx + 3, tx) === X) aimed++; out.aimed = aimed;
+          const strike = (k, o) => { plant(); sky(k, 2); firesOut(); G.dhaz.length = 0; G.felled.length = 0; strikeAt(X * T + 4, gy * T, false, Object.assign({ warn: 3 }, o)); for (let i = 0; i < 6; i++) { calm(); tick(); } return !stands(); };
+          let fell = 0, lit = 0, falling = 0; for (let i = 0; i < 40; i++) { if (strike('thunder')) { fell++; if (G.felled.length) falling++; } if (FACE_FIRES.length) lit++; } out.fell = fell; out.lit = lit; out.falling = falling;
+          let other = 0; for (let i = 0; i < 12; i++) { if (strike('clear')) other++; if (strike('thunder', { rod: 1 })) other++; } out.other = other;
+          for (let y = gy - 6; y < gy; y++) setTile(X, y, AIR); treeTops.delete(X); G.felled.length = 0; G.drops.length = 0; firesOut(); G.dhaz.length = 0; setSky('clear'); return out; })()""")
+        print('with no tree in reach a bolt keeps its ground:', tree['noTree'], ' with one, bolts out of 200 that go for it:', tree['aimed'], ' trees felled by 40 storm bolts:', tree['fell'], '(seen falling: %d, fires lit: %d)' % (tree['falling'], tree['lit']), ' by 12 bolts from a clear sky and 12 on a rod:', tree['other'])
+        assert tree['noTree'] and 60 < tree['aimed'] < 140, 'a bolt should go for a tree in reach about half the time, and keep its ground when there is none'
+        assert 8 < tree['fell'] < 36 and tree['lit'] == 40 and tree['falling'] == tree['fell'], 'a struck tree should come down more often than not (as a falling tree, not just gone), and the fire is lit either way'
+        assert tree['other'] == 0, 'only a thunderstorm bolt that reaches the tree fells it'
 
         # ---- the creatures: the right ones come, never a crowd ----
         mobs = await h.ev("""(() => { const out = {}; flat(); for (const [k, want] of [['rain', ['puddling']], ['snow', ['rimefang']], ['thunder', ['puddling', 'stormcaller', 'galewisp']], ['fog', ['mistwraith']], ['ashfall', ['dustmaw']], ['clear', []]]) {

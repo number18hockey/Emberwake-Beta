@@ -130,7 +130,7 @@ function tickFighter(f, I) {
     a = f.atk; const ok = f.state === 'normal' || (f.state === 'dodge' && f.dodgeT >= 2) || (f.state === 'attack' && a.phase === 2 && !a.rushed && a.pt >= beatOpen(a));
     if (ok) { const b = f.buf.b; f.beatIn = f.state === 'dodge' ? 1 : f.buf.beat | 0; f.buf = null; if (f.state === 'attack') endAttack(f); if (startAttack(f, b, I)) f.atkN++; f.beatIn = 0; }
   }
-  let grav = .26; const gp = f === G.p && gearOn(), maxV = 1.45 * (gp ? gearMul('walk') : 1) * (f.spd || 1) * (f.st && f.st.frost > 0 ? .72 : 1) * (f === G.p ? brewMul('swift') : 1) * wxSpeed(f);
+  let grav = .26; const gp = f === G.p && gearOn(), maxV = 1.45 * (gp ? gearMul('walk') : 1) * (f.spd || 1) * (f.st && f.st.frost > 0 ? .72 : 1) * (f === G.p ? brewMul('swift') : 1) * wxSpeed(f, I.md);
   if (gp && f.vy > 0 && (gearHas('feather') || gearHas('prismatic')) && I.jumpH && !f.onGround) grav = .17;
   if (f.state === 'dodge') {
     f.dodgeT++; f.vx = f.dodgeDir * 3.5 * (f.dodgeT > 8 ? .7 : 1) * (f === G.p ? gearMul('dodge') : 1); if (!f.dodgeGround) { f.vy = 0; grav = 0; }

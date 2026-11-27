@@ -59,9 +59,10 @@ function addFire(x, y, pts, life, by, ghost) {
   const f = { x, y, pts, x0: x0 - 3, x1: x1 + 3, y0: y0 - 4, y1: y1 + 4, life, max: life, by, ghost: !!ghost }; FACE_FIRES.push(f); return f;
 }
 // burn the surfaces around (x, y); returns null where there is nothing to cling to. A flask asks for walls and roofs only, and only
-// when it broke right against one: the ground beneath it burns as a strip, the old way
+// when it broke right against one: the ground beneath it burns as a strip, the old way. A side of rock is a wall only where the
+// rock goes on above it: the riser of a one-tile step and the lip of a ledge are ground, and stay as they always were
 function lightFire(x, y, R, life, by, ghost, wallsOnly) {
-  let pts = fireFaces(x, y, R); if (wallsOnly) { pts = pts.filter(p => p.ny >= 0); if (!pts.some(p => hypot(p.x - x, p.y - y) < 7)) pts = []; }
+  let pts = fireFaces(x, y, R); if (wallsOnly) { pts = pts.filter(p => p.ny > 0 || p.ny === 0 && solidAt(floor((p.x - p.nx * 2) / T), floor(p.y / T) - 1)); if (!pts.some(p => hypot(p.x - x, p.y - y) < 7)) pts = []; }
   return addFire(x, y, pts, life, by, ghost);
 }
 // burning drops thrown from a burst in mid-air: they fall, and burn where they land
