@@ -453,7 +453,7 @@ function eventTick(e) {
   const p = G.p;
   if (e.id === 'thunder') thunderTick(e);
   if (e.id === 'starfall' && G.time % 150 === 0 && !p.dead) { const x = p.x + 3 + frand(-240, 240); G.dhaz.push({ kind: 'star', x, y: G.cam.y - 30, vx: frand(-1.2, 1.2), vy: 2.4, g: .03, light: [.6, .7, .7] }); }
-  if (e.id === 'ashfall' && G.time % 2 === 0) P(G.cam.x + frand(VS.vw + 60), G.cam.y - 4, frand(-.5, -.1), frand(.4, .8), 340, fpick(['#a19baa', '#8d8794', '#d6d0dc']), { g: 0, fr: 1 });
+  if (e.id === 'ashfall' && G.time % 2 === 0) P(G.cam.x + frand(VS.vw + 60), G.cam.y - 4, frand(-.5, -.1), frand(.4, .8), 340, fpick(['#a19baa', '#8d8794', '#d6d0dc']), { g: 0, fr: 1, sky: 1 });
   if (e.id === 'emoon' && e.called && !e.shep && !G.boss && G.dn < .25 && e.t > 1500 && (Math.random() < .0015 || e.t > 4200) && realmAt(floor((p.x + 3) / T), floor((p.y + 10) / T)) === 'surface' && placeAt(floor((p.x + 3) / T), floor((p.y + 10) / T)) !== 'village') {
     e.shep = true; const s = Math.random() < .5 ? 1 : -1, tx = floor((p.x + 3) / T) + s * 16, ty = groundAt(tx); const b = bossSpawn('shepherd', tx * T, (ty - 4) * T); b.dir = -s; G.banner = { text: 'THE PALE SHEPHERD', sub: 'it has come for its flock', t: 0 }; learn('shepherd', true);
   }

@@ -49,8 +49,8 @@ function tickWeatherWays() {
     // the wind takes whoever is off the ground and out of shelter (never past a fair running speed)
     if (aw > .15 && !f.shel && !f.remote && !f.onGround && f.state !== 'dodge' && !f.climbing) { const gl = f.glide || f.gliding, lim = gl ? 3.4 : 2.4, v = f.vx + wind * .03 * (gl ? 1.5 : 1); if (abs(v) < lim || abs(v) < abs(f.vx)) f.vx = v; }
   }
-  // and it bends whatever is shot, thrown or spat
-  if (aw > .25) for (const pr of G.projs) if ((pr.type === 'arrow' || pr.type === 'flask' || pr.type === 'pellet' || pr.type === 'javelin' || pr.type === 'glob') && pr.t % 2 === 0) pr.vx += wind * .018;
+  // and it bends whatever is shot, thrown or spat (out in the open: not down a mine or under a roof)
+  if (aw > .25) for (const pr of G.projs) if ((pr.type === 'arrow' || pr.type === 'flask' || pr.type === 'pellet' || pr.type === 'javelin' || pr.type === 'glob') && pr.t % 2 === 0 && !wxCovered(pr.x, pr.y)) pr.vx += wind * .018;
   if (netGuest()) return;
   const form = wxForm(); if (form !== WXW.form) { WXW.form = form; if (form) WXW.mobT = 60 * frand(14, 30); }
   if (form && --WXW.mobT <= 0) { WXW.mobT = 60 * frand(22, 44); if (!p.dead && Math.random() < .5) wxMob(form); }

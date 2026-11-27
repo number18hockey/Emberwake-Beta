@@ -218,7 +218,7 @@ Object.assign(EVENTS, {
 EVMOB.add('stormcrow');
 function thunderTick(e) {
   const p = G.p; if (!p || p.dead || G.time % 3) return;
-  if (G.time % 2 === 0) for (let k = 0; k < 3; k++) P(G.cam.x + frand(-40, VS.vw + 40), G.cam.y - 4, -.6, frand(3, 3.8), 80, '#8a9ad0', { g: 0, fr: 1 });
+  if (G.time % 2 === 0) for (let k = 0; k < 3; k++) P(G.cam.x + frand(-40, VS.vw + 40), G.cam.y - 4, -.6, frand(3, 3.8), 80, '#8a9ad0', { g: 0, fr: 1, sky: 1 });
   if (G.thunT === undefined) G.thunT = 200; if ((G.thunT -= 3) > 0) return; G.thunT = 180 + frand(260);
   // a rod you raised within reach draws it; otherwise the highest ground near you
   const ptx = floor((p.x + 3) / T); let rod = null; for (const o of tileObjs.values()) if (o.id === LROD && abs(o.x - ptx) < 90 && (!rod || abs(o.x - ptx) < abs(rod.x - ptx))) rod = o;

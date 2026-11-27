@@ -97,6 +97,19 @@ async def main():
     check('opened again from that save it is the same world on the same land', f['fork'] == 1 and f['land'] == 2 and again == GOLD.get('12345/0/2/0', [])[:3], str(f))
     await opened(pg, OPEN + '((d => { delete d.hat; return d; })(' + SAVE % (12345, 0, 2, 0) + '))'); await pg.evaluate("G.leads.clear(); learn('g_frost', true); 1")
     check('(a world with gates still gets that lead)', await pg.evaluate("G.leads.has('g_frost')"))
+
+    # ---- 3b. jobs left working at a kiln: a job is saved under its recipe's number, and that branch counts its recipes
+    #          differently from 227 on (its roof tile is 268, flower pot 269, stained glasses 270 and 271; the jug, 93, is the same)
+    await opened(pg, OPEN + '(' + SAVE % (12345, 0, 2, 0) + ')')
+    k = json.loads(await pg.evaluate(r"""(() => { const x = floor(G.p.x / T) + 6, y = heights[x] - 1, i = y * WW + x, j = i + 3, brick = RECIPES.findIndex(r => r.st === 'kiln' && r.out === 'brick');
+      setTile(x, y, FURNACE); setTile(x + 3, y, FURNACE);
+      applyStn([{ i, t: FURNACE, slots: [[93, 5, 'jug'], [268, 7, 'rooftile'], [269, 9, 'flowerpot'], [270, 11, 'stained_r']] }, { i: j, t: FURNACE, slots: [[271, 13, 'stained_b'], 0, [268, 5, 'no_such_thing'], [brick, 21, 'brick']] }]);
+      const see = i => stnState(i, FURNACE).slots.map(s => s ? [RECIPES[s.r].st, RECIPES[s.r].out, s.t] : 0), a = see(i), b = see(j), right = stnState(j, FURNACE).slots[3].r === brick && stnState(i, FURNACE).slots[0].r === 93;
+      const kept = encodeStn().filter(o => o.i === i || o.i === j); STN.delete(i); STN.delete(j); applyStn(kept);
+      return JSON.stringify({ a, b, right, again: [see(i), see(j)] }); })()"""))
+    check('four kiln jobs saved under that branch\'s numbers are still working on the same things, as far along', k['a'] == [['kiln', 'jug', 5], ['kiln', 'rooftile', 7], ['kiln', 'flowerpot', 9], ['kiln', 'stained_r', 11]], json.dumps(k['a']))
+    check('so is the fifth; an empty slot stays empty, a thing nobody makes is dropped, and a job whose number is right keeps its number', k['b'] == [['kiln', 'stained_b', 13], 0, 0, ['kiln', 'brick', 21]] and k['right'], json.dumps(k['b']))
+    check('saved here and opened again they are the same jobs', k['again'] == [k['a'], k['b']], json.dumps(k['again']))
     errs += h.errs; await h.stop()
 
     # ---- 4. a friend joins such a world: the same land

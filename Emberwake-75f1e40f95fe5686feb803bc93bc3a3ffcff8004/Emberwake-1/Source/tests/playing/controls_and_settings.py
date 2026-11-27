@@ -121,6 +121,7 @@ async def main():
     res['I stored'] = await h.ev("localStorage.getItem('ew_settings')")
     # FPS MODE: its button switches it and it is remembered; while it is on no particle is made (and those in the air go at once),
     # the lesser parts of the HUD are not drawn and a plain cross marks the aim while you play. It is switched off again after.
+    # (Two of the ten parts looked for stay: the tempo, and a training drill's list of calls, without which a drill cannot be followed.)
     fx, fy = await h.ev("(() => { const big = !DIM && WT_ON && WT_KEYS.length > 0 && VS.uh >= 300, w = Math.min(392, VS.uw - 16), hh = big ? 290 : 240; return [Math.round((VS.uw - w) / 2) + 130 + 59, Math.round((VS.uh - hh) / 2) + hh - 36 + 6]; })()")
     FPS = "UI.open = 'pause'; render(1); mouse.ux = %d; mouse.uy = %d; uiMouseDown(0);" % (fx, fy)
     HUD = """(() => { const parts = ['drawStyleHud', 'drawFamHud', 'drawDrill', 'drawBless', 'drawMealHud', 'drawGadgetHud', 'drawMinimap', 'drawObjective', 'drawCompass', 'drawTempoHud'], was = {}, seen = new Set(), said = [];
@@ -137,7 +138,7 @@ async def main():
     await h.ev(FPS); fps.append(await h.ev("SETTINGS.fpsMode")); made.append(await h.ev("G.parts.length")); await h.ev("burst(G.p.x, G.p.y, 12, ['#fff'], 2, 30);"); made.append(await h.ev("G.parts.length")); hud.append(await h.ev(HUD))
     res['I fps mode: switched, particles (off, switched on, on), HUD parts / notes / cross (off, on)'] = [fps, made, hud, await h.ev("JSON.parse(localStorage.getItem('ew_settings')).fpsMode")]
     await h.ev(FPS); await h.ev("G.parts.length = 0;")
-    assert fps == [True, False, True] and made == [12, 0, 0] and hud == [[10, 5, False], [1, 0, True]] and not await h.ev("SETTINGS.fpsMode"), 'FPS MODE did not switch, kept making particles, or did not clear the HUD'
+    assert fps == [True, False, True] and made == [12, 0, 0] and hud == [[10, 5, False], [2, 0, True]] and not await h.ev("SETTINGS.fpsMode"), 'FPS MODE did not switch, kept making particles, or did not clear the HUD'
     await h.ev("UI.open = 'journal'; UI.jtab = 'leads'; render(1);")
     jx = await h.ev("(() => { const w = Math.min(330, VS.uw - 12), hh = Math.min(VS.uh - 44, 300), x = Math.round((VS.uw - w) / 2), y = Math.round((VS.uh - hh) / 2) - 8; return [x, y]; })()")
     await h.ev("render(1); mouse.ux = %d; mouse.uy = %d; uiMouseDown(0);" % (jx[0] + 176 + 25, jx[1] + 6))

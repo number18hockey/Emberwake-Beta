@@ -77,10 +77,10 @@ canvas{display:block;width:100vw;height:100vh;height:100dvh;image-rendering:pixe
 .touchButton{position:absolute;display:grid;place-items:center;width:clamp(58px,15vmin,82px);height:clamp(58px,15vmin,82px);padding:0;border:2px solid rgba(255,211,90,.68);border-radius:50%;background:radial-gradient(circle at 35% 28%,rgba(255,174,88,.8),rgba(104,40,43,.86));box-shadow:0 4px 16px #0009;color:#fff5d5;font:800 clamp(9px,2.4vmin,12px)/1 system-ui,sans-serif;letter-spacing:.5px;text-shadow:0 1px 3px #000;pointer-events:auto;touch-action:none;-webkit-tap-highlight-color:transparent}
 .touchButton:active,.touchButton.pressed{transform:scale(.94);filter:brightness(1.25)}
 #attackLight{right:calc(env(safe-area-inset-right,0px) + 18px);bottom:calc(env(safe-area-inset-bottom,0px) + 18px)}
-#attackHeavy{right:calc(env(safe-area-inset-right,0px) + 18px);bottom:calc(env(safe-area-inset-bottom,0px) + 96px)}
+#attackHeavy{right:calc(env(safe-area-inset-right,0px) + 18px);bottom:calc(env(safe-area-inset-bottom,0px) + max(96px,18px + clamp(58px,15vmin,82px) + 8px))}
 #mobileJump,#mobileDash{left:calc(env(safe-area-inset-left,0px) + 18px + clamp(112px,22vmin,156px) + 8px);width:clamp(54px,13vmin,68px);height:clamp(54px,13vmin,68px);border-color:rgba(143,245,230,.72);background:radial-gradient(circle at 35% 28%,rgba(143,245,230,.82),rgba(39,76,88,.9))}
 #mobileJump{bottom:calc(env(safe-area-inset-bottom,0px) + 18px)}
-#mobileDash{bottom:calc(env(safe-area-inset-bottom,0px) + 84px);border-color:rgba(255,211,90,.72)}
+#mobileDash{bottom:calc(env(safe-area-inset-bottom,0px) + max(84px,18px + clamp(54px,13vmin,68px) + 8px));border-color:rgba(255,211,90,.72)}
 #mobileUse{right:calc(env(safe-area-inset-right,0px) + 18px + clamp(58px,15vmin,82px) + 12px);bottom:calc(env(safe-area-inset-bottom,0px) + 35px);width:clamp(48px,12vmin,60px);height:clamp(48px,12vmin,60px);border-color:rgba(143,245,230,.72);background:radial-gradient(circle at 35% 28%,rgba(143,245,230,.82),rgba(39,76,88,.9))}
 #mobileTextInput{display:none;position:fixed;z-index:3;left:0;bottom:0;width:2px;height:2px;padding:0;border:0;opacity:.01;font-size:16px;color:transparent;background:transparent}
 .touch #mobileTextInput{display:block}
@@ -89,7 +89,7 @@ canvas{display:block;width:100vw;height:100vh;height:100dvh;image-rendering:pixe
 .touchPill:active,.touchPill.pressed{filter:brightness(1.5)}
 #mobileClose{border-color:rgba(255,211,90,.8);color:#fff1a8}
 #mobileControls.panel #mobileBar{left:auto;right:calc(env(safe-area-inset-right,0px) + 6px);top:calc(env(safe-area-inset-top,0px) + 2px)}
-@media (orientation:portrait){#movePad,#mobileJump,#attackLight{bottom:calc(env(safe-area-inset-bottom,0px) + 66px)}#mobileDash{bottom:calc(env(safe-area-inset-bottom,0px) + 138px)}#attackHeavy{bottom:calc(env(safe-area-inset-bottom,0px) + 144px)}#mobileUse{bottom:calc(env(safe-area-inset-bottom,0px) + 240px)}#mobileBar{top:calc(env(safe-area-inset-top,0px) + 130px)}}
+@media (orientation:portrait){#movePad,#mobileJump,#attackLight{bottom:calc(env(safe-area-inset-bottom,0px) + 66px)}#mobileDash{bottom:calc(env(safe-area-inset-bottom,0px) + max(138px,66px + clamp(54px,13vmin,68px) + 8px))}#attackHeavy{bottom:calc(env(safe-area-inset-bottom,0px) + max(144px,66px + clamp(58px,15vmin,82px) + 8px))}#mobileUse{bottom:calc(env(safe-area-inset-bottom,0px) + 240px)}#mobileBar{top:calc(env(safe-area-inset-top,0px) + 130px)}}
 </style>
 </head>
 <body>

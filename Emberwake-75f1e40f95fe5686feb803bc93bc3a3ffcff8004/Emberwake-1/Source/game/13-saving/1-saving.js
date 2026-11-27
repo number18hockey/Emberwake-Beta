@@ -48,7 +48,9 @@ function migrateGuestWorlds() {
   let worlds;
   try { worlds = JSON.parse(oldIndex); } catch (e) { return; }
   if (!Array.isArray(worlds)) return;
-  SAVE.list = worlds.filter(m => m && typeof m.id === 'string');
+  // only worlds that are still there: the old list is never rewritten, so it can name a world deleted since (in a session
+  // where nothing of the account could be written), and that name must not come back
+  SAVE.list = worlds.filter(m => m && typeof m.id === 'string' && (LS.get(profilePath('guest', 'w.' + m.id)) !== null || LS.get('ew2.w.' + m.id) !== null || LS.get(profileKey('w.' + m.id)) !== null));
   // the account's list is written first: a world leaves its old place only once the list that names it is safely kept.
   // (Where the list could not be written nothing has been done for good, and the next sign-in tries again.)
   const listed = LS.set(profileKey('index'), JSON.stringify(SAVE.list));
@@ -362,7 +364,13 @@ function restoreStn(o) {
   {
     if (!o || !(o.i >= 0 && o.i < WW * WH) || tiles[o.i] !== o.t) return; const s = stnState(o.i, o.t);
     if (Array.isArray(o.items) && s.items) o.items.forEach((q, k) => { if (k < s.items.length) s.items[k] = Array.isArray(q) && IT[q[0]] ? { id: q[0], n: clamp(q[1] | 0, 1, IT[q[0]].stack) } : null; });
-    if (Array.isArray(o.slots) && s.slots) o.slots.forEach((q, k) => { if (k < s.slots.length) s.slots[k] = Array.isArray(q) && RECIPES[q[0]] && (RECIPES[q[0]].out || '') === q[2] ? { r: q[0], t: q[1] | 0 } : null; });
+    // a job is kept as [recipe number, time, what it makes]. A world made in the game's other branch counts its recipes differently,
+    // so where the number does not make that thing, the job is found again by what it makes (among the stations that work by themselves)
+    if (Array.isArray(o.slots) && s.slots) o.slots.forEach((q, k) => {
+      if (k >= s.slots.length) return; let r = Array.isArray(q) ? q[0] : -1;
+      if (r >= 0 && !(RECIPES[r] && (RECIPES[r].out || '') === q[2])) r = RECIPES.findIndex(R => PASSIVE[R.st] && (R.out || '') === q[2]);
+      s.slots[k] = r >= 0 ? { r, t: q[1] | 0 } : null;
+    });
     for (const k of STN_KEYS) if (o[k] !== undefined) s[k] = o[k];
   }
 }

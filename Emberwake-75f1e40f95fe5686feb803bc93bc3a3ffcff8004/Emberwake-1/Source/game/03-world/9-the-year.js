@@ -49,7 +49,7 @@ function wxParticles() {
   const w = G.wx; if (!w || w.a <= .02 || WORLD.arena || DIM) return; const cx = G.cam.x, cy = G.cam.y, p = G.p;
   if (!p || realmAt(floor((p.x + 3) / T), floor((p.y + 10) / T)) !== 'surface') return;
   if (w.k === 'rain') { for (let i = 0, n = ceil(w.a * 5 * VS.vw / 420); i < n; i++) P(cx + frand(-30, VS.vw + 90), cy - 6, -1.5, frand(5.4, 6.8), 70, fpick(['#9ac8e8', '#c4e2f4', '#7fb0d8']), { g: 0, fr: 1, rain: 1 }); }
-  else if (G.time % 2 === 0) { for (let i = 0, n = ceil(w.a * 2 * VS.vw / 420); i < n; i++) P(cx + frand(-30, VS.vw + 70), cy - 4, frand(-.7, -.2), frand(.5, 1), 420, fpick(['#ffffff', '#e8f4ff', '#cfe6f4']), { g: 0, fr: 1 }); }
+  else if (G.time % 2 === 0) { for (let i = 0, n = ceil(w.a * 2 * VS.vw / 420); i < n; i++) P(cx + frand(-30, VS.vw + 70), cy - 4, frand(-.7, -.2), frand(.5, 1), 420, fpick(['#ffffff', '#e8f4ff', '#cfe6f4']), { g: 0, fr: 1, sky: 1 }); }
 }
 // the weather dims the day a little
 function seasonSun() {

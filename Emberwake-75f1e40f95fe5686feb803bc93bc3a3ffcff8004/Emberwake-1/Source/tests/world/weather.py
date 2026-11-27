@@ -65,7 +65,7 @@ async def main():
           const at = k => { setSky(k); p.shel = false; return wxWind(); };
           out.none = ['clear', 'rain', 'snow', 'fog', 'ashfall'].map(at); out.storm = at('thunder');
           WORLD.arena = true; const a = wxWind(); WORLD.royale = true; const bw = BR.wild; BR.wild = true; const w = wxWind(); BR.wild = bw; WORLD.royale = false; WORLD.arena = false; DIM = 1; const d = wxWind(); DIM = 0; const st = G.state; G.state = 'title'; const t = wxWind(); G.state = st; out.elsewhere = [a, w, d, t];
-          const arrow = k => { sky(k, 20); G.projs.length = 0; G.projs.push({ type: 'arrow', x: x0, y: gy * T - 200, px: x0, py: gy * T - 200, vx: 0, vy: 0, r: 2, dmg: 1, kb: [0, 0], life: 300, t: 0, owner: p, g: .1 });
+          const arrow = (k, y = gy * T - 200) => { sky(k, 20); G.projs.length = 0; G.projs.push({ type: 'arrow', x: x0, y, px: x0, py: y, vx: 0, vy: 0, r: 2, dmg: 1, kb: [0, 0], life: 300, t: 0, owner: p, g: .1 });
             let x = x0; for (let i = 0; i < 40 && G.projs.length; i++) { calm(); G.enemies.length = 0; tick(); if (G.projs[0]) x = G.projs[0].x; } G.projs.length = 0; return +(x - x0).toFixed(2); };
           // someone in the air: the shove itself in one tick of weather, and how far a leap with the wind and against it carries
           const shove = k => { flat(); sky(k, 20); p.y = p.py = gy * T - p.h - 40; p.vx = p.vy = 0; p.onGround = false; tickWeatherWays(); const v = p.vx; p.vx = 0; return +v.toFixed(4); };
@@ -75,6 +75,8 @@ async def main():
           for (const k of ['clear', 'rain', 'thunder']) out[k] = { arrow: arrow(k), shove: shove(k), leap: leap(k), run: run(k) };
           // a roof keeps it off a jumper and off a pair of legs
           flat(); for (let x = tx - 6; x <= tx + 6; x++) setTile(x, gy - 14, STONE); sky('thunder', 20); out.roofLegs = [wxSpeed(p, -1), wxSpeed(p, 1)]; out.roofed = p.shel; p.y = p.py = gy * T - p.h - 40; p.vx = p.vy = 0; p.onGround = false; tickWeatherWays(); out.roofShove = p.vx; p.vx = 0; for (let x = tx - 46; x <= tx + 46; x++) setTile(x, gy - 14, AIR);
+          // and it does not reach an arrow let go in a closed hollow deep in the rock
+          for (let x = tx - 3; x <= tx + 3; x++) for (let y = gy + 22; y <= gy + 34; y++) setTile(x, y, abs(x - tx) < 3 && y > gy + 22 && y < gy + 34 ? AIR : STONE); out.deep = [wxCovered(x0, (gy + 24) * T), arrow('thunder', (gy + 24) * T)];
           // it blows the way the storm's own rain leans, the same all through the storm, and a guest who is sent the host's sky feels the same wind
           flat(); G.parts.length = 0; const signs = new Set(); for (let i = 0; i < 200; i++) { calm(); G.enemies.length = 0; tick(); signs.add(sign(wxWind())); } out.signs = [...signs];
           const drop = G.parts.find(q => q.col === '#8a9ad0'); out.rainLeans = drop ? sign(drop.vx) : 0;
@@ -84,6 +86,7 @@ async def main():
         print('wind under a clear sky, rain, snow, fog, ashfall:', wind['none'], ' in a thunderstorm:', wind['storm'], ' in a storm but in an arena / the Wilds / another world / on the title:', wind['elsewhere'])
         for k in ('clear', 'rain', 'thunder'): print('%-8s' % k, 'an arrow let go in still air drifts; the shove on someone in the air; a leap and a run, to the left and to the right:', wind[k])
         print('under a roof in a storm, legs with and against it:', wind['roofLegs'], ' the shove on someone in the air:', wind['roofShove'])
+        print('an arrow let go in a closed hollow under the ground in a storm (is it under cover, how far it drifts):', wind['deep'])
         print('the wind through 200 ticks of one storm blows:', wind['signs'], ' the storm rain leans:', wind['rainLeans'], ' host and guest feel:', wind['hostGuest'])
         assert wind['none'] == [0, 0, 0, 0, 0] and wind['elsewhere'] == [0, 0, 0, 0] and wind['storm'] != 0, 'only a thunderstorm in the Waking Lands has a wind'
         for k in ('clear', 'rain'):
@@ -94,6 +97,7 @@ async def main():
         assert st['run'][0] != st['run'][1] and (st['run'][0] > st['run'][1]) == (wind['storm'] < 0), 'a run with the wind should be faster than one against it'
         assert max(st['run']) < wind['clear']['run'][0], 'and the storm still slows both'
         assert wind['roofed'] and wind['roofLegs'] == [1, 1] and wind['roofShove'] == 0, 'a roof should keep the wind off'
+        assert wind['deep'] == [True, 0], 'the wind should not bend an arrow in a closed hollow deep underground'
         assert wind['signs'] == [wind['rainLeans']] and wind['rainLeans'] != 0, 'the wind should blow one way through a storm: the way its rain leans'
         assert wind['hostGuest'][0] == wind['hostGuest'][1] != 0, 'host and guest should feel the same wind'
 

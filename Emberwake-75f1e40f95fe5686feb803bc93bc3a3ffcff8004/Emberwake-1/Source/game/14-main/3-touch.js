@@ -6,7 +6,7 @@
 // ============================================================
 const mobileControls = document.getElementById('mobileControls'), mobileTextInput = document.getElementById('mobileTextInput');
 const movePad = document.getElementById('movePad'), moveKnob = document.getElementById('moveKnob');
-let stickPointer = null, canvasTouchPointer = null, touchAim = false, touchTap = null;
+let stickPointer = null, canvasTouchPointer = null, touchAim = false, touchTap = null, touchDash = false;
 if (mobileDevice) document.documentElement.classList.add('touch');
 // ---------------- small screens ----------------
 // a label wider than its box is drawn smaller, and a field shows the end of what is typed. A computer draws both as it always did.
@@ -40,7 +40,7 @@ mobileTextInput.addEventListener('keydown', e => {
 function virtualKey(code, down) { if (down && !keys[code]) pressed[code] = true; keys[code] = down; }
 function clearMobileInput() {
   stickPointer = null; moveKnob.style.transform = 'translate(-50%,-50%)'; touchAim = false;
-  for (const k of ['KeyA', 'KeyD', 'ArrowDown', 'Space', 'KeyF', 'ShiftLeft']) keys[k] = false;
+  for (const k of ['KeyA', 'KeyD', 'ArrowDown', 'Space', 'KeyF']) keys[k] = false;
   mouse.l = mouse.r = false;
   document.querySelectorAll('#mobileControls .pressed').forEach(el => el.classList.remove('pressed'));
 }
@@ -86,7 +86,8 @@ const touchPlay = () => G.state === 'play' && !UI.open;
 bindTouchButton('attackLight', () => { if (touchPlay()) { touchAim = true; mouse.l = true; mouse.lp = true; mobileAim(); } }, () => { mouse.l = false; touchAim = false; });
 bindTouchButton('attackHeavy', () => { if (touchPlay()) { touchAim = true; mouse.r = true; mouse.rp = true; mobileAim(); } }, () => { mouse.r = false; touchAim = false; });
 bindTouchButton('mobileJump', () => { if (touchPlay()) virtualKey('Space', true); }, () => virtualKey('Space', false));
-bindTouchButton('mobileDash', () => { if (touchPlay()) virtualKey('ShiftLeft', true); }, () => virtualKey('ShiftLeft', false));
+// DASH is the Shift key; touchDash says this button is what holds it down (a real keyboard's Shift is never let go from here)
+bindTouchButton('mobileDash', () => { if (touchPlay()) { virtualKey('ShiftLeft', true); touchDash = true; } }, () => { if (touchDash) { touchDash = false; virtualKey('ShiftLeft', false); } });
 // USE is the F key, and it can be held: rekindling a fallen teammate in the Trials takes a held F
 bindTouchButton('mobileUse', () => { if (touchPlay()) virtualKey('KeyF', true); }, () => virtualKey('KeyF', false));
 for (const [id, code] of [['mobilePack', 'KeyE'], ['mobileMap', 'KeyM'], ['mobileHeal', 'KeyH'], ['mobilePact', 'KeyP'], ['mobileMenu', 'Escape']]) bindTouchButton(id, () => { if (touchPlay()) tapKey(code); });
@@ -102,6 +103,9 @@ function syncMobileControls() {
   // no button for what would do nothing: there is no pack in the Cinder Ring, no map there or before you have drawn one, and nobody to talk to alone
   if (visible) { const ring = WORLD.arena && !WORLD.royale; touchPackBtn.classList.toggle('off', ring); touchMapBtn.classList.toggle('off', ring || (!WORLD.royale && !hasUtil('fieldmap'))); touchChatBtn.classList.toggle('off', !COOP.role); touchPactBtn.classList.toggle('off', !wildOn()); }
   if (!visible && (stickPointer !== null || mouse.l || mouse.r)) clearMobileInput();
+  // a finger still on DASH when the buttons go or you fall (a panel opens, you leave for the title) no longer holds Shift:
+  // or a tap in the pack would be a Shift-click until it lifts
+  if (touchDash && (!visible || !G.p || G.p.dead)) { touchDash = false; keys.ShiftLeft = false; }
   if (visible && touchAim) mobileAim();
 }
 // ---------------- fingers on the picture itself ----------------

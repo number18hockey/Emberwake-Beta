@@ -56,7 +56,8 @@ function moveBody(e) {
 }
 
 // ---------------- particles ----------------
-function P(x, y, vx, vy, life, col, o) { if (SETTINGS.fpsMode || G.parts.length > 1400 || wildOn() && wOffScreen(x, y)) return; const p = { x, y, vx, vy, life, max: life, col, sz: 1, g: .12, fr: .985, glow: 0, hit: 0 }; if (o) Object.assign(p, o); G.parts.push(p); }
+// (FPS MODE makes none, but for what the sky itself drops: rain, snow and ash still slow you, so they are still seen)
+function P(x, y, vx, vy, life, col, o) { if (SETTINGS.fpsMode && !(o && (o.rain || o.sky)) || G.parts.length > 1400 || wildOn() && wOffScreen(x, y)) return; const p = { x, y, vx, vy, life, max: life, col, sz: 1, g: .12, fr: .985, glow: 0, hit: 0 }; if (o) Object.assign(p, o); G.parts.push(p); }
 function burst(x, y, n, cols, sp, life, o) { for (let i = 0; i < n; i++) { const a = frand(TAU), v = frand(.2, 1) * sp; P(x, y, cos(a) * v, sin(a) * v, max(4, life * frand(.5, 1) | 0), fpick(cols), o); } }
 function tickParts() {
   const a = G.parts;
