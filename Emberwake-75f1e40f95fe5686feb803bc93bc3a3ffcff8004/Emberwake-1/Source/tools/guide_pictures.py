@@ -51,6 +51,9 @@ async def main():
         ctx = await b.new_context(viewport=SIZE)
         await ctx.add_init_script("window.EW_BROKERS = ['ws://127.0.0.1:%d/mqtt'];" % PORT)
         pg = await ctx.new_page(); await pg.goto(GAME_URL); await pg.wait_for_timeout(900)
+        # past the sign-in board, as the tests' harness does: a Waker of this browser is signed in, and the home page shows
+        await pg.evaluate("if (typeof ACCOUNT !== 'undefined' && G.state === 'accounts') { ACCOUNT.active = { id: 'guide', name: 'ALPHA', skin: 0, hat: 0 }; SAVE.list = readLocalIndex(); G.state = 'title'; if (typeof titleScene === 'function') titleScene(); } 0")
+        await pg.wait_for_timeout(600)
         return b, pg
 
     async def wait(pg, js, ms=20000):
