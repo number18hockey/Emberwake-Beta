@@ -52,7 +52,7 @@ This version joins two that had grown apart. One had the Trials, the four worlds
 - **The surface matters:** sunstone by day, skyiron from craters, sunbloom and moonpetal, skyfeathers, sun shrines, observatories, thunderstorms, lightning rods and storm glass. The four gates are all above ground.
 - **Guardians are harder to wake and harder to beat:** each offering needs things from several worlds and from the surface; guardians have more health, a guard, and a rage. Lands are wider, and forts and castles are rarer.
 - **A new home screen:** three boards (ALONE, WITH FRIENDS, THE ARENAS), a CONTINUE button for your last world, sound, difficulty and controls on the front page, and HOW TO PLAY.
-- **The Cinder Ring works with game codes**, so friends can duel from the HTML file or the Mac app.
+- **The FFA Arcade has ten combat modes**, each with its own arena, weapon kit and saved stats. Quick play starts with three echo bots; private matches use a join code. Crystal PvP resets its arena every ten minutes.
 - **Playing together is steadier:** when two players change the same spot at the same moment the host now settles it for everyone (this was the cause of worlds drifting apart); friends see a guardian's lightning and fire pillars. This version can't play with older ones, so send your friends the new files.
 
 ## Benches, trinkets, guardians and a bigger world

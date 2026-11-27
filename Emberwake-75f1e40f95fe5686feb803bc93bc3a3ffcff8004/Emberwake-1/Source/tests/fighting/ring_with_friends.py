@@ -1,31 +1,31 @@
-# The Cinder Ring with friends by game code, from the plain HTML file (no claude.ai room): the host lights a
+# A private FFA match with friends by game code, from the plain HTML file (no claude.ai room): the host opens a
 # ring, a friend joins it with JOIN A FRIEND, both see each other move, a blow lands across the line, a
 # takedown counts for the right person, and leaving ends it cleanly for the friend.
 import asyncio, sys, io, os, time
 from playwright.async_api import async_playwright
 sys.path.insert(0, os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), 'helpers'))
-from where import GAME_URL, GAME_DIR, HELPERS, CHROME, shot
+from where import GAME_URL, shot
 from broker import Broker
 from PIL import Image
-ARGS = ['--no-sandbox', '--disable-background-timer-throttling', '--disable-renderer-backgrounding', '--disable-backgrounding-occluded-windows']
+ARGS = ['--no-sandbox', '--disable-dev-shm-usage', '--disable-background-timer-throttling', '--disable-renderer-backgrounding', '--disable-backgrounding-occluded-windows']
 PORT = 18852
 async def main():
     Broker(PORT).start(); await asyncio.sleep(.3)
-    pw = await async_playwright().start(); errs = []; ok = True
+    pw = await async_playwright().start(); browser = await pw.chromium.launch(headless=True, args=ARGS); errs = []; ok = True
     def check(name, cond, info=''):
         nonlocal ok; ok = ok and bool(cond); print(('PASS ' if cond else 'FAIL ') + name, info)
     async def page(name):
-        b = await pw.chromium.launch(headless=True, args=ARGS, **CHROME); ctx = await b.new_context(viewport={'width': 960, 'height': 540})
+        ctx = await browser.new_context(viewport={'width': 960, 'height': 540})
         await ctx.add_init_script("window.EW_BROKERS = ['ws://127.0.0.1:%d/mqtt'];" % PORT); pg = await ctx.new_page()
         pg.on('pageerror', lambda e: errs.append(name + ' PAGEERROR: ' + str(e)))
         pg.on('console', lambda m: errs.append(name + ' ' + m.type + ': ' + m.text) if m.type == 'error' else None)
-        await pg.goto(GAME_URL); await pg.wait_for_timeout(700); return b, pg
+        await pg.goto(GAME_URL); await pg.wait_for_timeout(700); return ctx, pg
     async def wait(pg, js, ms=15000):
         for i in range(ms // 100):
             if await pg.evaluate(js): return True
             await pg.wait_for_timeout(100)
         return False
-    bA, A = await page('HOST'); bB, B = await page('FRIEND')
+    ctxA, A = await page('HOST'); ctxB, B = await page('FRIEND')
     check('the claude.ai room is not here (plain file)', not await A.evaluate("!!NET.room"))
     # the host lights a ring from the ring screen's button
     await A.evaluate("FORM.nick = 'ALPHA'; G.state = 'ring';"); await A.wait_for_timeout(300)
@@ -37,6 +37,11 @@ async def main():
     check('the friend lands in the ring', await wait(B, "WORLD.arena && G.state === 'play' && NET.via === 'rtc' && NET.peers.size === 1", 25000))
     check('the host sees the friend', await wait(A, "NET.peers.size === 1 && [...NET.peers.values()][0].name === 'BRAVO'", 8000))
     check('the echoes stepped aside', await wait(A, "!G.fighters.some(f => f.echoBot)", 5000) and await wait(B, "!G.fighters.some(f => f.echoBot)", 5000))
+    await A.evaluate("(() => { G.p.x = 60 * T; G.p.y = 60 * T - 21; G.p.face = 1; pressed.KeyF = true; FFA.crystalCd = 0; ffaCrystalAction(); })()")
+    check('the host places a Crystal PvP crystal', await wait(A, "FFA.crystals.length === 1", 3000))
+    check('the friend sees the placed crystal', await wait(B, "FFA.crystals.some(c => c.owner === [...NET.peers.keys()][0] && tileAt(c.tx, c.surface - 3) === CRYSTAL)", 5000))
+    await A.evaluate("pressed.KeyF = true; FFA.crystalCd = 0; ffaCrystalAction()")
+    check('the friend sees the crystal detonation', await wait(B, "FFA.crystals.length === 0", 5000))
     # both move; each sees the other where they really are
     await A.evaluate("(() => { const p = G.p; p.x = p.px = 60 * T; p.y = p.py = 20 * T; p.vx = p.vy = 0; })()")
     await B.evaluate("(() => { const p = G.p; p.x = p.px = 66 * T; p.y = p.py = 20 * T; p.vx = p.vy = 0; })()")
@@ -61,5 +66,5 @@ async def main():
     await A.evaluate("quitToTitle()")
     check('the friend hears the host left', await wait(B, "G.state === 'join' && !WORLD.arena", 20000), await B.evaluate("[G.state, COOP.err]"))
     print('errors:', errs[:6])
-    await bA.close(); await bB.close(); await pw.stop(); print('ALL PASS' if ok else 'SOME FAILED')
+    await ctxA.close(); await ctxB.close(); await browser.close(); await pw.stop(); print('ALL PASS' if ok else 'SOME FAILED')
 asyncio.run(main())

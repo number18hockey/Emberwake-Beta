@@ -238,7 +238,7 @@ function brRtcTick() {
   for (const P of COOP.peers.values()) if (!P.open && !P.ok && P.connT && now - P.connT > 25000) { COOP.peers.delete(P.id); try { P.pc.close(); } catch (e) { } COOP.note = ''; COOP.err = 'Could not reach ' + P.name + '. Try again with a new invite; on the same Wi-Fi it almost always works.'; }
   if (netGuest() && NET.R && NET.R.mine && now - (BR.rtcPing || 0) > 2000) { BR.rtcPing = now; const H = COOP.peers.get('h'); if (H && H.open) sendTo(H, { t: 'bp', p: NET.R.mine }, 'bp'); }
 }
-// the Cinder Ring over game codes: the same presence room, with the ring's own presences in it
+// the FFA Arcade over game codes: the same presence room, with the match's own presences in it
 function ringRtcStart(code) {
   if (!COOP.role) { COOP.role = 'host'; COOP.me = 'h'; COOP.hostName = coopName(); }
   COOP.br = true; COOP.ring = true; NET.code = code; NET.status = 'online'; NET.me = netGuest() ? COOP.me : '0h';
@@ -254,13 +254,13 @@ function ringRtcEnd() {
 function brRtcWelcome(P, m) { if (BR.wild) return wBrRtcWelcome(P, m);
   if ([...COOP.peers.values()].filter(Q => Q.ok).length >= brMaxG()) { sendTo(P, { t: 'kick' }); return; }
   P.name = cleanName(m.n) || P.name || 'WAKER'; P.skin = clamp(m.sk | 0, 0, SKINS.length - 1); P.hat = clamp(m.ht | 0, 0, 3); P.trail = clamp(m.tr | 0, 0, BR_TRAILS.length - 1); P.ok = true; P.pres = null;
-  sendTo(P, { t: 'brw', v: NETV, id: P.id, host: coopName(), code: COOP.ring ? NET.code : BR.code, mode: COOP.ring ? 'ring' : 'br', pt: BR.party || COOP.gcode || '' }); COOP.note = ''; sfx('quest', 0); BR.rtcDirty = true;
+  sendTo(P, { t: 'brw', v: NETV, id: P.id, host: coopName(), code: COOP.ring ? NET.code : BR.code, mode: COOP.ring ? 'ring' : 'br', ffa: COOP.ring && FFA.active ? FFA.mode : '', pt: BR.party || COOP.gcode || '' }); COOP.note = ''; sfx('quest', 0); BR.rtcDirty = true;
   if (COOP.ring) G.kfeed.unshift({ a: '', b: P.name, txt: 'is on the way in', t: 0 });
 }
 function brRtcJoin(m) {
   COOP.me = String(m.id || 'g?'); COOP.joined = true; COOP.br = true; COOP.hostName = cleanName(m.host) || COOP.hostName;
   const HP = COOP.peers.get('h'); if (HP) { HP.ok = true; HP.name = COOP.hostName || HP.name; }
-  if (m.mode === 'ring') { COOP.ring = true; COOP.reply = ''; COOP.code = ''; COOP.note = ''; const nick = coopName(); G.nick = nick; enterArena(nick, FORM.skin | 0, typeof m.code === 'string' ? cleanCode(m.code) || 'friends' : 'friends', 'rtc'); sfx('quest', 0); return; }
+  if (m.mode === 'ring') { COOP.ring = true; COOP.reply = ''; COOP.code = ''; COOP.note = ''; const nick = coopName(); G.nick = nick; const mode = FFA_MODES.some(q => q.id === m.ffa) ? m.ffa : 'sword'; COOP.ffaMode = mode; enterArena(nick, FORM.skin | 0, typeof m.code === 'string' ? cleanCode(m.code) || 'friends' : 'friends', 'rtc', mode); sfx('quest', 0); return; }
   G.nick = coopName(); G.skin = FORM.skin | 0; COOP.reply = ''; COOP.code = ''; COOP.note = '';
   // walking in with a code makes you one of the host's party; arriving from the open board, you keep the party you came with
   if (BR.joinOpen) BR.joinOpen = false; else BR.party = typeof m.pt === 'string' ? m.pt.toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 8) : '';

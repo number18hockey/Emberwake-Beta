@@ -21,7 +21,7 @@ let FORGE_X = 0, FORGE_Y = 0, SKY_X = 0, SKY_Y = 0, MINE_X = 0, MINE_Y = 0, road
 const SIZES = [[600, 260], [900, 320], [1400, 380], [2200, 440]], SIZE_N = ['Small', 'Medium', 'Large', 'Vast'], SHAPE_N = ['Balanced', 'Skylands', 'Hollows'], MODE_N = ['Journey', 'Free Forge'];
 const WORLD = { id: '', name: '', seed: 0, size: 1, shape: 0, mode: 0, arena: false };
 const ARENA_SPAWNS = [[18, 58], [131, 58], [75, 48], [44, 43], [105, 43], [75, 38]];
-const BIOME = { reach: 'STILLGLASS REACH', moor: 'EMBERFELT MOOR', mosswood: 'MOSSWOOD', willowmere: 'WILLOWMERE', scoria: 'RUSTFALL', ash: 'ASHEN HOLLOW', drift: 'THE DRIFT', under: 'THE UNDERDARK', deep: 'THE DEEP', ring: 'THE CINDER RING', village: 'HEARTHHOLD' };
+const BIOME = { reach: 'STILLGLASS REACH', moor: 'EMBERFELT MOOR', mosswood: 'MOSSWOOD', willowmere: 'WILLOWMERE', scoria: 'RUSTFALL', ash: 'ASHEN HOLLOW', drift: 'THE DRIFT', under: 'THE UNDERDARK', deep: 'THE DEEP', ring: 'THE FFA ARCADE', village: 'HEARTHHOLD' };
 // visual layers and set pieces, rebuilt from the seed every time a world loads
 const STRUCTS = [], PROPS = [], FGP = [], VENTS = [], SPOTS = {}, LANDMARKS = [], ISLES = [];
 let PROPB = new Map(), FGPB = new Map();
@@ -494,17 +494,41 @@ function buildDrift() {
   ISLES.slice(1).sort((p, q) => p.cx - q.cx).forEach((s, i) => { if (i % 2) return; const x = s.cx + (i % 4 ? 1 : -1) * (s.a + 4); if (x > 6 && x < WW - 7 && heights[x] - s.cy > 16) vent(x, s.cy - 7); });
 }
 
-function genArena() {
+function genArena(mode) {
   SEED = 4242; rng = mulberry32(SEED); WORLD.arena = true; resetWorld(150, 68);
   const fy = 60; SPAWN_X = 75; SHRINE_X = SHRINE2_X = GATE_X = -9999; BASE_Y = fy; DEEP_Y = 9999; DRIFT_Y = -99; VIL_Y = -999;
   for (let x = 0; x < WW; x++) {
     heights[x] = fy;
-    for (let y = fy; y < WH; y++) tiles[y * WW + x] = y >= WH - 3 ? BEDROCK : y < fy + 2 ? BRICK : STONE;
+    for (let y = fy; y < WH; y++) tiles[y * WW + x] = y >= WH - 3 ? (mode === 'knockback' ? AIR : BEDROCK) : y < fy + 2 ? BRICK : STONE;
     for (let y = 8; y < fy; y++) { if (x < 3 || x >= WW - 3) tiles[y * WW + x] = BEDROCK; else if (x % 14 < 2 && y > fy - 26 || (y > fy - 28 && y <= fy - 26)) walls[y * WW + x] = W_RUIN; }
   }
   const plat = (x0, x1, y) => { for (let x = x0; x <= x1; x++) tiles[y * WW + x] = PLATFORM; };
   const block = (x0, x1, y0, y1) => { for (let x = x0; x <= x1; x++) for (let y = y0; y <= y1; y++) tiles[y * WW + x] = BRICK; };
   plat(16, 36, 53); plat(113, 133, 53); plat(48, 58, 55); plat(91, 101, 55); block(61, 88, 50, 51); plat(36, 52, 46); plat(97, 113, 46); plat(66, 83, 41); plat(20, 31, 39); plat(118, 129, 39);
+  if (mode === 'crystal') {
+    plat(48, 101, 55); block(69, 80, 51, 53);
+    for (const [x, y] of [[56, 54], [95, 54], [64, 50], [85, 50], [74, 40]]) setTile(x, y, CRYSTAL);
+  } else if (mode === 'mace') {
+    plat(42, 59, 49); plat(90, 107, 49); plat(65, 84, 36); block(70, 79, 45, 50);
+  } else if (mode === 'spear') {
+    for (let x = 61; x <= 88; x++) for (let y = 50; y <= 51; y++) tiles[y * WW + x] = AIR;
+    plat(27, 44, 49); plat(105, 122, 49); plat(57, 92, 56);
+  } else if (mode === 'grapple') {
+    block(37, 41, 31, 53); block(108, 112, 31, 53); plat(25, 52, 37); plat(97, 124, 37); plat(59, 90, 32);
+  } else if (mode === 'bow') {
+    block(43, 48, 47, 52); block(101, 106, 47, 52); plat(24, 39, 38); plat(111, 126, 38); plat(58, 91, 45);
+  } else if (mode === 'axe') {
+    for (let x = 20; x <= 129; x++) for (let y = 34; y <= 46; y++) tiles[y * WW + x] = AIR;
+    block(67, 82, 49, 53); plat(48, 61, 55); plat(88, 101, 55);
+  } else if (mode === 'shield') {
+    block(37, 41, 45, 54); block(108, 112, 45, 54); block(69, 80, 48, 52);
+    plat(49, 60, 44); plat(89, 100, 44);
+  } else if (mode === 'knockback') {
+    for (let x = 3; x < WW - 3; x++) for (let y = fy; y < WH - 3; y++) tiles[y * WW + x] = AIR;
+    plat(59, 90, 48); plat(29, 46, 54); plat(103, 120, 54); plat(69, 80, 38);
+  } else if (mode === 'random') {
+    plat(36, 54, 46); plat(95, 113, 46); block(72, 77, 47, 53);
+  }
   for (const [x, y] of [[14, 52], [42, 52], [70, 44], [79, 44], [107, 52], [135, 52], [28, 34], [121, 34], [56, 52], [93, 52]]) setTile(x, y, TORCH);
   MODS_ON = false;
 }

@@ -169,10 +169,10 @@ function drawTitle(c) {
          : ['BEGIN', 'forge your first world', () => { G.state = 'create'; Object.assign(FORM, { name: 'World 1', seed: rollSeed() }); UI.focus = 'name'; sfx('ui'); }, 'A new land, a cold fire, and three embers to find.', { col: '#ffd35a' }],
     ['WORLDS', 'new, load, copy', () => goWorlds(''), 'Every world you have made. Forge a new one, or paste one a friend sent.']];
   const friends = [
-    ['JOIN A FRIEND', 'type their game code', () => { G.state = 'join'; UI.focus = null; COOP.err = ''; COOP.note = ''; COOP.long = false; nick(); sfx('ui'); }, 'Step into a friend\'s world with the code they give you.'],
+    ['JOIN A FRIEND', 'world or private FFA code', () => { G.state = 'join'; UI.focus = null; COOP.err = ''; COOP.note = ''; COOP.long = false; nick(); sfx('ui'); }, 'Join a friend\'s world or private FFA match with their game code.'],
     ['HOST A WORLD', 'open one, then invite', () => goWorlds('Open a world, then press P and choose PLAY TOGETHER for a code.'), 'Open one of your worlds, press P, choose PLAY TOGETHER: friends join with the code.']];
   const arenas = [
-    ['THE CINDER RING', 'duels: first to ten', () => { G.state = 'ring'; UI.focus = null; nick(); sfx('ui'); }, 'A small arena, every weapon, quick duels. Online, with friends by code, or against echoes.'],
+    ['FFA ARCADE', '10 combat modes · 3 bots', () => { G.state = 'ring'; UI.focus = null; nick(); sfx('ui'); }, 'Ten weapon-focused arenas, three opponents in quick play, personal ratings, and private matches by code.'],
     ['THE ASHFALL TRIALS', 'outlast the field', () => { G.state = 'brform'; UI.focus = null; nick(); if (FORM.brcode === undefined) FORM.brcode = ''; sfx('ui'); }, 'Twelve Wakers, one island. Scavenge, team up, survive the nights. About twelve minutes.']];
   TITLE.hint = '';
   if (uw >= 430) {
@@ -386,24 +386,7 @@ function drawAccounts(c) {
   if (ACCOUNT.note) textC(c, ACCOUNT.note, uw / 2, y + h + 3, '#8ff5e6', 1, textO);
 }
 function drawRingForm(c) {
-  const uw = VS.uw, uh = VS.uh, w = min(330, uw - 16), h = 244, x = round((uw - w) / 2), y = max(8, round((uh - h) / 2));
-  c.fillStyle = 'rgba(18,13,31,.55)'; c.fillRect(0, 0, uw, uh); panel(c, x, y, w, h, 'THE CINDER RING : ONLINE PVP');
-  const fx = x + 10, fw = w - 20;
-  drawText(c, 'NAME', fx, y + 22, '#b9bdd0'); field(c, fx + 46, y + 18, fw - 46, 'nick', 'WAKER');
-  skinPicker(c, fx, y + 38);
-  drawText(c, 'RING', fx, y + 70, '#b9bdd0'); field(c, fx + 46, y + 66, fw - 46, 'code', 'open  (or a private code)');
-  const L = ['First to 10 takedowns takes the ring. Alone in a ring?', 'Echoes spar with you until someone joins.', 'FRIENDS: host a ring, and your friends pick JOIN A FRIEND', 'on the title screen and type your game code. Up to 4.'];
-  L.forEach((l, i) => drawText(c, l, fx, y + 92 + i * 10, '#d8d4e6'));
-  drawText(c, NET.room ? 'claude.ai live room: everyone with the same ring code meets.' : 'claude.ai live room: not here. Game codes work anywhere.', fx, y + 136, NET.room ? '#7ddc6f' : '#8b8fa3');
-  if (netOK()) button(c, x + 10, y + h - 50, fw, 18, 'HOST A RING FOR FRIENDS (GAME CODE)', () => {
-    UI.focus = null; const nick = cleanName(FORM.nick) || 'WAKER'; FORM.nick = nick; G.state = 'loading'; G.loadMsg = 'Lighting the ring...';
-    setTimeout(() => { coopReset(); enterArena(nick, FORM.skin, 'friends', 'rtc'); }, 30); sfx('quest', 0);
-  });
-  button(c, x + 10, y + h - 26, 150, 18, NET.room ? 'ENTER THE RING' : 'PRACTICE (ECHOES)', () => {
-    UI.focus = null; const nick = cleanName(FORM.nick) || 'WAKER'; FORM.nick = nick; G.state = 'loading'; G.loadMsg = 'Entering the ring...';
-    setTimeout(() => enterArena(nick, FORM.skin, cleanCode(FORM.code) || 'open'), 30); sfx('quest', 0);
-  });
-  button(c, x + w - 70, y + h - 26, 60, 18, 'BACK', () => { G.state = 'title'; UI.focus = null; sfx('ui'); });
+  drawFFAMenu(c);
 }
 
 // ---------------- in-game HUD ----------------
@@ -415,7 +398,7 @@ function drawHUD(c) {
   if ((!A || wild) && WORLD.mode !== 1) { const f = G.food / 100; bar(c, 15, 20, 72, 2, f, f < .25 && (G.time >> 4) & 1 ? '#ff9a8a' : '#e0a050', '#7a4a1a'); if (f < .3) textO(c, f <= 0 ? 'STARVING' : 'HUNGRY', 91, 16, '#e0a050'); }
   if (p.riposte > 0 && (G.time >> 2) & 1) textO(c, 'RIPOSTE READY', 15, 22, '#8ff5e6');
   else if (!UI.open && WORLD.royale) { if (wild && !SETTINGS.fpsMode && !mobileDevice && !(BR.t > 60 * 60 || G.note || p.dead)) textS(c, '[LMB] hit / dig  [F] open  [E] pack  [B] recipes  [K] knap  [H] heal  [P] pact  [M] map', 4, 35, '#8b8fa3'); }
-  else if (!UI.open && !SETTINGS.fpsMode && !mobileDevice) textS(c, A ? '[TAB] scores  [C] forms  [P] menu  1-6 weapons  [R] sidearm [T] swap' : '[E] pack  [K] knap  [F] use  [J] journal  [P] menu', 4, 25, '#8b8fa3');
+  else if (!UI.open && !SETTINGS.fpsMode && !mobileDevice) textS(c, A ? (FFA.active ? FFA.mode === 'crystal' ? '[TAB] scores  [F] place / detonate crystal  [P] menu' : FFA.mode === 'shield' ? '[TAB] scores  [G] guard  [P] menu' : '[TAB] scores  [C] forms  [P] menu  1-6 weapons  [R] sidearm' : '[TAB] scores  [C] forms  [P] menu  1-6 weapons  [R] sidearm [T] swap') : '[E] pack  [K] knap  [F] use  [J] journal  [P] menu', 4, 25, '#8b8fa3');
   if (!SETTINGS.fpsMode && !A && G.jNew && (G.time >> 4) & 1) textS(c, 'NEW JOURNAL ENTRY [J]', 4, 32, '#ffd35a');
   if (!SETTINGS.fpsMode) { drawBless(c); drawMealHud(c); drawGadgetHud(c); }
   drawCoopHud(c);
@@ -473,15 +456,19 @@ function drawObjective(c) {
   if (at !== null && at !== undefined) { const d = at * T - p.x, m = round(abs(d) / T); textS(c, m < 8 ? 'you are here' : d > 0 ? `→ ${m} paces east` : `← ${m} paces west`, qx + 6, 17 + oy + min(3, lines.length) * 9, '#8ff5e6'); }
   drawMileWay(c, uw, 6 + oy + qh);
 }
-function ringStatusText() { if (NET.via === 'rtc') return (netHost() ? 'GAME CODE ' + sigSpaced(COOP.gcode || '......') + ' : ' : (COOP.hostName || 'HOST') + '\'S RING : ') + (NET.peers.size + 1) + ' WAKER' + (NET.peers.size ? 'S' : ''); return NET.status === 'online' ? `ONLINE : ${NET.peers.size + 1} WAKER${NET.peers.size ? 'S' : ''}` : NET.status === 'connecting' ? 'CONNECTING...' : 'OFFLINE : PRACTICE'; }
+function ringStatusText() { if (NET.via === 'rtc') return (netHost() ? 'PRIVATE CODE ' + sigSpaced(COOP.gcode || '......') + ' : ' : (COOP.hostName || 'HOST') + '\'S FFA : ') + (NET.peers.size + 1) + ' WAKER' + (NET.peers.size ? 'S' : ''); return NET.status === 'online' ? `ONLINE : ${NET.peers.size + 1} WAKER${NET.peers.size ? 'S' : ''}` : NET.status === 'connecting' ? 'CONNECTING...' : 'OFFLINE : PRACTICE'; }
 function drawRingStatus(c) {
   const uw = VS.uw, list = [...G.fighters].filter(f => !f.npc).sort((a, b) => b.kills - a.kills || a.deaths - b.deaths);
   const w = 120, x = uw - w - 4; let y = 4;
   c.fillStyle = 'rgba(18,13,31,.62)'; c.fillRect(x, y, w, 13 + min(5, list.length) * 9); c.fillStyle = NET.status === 'online' ? '#7ddc6f' : '#ffb347'; c.fillRect(x, y, 2, 13 + min(5, list.length) * 9);
-  textS(c, NET.via === 'rtc' ? 'RING: FRIENDS' : `RING ${NET.code.toUpperCase()}`, x + 6, y + 3, '#ffd35a'); drawText(c, NET.status === 'online' ? 'live' : NET.status === 'connecting' ? '...' : 'solo', x + w - 24, y + 3, NET.status === 'online' ? '#7ddc6f' : '#ffb347');
-  list.slice(0, 5).forEach((f, i) => { const yy = y + 13 + i * 9, me = f === G.p; drawText(c, (me ? '> ' : '') + f.name, x + 6, yy, me ? '#ffd35a' : f.echoBot ? '#b9bdd0' : '#8ff5e6'); drawText(c, String(f.kills), x + w - 8 - textW(f.kills), yy, '#fff'); });
-  textC(c, ringStatusText(), uw / 2, 4, NET.status === 'online' ? '#7ddc6f' : '#ffb347', 1, textO);
+  textS(c, ffaModeLabel(), x + 6, y + 3, '#ffd35a'); drawText(c, NET.status === 'online' ? 'live' : NET.status === 'connecting' ? '...' : 'solo', x + w - 24, y + 3, NET.status === 'online' ? '#7ddc6f' : '#ffb347');
+  list.slice(0, 5).forEach((f, i) => { const yy = y + 13 + i * 9, me = f === G.p; drawText(c, (me ? '> ' : '') + f.name, x + 6, yy, me ? '#ffd35a' : f.echoBot ? '#b9bdd0' : '#8ff5e6'); drawText(c, `${f.kills}/${f.deaths}`, x + w - 8 - textW(`${f.kills}/${f.deaths}`), yy, '#fff'); });
+  textC(c, NET.via === 'rtc' ? 'PRIVATE FFA  ·  CODE ' + sigSpaced(COOP.gcode || '......') : `FFA  ·  ${NET.peers.size + 1} WAKERS`, uw / 2, 4, NET.status === 'online' ? '#7ddc6f' : '#ffb347', 1, textO);
   if (NET.roundOver) textC(c, 'next round in ' + ceil(NET.roundOver / 60), uw / 2, 14, '#fff', 1, textO);
+  if (FFA.mode === 'crystal' && FFA.resetAt) {
+    const left = max(0, ceil((FFA.resetAt - Date.now()) / 1000)), reset = `ARENA RESET ${String(floor(left / 60)).padStart(2, '0')}:${String(left % 60).padStart(2, '0')}`;
+    textC(c, reset, uw / 2, 14 + (NET.roundOver ? 9 : 0), '#c9fff6', 1, textO);
+  }
 }
 function drawKillFeed(c) {
   const uw = VS.uw; let y = WORLD.royale ? 30 : 4 + 13 + min(5, G.fighters.length) * 9 + 6;
@@ -494,9 +481,9 @@ function drawKillFeed(c) {
 }
 function drawScore(c) {
   const uw = VS.uw, uh = VS.uh, list = [...G.fighters].sort((a, b) => b.kills - a.kills || a.deaths - b.deaths), w = min(260, uw - 16), h = 34 + list.length * 11, x = round((uw - w) / 2), y = round((uh - h) / 2) - 10;
-  panel(c, x, y, w, h, `THE CINDER RING : ${NET.code.toUpperCase()} : ROUND ${NET.rd + 1}`);
-  drawText(c, 'WAKER', x + 8, y + 16, '#8b8fa3'); drawText(c, 'TAKEDOWNS', x + w - 110, y + 16, '#8b8fa3'); drawText(c, 'FALLS', x + w - 44, y + 16, '#8b8fa3');
-  list.forEach((f, i) => { const yy = y + 28 + i * 11, me = f === G.p; if (me) { c.fillStyle = '#2b2740'; c.fillRect(x + 4, yy - 2, w - 8, 10); } drawText(c, f.name + (f.echoBot ? '  (echo)' : f.remote ? '' : '  (you)'), x + 8, yy, me ? '#ffd35a' : f.echoBot ? '#b9bdd0' : '#8ff5e6'); drawText(c, String(f.kills), x + w - 80, yy, '#fff'); drawText(c, String(f.deaths), x + w - 34, yy, '#fff'); });
+  panel(c, x, y, w, h, `${ffaModeLabel()} : ${NET.code.toUpperCase()} : ROUND ${NET.rd + 1}`);
+  drawText(c, 'WAKER', x + 8, y + 16, '#8b8fa3'); drawText(c, 'K', x + w - 122, y + 16, '#8b8fa3'); drawText(c, 'D', x + w - 82, y + 16, '#8b8fa3'); drawText(c, 'K/D', x + w - 48, y + 16, '#8b8fa3');
+  list.forEach((f, i) => { const yy = y + 28 + i * 11, me = f === G.p, kd = f.deaths ? (f.kills / f.deaths).toFixed(1) : f.kills.toFixed(1); if (me) { c.fillStyle = '#2b2740'; c.fillRect(x + 4, yy - 2, w - 8, 10); } drawText(c, f.name + (f.echoBot ? '  (bot)' : f.remote ? '' : '  (you)'), x + 8, yy, me ? '#ffd35a' : f.echoBot ? '#b9bdd0' : '#8ff5e6'); drawText(c, String(f.kills), x + w - 122, yy, '#fff'); drawText(c, String(f.deaths), x + w - 82, yy, '#fff'); drawText(c, kd, x + w - 48, yy, '#fff'); });
   drawText(c, ringStatusText(), x + 8, y + h - 10, '#7ddc6f');
 }
 function drawInv(c) {
@@ -588,11 +575,11 @@ function drawJournal(c) {
 }
 function drawPause(c) {
   const A = WORLD.arena, big = !A && !DIM && WT_ON && WT_KEYS.length > 0 && VS.uh >= 300, w = min(A ? 340 : 392, VS.uw - 16), h = A ? 158 : big ? 290 : 240, x = round((VS.uw - w) / 2), y = round((VS.uh - h) / 2);
-  panel(c, x, y, w, h, A ? (WORLD.royale ? (BR.wild ? 'THE WILDS : MENU' : 'THE ASHFALL : MENU') : 'THE CINDER RING : MENU') : `${WORLD.name.toUpperCase()} : PAUSED`); hit(x, y, w, h, () => { });
+  panel(c, x, y, w, h, A ? (WORLD.royale ? (BR.wild ? 'THE WILDS : MENU' : 'THE ASHFALL : MENU') : 'FFA ARCADE : MENU') : `${WORLD.name.toUpperCase()} : PAUSED`); hit(x, y, w, h, () => { });
   if (!A && !DIM) { const s = yearLine(); drawText(c, s, x + w - textW(s) - 6, y + 3, SEASON().col); }
   if (big) { drawText(c, 'THIS WORLD IS', x + 8, y + 194, '#8b8fa3'); drawTraits(c, x + 8, y + 205, w - 16); }
   button(c, x + 8, y + 18, 70, 15, 'RESUME', () => { closeUI(); sfx('ui'); });
-  button(c, x + 84, y + 18, 96, 15, A ? (WORLD.royale ? (BR.via !== 'solo' ? 'TO THE LOBBY' : 'LEAVE MATCH') : 'LEAVE RING') : 'SAVE & QUIT', () => { closeUI(); if (WORLD.royale && BR.on && BR.via !== 'solo') brBackToLobby(); else quitToTitle(); sfx('ui'); });
+  button(c, x + 84, y + 18, 96, 15, A ? (WORLD.royale ? (BR.via !== 'solo' ? 'TO THE LOBBY' : 'LEAVE MATCH') : 'LEAVE FFA') : 'SAVE & QUIT', () => { closeUI(); if (WORLD.royale && BR.on && BR.via !== 'solo') brBackToLobby(); else quitToTitle(); sfx('ui'); });
   button(c, x + 186, y + 18, 84, 15, muted ? 'SOUND: OFF' : 'SOUND: ON', () => { muted = !muted; sfx('ui'); });
   if (!A) button(c, x + 276, y + 18, 46, 15, 'SAVE', () => { saveWorld(); sfx('craft'); });
   if (wildOn() && BR.teammate) button(c, x + w - 66, y + h - 19, 58, 15, 'LEAVE PACT', () => { brBreakPact(false); closeUI(); });

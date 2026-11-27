@@ -1086,7 +1086,7 @@ let FORGE_X = 0, FORGE_Y = 0, SKY_X = 0, SKY_Y = 0, MINE_X = 0, MINE_Y = 0, road
 const SIZES = [[600, 260], [900, 320], [1400, 380], [2200, 440]], SIZE_N = ['Small', 'Medium', 'Large', 'Vast'], SHAPE_N = ['Balanced', 'Skylands', 'Hollows'], MODE_N = ['Journey', 'Free Forge'];
 const WORLD = { id: '', name: '', seed: 0, size: 1, shape: 0, mode: 0, arena: false };
 const ARENA_SPAWNS = [[18, 58], [131, 58], [75, 48], [44, 43], [105, 43], [75, 38]];
-const BIOME = { reach: 'STILLGLASS REACH', moor: 'EMBERFELT MOOR', mosswood: 'MOSSWOOD', willowmere: 'WILLOWMERE', scoria: 'RUSTFALL', ash: 'ASHEN HOLLOW', drift: 'THE DRIFT', under: 'THE UNDERDARK', deep: 'THE DEEP', ring: 'THE CINDER RING', village: 'HEARTHHOLD' };
+const BIOME = { reach: 'STILLGLASS REACH', moor: 'EMBERFELT MOOR', mosswood: 'MOSSWOOD', willowmere: 'WILLOWMERE', scoria: 'RUSTFALL', ash: 'ASHEN HOLLOW', drift: 'THE DRIFT', under: 'THE UNDERDARK', deep: 'THE DEEP', ring: 'THE FFA ARCADE', village: 'HEARTHHOLD' };
 // visual layers and set pieces, rebuilt from the seed every time a world loads
 const STRUCTS = [], PROPS = [], FGP = [], VENTS = [], SPOTS = {}, LANDMARKS = [], ISLES = [];
 let PROPB = new Map(), FGPB = new Map();
@@ -1559,17 +1559,41 @@ function buildDrift() {
   ISLES.slice(1).sort((p, q) => p.cx - q.cx).forEach((s, i) => { if (i % 2) return; const x = s.cx + (i % 4 ? 1 : -1) * (s.a + 4); if (x > 6 && x < WW - 7 && heights[x] - s.cy > 16) vent(x, s.cy - 7); });
 }
 
-function genArena() {
+function genArena(mode) {
   SEED = 4242; rng = mulberry32(SEED); WORLD.arena = true; resetWorld(150, 68);
   const fy = 60; SPAWN_X = 75; SHRINE_X = SHRINE2_X = GATE_X = -9999; BASE_Y = fy; DEEP_Y = 9999; DRIFT_Y = -99; VIL_Y = -999;
   for (let x = 0; x < WW; x++) {
     heights[x] = fy;
-    for (let y = fy; y < WH; y++) tiles[y * WW + x] = y >= WH - 3 ? BEDROCK : y < fy + 2 ? BRICK : STONE;
+    for (let y = fy; y < WH; y++) tiles[y * WW + x] = y >= WH - 3 ? (mode === 'knockback' ? AIR : BEDROCK) : y < fy + 2 ? BRICK : STONE;
     for (let y = 8; y < fy; y++) { if (x < 3 || x >= WW - 3) tiles[y * WW + x] = BEDROCK; else if (x % 14 < 2 && y > fy - 26 || (y > fy - 28 && y <= fy - 26)) walls[y * WW + x] = W_RUIN; }
   }
   const plat = (x0, x1, y) => { for (let x = x0; x <= x1; x++) tiles[y * WW + x] = PLATFORM; };
   const block = (x0, x1, y0, y1) => { for (let x = x0; x <= x1; x++) for (let y = y0; y <= y1; y++) tiles[y * WW + x] = BRICK; };
   plat(16, 36, 53); plat(113, 133, 53); plat(48, 58, 55); plat(91, 101, 55); block(61, 88, 50, 51); plat(36, 52, 46); plat(97, 113, 46); plat(66, 83, 41); plat(20, 31, 39); plat(118, 129, 39);
+  if (mode === 'crystal') {
+    plat(48, 101, 55); block(69, 80, 51, 53);
+    for (const [x, y] of [[56, 54], [95, 54], [64, 50], [85, 50], [74, 40]]) setTile(x, y, CRYSTAL);
+  } else if (mode === 'mace') {
+    plat(42, 59, 49); plat(90, 107, 49); plat(65, 84, 36); block(70, 79, 45, 50);
+  } else if (mode === 'spear') {
+    for (let x = 61; x <= 88; x++) for (let y = 50; y <= 51; y++) tiles[y * WW + x] = AIR;
+    plat(27, 44, 49); plat(105, 122, 49); plat(57, 92, 56);
+  } else if (mode === 'grapple') {
+    block(37, 41, 31, 53); block(108, 112, 31, 53); plat(25, 52, 37); plat(97, 124, 37); plat(59, 90, 32);
+  } else if (mode === 'bow') {
+    block(43, 48, 47, 52); block(101, 106, 47, 52); plat(24, 39, 38); plat(111, 126, 38); plat(58, 91, 45);
+  } else if (mode === 'axe') {
+    for (let x = 20; x <= 129; x++) for (let y = 34; y <= 46; y++) tiles[y * WW + x] = AIR;
+    block(67, 82, 49, 53); plat(48, 61, 55); plat(88, 101, 55);
+  } else if (mode === 'shield') {
+    block(37, 41, 45, 54); block(108, 112, 45, 54); block(69, 80, 48, 52);
+    plat(49, 60, 44); plat(89, 100, 44);
+  } else if (mode === 'knockback') {
+    for (let x = 3; x < WW - 3; x++) for (let y = fy; y < WH - 3; y++) tiles[y * WW + x] = AIR;
+    plat(59, 90, 48); plat(29, 46, 54); plat(103, 120, 54); plat(69, 80, 38);
+  } else if (mode === 'random') {
+    plat(36, 54, 46); plat(95, 113, 46); block(72, 77, 47, 53);
+  }
   for (const [x, y] of [[14, 52], [42, 52], [70, 44], [79, 44], [107, 52], [135, 52], [28, 34], [121, 34], [56, 52], [93, 52]]) setTile(x, y, TORCH);
   MODS_ON = false;
 }
@@ -7803,7 +7827,7 @@ function tickStatus(e) {
 
 // ---------------- sidearms ----------------
 const ARMS = ['shuriken', 'hook', 'flask', 'smoke'];
-function armsOwned(f) { if (!f.isPlayer) return f.arms || []; if ((WORLD.arena && !WORLD.royale) || WORLD.mode === 1) return ARMS; return ARMS.filter(id => countItem(id) > 0); }
+function armsOwned(f) { if (!f.isPlayer) return f.arms || []; if (FFA.active && WORLD.arena && !WORLD.royale) return ffaArms(); if ((WORLD.arena && !WORLD.royale) || WORLD.mode === 1) return ARMS; return ARMS.filter(id => countItem(id) > 0); }
 function curArm(f) { const own = armsOwned(f); if (!own.length) return null; if (!own.includes(f.arm)) f.arm = own[0]; return f.arm; }
 function cycleArm(f) { const own = armsOwned(f); if (!own.length) { sfx('deny'); return; } f.arm = own[(own.indexOf(f.arm) + 1) % own.length]; G.armT = 100; sfx('ui'); }
 function throwArm(f, wx, wy) {
@@ -9006,7 +9030,9 @@ function hurtFighter(f, dmg, fromX, o = {}) {
   if (f.inv > (o.net ? 30 : o.link ? 999 : 0)) return false;
   if (f.state === 'link' && !o.link) return false;
   if (tryClash(f, dmg, fromX, o)) return false;
-  const wild = wildOn(), pvp = !!o.pvp, armored = f.atk && f.atk.m.armor && f.atk.phase < 2, caught = caughtOpen(f, o), soft = pvp && o.bite === false;
+  const guarded = FFA.active && FFA.mode === 'shield' && f === G.p && keys.KeyG && f.stam >= 12 && sign(fromX - (f.x + 3)) === f.face;
+  if (guarded) { f.stam -= 12; f.riposte = max(f.riposte || 0, 40); dmg *= .35; }
+  const wild = wildOn(), pvp = !!o.pvp, armored = f.atk && f.atk.m.armor && f.atk.phase < 2, caught = caughtOpen(f, o), soft = pvp && (o.bite === false || guarded);
   if (caught) dmg *= 1.25;
   const gp = f === G.p && gearOn(); if (gp) { dmg = gearDamage(dmg, o); if ((gearHas('kindled') || gearHas('molten')) && o.by && o.by !== f && !o.by.dead && o.by.hp !== undefined && !o.by.fighter) applyStatus(o.by, 'burn', f, { d: 90 }); }
   // a guardian's fight hits harder than the open road
@@ -9023,7 +9049,7 @@ function hurtFighter(f, dmg, fromX, o = {}) {
   else if (gp && dmg < 9 && gearHas('anvil')) { f.inv = 40; fsx(f, 'hit2', 0); sparks(f.x + 3, f.y + 8, 3, 0, 1.2); }
   else if (!armored) {
     const d = sign((f.x + 3) - fromX) || -f.face;
-    const pz = (gp ? gearMul('poise') : 1) * (soft ? .45 : 1); f.vx = (o.kx !== undefined ? o.kx * .85 : d * 2.7) * pz; if (!soft) { f.vy = (o.ky !== undefined ? min(o.ky, -1.2) : -2.3) * (.4 + .6 * pz); f.onGround = false; }
+    const pz = (gp ? gearMul('poise') : 1) * (guarded ? .12 : soft ? .45 : 1); f.vx = (o.kx !== undefined ? o.kx * .85 : d * 2.7) * pz; if (!soft) { f.vy = (o.ky !== undefined ? min(o.ky, -1.2) : -2.3) * (.4 + .6 * pz); f.onGround = false; }
     f.hurtT = soft ? 5 : pvp ? clamp(o.stagger ? 24 : 11 + (o.stop || 2), 10, 26) : 13; f.inv = pvp ? 7 : 50;
     if (o.link) f.inv = 0; else if (pvp && ++f.taken >= 4) { f.inv = 50; f.taken = 0; f.vx *= 1.4; sparks(f.x + 3, f.y + 10, 10, 0, 2, FROST); }
     f.takenT = 70; if (!(soft && f.atk && f.atk.phase === 1)) { f.atk = null; f.state = 'normal'; f.lastMove = null; f.chainT = 0; f.glintT = 0; } f.buf = null;
@@ -9158,7 +9184,7 @@ function tickPlayer() {
   tickFighter(p, I);
   if (WORLD.royale) brAfter(p, I);
   if (p.dead) { if (!WORLD.royale && p.deadT > (WORLD.arena ? 150 : 190)) respawnPlayer(); return; }
-  const wild = wildOn(); if (WORLD.arena && !wild) return;
+  const wild = wildOn(); if (WORLD.arena && !wild) { ffaCrystalAction(); return; }
   // ---- tools, blocks, consumables (in the Wilds you dig, build and throw as anywhere, but its own keys heal and open things) ----
   toolTick(p, I);
   const hi = heldItem(); if (hi && hi.type === 'weapon') G.lastWeapon = G.sel;
@@ -11515,7 +11541,7 @@ const JOURNAL = {
   vesper2: ['The Still Ember', 'Vesper yielded, and the second ember settled behind your ribs with a cold you can feel in your teeth. Your feet have learned to push off the air twice: dodge two times before you land.'],
   wick2: ['What Wick Knows', 'Wick knew Vesper once. She kept a fire too, before hers went out. He thinks she might not be wrong about the Hollow. He thinks you should keep going anyway.'],
   gate: ['The Furnace Gate', 'In Rustfall, a door taller than any stalk is set into the hillside. Three sockets. Two of them hum when you come near. Something on the other side has been waiting a very long time.'],
-  ring: ['The Cinder Ring', 'A coliseum where Wakers sparred, once. The echoes that wait there are memories of every Waker who ever fought in it. Other Wakers can reach it too, from wherever they woke.'],
+  ring: ['The FFA Arcade', 'Ten arenas put Wakers against echo fighters, each with a different weapon and way to win. Other Wakers can join a private match by code.'],
   village: ['Hearthhold', 'The last village that still keeps its lamps lit. A dojo, a smithy, a watchtower, a well, and a fire in the square that has not gone out in living memory.'],
   juno: ['Juno', 'Juno runs the dojo. She does not care which weapon you carry. She cares what happens between two of them: the star that pins, the chain that follows.'],
   bram: ['Bram', 'The smith. Bald, bearded, busy. His family worked the Drowned Forge before the Keeper took it, and he has never once gone down to look.'],
@@ -11564,7 +11590,7 @@ const LEADS = {
   spire: { title: 'The Broken Spire', text: 'An old watchtower stands on the western moor. Something is carved at the top.', at: () => SPOTS.spire && SPOTS.spire.x, done: () => G.flags.spireRead },
   gate: { title: 'The Furnace Gate', text: 'A door in Rustfall with three sockets. It wants all three embers.', at: () => GATE_X, done: () => G.flags.gateOpen },
   links: { title: 'Links', text: 'Juno says a pinned, hooked, burning, blinded or launched foe can be finished with the right weapon. Find three links.', done: () => G.linksKnown.size >= 3 },
-  ring: { title: 'The Cinder Ring', text: 'Wakers spar in the Cinder Ring, against echoes or each other. Enter it from the title screen.', done: () => false },
+  ring: { title: 'The FFA Arcade', text: 'Ten weapon-focused arenas await. Enter the FFA Arcade from the title screen to practise with echo fighters or host a private match.', done: () => false },
   tools: { title: 'Bare hands', text: 'You woke with nothing. Pebbles and flint lie about; grass gives fiber, bushes give sticks. Knap a blade [K], twist twine, bind them.', done: () => !!(G.flags.crafted_flint_axe || G.flags.crafted_flint_pick) },
   food: { title: 'An empty stomach', text: 'Berries off the bushes, hares and thornbacks for meat. Raw meat feeds you; seared on a campfire it feeds you far better.', done: () => !!(G.flags.ate_cmeat || G.flags.ate_stew || G.flags.ate_jerky) },
   styles: { title: 'Five forms', text: 'Every weapon has five styles on V. Juno shows you the first; drills at a practice post teach the rest. Land one and swap [X] to your off hand for a pair finisher.', done: () => Object.keys(G.mast || {}).some(t => styleLevel(t) >= 5) },
@@ -11609,7 +11635,7 @@ const SCRIPTS = {
   },
   wick_keeper: { lines: [['WICK', 'You went all the way down. And you came back up with fire that does not burn you.'], ['WICK', 'Bram will want to hear about the forge. He will pretend he does not.']], end() { G.flags.wickTold3 = true; G.dirty = true; } },
   wick_three: { lines: [['WICK', 'All three. I did not think I would see it. I am not sure I wanted to.'], ['WICK', 'The Furnace Gate is in Rustfall, far east. Whatever happens when it opens, it happens because you chose it.']], end() { learn('gate'); G.pin = 'gate'; } },
-  wick_forge: { lines: [['WICK', 'A free forge, then. No embers to chase, just stone to shape and stalks to cut.'], ['WICK', 'The shrine, the mirror and the Drowned Forge still answer, if you want a fight. So does the Cinder Ring, where Wakers spar with each other.']], end() { G.flags.metWick = true; for (const id of ['warden', 'vesper', 'keeper', 'juno', 'bram', 'ring']) learn(id, true); unlock('ring'); } },
+  wick_forge: { lines: [['WICK', 'A free forge, then. No embers to chase, just stone to shape and stalks to cut.'], ['WICK', 'The shrine, the mirror and the Drowned Forge still answer, if you want a fight. The FFA Arcade has ten arenas, each with its own way to fight.']], end() { G.flags.metWick = true; for (const id of ['warden', 'vesper', 'keeper', 'juno', 'bram', 'ring']) learn(id, true); unlock('ring'); } },
   juno_intro: {
     lines: [['JUNO', 'You walk like a Waker. Loud. Come in, then.'], ['JUNO', 'Weapons are not the interesting part. What happens between them is.'],
     ['JUNO', 'You made that yourself? Then you are worth teaching. Take these. A Rattlechain, and star knives. [R] throws a star. It carries whatever it hits into the nearest wall and nails it there.'],
@@ -12280,10 +12306,10 @@ function drawTitle(c) {
          : ['BEGIN', 'forge your first world', () => { G.state = 'create'; Object.assign(FORM, { name: 'World 1', seed: rollSeed() }); UI.focus = 'name'; sfx('ui'); }, 'A new land, a cold fire, and three embers to find.', { col: '#ffd35a' }],
     ['WORLDS', 'new, load, copy', () => goWorlds(''), 'Every world you have made. Forge a new one, or paste one a friend sent.']];
   const friends = [
-    ['JOIN A FRIEND', 'type their game code', () => { G.state = 'join'; UI.focus = null; COOP.err = ''; COOP.note = ''; COOP.long = false; nick(); sfx('ui'); }, 'Step into a friend\'s world with the code they give you.'],
+    ['JOIN A FRIEND', 'world or private FFA code', () => { G.state = 'join'; UI.focus = null; COOP.err = ''; COOP.note = ''; COOP.long = false; nick(); sfx('ui'); }, 'Join a friend\'s world or private FFA match with their game code.'],
     ['HOST A WORLD', 'open one, then invite', () => goWorlds('Open a world, then press P and choose PLAY TOGETHER for a code.'), 'Open one of your worlds, press P, choose PLAY TOGETHER: friends join with the code.']];
   const arenas = [
-    ['THE CINDER RING', 'duels: first to ten', () => { G.state = 'ring'; UI.focus = null; nick(); sfx('ui'); }, 'A small arena, every weapon, quick duels. Online, with friends by code, or against echoes.'],
+    ['FFA ARCADE', '10 combat modes · 3 bots', () => { G.state = 'ring'; UI.focus = null; nick(); sfx('ui'); }, 'Ten weapon-focused arenas, three opponents in quick play, personal ratings, and private matches by code.'],
     ['THE ASHFALL TRIALS', 'outlast the field', () => { G.state = 'brform'; UI.focus = null; nick(); if (FORM.brcode === undefined) FORM.brcode = ''; sfx('ui'); }, 'Twelve Wakers, one island. Scavenge, team up, survive the nights. About twelve minutes.']];
   TITLE.hint = '';
   if (uw >= 430) {
@@ -12497,24 +12523,7 @@ function drawAccounts(c) {
   if (ACCOUNT.note) textC(c, ACCOUNT.note, uw / 2, y + h + 3, '#8ff5e6', 1, textO);
 }
 function drawRingForm(c) {
-  const uw = VS.uw, uh = VS.uh, w = min(330, uw - 16), h = 244, x = round((uw - w) / 2), y = max(8, round((uh - h) / 2));
-  c.fillStyle = 'rgba(18,13,31,.55)'; c.fillRect(0, 0, uw, uh); panel(c, x, y, w, h, 'THE CINDER RING : ONLINE PVP');
-  const fx = x + 10, fw = w - 20;
-  drawText(c, 'NAME', fx, y + 22, '#b9bdd0'); field(c, fx + 46, y + 18, fw - 46, 'nick', 'WAKER');
-  skinPicker(c, fx, y + 38);
-  drawText(c, 'RING', fx, y + 70, '#b9bdd0'); field(c, fx + 46, y + 66, fw - 46, 'code', 'open  (or a private code)');
-  const L = ['First to 10 takedowns takes the ring. Alone in a ring?', 'Echoes spar with you until someone joins.', 'FRIENDS: host a ring, and your friends pick JOIN A FRIEND', 'on the title screen and type your game code. Up to 4.'];
-  L.forEach((l, i) => drawText(c, l, fx, y + 92 + i * 10, '#d8d4e6'));
-  drawText(c, NET.room ? 'claude.ai live room: everyone with the same ring code meets.' : 'claude.ai live room: not here. Game codes work anywhere.', fx, y + 136, NET.room ? '#7ddc6f' : '#8b8fa3');
-  if (netOK()) button(c, x + 10, y + h - 50, fw, 18, 'HOST A RING FOR FRIENDS (GAME CODE)', () => {
-    UI.focus = null; const nick = cleanName(FORM.nick) || 'WAKER'; FORM.nick = nick; G.state = 'loading'; G.loadMsg = 'Lighting the ring...';
-    setTimeout(() => { coopReset(); enterArena(nick, FORM.skin, 'friends', 'rtc'); }, 30); sfx('quest', 0);
-  });
-  button(c, x + 10, y + h - 26, 150, 18, NET.room ? 'ENTER THE RING' : 'PRACTICE (ECHOES)', () => {
-    UI.focus = null; const nick = cleanName(FORM.nick) || 'WAKER'; FORM.nick = nick; G.state = 'loading'; G.loadMsg = 'Entering the ring...';
-    setTimeout(() => enterArena(nick, FORM.skin, cleanCode(FORM.code) || 'open'), 30); sfx('quest', 0);
-  });
-  button(c, x + w - 70, y + h - 26, 60, 18, 'BACK', () => { G.state = 'title'; UI.focus = null; sfx('ui'); });
+  drawFFAMenu(c);
 }
 
 // ---------------- in-game HUD ----------------
@@ -12526,7 +12535,7 @@ function drawHUD(c) {
   if ((!A || wild) && WORLD.mode !== 1) { const f = G.food / 100; bar(c, 15, 20, 72, 2, f, f < .25 && (G.time >> 4) & 1 ? '#ff9a8a' : '#e0a050', '#7a4a1a'); if (f < .3) textO(c, f <= 0 ? 'STARVING' : 'HUNGRY', 91, 16, '#e0a050'); }
   if (p.riposte > 0 && (G.time >> 2) & 1) textO(c, 'RIPOSTE READY', 15, 22, '#8ff5e6');
   else if (!UI.open && WORLD.royale) { if (wild && !SETTINGS.fpsMode && !mobileDevice && !(BR.t > 60 * 60 || G.note || p.dead)) textS(c, '[LMB] hit / dig  [F] open  [E] pack  [B] recipes  [K] knap  [H] heal  [P] pact  [M] map', 4, 35, '#8b8fa3'); }
-  else if (!UI.open && !SETTINGS.fpsMode && !mobileDevice) textS(c, A ? '[TAB] scores  [C] forms  [P] menu  1-6 weapons  [R] sidearm [T] swap' : '[E] pack  [K] knap  [F] use  [J] journal  [P] menu', 4, 25, '#8b8fa3');
+  else if (!UI.open && !SETTINGS.fpsMode && !mobileDevice) textS(c, A ? (FFA.active ? FFA.mode === 'crystal' ? '[TAB] scores  [F] place / detonate crystal  [P] menu' : FFA.mode === 'shield' ? '[TAB] scores  [G] guard  [P] menu' : '[TAB] scores  [C] forms  [P] menu  1-6 weapons  [R] sidearm' : '[TAB] scores  [C] forms  [P] menu  1-6 weapons  [R] sidearm [T] swap') : '[E] pack  [K] knap  [F] use  [J] journal  [P] menu', 4, 25, '#8b8fa3');
   if (!SETTINGS.fpsMode && !A && G.jNew && (G.time >> 4) & 1) textS(c, 'NEW JOURNAL ENTRY [J]', 4, 32, '#ffd35a');
   if (!SETTINGS.fpsMode) { drawBless(c); drawMealHud(c); drawGadgetHud(c); }
   drawCoopHud(c);
@@ -12584,15 +12593,19 @@ function drawObjective(c) {
   if (at !== null && at !== undefined) { const d = at * T - p.x, m = round(abs(d) / T); textS(c, m < 8 ? 'you are here' : d > 0 ? `→ ${m} paces east` : `← ${m} paces west`, qx + 6, 17 + oy + min(3, lines.length) * 9, '#8ff5e6'); }
   drawMileWay(c, uw, 6 + oy + qh);
 }
-function ringStatusText() { if (NET.via === 'rtc') return (netHost() ? 'GAME CODE ' + sigSpaced(COOP.gcode || '......') + ' : ' : (COOP.hostName || 'HOST') + '\'S RING : ') + (NET.peers.size + 1) + ' WAKER' + (NET.peers.size ? 'S' : ''); return NET.status === 'online' ? `ONLINE : ${NET.peers.size + 1} WAKER${NET.peers.size ? 'S' : ''}` : NET.status === 'connecting' ? 'CONNECTING...' : 'OFFLINE : PRACTICE'; }
+function ringStatusText() { if (NET.via === 'rtc') return (netHost() ? 'PRIVATE CODE ' + sigSpaced(COOP.gcode || '......') + ' : ' : (COOP.hostName || 'HOST') + '\'S FFA : ') + (NET.peers.size + 1) + ' WAKER' + (NET.peers.size ? 'S' : ''); return NET.status === 'online' ? `ONLINE : ${NET.peers.size + 1} WAKER${NET.peers.size ? 'S' : ''}` : NET.status === 'connecting' ? 'CONNECTING...' : 'OFFLINE : PRACTICE'; }
 function drawRingStatus(c) {
   const uw = VS.uw, list = [...G.fighters].filter(f => !f.npc).sort((a, b) => b.kills - a.kills || a.deaths - b.deaths);
   const w = 120, x = uw - w - 4; let y = 4;
   c.fillStyle = 'rgba(18,13,31,.62)'; c.fillRect(x, y, w, 13 + min(5, list.length) * 9); c.fillStyle = NET.status === 'online' ? '#7ddc6f' : '#ffb347'; c.fillRect(x, y, 2, 13 + min(5, list.length) * 9);
-  textS(c, NET.via === 'rtc' ? 'RING: FRIENDS' : `RING ${NET.code.toUpperCase()}`, x + 6, y + 3, '#ffd35a'); drawText(c, NET.status === 'online' ? 'live' : NET.status === 'connecting' ? '...' : 'solo', x + w - 24, y + 3, NET.status === 'online' ? '#7ddc6f' : '#ffb347');
-  list.slice(0, 5).forEach((f, i) => { const yy = y + 13 + i * 9, me = f === G.p; drawText(c, (me ? '> ' : '') + f.name, x + 6, yy, me ? '#ffd35a' : f.echoBot ? '#b9bdd0' : '#8ff5e6'); drawText(c, String(f.kills), x + w - 8 - textW(f.kills), yy, '#fff'); });
-  textC(c, ringStatusText(), uw / 2, 4, NET.status === 'online' ? '#7ddc6f' : '#ffb347', 1, textO);
+  textS(c, ffaModeLabel(), x + 6, y + 3, '#ffd35a'); drawText(c, NET.status === 'online' ? 'live' : NET.status === 'connecting' ? '...' : 'solo', x + w - 24, y + 3, NET.status === 'online' ? '#7ddc6f' : '#ffb347');
+  list.slice(0, 5).forEach((f, i) => { const yy = y + 13 + i * 9, me = f === G.p; drawText(c, (me ? '> ' : '') + f.name, x + 6, yy, me ? '#ffd35a' : f.echoBot ? '#b9bdd0' : '#8ff5e6'); drawText(c, `${f.kills}/${f.deaths}`, x + w - 8 - textW(`${f.kills}/${f.deaths}`), yy, '#fff'); });
+  textC(c, NET.via === 'rtc' ? 'PRIVATE FFA  ·  CODE ' + sigSpaced(COOP.gcode || '......') : `FFA  ·  ${NET.peers.size + 1} WAKERS`, uw / 2, 4, NET.status === 'online' ? '#7ddc6f' : '#ffb347', 1, textO);
   if (NET.roundOver) textC(c, 'next round in ' + ceil(NET.roundOver / 60), uw / 2, 14, '#fff', 1, textO);
+  if (FFA.mode === 'crystal' && FFA.resetAt) {
+    const left = max(0, ceil((FFA.resetAt - Date.now()) / 1000)), reset = `ARENA RESET ${String(floor(left / 60)).padStart(2, '0')}:${String(left % 60).padStart(2, '0')}`;
+    textC(c, reset, uw / 2, 14 + (NET.roundOver ? 9 : 0), '#c9fff6', 1, textO);
+  }
 }
 function drawKillFeed(c) {
   const uw = VS.uw; let y = WORLD.royale ? 30 : 4 + 13 + min(5, G.fighters.length) * 9 + 6;
@@ -12605,9 +12618,9 @@ function drawKillFeed(c) {
 }
 function drawScore(c) {
   const uw = VS.uw, uh = VS.uh, list = [...G.fighters].sort((a, b) => b.kills - a.kills || a.deaths - b.deaths), w = min(260, uw - 16), h = 34 + list.length * 11, x = round((uw - w) / 2), y = round((uh - h) / 2) - 10;
-  panel(c, x, y, w, h, `THE CINDER RING : ${NET.code.toUpperCase()} : ROUND ${NET.rd + 1}`);
-  drawText(c, 'WAKER', x + 8, y + 16, '#8b8fa3'); drawText(c, 'TAKEDOWNS', x + w - 110, y + 16, '#8b8fa3'); drawText(c, 'FALLS', x + w - 44, y + 16, '#8b8fa3');
-  list.forEach((f, i) => { const yy = y + 28 + i * 11, me = f === G.p; if (me) { c.fillStyle = '#2b2740'; c.fillRect(x + 4, yy - 2, w - 8, 10); } drawText(c, f.name + (f.echoBot ? '  (echo)' : f.remote ? '' : '  (you)'), x + 8, yy, me ? '#ffd35a' : f.echoBot ? '#b9bdd0' : '#8ff5e6'); drawText(c, String(f.kills), x + w - 80, yy, '#fff'); drawText(c, String(f.deaths), x + w - 34, yy, '#fff'); });
+  panel(c, x, y, w, h, `${ffaModeLabel()} : ${NET.code.toUpperCase()} : ROUND ${NET.rd + 1}`);
+  drawText(c, 'WAKER', x + 8, y + 16, '#8b8fa3'); drawText(c, 'K', x + w - 122, y + 16, '#8b8fa3'); drawText(c, 'D', x + w - 82, y + 16, '#8b8fa3'); drawText(c, 'K/D', x + w - 48, y + 16, '#8b8fa3');
+  list.forEach((f, i) => { const yy = y + 28 + i * 11, me = f === G.p, kd = f.deaths ? (f.kills / f.deaths).toFixed(1) : f.kills.toFixed(1); if (me) { c.fillStyle = '#2b2740'; c.fillRect(x + 4, yy - 2, w - 8, 10); } drawText(c, f.name + (f.echoBot ? '  (bot)' : f.remote ? '' : '  (you)'), x + 8, yy, me ? '#ffd35a' : f.echoBot ? '#b9bdd0' : '#8ff5e6'); drawText(c, String(f.kills), x + w - 122, yy, '#fff'); drawText(c, String(f.deaths), x + w - 82, yy, '#fff'); drawText(c, kd, x + w - 48, yy, '#fff'); });
   drawText(c, ringStatusText(), x + 8, y + h - 10, '#7ddc6f');
 }
 function drawInv(c) {
@@ -12699,11 +12712,11 @@ function drawJournal(c) {
 }
 function drawPause(c) {
   const A = WORLD.arena, big = !A && !DIM && WT_ON && WT_KEYS.length > 0 && VS.uh >= 300, w = min(A ? 340 : 392, VS.uw - 16), h = A ? 158 : big ? 290 : 240, x = round((VS.uw - w) / 2), y = round((VS.uh - h) / 2);
-  panel(c, x, y, w, h, A ? (WORLD.royale ? (BR.wild ? 'THE WILDS : MENU' : 'THE ASHFALL : MENU') : 'THE CINDER RING : MENU') : `${WORLD.name.toUpperCase()} : PAUSED`); hit(x, y, w, h, () => { });
+  panel(c, x, y, w, h, A ? (WORLD.royale ? (BR.wild ? 'THE WILDS : MENU' : 'THE ASHFALL : MENU') : 'FFA ARCADE : MENU') : `${WORLD.name.toUpperCase()} : PAUSED`); hit(x, y, w, h, () => { });
   if (!A && !DIM) { const s = yearLine(); drawText(c, s, x + w - textW(s) - 6, y + 3, SEASON().col); }
   if (big) { drawText(c, 'THIS WORLD IS', x + 8, y + 194, '#8b8fa3'); drawTraits(c, x + 8, y + 205, w - 16); }
   button(c, x + 8, y + 18, 70, 15, 'RESUME', () => { closeUI(); sfx('ui'); });
-  button(c, x + 84, y + 18, 96, 15, A ? (WORLD.royale ? (BR.via !== 'solo' ? 'TO THE LOBBY' : 'LEAVE MATCH') : 'LEAVE RING') : 'SAVE & QUIT', () => { closeUI(); if (WORLD.royale && BR.on && BR.via !== 'solo') brBackToLobby(); else quitToTitle(); sfx('ui'); });
+  button(c, x + 84, y + 18, 96, 15, A ? (WORLD.royale ? (BR.via !== 'solo' ? 'TO THE LOBBY' : 'LEAVE MATCH') : 'LEAVE FFA') : 'SAVE & QUIT', () => { closeUI(); if (WORLD.royale && BR.on && BR.via !== 'solo') brBackToLobby(); else quitToTitle(); sfx('ui'); });
   button(c, x + 186, y + 18, 84, 15, muted ? 'SOUND: OFF' : 'SOUND: ON', () => { muted = !muted; sfx('ui'); });
   if (!A) button(c, x + 276, y + 18, 46, 15, 'SAVE', () => { saveWorld(); sfx('craft'); });
   if (wildOn() && BR.teammate) button(c, x + w - 66, y + h - 19, 58, 15, 'LEAVE PACT', () => { brBreakPact(false); closeUI(); });
@@ -13422,18 +13435,10 @@ function drawTrinketRow(c, x, y) {
 }
 
 // ============================================================
-//  The Cinder Ring, online. Two ways in:
-//  - on claude.ai, the page's live room: everyone who enters the same
-//    ring code fights in one arena;
-//  - anywhere (the HTML file, the Mac app), a game code: one person hosts
-//    a ring and up to three friends join it with JOIN A FRIEND. The host's
-//    computer passes everyone's Waker on to the others.
-//  Either way Each browser simulates its own
-//  Waker and shares it through the page's live room as presence:
-//  position, pose, the move in progress, and the hits it landed.
-//  The person who was hit applies the hit (so a perfect dodge on
-//  your screen really dodges). Nothing is stored; closing the page
-//  leaves the ring. Alone in a ring? Echoes spar with you instead.
+//  The FFA Arcade: quick play and private game-code matches.
+//  Each browser simulates its own Waker and shares position, pose,
+//  moves and hits with the other players. The person who was hit
+//  applies the hit, so a perfect dodge on your screen really dodges.
 // ============================================================
 const NET = { room: null, R: null, status: 'off', code: 'open', me: '', peers: new Map(), seen: new Map(), hitSeq: 0, shotSeq: 0, hits: [], shots: [], rd: 0, roundOver: 0, winner: '', deathN: 0, kb: ['', 0], unsubs: [], joinTok: 0 };
 const RING_WEAPONS = ['sword', 'spear', 'fangs', 'maul', 'bow', 'nunchaku'], ECHO_WEAPONS = ['sword', 'sword', 'spear', 'spear', 'fangs', 'fangs', 'maul', 'bow', 'nunchaku', 'nunchaku'], SHOT_TYPES = ['arrow', 'bomb', 'knife', 'javelin', 'wave', 'star', 'hook', 'flask', 'pellet'], ARM_SHOTS = ['star', 'hook', 'flask', 'pellet'];
@@ -13474,16 +13479,16 @@ function netPeers(list) {
     let f = NET.peers.get(pe.peer);
     if (!f) {
       f = newFighter(num(s.x, 600), num(s.y, 300), { remote: true, peer: pe.peer, team: 'r:' + pe.peer, snaps: [], spawnT: 40, name: cleanName(s.n) || 'WAKER', skin: clamp(num(s.sk) | 0, 0, SKINS.length - 1), hat: clamp(num(s.ht) | 0, 0, 3), trail: clamp(num(s.tr) | 0, 0, BR_TRAILS.length - 1), guest: !!pe.guest });
-      NET.peers.set(pe.peer, f); G.fighters.push(f); G.kfeed.unshift({ a: '', b: f.name, txt: 'entered the ring', t: 0 }); sfx('quest', 0);
+      NET.peers.set(pe.peer, f); G.fighters.push(f); G.kfeed.unshift({ a: '', b: f.name, txt: 'entered the FFA match', t: 0 }); sfx('quest', 0);
     }
     if (pe.presence !== f.lastPres) { f.lastPres = pe.presence; netApply(f, s); }
   }
-  for (const [peer, f] of NET.peers) if (!here.has(peer)) { NET.peers.delete(peer); f.gone = true; G.kfeed.unshift({ a: '', b: f.name, txt: 'left the ring', t: 0 }); burst(f.x + 3, f.y + 10, 20, SPARK, 2, 40, { glow: 1 }); }
+  for (const [peer, f] of NET.peers) if (!here.has(peer)) { ffaSyncPeerCrystals(f, []); NET.peers.delete(peer); f.gone = true; G.kfeed.unshift({ a: '', b: f.name, txt: 'left the FFA match', t: 0 }); burst(f.x + 3, f.y + 10, 20, SPARK, 2, 40, { glow: 1 }); }
   if (G.fighters.some(f => f.gone)) G.fighters = G.fighters.filter(f => !f.gone);
 }
 function netApply(f, s) {
   const now = performance.now();
-  f.name = cleanName(s.n) || 'WAKER'; f.skin = clamp(num(s.sk) | 0, 0, SKINS.length - 1); if (s.ht !== undefined) f.hat = clamp(num(s.ht) | 0, 0, 3); if (s.tr !== undefined) f.trail = clamp(num(s.tr) | 0, 0, BR_TRAILS.length - 1); f.wid = WORLD.royale ? (IT[s.w] && IT[s.w].type === 'weapon' ? s.w : 'fists') : RING_WEAPONS.includes(s.w) ? s.w : 'sword';
+  f.name = cleanName(s.n) || 'WAKER'; f.skin = clamp(num(s.sk) | 0, 0, SKINS.length - 1); if (s.ht !== undefined) f.hat = clamp(num(s.ht) | 0, 0, 3); if (s.tr !== undefined) f.trail = clamp(num(s.tr) | 0, 0, BR_TRAILS.length - 1); f.wid = WORLD.royale ? (IT[s.w] && IT[s.w].type === 'weapon' ? s.w : 'fists') : FFA.active ? (IT[s.w] && IT[s.w].type === 'weapon' ? s.w : ffaWeaponIds()[0]) : RING_WEAPONS.includes(s.w) ? s.w : 'sword';
   const snap = {
     t: now, x: clamp(num(s.x, f.x), 0, WW * T), y: clamp(num(s.y, f.y), 0, WH * T), vx: clamp(num(s.vx), -9, 9), vy: clamp(num(s.vy), -9, 9), face: s.f < 0 ? -1 : 1, g: !!s.g, st: num(s.st) | 0, dd: s.dd < 0 ? -1 : 1,
     m: typeof s.m === 'string' ? s.m : '', an: num(s.an) | 0, mp: clamp(num(s.mp) | 0, 0, 2), mt: clamp(num(s.mt), 0, 200), ma: clamp(num(s.ma), -3.2, 3.2), md: clamp(num(s.md, 40), 0, 900), mc: clamp(num(s.mc) | 0, 0, 60), mf: s.mf < 0 ? -1 : 1, rp: !!s.rp, sp: !!s.sp
@@ -13491,6 +13496,9 @@ function netApply(f, s) {
   f.snaps.push(snap); if (f.snaps.length > 40) f.snaps.shift();
   { const sx = Array.isArray(s.sx) ? s.sx : [0, 0, 0, 0], st = stOf(f); st.pin = sx[0] ? 30 : 0; st.pinS = sx[0] ? clamp((sx[0] | 0) - 2, -1, 1) : 0; st.burn = sx[1] ? 30 : 0; st.blind = sx[2] ? 30 : 0; st.hook = sx[3] ? 30 : 0; st.hookBy = null; f.linking = !!s.lk; }
   f.hp = clamp(num(s.hp, 100), 0, 100); f.kills = clamp(num(s.k) | 0, 0, 999); f.deaths = clamp(num(s.d) | 0, 0, 9999); f.rd = num(s.rd) | 0;
+  if (FFA.active && typeof s.fm === 'string' && FFA_MODES.some(m => m.id === s.fm)) FFA.mode = s.fm;
+  if (FFA.active && FFA.mode === 'crystal' && num(s.fr) > 0) FFA.resetAt = FFA.resetAt ? min(FFA.resetAt, num(s.fr)) : num(s.fr);
+  if (FFA.active && FFA.mode === 'crystal') ffaSyncPeerCrystals(f, s.cx);
   const hs = Array.isArray(s.hs) ? s.hs.slice(0, 12) : [], ps = Array.isArray(s.ps) ? s.ps.slice(0, 10) : [];
   let seen = NET.seen.get(f.peer);
   if (!seen) { seen = { hit: max(-1, ...hs.map(h => Array.isArray(h) ? num(h[1], -1) : -1)), shot: max(-1, ...ps.map(q => Array.isArray(q) ? num(q[0], -1) : -1)), kb: Array.isArray(s.kb) ? num(s.kb[1]) : 0 }; NET.seen.set(f.peer, seen); }
@@ -13523,7 +13531,8 @@ function netTakeHit(from, h) {
 function netDeathSeen(victim, killerPeer) {
   if (WORLD.royale) return brDeathSeen(victim, killerPeer);
   const killer = killerPeer && killerPeer === NET.me ? G.p : NET.peers.get(killerPeer);
-  if (killer === G.p) { G.p.kills++; sfx('newmove', 0); G.banner = { text: 'TAKEN DOWN', sub: victim.name, t: 120 }; comboHit(true); }
+  if (killer === G.p) { G.p.kills++; ffaRecord('kill'); sfx('newmove', 0); G.banner = { text: 'TAKEN DOWN', sub: victim.name, t: 120 }; comboHit(true); }
+  if (victim === G.p) ffaRecord('death');
   G.kfeed.unshift({ a: killer ? killer.name : '', b: victim.name, t: 0, me: killer === G.p ? 1 : 0 });
   burst(victim.x + 3, victim.y + 10, 30, SPARK, 3, 50, { glow: 1, g: .02 });
 }
@@ -13537,8 +13546,9 @@ function netSend() {
   const R = NET.R; if (!R || !R.connected()) return;
   const p = G.p, a = p.atk, W = heldOf(p);
   R.presence({
-    v: 1, ring: NET.code, n: G.nick, sk: G.skin, ht: G.hat | 0, tr: G.trail | 0, w: W && RING_WEAPONS.includes(W.id) ? W.id : 'sword', x: r1(p.x), y: r1(p.y), vx: r2(p.vx), vy: r2(p.vy), f: p.face, g: p.onGround ? 1 : 0,
-    st: p.dead ? 4 : p.state === 'dodge' ? 2 : p.hurtT > 0 ? 3 : a ? 1 : 0, dd: p.dodgeDir, hp: max(0, round(p.hp)), k: p.kills, d: p.deaths, rd: NET.rd,
+    v: 1, ring: NET.code, n: G.nick, sk: G.skin, ht: G.hat | 0, tr: G.trail | 0, w: W && (FFA.active ? ffaWeaponIds().includes(W.id) : RING_WEAPONS.includes(W.id)) ? W.id : 'sword', x: r1(p.x), y: r1(p.y), vx: r2(p.vx), vy: r2(p.vy), f: p.face, g: p.onGround ? 1 : 0,
+    st: p.dead ? 4 : p.state === 'dodge' ? 2 : p.hurtT > 0 ? 3 : a ? 1 : 0, dd: p.dodgeDir, hp: max(0, round(p.hp)), k: p.kills, d: p.deaths, rd: NET.rd, fm: FFA.active ? FFA.mode : '', fr: FFA.active ? FFA.resetAt : 0,
+    cx: FFA.active && FFA.mode === 'crystal' ? FFA.crystals.filter(q => q.owner === (NET.me || 'local')).map(q => [q.tx, q.surface]) : [],
     m: a ? a.id : '', an: p.atkN, mp: a ? a.phase : 0, mt: a ? a.pt : 0, ma: a ? r2(a.aimA) : 0, md: a ? round(a.dist) : 0, mc: a ? a.charge : 0, mf: a ? a.face : p.face, rp: p.riposte > 0 ? 1 : 0, sp: p.inv > 30 ? 1 : 0,
     hs: NET.hits, ps: NET.shots, kb: NET.kb, sx: p.st ? [p.st.pin > 0 ? (p.st.pinS || 0) + 2 : 0, p.st.burn > 0 ? 1 : 0, p.st.blind > 0 ? 1 : 0, p.st.hook > 0 || p.st.reel > 0 ? 1 : 0] : 0, lk: p.state === 'link' ? 1 : 0
   }).catch(() => { });
@@ -13573,21 +13583,24 @@ function tickRemote(f) {
 }
 
 // ---------------- the arena itself ----------------
-function enterArena(nick, skin, code, via) {
-  if (BR.on) brLeave(); netLeave(); if (COOP.role && via !== 'rtc') coopLeave(); NET.via = via || 'room'; WORLD.guest = false; WORLD.id = ''; WORLD.mode = 0; genArena(); freshSession();
-  G.nick = nick; G.skin = skin; NET.rd = 0; NET.roundOver = 0; NET.deathN = 0; NET.kb = ['', 0]; G.echoT = 60;
-  inv = new Array(INV_N).fill(null); RING_WEAPONS.forEach((id, i) => inv[i] = { id, n: 1 });
+function enterArena(nick, skin, code, via, ffaId) {
+  if (BR.on) brLeave(); netLeave(); if (COOP.role && via !== 'rtc') coopLeave(); NET.via = via || 'room'; ffaStart(ffaId || FFA.selected, NET.via); WORLD.guest = false; WORLD.id = ''; WORLD.mode = 0; genArena(FFA.mode); freshSession();
+  G.nick = nick; G.skin = skin; NET.rd = 0; NET.roundOver = 0; NET.deathN = 0; NET.kb = ['', 0]; G.echoT = 0;
+  inv = new Array(INV_N).fill(null);
   G.p = newPlayer(); G.fighters = [G.p]; G.npcs = []; G.clock = .57; arenaRespawn(G.p); G.p.inv = 60;
+  for (let i = 0; i < 3; i++) spawnEcho();
   snapCam(); G.state = 'play';
-  if (via === 'rtc') { ringRtcStart(code || 'friends'); G.banner = { text: 'THE CINDER RING', sub: netHost() ? 'friends pick JOIN A FRIEND and type your game code' : 'you are in ' + (COOP.hostName || 'your host') + '\'s ring', t: 0 }; return; }
-  G.banner = { text: 'THE CINDER RING', sub: NET.room ? 'ring code: ' + (code || 'open') : 'practice with the echoes', t: 0 };
-  netJoin(code || 'open');
+  if (via === 'rtc') { COOP.ffaMode = FFA.mode; ringRtcStart(code || 'friends'); G.banner = { text: FFA.mode.toUpperCase() + ' FFA', sub: netHost() ? 'private match · share your game code' : 'you are in ' + (COOP.hostName || 'your host') + '\'s private match', t: 0 }; return; }
+  G.banner = { text: FFA.mode.toUpperCase() + ' FFA', sub: NET.room ? 'quick play · finding Wakers' : 'quick play · 3 bots', t: 0 };
+  netJoin(code || 'ffa-' + FFA.mode);
 }
 function arenaRespawn(f) {
-  let best = ARENA_SPAWNS[0], bd = -1;
-  for (const s of ARENA_SPAWNS) { let d = 1e9; for (const o of G.fighters) if (o !== f && !o.dead) d = min(d, hypot(o.x / T - s[0], o.y / T - s[1])); d += Math.random() * 6; if (d > bd) { bd = d; best = s; } }
+  const spawns = FFA.active && FFA.mode === 'knockback' ? [[36, 54], [113, 54], [75, 48], [29, 54], [120, 54], [75, 38]] : ARENA_SPAWNS;
+  let best = spawns[0], bd = -1;
+  for (const s of spawns) { let d = 1e9; for (const o of G.fighters) if (o !== f && !o.dead) d = min(d, hypot(o.x / T - s[0], o.y / T - s[1])); d += Math.random() * 6; if (d > bd) { bd = d; best = s; } }
   reviveFighter(f, best[0] * T + 1, best[1] * T - 21); f.inv = 90;
-  if (f === G.p) snapCam(); else { f.wid = fpick(ECHO_WEAPONS); f.arms = [fpick(ARMS), fpick(ARMS)]; }
+  if (FFA.active) ffaEquip(f);
+  if (f === G.p) snapCam(); else if (!FFA.active) { f.wid = fpick(ECHO_WEAPONS); f.arms = [fpick(ARMS), fpick(ARMS)]; }
   burst(f.x + 3, f.y + 10, 24, SPARK, 2.4, 40, { glow: 1 });
 }
 function spawnEcho() {
@@ -13599,10 +13612,11 @@ function arenaDeath(f, by) {
   if (WORLD.royale) return brDeath(f, by);
   if (f === G.p) {
     NET.deathN++; NET.kb = [by && by.remote ? by.peer : '', NET.deathN];
+    ffaRecord('death');
     if (by && !by.remote && by !== G.p) by.kills++;
     G.kfeed.unshift({ a: by && by !== G.p ? by.name : '', b: G.p.name, t: 0, me: 2 });
   } else if (!f.remote) {
-    if (by === G.p) { G.p.kills++; G.banner = { text: 'TAKEN DOWN', sub: f.name, t: 120 }; } else if (by && !by.remote) by.kills++;
+    if (by === G.p) { G.p.kills++; ffaRecord('kill'); G.banner = { text: 'TAKEN DOWN', sub: f.name, t: 120 }; } else if (by && !by.remote) by.kills++;
     G.kfeed.unshift({ a: by ? by.name : '', b: f.name, t: 0, me: by === G.p ? 1 : 0 }); f.respawnT = 140;
   }
   if (G.kfeed.length > 6) G.kfeed.length = 6;
@@ -13610,17 +13624,18 @@ function arenaDeath(f, by) {
 function resetRound() {
   NET.roundOver = 0; NET.winner = '';
   for (const f of G.fighters) if (!f.remote) { f.kills = 0; f.deaths = 0; if (f !== G.p || f.dead) arenaRespawn(f); }
-  G.banner = { text: 'ROUND ' + (NET.rd + 1), sub: 'first to ' + KILLS_TO_WIN + ' takes the ring', t: 0 };
+  G.banner = { text: 'ROUND ' + (NET.rd + 1), sub: 'first to ' + KILLS_TO_WIN + ' wins the match', t: 0 };
 }
 function arenaTick() {
   if (WORLD.royale) return brTick();
+  ffaTick();
   const humans = NET.peers.size, echoes = G.fighters.filter(f => f.echoBot);
-  if (humans === 0) { if (echoes.length < 3 && --G.echoT <= 0) { spawnEcho(); G.echoT = 100; } }
-  else if (echoes.length) { const e = echoes[0]; e.gone = true; burst(e.x + 3, e.y + 10, 30, SPARK, 2.6, 40, { glow: 1 }); G.fighters = G.fighters.filter(f => !f.gone); if (echoes.length === 1) say('Another Waker has entered the ring. The echoes step aside.'); }
+  if (humans === 0 || FFA.active && !FFA.private) { if (echoes.length < 3 && --G.echoT <= 0) { spawnEcho(); G.echoT = 100; } }
+  else if (echoes.length) { const e = echoes[0]; e.gone = true; burst(e.x + 3, e.y + 10, 30, SPARK, 2.6, 40, { glow: 1 }); G.fighters = G.fighters.filter(f => !f.gone); if (echoes.length === 1) say('Another Waker has entered the match. The echoes step aside.'); }
   for (const f of G.fighters) if (f.echoBot && f.dead && --f.respawnT <= 0) arenaRespawn(f);
   if (!NET.roundOver) {
     let win = null; for (const f of G.fighters) if (f.kills >= KILLS_TO_WIN && (!f.remote || f.rd === NET.rd)) win = f;
-    if (win) { NET.roundOver = 330; NET.winner = win.name; G.banner = { text: win === G.p ? 'YOU TAKE THE RING' : win.name + ' TAKES THE RING', sub: 'next round soon', t: 0 }; sfx('quest', 0); G.flash = .4; G.flashCol = '255,211,90'; }
+    if (win) { NET.roundOver = 330; NET.winner = win.name; if (win === G.p && FFA.winRound !== NET.rd) { FFA.winRound = NET.rd; ffaRecord('win'); } G.banner = { text: win === G.p ? 'YOU WIN THE MATCH' : win.name + ' WINS THE MATCH', sub: 'next round soon', t: 0 }; sfx('quest', 0); G.flash = .4; G.flashCol = '255,211,90'; }
   } else if (--NET.roundOver === 0) { NET.rd++; resetRound(); }
   if (NET.via === 'rtc') { brRtcTick(); if (netHost()) sigHost('ring'); }
   if (G.time % 3 === 0) netSend();
@@ -13634,7 +13649,7 @@ function arenaTick() {
 //  places are filled by echoes (computer players).
 //  Online, the match leader (the first person in the lobby) runs the
 //  storm clock and the echoes; every computer runs its own Waker and
-//  shares it as presence, exactly like the Cinder Ring.
+//  shares it as presence, exactly like the FFA Arcade.
 // ============================================================
 const BRW = 800, BRH = 140, BRSKY = 17, BR_MAX = 12, BR_FILL = 12;
 const BR_TIERS = ['COMMON', 'UNCOMMON', 'RARE', 'EPIC', 'LEGENDARY', 'MYTHIC'], BR_TCOL = ['#c8c4d4', '#7ddc6f', '#5aa8ff', '#c77dff', '#ffd35a', '#ff7a9e'];
@@ -14428,7 +14443,7 @@ function brRtcTick() {
   for (const P of COOP.peers.values()) if (!P.open && !P.ok && P.connT && now - P.connT > 25000) { COOP.peers.delete(P.id); try { P.pc.close(); } catch (e) { } COOP.note = ''; COOP.err = 'Could not reach ' + P.name + '. Try again with a new invite; on the same Wi-Fi it almost always works.'; }
   if (netGuest() && NET.R && NET.R.mine && now - (BR.rtcPing || 0) > 2000) { BR.rtcPing = now; const H = COOP.peers.get('h'); if (H && H.open) sendTo(H, { t: 'bp', p: NET.R.mine }, 'bp'); }
 }
-// the Cinder Ring over game codes: the same presence room, with the ring's own presences in it
+// the FFA Arcade over game codes: the same presence room, with the match's own presences in it
 function ringRtcStart(code) {
   if (!COOP.role) { COOP.role = 'host'; COOP.me = 'h'; COOP.hostName = coopName(); }
   COOP.br = true; COOP.ring = true; NET.code = code; NET.status = 'online'; NET.me = netGuest() ? COOP.me : '0h';
@@ -14444,13 +14459,13 @@ function ringRtcEnd() {
 function brRtcWelcome(P, m) { if (BR.wild) return wBrRtcWelcome(P, m);
   if ([...COOP.peers.values()].filter(Q => Q.ok).length >= brMaxG()) { sendTo(P, { t: 'kick' }); return; }
   P.name = cleanName(m.n) || P.name || 'WAKER'; P.skin = clamp(m.sk | 0, 0, SKINS.length - 1); P.hat = clamp(m.ht | 0, 0, 3); P.trail = clamp(m.tr | 0, 0, BR_TRAILS.length - 1); P.ok = true; P.pres = null;
-  sendTo(P, { t: 'brw', v: NETV, id: P.id, host: coopName(), code: COOP.ring ? NET.code : BR.code, mode: COOP.ring ? 'ring' : 'br', pt: BR.party || COOP.gcode || '' }); COOP.note = ''; sfx('quest', 0); BR.rtcDirty = true;
+  sendTo(P, { t: 'brw', v: NETV, id: P.id, host: coopName(), code: COOP.ring ? NET.code : BR.code, mode: COOP.ring ? 'ring' : 'br', ffa: COOP.ring && FFA.active ? FFA.mode : '', pt: BR.party || COOP.gcode || '' }); COOP.note = ''; sfx('quest', 0); BR.rtcDirty = true;
   if (COOP.ring) G.kfeed.unshift({ a: '', b: P.name, txt: 'is on the way in', t: 0 });
 }
 function brRtcJoin(m) {
   COOP.me = String(m.id || 'g?'); COOP.joined = true; COOP.br = true; COOP.hostName = cleanName(m.host) || COOP.hostName;
   const HP = COOP.peers.get('h'); if (HP) { HP.ok = true; HP.name = COOP.hostName || HP.name; }
-  if (m.mode === 'ring') { COOP.ring = true; COOP.reply = ''; COOP.code = ''; COOP.note = ''; const nick = coopName(); G.nick = nick; enterArena(nick, FORM.skin | 0, typeof m.code === 'string' ? cleanCode(m.code) || 'friends' : 'friends', 'rtc'); sfx('quest', 0); return; }
+  if (m.mode === 'ring') { COOP.ring = true; COOP.reply = ''; COOP.code = ''; COOP.note = ''; const nick = coopName(); G.nick = nick; const mode = FFA_MODES.some(q => q.id === m.ffa) ? m.ffa : 'sword'; COOP.ffaMode = mode; enterArena(nick, FORM.skin | 0, typeof m.code === 'string' ? cleanCode(m.code) || 'friends' : 'friends', 'rtc', mode); sfx('quest', 0); return; }
   G.nick = coopName(); G.skin = FORM.skin | 0; COOP.reply = ''; COOP.code = ''; COOP.note = '';
   // walking in with a code makes you one of the host's party; arriving from the open board, you keep the party you came with
   if (BR.joinOpen) BR.joinOpen = false; else BR.party = typeof m.pt === 'string' ? m.pt.toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 8) : '';
@@ -15338,6 +15353,228 @@ function drawBrOpen(c) {
 }
 
 // ============================================================
+//  The FFA arcade: ten weapon-focused ring variants, local records,
+//  and the shared private-match flow.
+// ============================================================
+const FFA_MODES = [
+  { id: 'crystal', name: 'CRYSTAL PVP', desc: 'Place, blast, and out-position.', color: '#c77dff', weapons: ['steel_sword', 'iron_sword'], arms: ['flask'], map: 'crystal' },
+  { id: 'sword', name: 'SWORD FFA', desc: 'Combos, timing, and footwork.', color: '#ff8a3d', weapons: ['bronze_sword', 'iron_sword', 'steel_sword'], arms: ['shuriken'], map: 'sword' },
+  { id: 'mace', name: 'MACE FFA', desc: 'Rise high. Land heavy.', color: '#ffd35a', weapons: ['copper_mace', 'rust_mace', 'deep_warhammer'], arms: ['shuriken'], map: 'mace' },
+  { id: 'spear', name: 'SPEAR FFA', desc: 'Own the lane. Strike at reach.', color: '#8ff5e6', weapons: ['spear', 'iron_spear', 'steel_halberd'], arms: ['javelin'], map: 'spear' },
+  { id: 'grapple', name: 'GRAPPLE FFA', desc: 'Hook in, swing, reposition.', color: '#7ddc6f', weapons: ['sword', 'iron_sword'], arms: ['hook'], map: 'grapple' },
+  { id: 'bow', name: 'BOW FFA', desc: 'Aim ahead. Make every shot count.', color: '#5aa8ff', weapons: ['bow', 'wood_shortbow', 'bone_recurve'], arms: ['shuriken'], map: 'bow' },
+  { id: 'axe', name: 'AXE FFA', desc: 'Slow swings. Brutal close-range hits.', color: '#e2483b', weapons: ['battleaxe', 'iron_battleaxe', 'steel_greataxe'], arms: ['shuriken'], map: 'axe' },
+  { id: 'shield', name: 'SHIELD & SWORD', desc: 'Guard, wait, then counterattack.', color: '#b9bdd0', weapons: ['bronze_sword', 'iron_sword'], arms: ['smoke'], map: 'shield' },
+  { id: 'knockback', name: 'KNOCKBACK', desc: 'Send rivals off the floating ring.', color: '#ff6b6b', weapons: ['club', 'maul', 'nunchaku'], arms: ['hook'], map: 'knockback' },
+  { id: 'random', name: 'RANDOM LOADOUT', desc: 'A new balanced kit each respawn.', color: '#fff1a8', weapons: ['sword', 'spear', 'fangs', 'maul', 'bow', 'nunchaku', 'iron_sword', 'iron_spear', 'copper_mace', 'iron_battleaxe'], arms: ['shuriken', 'hook', 'flask', 'smoke'], map: 'random' }
+];
+const FFA = { selected: 'crystal', mode: 'crystal', active: false, private: false, resetAt: 0, resetN: 0, winRound: -1, crystals: [], crystalCd: 0, cloudTimer: 0 };
+const ffaMode = id => FFA_MODES.find(m => m.id === id) || FFA_MODES[0];
+const ffaStatsKey = owner => 'ew2.ffa.' + owner;
+
+function ffaStats() {
+  const owner = typeof accountId === 'function' ? accountId() : 'guest';
+  try {
+    const raw = typeof LS === 'object' ? JSON.parse(LS.get(ffaStatsKey(owner)) || '{}') : {};
+    const modes = {};
+    for (const m of FFA_MODES) {
+      const s = raw.modes && raw.modes[m.id] || {};
+      modes[m.id] = { kills: max(0, num(s.kills) | 0), deaths: max(0, num(s.deaths) | 0), wins: max(0, num(s.wins) | 0), matches: max(0, num(s.matches) | 0), elo: clamp(num(s.elo, 1000) | 0, 0, 9999) };
+    }
+    return { modes, updatedAt: max(0, num(raw.updatedAt)) };
+  } catch (e) {
+    return { modes: Object.fromEntries(FFA_MODES.map(m => [m.id, { kills: 0, deaths: 0, wins: 0, matches: 0, elo: 1000 }])), updatedAt: 0 };
+  }
+}
+function ffaSaveStats(data = ffaStats(), sync = true) {
+  const owner = typeof accountId === 'function' ? accountId() : 'guest', key = ffaStatsKey(owner);
+  data.updatedAt = Date.now();
+  if (typeof LS === 'object' && !LS.set(key, JSON.stringify(data))) { console.warn('Could not save FFA progression in this browser.'); return false; }
+  if (sync && SAVE.db && typeof dpath === 'function') {
+    clearTimeout(FFA.cloudTimer);
+    FFA.cloudTimer = setTimeout(() => {
+      if (!SAVE.db || accountId() !== owner) return;
+      SAVE.db.doc(dpath('ffa-profile', owner)).set(data).catch(e => console.warn('Could not sync FFA progression:', e));
+    }, 800);
+  }
+  return true;
+}
+async function ffaSyncProfile(owner) {
+  if (!SAVE.db || typeof dpath !== 'function') return;
+  const db = SAVE.db, ref = db.doc(dpath('ffa-profile', owner));
+  try {
+    const snap = await withTimeout(ref.get(), 9000);
+    if (accountId() !== owner || SAVE.db !== db) return;
+    const local = ffaStats(), remote = snap && snap.exists ? snap.data() : null;
+    if (remote && num(remote.updatedAt) > local.updatedAt && remote.modes && typeof remote.modes === 'object') ffaSaveStats(remote, false);
+    else await withTimeout(ref.set(local), 9000);
+  } catch (e) { console.warn('Could not load cloud FFA progression:', e); }
+}
+function ffaModeStats(id = FFA.mode) { return ffaStats().modes[id] || { kills: 0, deaths: 0, wins: 0, matches: 0, elo: 1000 }; }
+function ffaRecord(type) {
+  if (!FFA.active || !G.p) return;
+  const data = ffaStats(), stat = data.modes[FFA.mode];
+  if (type === 'kill') {
+    stat.kills++; stat.elo = min(9999, stat.elo + 2);
+    if (typeof brProfile === 'function' && typeof brSaveProfile === 'function') { const p = brProfile(); p.souls++; brSaveProfile(p); }
+  } else if (type === 'death') {
+    stat.deaths++; stat.elo = max(0, stat.elo - 1);
+  } else if (type === 'match') {
+    stat.matches++;
+    if (typeof brProfile === 'function' && typeof brSaveProfile === 'function') { const p = brProfile(); p.coins++; brSaveProfile(p); }
+  }
+  else if (type === 'win') {
+    stat.wins++; stat.elo = min(9999, stat.elo + 12);
+    if (typeof brProfile === 'function' && typeof brSaveProfile === 'function') { const p = brProfile(); p.coins += 3; brSaveProfile(p); }
+  } else return;
+  ffaSaveStats(data);
+}
+function ffaWeaponIds(id = FFA.mode) {
+  const mode = ffaMode(id);
+  const available = mode.weapons.filter(item => IT[item] && IT[item].type === 'weapon');
+  return available.length ? available : ['sword'];
+}
+function ffaArms(id = FFA.mode) {
+  const mode = ffaMode(id);
+  return mode.arms.filter(item => IT[item] && IT[item].type === 'arm');
+}
+function ffaEquip(f) {
+  const weapons = ffaWeaponIds(), item = fpick(weapons);
+  if (f === G.p) {
+    inv = new Array(INV_N).fill(null);
+    const kit = FFA.mode === 'random' ? [item] : weapons.slice(0, 5);
+    kit.forEach((id, i) => { if (i < hotN()) inv[i] = { id, n: 1 }; });
+    G.sel = 0;
+    f.arm = ffaArms()[0] || null;
+    if (FFA.mode === 'bow' && IT.arrow) inv[5] = { id: 'arrow', n: 40 };
+  } else {
+    f.wid = item;
+    f.arms = ffaArms();
+  }
+}
+function ffaStart(mode, via = 'solo') {
+  const selected = ffaMode(mode).id;
+  FFA.selected = selected; FFA.mode = selected; FFA.private = via === 'rtc'; FFA.active = true; FFA.resetN = 0; FFA.winRound = -1;
+  FFA.resetAt = selected === 'crystal' ? Date.now() + 10 * 60 * 1000 : 0; FFA.crystals.length = 0; FFA.crystalCd = 0;
+  ffaRecord('match');
+}
+function ffaResetArena() {
+  FFA.crystals.length = 0;
+  genArena(FFA.mode);
+  G.drops.length = 0; G.projs.length = 0; G.smokes.length = 0; G.parts.length = 0;
+  for (const f of G.fighters) if (!f.remote) arenaRespawn(f);
+  FFA.resetN++; FFA.resetAt = Date.now() + 10 * 60 * 1000;
+  G.banner = { text: 'CRYSTAL ARENA RESET', sub: 'arena restored · fighters returned to spawn', t: 0 };
+  sfx('quest', 0);
+}
+function ffaTick() {
+  if (FFA.crystalCd > 0) FFA.crystalCd--;
+  if (!FFA.active || FFA.mode !== 'crystal' || !FFA.resetAt || Date.now() < FFA.resetAt) return;
+  ffaResetArena();
+}
+function ffaCrystalAction() {
+  if (!FFA.active || FFA.mode !== 'crystal' || UI.open || G.dialog || !pressed.KeyF || FFA.crystalCd > 0) return;
+  const p = G.p, owner = NET.me || 'local', near = FFA.crystals.findIndex(c => c.owner === owner && hypot(c.x - p.x, c.y - p.y) < 96);
+  if (near >= 0) {
+    const crystal = FFA.crystals.splice(near, 1)[0];
+    for (const [tx, ty, old] of crystal.cells) setTile(tx, ty, old);
+    burst(crystal.x, crystal.y, 36, ['#c77dff', '#8ff5e6', '#fff1a8'], 3, 60, { glow: 1, g: -.02 });
+    for (const f of G.fighters) {
+      if (f.dead || f.gone) continue;
+      const d = hypot(f.x + 3 - crystal.x, f.y + f.h / 2 - crystal.y);
+      if (d > 92) continue;
+      const dmg = max(6, round(28 * (1 - d / 120)));
+      const kx = sign(f.x + 3 - crystal.x) * (4 - d / 40);
+      if (f.remote) netHit(f, dmg, kx, -3, true, null, p);
+      else hurtFighter(f, dmg, crystal.x, { kx, ky: -3, by: p, pvp: true, crit: true });
+    }
+    FFA.crystalCd = 18; sfx('boom', 0); return;
+  }
+  if (FFA.crystals.length >= 3) { say('Three crystals are already set. Detonate one with [F].'); return; }
+  const tx = clamp(floor((p.x + 3 + p.face * 22) / T), 3, WW - 4);
+  let surface = clamp(floor((p.y + p.h) / T), 1, WH - 5);
+  while (surface < WH - 4 && tileAt(tx, surface) === AIR) surface++;
+  surface--;
+  const cells = [[tx, surface - 1], [tx, surface - 2], [tx, surface - 3]];
+  if (cells.some(([cx, cy]) => cy < 1 || tileAt(cx, cy) !== AIR)) { say('There is no room to place a crystal here.'); return; }
+  for (let i = 0; i < cells.length; i++) {
+    const [cx, cy] = cells[i]; cells[i].push(tiles[cy * WW + cx]); setTile(cx, cy, i === 2 ? CRYSTAL : BRICK);
+  }
+  FFA.crystals.push({ x: tx * T + 4, y: (surface - 2) * T, tx, surface, owner, cells });
+  FFA.crystalCd = 24; sfx('place', 0);
+}
+function ffaSyncPeerCrystals(f, source) {
+  if (!FFA.active || FFA.mode !== 'crystal' || !Array.isArray(source)) return;
+  const data = source.slice(0, 3).filter(q => Array.isArray(q) && q.length >= 2).map(q => [clamp(num(q[0]) | 0, 3, WW - 4), clamp(num(q[1]) | 0, 4, WH - 5)]);
+  const key = JSON.stringify(data);
+  if (f.ffaCrystalKey === key) return;
+  const old = FFA.crystals.filter(c => c.owner === f.peer);
+  for (const c of old) for (const [tx, ty, tile] of c.cells) setTile(tx, ty, tile);
+  FFA.crystals = FFA.crystals.filter(c => c.owner !== f.peer);
+  for (const [tx, surface] of data) {
+    const cells = [[tx, surface - 1], [tx, surface - 2], [tx, surface - 3]];
+    if (cells.some(([cx, cy]) => cy < 1 || tileAt(cx, cy) !== AIR)) continue;
+    for (let i = 0; i < cells.length; i++) { const [cx, cy] = cells[i]; cells[i].push(tiles[cy * WW + cx]); setTile(cx, cy, i === 2 ? CRYSTAL : BRICK); }
+    FFA.crystals.push({ x: tx * T + 4, y: (surface - 2) * T, tx, surface, owner: f.peer, cells });
+  }
+  f.ffaCrystalKey = key;
+}
+function ffaModeLabel(id = FFA.mode) { return ffaMode(id).name; }
+
+function ffaEnter(mode, privateMatch = false) {
+  const selected = ffaMode(mode).id;
+  UI.focus = null;
+  const nick = cleanName(FORM.nick) || 'WAKER'; FORM.nick = nick; G.nick = nick; G.skin = FORM.skin | 0;
+  FFA.selected = selected;
+  G.state = 'loading'; G.loadMsg = privateMatch ? 'Opening your private FFA...' : 'Entering the FFA arena...';
+  setTimeout(() => {
+    if (privateMatch) { coopReset(); COOP.ffaMode = selected; enterArena(nick, FORM.skin, 'friends', 'rtc', selected); }
+    else enterArena(nick, FORM.skin, 'ffa-' + selected, 'room', selected);
+  }, 30);
+  sfx('quest', 0);
+}
+function ffaQuickPlay() {
+  const mode = fpick(FFA_MODES);
+  ffaEnter(mode.id);
+}
+function drawFFAMenu(c) {
+  const uw = VS.uw, uh = VS.uh, w = min(620, uw - 12), h = min(320, uh - 10), x = round((uw - w) / 2), y = max(5, round((uh - h) / 2));
+  c.fillStyle = 'rgba(18,13,31,.7)'; c.fillRect(0, 0, uw, uh); panel(c, x, y, w, h, 'THE FFA ARCADE  ·  10 MODES');
+  const fx = x + 8, fw = w - 16, mode = ffaMode(FFA.selected), skinY = y + 20;
+  drawText(c, 'NAME', fx, skinY + 4, '#b9bdd0'); field(c, fx + 40, skinY, min(160, fw - 145), 'nick', 'WAKER'); skinPicker(c, x + w - 130, skinY - 2);
+
+  const colGap = 6, cardW = floor((fw - colGap) / 2), cardH = 22, listY = y + 43;
+  for (let i = 0; i < FFA_MODES.length; i++) {
+    const m = FFA_MODES[i], col = i < 5 ? 0 : 1, row = i % 5, cx = fx + col * (cardW + colGap), cy = listY + row * 23;
+    const selected = m.id === FFA.selected;
+    c.fillStyle = selected ? '#3a3020' : 'rgba(32,27,45,.92)'; c.fillRect(cx, cy, cardW, cardH);
+    c.fillStyle = selected ? m.color : '#4a4460'; c.fillRect(cx, cy, 2, cardH);
+    c.fillStyle = m.color; c.fillRect(cx + 6, cy + 6, 8, 8); c.fillStyle = INK; c.fillRect(cx + 8, cy + 8, 4, 4);
+    drawText(c, m.name, cx + 19, cy + 3, selected ? '#fff1a8' : '#fff');
+    let desc = m.desc; while (desc.length > 4 && textW(desc) > cardW - 25) desc = desc.slice(0, -1);
+    drawText(c, desc, cx + 19, cy + 12, '#8b8fa3');
+    const count = '3 BOTS'; drawText(c, count, cx + cardW - textW(count) - 4, cy + 3, '#7ddc6f');
+    hit(cx, cy, cardW, cardH, () => { FFA.selected = m.id; sfx('ui'); });
+  }
+  const stats = ffaModeStats(mode.id), ratio = stats.deaths ? (stats.kills / stats.deaths).toFixed(2) : stats.kills.toFixed(2);
+  const infoY = listY + 5 * 23 + 4;
+  drawText(c, `${mode.name}   ${mode.desc}`, fx, infoY, mode.color);
+  drawText(c, `K ${stats.kills}  D ${stats.deaths}  W ${stats.wins}  MATCHES ${stats.matches}  K/D ${ratio}  ELO ${stats.elo}`, fx, infoY + 10, '#d8d4e6');
+  const best = FFA_MODES.map(m => ({ name: m.name, elo: ffaModeStats(m.id).elo })).sort((a, b) => b.elo - a.elo)[0];
+  drawText(c, `PERSONAL LEADERBOARD  ·  TOP ${best.name} ${best.elo} ELO  ·  QUICK PLAY picks a random mode`, fx, infoY + 20, '#8b8fa3');
+  const milestones = [stats.kills >= 10 && '10 KILLS', stats.wins >= 1 && 'FIRST WIN', stats.matches >= 10 && '10 MATCHES'].filter(Boolean);
+  drawText(c, `MILESTONES  ·  ${milestones.length ? milestones.join('  ·  ') : 'First win, 10 kills, 10 matches'}`, fx, infoY + 30, '#ffd35a');
+  const actionY = y + h - 38;
+  button(c, fx, actionY, floor((fw - 8) / 2), 16, 'PLAY ' + mode.name, () => ffaEnter(mode.id), { col: mode.color });
+  button(c, fx + floor((fw - 8) / 2) + 8, actionY, floor((fw - 8) / 2), 16, 'QUICK PLAY  ·  RANDOM MODE', ffaQuickPlay, { col: '#ffd35a' });
+  if (netOK()) {
+    button(c, fx, actionY + 19, floor((fw - 8) / 2), 15, 'HOST PRIVATE MATCH  ·  CODE', () => ffaEnter(mode.id, true), { col: '#8ff5e6' });
+    drawText(c, 'Friends: title screen → JOIN A FRIEND → enter your code.', fx + floor((fw - 8) / 2) + 8, actionY + 23, '#8b8fa3');
+  } else drawText(c, 'Private matches need WebRTC. Practice is ready offline with 3 bots.', fx, actionY + 23, '#8b8fa3');
+  button(c, x + w - 66, y + h - 18, 58, 13, 'BACK', () => { G.state = 'title'; UI.focus = null; sfx('ui'); });
+}
+
+// ============================================================
 //  THE WILDS: what stands on the island's ground between the trees:
 //  bushes, boulders, logs, stumps, cacti, reeds, old ribs, glass
 //  spikes and cave mushrooms. Painted the first time an island is
@@ -15374,7 +15611,7 @@ function buildWildProps() {
 //  nothing too.
 //  Online, the match leader (the first person in the lobby) runs the
 //  clock, the border and the echoes; every computer runs its own Waker
-//  and shares it as presence, exactly like the Cinder Ring.
+//  and shares it as presence, exactly like the FFA Arcade.
 //  (the island: 23-wilds-island; echoes: 24-wilds-echoes; creatures,
 //  gifts and the other cruelties of the games: 25-wilds-games)
 // ============================================================
@@ -18570,7 +18807,7 @@ function saveBoot() {
     Promise.all([window.claude.use('user'), window.claude.use('db')]).then(async ([user, db]) => {
       if (!user || !db) return; const uid = await user.id(); if (!uid) return;
       SAVE.db = db; SAVE.uid = uid; SAVE.status = 'syncing';
-      brSyncProfile(owner);
+      brSyncProfile(owner); ffaSyncProfile(owner);
       try {
         const snap = await withTimeout(db.doc(dpath('index', owner)).get(), 9000);
         if (accountId() !== owner) return;
@@ -19677,7 +19914,7 @@ function syncMobileControls() {
   if (!mobileDevice) return; // (a mouse's clicks and keys are its own business)
   const play = G.state === 'play' && !G.dialog && !G.cine, visible = play && !UI.open;
   mobileControls.classList.toggle('visible', visible); mobileControls.classList.toggle('panel', play && !!UI.open); mobileControls.setAttribute('aria-hidden', String(!play));
-  // no button for what would do nothing: there is no pack in the Cinder Ring, no map there or before you have drawn one, and nobody to talk to alone
+  // no button for what would do nothing: there is no pack in the FFA Arcade, no map there or before you have drawn one, and nobody to talk to alone
   if (visible) { const ring = WORLD.arena && !WORLD.royale; touchPackBtn.classList.toggle('off', ring); touchMapBtn.classList.toggle('off', ring || (!WORLD.royale && !hasUtil('fieldmap'))); touchChatBtn.classList.toggle('off', !COOP.role); touchPactBtn.classList.toggle('off', !wildOn()); }
   if (!visible && (stickPointer !== null || mouse.l || mouse.r)) clearMobileInput();
   // a finger still on DASH when the buttons go or you fall (a panel opens, you leave for the title) no longer holds Shift:

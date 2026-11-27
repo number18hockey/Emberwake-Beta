@@ -115,7 +115,7 @@ function tickStatus(e) {
 
 // ---------------- sidearms ----------------
 const ARMS = ['shuriken', 'hook', 'flask', 'smoke'];
-function armsOwned(f) { if (!f.isPlayer) return f.arms || []; if ((WORLD.arena && !WORLD.royale) || WORLD.mode === 1) return ARMS; return ARMS.filter(id => countItem(id) > 0); }
+function armsOwned(f) { if (!f.isPlayer) return f.arms || []; if (FFA.active && WORLD.arena && !WORLD.royale) return ffaArms(); if ((WORLD.arena && !WORLD.royale) || WORLD.mode === 1) return ARMS; return ARMS.filter(id => countItem(id) > 0); }
 function curArm(f) { const own = armsOwned(f); if (!own.length) return null; if (!own.includes(f.arm)) f.arm = own[0]; return f.arm; }
 function cycleArm(f) { const own = armsOwned(f); if (!own.length) { sfx('deny'); return; } f.arm = own[(own.indexOf(f.arm) + 1) % own.length]; G.armT = 100; sfx('ui'); }
 function throwArm(f, wx, wy) {

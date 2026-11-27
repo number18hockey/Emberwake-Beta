@@ -58,7 +58,9 @@ function hurtFighter(f, dmg, fromX, o = {}) {
   if (f.inv > (o.net ? 30 : o.link ? 999 : 0)) return false;
   if (f.state === 'link' && !o.link) return false;
   if (tryClash(f, dmg, fromX, o)) return false;
-  const wild = wildOn(), pvp = !!o.pvp, armored = f.atk && f.atk.m.armor && f.atk.phase < 2, caught = caughtOpen(f, o), soft = pvp && o.bite === false;
+  const guarded = FFA.active && FFA.mode === 'shield' && f === G.p && keys.KeyG && f.stam >= 12 && sign(fromX - (f.x + 3)) === f.face;
+  if (guarded) { f.stam -= 12; f.riposte = max(f.riposte || 0, 40); dmg *= .35; }
+  const wild = wildOn(), pvp = !!o.pvp, armored = f.atk && f.atk.m.armor && f.atk.phase < 2, caught = caughtOpen(f, o), soft = pvp && (o.bite === false || guarded);
   if (caught) dmg *= 1.25;
   const gp = f === G.p && gearOn(); if (gp) { dmg = gearDamage(dmg, o); if ((gearHas('kindled') || gearHas('molten')) && o.by && o.by !== f && !o.by.dead && o.by.hp !== undefined && !o.by.fighter) applyStatus(o.by, 'burn', f, { d: 90 }); }
   // a guardian's fight hits harder than the open road
@@ -75,7 +77,7 @@ function hurtFighter(f, dmg, fromX, o = {}) {
   else if (gp && dmg < 9 && gearHas('anvil')) { f.inv = 40; fsx(f, 'hit2', 0); sparks(f.x + 3, f.y + 8, 3, 0, 1.2); }
   else if (!armored) {
     const d = sign((f.x + 3) - fromX) || -f.face;
-    const pz = (gp ? gearMul('poise') : 1) * (soft ? .45 : 1); f.vx = (o.kx !== undefined ? o.kx * .85 : d * 2.7) * pz; if (!soft) { f.vy = (o.ky !== undefined ? min(o.ky, -1.2) : -2.3) * (.4 + .6 * pz); f.onGround = false; }
+    const pz = (gp ? gearMul('poise') : 1) * (guarded ? .12 : soft ? .45 : 1); f.vx = (o.kx !== undefined ? o.kx * .85 : d * 2.7) * pz; if (!soft) { f.vy = (o.ky !== undefined ? min(o.ky, -1.2) : -2.3) * (.4 + .6 * pz); f.onGround = false; }
     f.hurtT = soft ? 5 : pvp ? clamp(o.stagger ? 24 : 11 + (o.stop || 2), 10, 26) : 13; f.inv = pvp ? 7 : 50;
     if (o.link) f.inv = 0; else if (pvp && ++f.taken >= 4) { f.inv = 50; f.taken = 0; f.vx *= 1.4; sparks(f.x + 3, f.y + 10, 10, 0, 2, FROST); }
     f.takenT = 70; if (!(soft && f.atk && f.atk.phase === 1)) { f.atk = null; f.state = 'normal'; f.lastMove = null; f.chainT = 0; f.glintT = 0; } f.buf = null;
@@ -210,7 +212,7 @@ function tickPlayer() {
   tickFighter(p, I);
   if (WORLD.royale) brAfter(p, I);
   if (p.dead) { if (!WORLD.royale && p.deadT > (WORLD.arena ? 150 : 190)) respawnPlayer(); return; }
-  const wild = wildOn(); if (WORLD.arena && !wild) return;
+  const wild = wildOn(); if (WORLD.arena && !wild) { ffaCrystalAction(); return; }
   // ---- tools, blocks, consumables (in the Wilds you dig, build and throw as anywhere, but its own keys heal and open things) ----
   toolTick(p, I);
   const hi = heldItem(); if (hi && hi.type === 'weapon') G.lastWeapon = G.sel;

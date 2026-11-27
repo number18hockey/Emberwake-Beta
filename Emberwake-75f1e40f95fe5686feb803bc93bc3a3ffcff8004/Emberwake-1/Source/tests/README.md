@@ -87,7 +87,7 @@ Links, armour, weapon styles, creatures and guardians.
 - `weapon_styles.py` Weapon styles: locked until learned, learning them, the codex and the HUD.
 - `tempo.py` The beat: mashing must lose to timing; rushed blows, tempo, clean hits, clashes, guards, being caught; a rival that fights in time.
 - `balance.py` Balance: metal tiers climb steadily, kinds of weapon stay in one band when used well, tools hit half as hard as a sword of their metal; and the newer rules: sunder, perfect release, the answer, stamina for mashing, warded foes.
-- `ring_with_friends.py` The Cinder Ring with friends by game code, from the plain HTML file.
+- `ring_with_friends.py` A private FFA match with friends by game code, from the plain HTML file.
 - `carried_momentum.py` A blow or a dash never stops you dead: held keys keep you running through a swing, a dash flows into a run, and hands off the keys you glide to a stop.
 - `bots_find_their_way.py` Fighters the computer runs find a real way: over walls, across pits, up and down rope bridges, round what is too tall, never into a pool with no way out, never through fire; and what the searching costs with twelve at once.
 

@@ -102,7 +102,7 @@ async def run():
     await h.pg.set_viewport_size({'width': 900, 'height': 600}); await h.pg.wait_for_timeout(200); await h.step(10)
     errs = [e for e in h.errs if 'PAGEERROR' in e]
     print('  another world', d1, ' the ring', ring, ' the trials', roy, ' errors', len(errs) - n0)
-    ok.append(('another world, the title, the Cinder Ring, the Trials and a resized window all draw without error', len(errs) == n0 and d1[0] == 1 and ring[0] and ring[2] == 0 and roy[0] and not roy[2] and not roy[3]))
+    ok.append(('another world, the title, the FFA Arcade, the Trials and a resized window all draw without error', len(errs) == n0 and d1[0] == 1 and ring[0] and ring[2] == 0 and roy[0] and not roy[2] and not roy[3]))
 
     sheet(ims, 3, shot('atmosphere.png'), labels, .5)
     bad = [n for n, v in ok if not v]

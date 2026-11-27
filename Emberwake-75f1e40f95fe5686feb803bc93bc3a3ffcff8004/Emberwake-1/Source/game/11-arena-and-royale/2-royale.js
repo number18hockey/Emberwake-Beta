@@ -6,7 +6,7 @@
 //  places are filled by echoes (computer players).
 //  Online, the match leader (the first person in the lobby) runs the
 //  storm clock and the echoes; every computer runs its own Waker and
-//  shares it as presence, exactly like the Cinder Ring.
+//  shares it as presence, exactly like the FFA Arcade.
 // ============================================================
 const BRW = 800, BRH = 140, BRSKY = 17, BR_MAX = 12, BR_FILL = 12;
 const BR_TIERS = ['COMMON', 'UNCOMMON', 'RARE', 'EPIC', 'LEGENDARY', 'MYTHIC'], BR_TCOL = ['#c8c4d4', '#7ddc6f', '#5aa8ff', '#c77dff', '#ffd35a', '#ff7a9e'];

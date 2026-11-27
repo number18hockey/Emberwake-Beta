@@ -156,7 +156,7 @@ function saveBoot() {
     Promise.all([window.claude.use('user'), window.claude.use('db')]).then(async ([user, db]) => {
       if (!user || !db) return; const uid = await user.id(); if (!uid) return;
       SAVE.db = db; SAVE.uid = uid; SAVE.status = 'syncing';
-      brSyncProfile(owner);
+      brSyncProfile(owner); ffaSyncProfile(owner);
       try {
         const snap = await withTimeout(db.doc(dpath('index', owner)).get(), 9000);
         if (accountId() !== owner) return;

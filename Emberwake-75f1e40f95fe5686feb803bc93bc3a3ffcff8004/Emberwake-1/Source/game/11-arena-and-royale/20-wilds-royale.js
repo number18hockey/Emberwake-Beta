@@ -11,7 +11,7 @@
 //  nothing too.
 //  Online, the match leader (the first person in the lobby) runs the
 //  clock, the border and the echoes; every computer runs its own Waker
-//  and shares it as presence, exactly like the Cinder Ring.
+//  and shares it as presence, exactly like the FFA Arcade.
 //  (the island: 23-wilds-island; echoes: 24-wilds-echoes; creatures,
 //  gifts and the other cruelties of the games: 25-wilds-games)
 // ============================================================
