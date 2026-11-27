@@ -195,7 +195,7 @@ function hostWelcome(P) {
   if ([...COOP.peers.values()].filter(Q => Q.ok).length >= brMaxG()) { sendTo(P, { t: 'kick' }); return; }
   const b = worldBlob(); b.drops = [];
   const p = G.p, pos = [r1(p.x + (Math.random() < .5 ? -14 : 14)), r1(p.y)];
-  sendTo(P, { t: 'welcome', v: NETV, id: P.id, host: coopName(), world: { id: WORLD.id, name: WORLD.name, seed: WORLD.seed, size: WORLD.size, shape: WORLD.shape, mode: WORLD.mode, land: WORLD.land || 1, gates: WORLD.gates || null, legacy: WORLD.legacy || {} }, dim: DIM, blob: b, pos, clock: G.clock, ev: G.ev, dev: G.dev, devT: G.devT,
+  sendTo(P, { t: 'welcome', v: NETV, id: P.id, host: coopName(), world: { id: WORLD.id, name: WORLD.name, seed: WORLD.seed, size: WORLD.size, shape: WORLD.shape, mode: WORLD.mode, land: WORLD.land || 1, fork: WORLD.fork ? 1 : 0, gates: WORLD.gates || null, legacy: WORLD.legacy || {} }, dim: DIM, blob: b, pos, clock: G.clock, ev: G.ev, dev: G.dev, devT: G.devT,
     players: [...COOP.peers.values()].filter(Q => Q.ok && Q !== P).map(Q => ({ id: Q.id, n: Q.name })) });
   P.ok = true; P.seen = new Map(); P.hseen = new Set(); makeRemote(P, { x: pos[0], y: pos[1], n: P.name, sk: P.skin, ht: P.hat });
   sendAll({ t: 'pj', id: P.id, n: P.name }, P); chatLine('', P.name + ' joined your world', '#7ddc6f'); COOP.note = ''; sfx('quest', 0);
@@ -210,7 +210,7 @@ function guestEnter(m) {
   setTimeout(() => {
     COOP.applying = true;
     try {
-      Object.assign(WORLD, { id: String(w.id || 'shared'), name: String(w.name || 'Shared World').slice(0, 30), seed: w.seed | 0, size: clamp(w.size | 0, 0, 2), shape: clamp(w.shape | 0, 0, 2), mode: w.mode ? 1 : 0, land: LANDS[w.land | 0] ? w.land | 0 : 1, arena: false });
+      Object.assign(WORLD, { id: String(w.id || 'shared'), name: String(w.name || 'Shared World').slice(0, 30), seed: w.seed | 0, size: clamp(w.size | 0, 0, 2), shape: clamp(w.shape | 0, 0, 2), mode: w.mode ? 1 : 0, land: LANDS[w.land | 0] ? w.land | 0 : 1, fork: w.fork ? 1 : 0, arena: false });
       WORLD.legacy = cleanLegacy(w.legacy); WORLD.gates = cleanGates(w.gates); WORLD.known = null;
       netLeave(); SEED = WORLD.seed; initEndless(); fixLeadTexts(); freshSession(); for (const k in DSTASH) delete DSTASH[k];
       WORLD.legacy = cleanLegacy(w.legacy); WORLD.guest = true; PLC.clear();

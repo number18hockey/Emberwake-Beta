@@ -161,7 +161,8 @@ function saveBoot() {
   } catch (e) { }
 }
 function sortWorlds() { SAVE.list.sort((a, b) => (b.savedAt || 0) - (a.savedAt || 0)); }
-function worldMeta() { return { id: WORLD.id, name: WORLD.name, seed: WORLD.seed, size: WORLD.size, shape: WORLD.shape, mode: WORLD.mode, skin: G.skin, e: embers(), v: 6, endless: 1, savedAt: Date.now(), played: round(G.played), gcode: WORLD.gcode || '', land: WORLD.land || 1 }; }
+// (a world of the game's other branch says so, and still names your hat: that branch puts on the hat a world names when it opens one)
+function worldMeta() { return Object.assign({ id: WORLD.id, name: WORLD.name, seed: WORLD.seed, size: WORLD.size, shape: WORLD.shape, mode: WORLD.mode, skin: G.skin, e: embers(), v: 6, endless: 1, savedAt: Date.now(), played: round(G.played), gcode: WORLD.gcode || '', land: WORLD.land || 1 }, WORLD.fork ? { fork: 1, hat: G.hat | 0 } : null); }
 function snapshotWorld() {
   const p = G.p;
   return Object.assign(worldMeta(), {
@@ -251,13 +252,18 @@ async function openWorld(meta) {
   Object.assign(WORLD, { id: data.id, name: data.name, seed: data.seed | 0, size: clamp(data.size | 0, 0, 2), shape: clamp(data.shape | 0, 0, 2), mode: data.mode ? 1 : 0, arena: false });
   G.skin = clamp(data.skin | 0, 0, SKINS.length - 1); accountSaveProfile(); startWorld(data);
 }
+// a world saved by the game's other branch (the one that first had accounts and hats): its saves name the hat you wore, which
+// no save of this branch ever did, and say nothing of 'land'. Once it has been saved here it says so itself.
+const forkSave = data => !!data && (data.fork ? true : !('land' in data) && 'hat' in data);
 function startWorld(data) {
   G.state = 'loading'; G.loadMsg = data ? 'Rebuilding ' + WORLD.name + '...' : 'Forging ' + WORLD.name + '...';
   setTimeout(() => {
     // a saved world keeps the land it was made with; a new one gets the widest lands. (Saves have long had a
     // 'gen' field that means something else, so the shape of the land is 'land'. Saves from the update that
     // first widened the lands carry 'boons' but no 'land': those were made with land 2.)
-    WORLD.land = data ? (data.land | 0) || (data.boons ? 2 : 1) : LAND_NEW;
+    // (a world of the game's other branch: see forkSave. That branch kept the shape of its land in 'gen', and so it is read here)
+    WORLD.fork = forkSave(data) ? 1 : 0;
+    WORLD.land = !data ? LAND_NEW : WORLD.fork ? (((data.land || data.gen) | 0) === 2 ? 2 : 1) : (data.land | 0) || (data.boons ? 2 : 1);
     // (what an old world had already seen is known before the land is laid out, so new places keep off it)
     WORLD.legacy = !data ? {} : (data.gen | 0) >= 2 ? cleanLegacy(data.legacy) : legacyOf(data);
     // the gates past the floors are worked out once and kept; a world from before them puts them past the land it has seen

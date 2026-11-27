@@ -30,6 +30,10 @@ const LANDS = { 1: { cl: 1, wide: 1, tall: 1, blend: 60, dim: 1 }, 2: { cl: .5, 
 // (5: all of 4, and two more lands in the mild middle of the world: the Mosswood and the Willowmere. A world keeps the
 //  number it was made with, so no hill of an older world moves; LAND_NEW is what a world made today gets)
 const LAND_NEW = 5, hasNewLands = () => (WORLD.land | 0) >= 5;
+// (and one more kind of old world: the game had another branch for a while, the one that first had accounts and hats, and a world
+//  made there has land 1 or 2 with the two new lands grown into it its own way, everywhere and from the start. Such a world is
+//  marked WORLD.fork and its land is made exactly as that branch made it, tile for tile, so all you built there stands where it stood)
+const forkLand = () => !!WORLD.fork, midLands = () => hasNewLands() || forkLand();
 const GEN = () => GENV || LANDS[WORLD.land] || LANDS[1];
 function climate(x) {
   const k = GEN().cl;
@@ -41,7 +45,7 @@ function climate(x) {
 // the village and the story's other mild places were set down on the moor. Where the Mosswood now holds the middle of the
 // wet-to-dry scale, they are held to the moor's part of it, so home looks as it always did (nu: a stretch of a new land, set down on purpose)
 const moorH = f => !f.nu && f.t > .34 && f.t < .66 && f.h > .43 && f.h < .6 ? .43 : f.h;
-const bioOf = (t, h) => hasNewLands() ? bioOf5(t, h) : t < .34 ? 'reach' : t > .66 ? (h < .45 ? 'dunes' : h > .7 ? 'ash' : 'scoria') : h > .63 ? 'fen' : h < .37 ? 'thorn' : 'moor';
+const bioOf = (t, h) => midLands() ? bioOf5(t, h) : t < .34 ? 'reach' : t > .66 ? (h < .45 ? 'dunes' : h > .7 ? 'ash' : 'scoria') : h > .63 ? 'fen' : h < .37 ? 'thorn' : 'moor';
 // with the new lands: between the thorns and the fen lie the moor, then the Mosswood, then the Willowmere, drier to wetter
 const bioOf5 = (t, h) => t < .34 ? 'reach' : t > .66 ? (h < .45 ? 'dunes' : h > .7 ? 'ash' : 'scoria') : h > .68 ? 'fen' : h < .38 ? 'thorn' : h >= .59 ? 'willowmere' : h >= .47 ? 'mosswood' : 'moor';
 function bweights5(t, h) {
@@ -54,7 +58,7 @@ function bweights5(t, h) {
   return { reach: cold, moor: temp * plain, mosswood: temp * grove, willowmere: temp * mere, fen: temp * wet, thorn: temp * dry, dunes: hot * hd, scoria: hot * hm, ash: hot * hw };
 }
 function bweights(t, h) {
-  if (hasNewLands()) return bweights5(t, h);
+  if (midLands()) return bweights5(t, h);
   const cold = smooth((.38 - t) / .08), hot = smooth((t - .62) / .08), temp = max(0, 1 - cold - hot);
   const wet = smooth((h - .59) / .08), dry = smooth((.41 - h) / .08), mid = max(0, 1 - wet - dry);
   const hw = smooth((h - .66) / .08), hd = smooth((.49 - h) / .08), hm = max(0, 1 - hw - hd);
@@ -131,7 +135,7 @@ function structOf0(k) {
   if (nu && bigNear(x, 18)) return null;
   // only on fairly level ground, so a building never stands in a pit or against a bank
   { const h0 = surf(x + 3); for (const o of [-14, -10, -6, -2, 2, 6, 10, 14, 18]) if (abs(surf(x + o) - h0) > 4) return null; }
-  const kinds = (nu ? SKINDS2 : SKINDS)[biomeE(x)]; if (!kinds) return null; return { x, kind: kinds[floor(hh(k, 803, SEED) * kinds.length)] };
+  const kinds = (nu ? forkLand() ? SKINDS_FORK : SKINDS2 : SKINDS)[biomeE(x)]; if (!kinds) return null; return { x, kind: kinds[floor(hh(k, 803, SEED) * kinds.length)] };
 }
 const reservedAt = x => { if (inWindow(x, 6)) return true; const k = floor(x / 150); for (const q of [k, k - 1, k + 1]) { const s = structOf(q); if (s && x > s.x - 13 && x < s.x + 16) return true; } return placeReserved(x); };
 
@@ -175,7 +179,7 @@ function terrainColumn(x) {
   const hs = surf(x), b = biomeE(x), slope = abs(surf(x + 2) - surf(x - 2)), high = hs < BASE_Y - 30, dd = 4 + floor(fbm(x * .07, 50, 2) * 6), prot = protectDepth(x), L = lakeAt(x);
   const vil = abs(x - SPAWN_X) < VIL_W + 20, mouth = !L && mouthAt(x), shape = WORLD.shape;
   heights[x] = hs; SKYL[x] = hs + 3;
-  const hol = WT_ON && WT.hollow, M = WT_ON ? moodOf(x, b) : MOOD0;
+  const hol = WT_ON && WT.hollow, M = WT_ON ? moodOf(x, b) : MOOD0, fk = forkLand();
   const sk = floor(x / 200), shafts = [sk - 1, sk, sk + 1].filter(k => hh(k, 601, SEED) < (hol ? .8 : .5) && !inWindow(k * 200 + 100, 60));
   for (let y = 0; y < WH; y++) {
     const i = y * WW + x; let t = AIR, w = 0; const d = y - hs;
@@ -190,11 +194,11 @@ function terrainColumn(x) {
         : b === 'fen' || b === 'willowmere' ? (d < 2 ? MUD : d < 5 ? PEAT : fbm(x * .08, y * .08 + 5, 2) > .55 ? CLAY : DIRT) : b === 'dunes' ? (d < 1 && fbm(x * .05, 9.9, 2) > .62 ? SALT : SAND)
         : b === 'thorn' ? (fbm(x * .09, y * .09 + 3, 2) > .66 ? GRAVEL : slope > 9 && d < 3 ? STONE : DIRT) : (slope > 9 && d < 3 ? STONE : DIRT);
       else if ((b === 'scoria' || b === 'dunes') && d < dd + 20) t = strata ? SANDSTONE : SAND;
-      else if ((b === 'fen' || b === 'willowmere') && d < dd + 10 && fbm(x * .06, y * .06 + 11, 2) > .5) t = CLAY;
+      else if ((b === 'fen' || b === 'willowmere' && !fk) && d < dd + 10 && fbm(x * .06, y * .06 + 11, 2) > .5) t = CLAY;
       else t = clay ? SANDSTONE : !deep ? DIRT : fbm(x * .06, y * .06 + 20, 2) > .7 ? DIRT : STONE;
       // a mood changes the topsoil in patches (burnt ground on a moor, peat in a black fen, salt on the flats)
       if (M.top && d < 3 && !dl && (t === DIRT || t === SAND || t === MUD || t === ASH || t === SNOW) && fbm(x * .045 + 9, y * .08 + 61, 2) > 1 - M.top[1] * .82) t = M.top[0];
-      if (L && d < 1 && t !== WATER) t = b === 'fen' || b === 'willowmere' ? MUD : CLAY;
+      if (L && d < 1 && t !== WATER) t = b === 'fen' || b === 'willowmere' && !fk ? MUD : CLAY;
       // caves, which wind and join: two families of tunnels along the zero lines of smooth noise, caverns, the Underdark and the Deep
       let cave = 0;
       if (d >= 1 && d >= prot) {
@@ -236,7 +240,7 @@ function oreAt(x, y, d, b, t) {
   if (d > 2 && d < 26 && n(8.8, 2.1, .06) > .77) return CLAY;
   if (d > 8) {
     const p = n(3.7, 9.2, .1);
-    if (p > .8) { if (b === 'reach' && d > 20) return GEODE; if (b === 'moor' || b === 'mosswood') return COAL; if (b === 'ash' || b === 'scoria') return d > 24 && hh(x, y, 31) < .3 ? EMBER : COAL; if (b === 'fen' || b === 'willowmere') return d < 40 ? PEAT : CLAY; if (b === 'thorn') return GRAVEL; if (b === 'dunes') return SALT; }
+    if (p > .8) { if (b === 'reach' && d > 20) return GEODE; if (b === 'moor' || b === 'mosswood' && !forkLand()) return COAL; if (b === 'ash' || b === 'scoria') return d > 24 && hh(x, y, 31) < .3 ? EMBER : COAL; if (b === 'fen' || b === 'willowmere' && !forkLand()) return d < 40 ? PEAT : CLAY; if (b === 'thorn') return GRAVEL; if (b === 'dunes') return SALT; }
   }
   return t;
 }
@@ -263,7 +267,7 @@ function decorColumn(x, hs, b, L, M = MOOD0) {
 }
 function treeColumn(x, hs, b, M = MOOD0) {
   const k = floor(x / 5); if (x !== k * 5 + floor(hh(k, 77, SEED) * 5)) return;
-  let ch = b === 'moor' ? .55 : b === 'mosswood' ? .68 : b === 'willowmere' ? .16 : b === 'thorn' ? .7 : b === 'reach' ? .35 : b === 'ash' ? .18 : b === 'fen' ? .14 : b === 'dunes' ? 0 : .1, tall = 1;
+  let ch = b === 'moor' ? .55 : b === 'mosswood' ? .68 : b === 'willowmere' ? .16 : b === 'thorn' ? .7 : b === 'reach' ? .35 : b === 'ash' ? .18 : b === 'fen' ? (forkLand() ? .16 : .14) : b === 'dunes' ? 0 : .1, tall = 1;
   if (WT_ON) { ch = min(.96, ch * (M.tree === undefined ? 1 : M.tree) * (WT.oldgrowth ? 1.5 : WT.barren ? .35 : 1)); tall = (M.th || 1) * (WT.oldgrowth ? 1.55 : 1); }
   if (hh(k, 78, SEED) > ch || abs(surf(x - 1) - hs) > 1 || abs(surf(x + 1) - hs) > 1) return;
   const tp = tiles[hs * WW + x]; if (!TP[tp].solid || TP[tp].ghost) return;
@@ -275,7 +279,9 @@ function treeColumn(x, hs, b, M = MOOD0) {
 }
 // the crown that grows in the two new lands: oaks in the Mosswood, willows in the Willowmere, a lantern stalk here and there
 // between them (the trunk under it is the same; every older land keeps the stalks it has always had)
-const crownFor = (b, kind, r) => kind !== 0 ? kind : b === 'mosswood' ? (r < .72 ? CROWN.oak : kind) : b === 'willowmere' ? (r < .75 ? CROWN.willow : kind) : kind;
+const crownFor = (b, kind, r) => forkLand() ? crownFork(b, kind, r) : kind !== 0 ? kind : b === 'mosswood' ? (r < .72 ? CROWN.oak : kind) : b === 'willowmere' ? (r < .75 ? CROWN.willow : kind) : kind;
+// (a world of the other branch has a crown of its own in most lands: mangroves in the fen, pines in the Reach, maples on the Rustfall, palms on the dunes)
+const crownFork = (b, kind, r) => b === 'mosswood' ? (r < .72 ? CROWN.oak : kind) : b === 'willowmere' ? (r < .75 ? CROWN.willow : kind) : b === 'fen' ? (r < .7 ? CROWN.mangrove : kind) : b === 'reach' ? (r < .42 ? CROWN.pine : kind) : b === 'scoria' ? (r < .55 ? CROWN.maple : kind) : b === 'dunes' ? CROWN.palm : kind;
 
 // ---------------- step two: what is anchored in a chunk ----------------
 function finishChunk(cx) {

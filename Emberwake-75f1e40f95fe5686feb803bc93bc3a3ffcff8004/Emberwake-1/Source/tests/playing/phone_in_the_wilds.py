@@ -82,7 +82,7 @@ async def main():
     for k, v in out.items(): print(k, ':', v)
     assert out['touch'] and all(n > 0 and off == 0 for n, off in out['screens'].values()), 'every button of the Wilds\' four screens should be on the glass of a phone'
     assert out['state'] == ['play', True, True, True] and out['steered'] > 20, 'a match of the Wilds should begin on the glider, and the stick should steer it'
-    assert out['buttons'] == ['JUMP', 'USE', 'HEAVY', 'LIGHT', 'PACK', 'MAP', 'HEAL', 'PACT', 'MENU'], 'the buttons of the Wilds: those of a match, and PACT'
+    assert out['buttons'] == ['JUMP', 'DASH', 'USE', 'HEAVY', 'LIGHT', 'PACK', 'MAP', 'HEAL', 'PACT', 'MENU'], 'the buttons of the Wilds: those of a match, and PACT'
     assert {'fiber', 'flint', 'rock', 'stick'} <= set(out['gathered']), 'a finger on what lies on the ground should gather it'
     assert out['dug'] == [True, False, True], 'a finger held on the ground should dig it with bare hands, and the dirt is yours'
     assert out['pack'] == ['inv', ['CLOSE']] and out['closed'] is None and out['map'] == [True, False], 'PACK and MAP should open and close'

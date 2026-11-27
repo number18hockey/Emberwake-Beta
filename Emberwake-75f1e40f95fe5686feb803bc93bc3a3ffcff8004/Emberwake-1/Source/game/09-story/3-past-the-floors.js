@@ -85,6 +85,8 @@ Object.assign(LEADS, {
   dawnforge: { title: 'The Dawnforge', text: 'Dawnsteel, the metal of the ring, needs the Dawnforge, made at a Thunder Anvil: dawnsteel ore, voidrock, stormsilver and sunstone.', done: () => !!G.flags.used_anvil7 || !!G.flags.placed_dawnforge },
   hollowking: { title: 'The Cold Hearth', text: 'The Hollow waits by the first fire. Set the Dawnring on the Cold Hearth with an Ember Offering: dawnsteel, last embers, sunstone, cinderite and the Thunder Heart.', dim: 7, at: () => DARENA_X, done: () => !!G.flags.hollowDead }
 });
+// (a world of the game's other branch has no gates on its surface, see forkLand in 03-world/3-endless.js, so there no lead points at one)
+for (const id of ['g_frost', 'g_clock', 'g_storm', 'g_ring']) { const done = LEADS[id].done; LEADS[id].done = () => forkLand() || done(); }
 LEAD_ORDER.push('sunshrines', 'g_frost', 'rimeforge', 'winterstag', 'g_clock', 'hourkey', 'escapement', 'horologist', 'g_storm', 'stormkey', 'thunderanvil', 'stormwright', 'dawnring', 'g_ring', 'dawnforge', 'hollowking');
 // the matriarch's lead points onward now
 LEADS.matriarch.text = 'The Prism Matriarch keeps the broken sky. Wake her at the altar with a Prism Offering (it needs moth wax from the Rootmother). Her heart opens the way past the floors.';

@@ -85,6 +85,8 @@ const SKINDS2 = {
   reach: ['camp', 'circle', 'tower', 'shrine', 'shrine', 'den'], fen: ['stilt', 'stilt', 'hut', 'wreck', 'shrine'], dunes: ['dune', 'well', 'graves', 'wreck', 'wreck', 'shrine'],
   scoria: ['tower', 'dune', 'graves', 'camp', 'shrine', 'den'], ash: ['graves', 'camp', 'circle', 'shrine', 'den']
 };
+// (in a world of the other branch the Mosswood's list ran in this order, so each of its mills and shrines stays the one it was)
+const SKINDS_FORK = Object.assign({}, SKINDS2, { mosswood: ['hut', 'camp', 'circle', 'well', 'den', 'shrine', 'mill'] });
 const BKINDS = { moor: ['hamlet', 'hamlet', 'fort', 'castle'], mosswood: ['hamlet', 'hamlet', 'fort'], willowmere: ['hamlet', 'fort'], thorn: ['fort', 'fort', 'hamlet', 'castle'], reach: ['temple', 'temple', 'castle', 'hamlet'], fen: ['hamlet', 'fort'], dunes: ['pyramid', 'pyramid', 'fort'], scoria: ['fort', 'castle', 'pyramid'], ash: ['fort', 'castle', 'fort'] };
 const BHALF = { hamlet: 31, fort: 27, castle: 35, pyramid: 25, temple: 17, observatory: 10 }, BIGW = 560, DEEPW = 700, CAMPW = 330;
 // worlds made since the lands grew widest: big places further apart, and far fewer garrisons (an observatory instead)
@@ -198,7 +200,7 @@ Object.assign(STRUCT_B, {
       for (let tx = cx - 6; tx <= cx + 6; tx++) { const fy = floorAt(tx, cy, cy + 6); if (fy > 0 && tileAt(tx, fy - 1) === AIR && hh(tx, fy, 41) > .55) tiles[(fy - 1) * WW + tx] = hh(tx, fy, 42) > .5 ? BONES : STICKS; }
       for (let y = cy - 4; y <= cy - 1; y++) for (let tx = cx - 7; tx <= cx + 7; tx++) if (tileAt(tx, y) === AIR && (solidAt(tx, y - 1) || solidAt(tx - 1, y) || solidAt(tx + 1, y)) && hh(tx, y, 43) > .55) tiles[y * WW + tx] = COBWEB;
       { const fy = floorAt(cx + 5, cy, cy + 6); if (fy > 0) { setT(cx + 5, fy - 1, AIR); chestAt(cx + 5, fy - 1, 'den'); } }
-      const kinds = { thorn: ['thornback', 'thornback', 'thornback'], moor: ['husk', 'thornback', 'thornback'], mosswood: ['husk', 'thornback', 'thornback'], ash: ['husk', 'husk', 'husk'], scoria: ['rustback', 'rustback', 'rustback'], reach: ['mite', 'mite', 'mite', 'mite'] }[b] || ['husk', 'husk'];
+      const kinds = { thorn: ['thornback', 'thornback', 'thornback'], moor: ['husk', 'thornback', 'thornback'], mosswood: forkLand() ? null : ['husk', 'thornback', 'thornback'], ash: ['husk', 'husk', 'husk'], scoria: ['rustback', 'rustback', 'rustback'], reach: ['mite', 'mite', 'mite', 'mite'] }[b] || ['husk', 'husk'];
       const g = []; kinds.forEach((t, i) => { const tx = cx - 4 + i * 3, fy = floorAt(tx, cy, cy + 6); if (fy > 0) g.push([t, tx, fy]); });
       lair('den', cx, cy, g, { done: 'THE DEN IS QUIET', sub: 'whatever slept there, sleeps for good' });
       mark('n' + x, 'A BEAST DEN', 'something sleeps inside', cx, cy - 2, 10); small(); return true;

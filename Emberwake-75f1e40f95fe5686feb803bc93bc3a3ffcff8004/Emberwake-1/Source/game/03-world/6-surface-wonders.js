@@ -57,6 +57,8 @@ const GATE_INFO = {
 const gateX = k => k === 'frost' ? FROST_X : k === 'clock' ? CLOCK_X : k === 'storm' ? STORMG_X : k === 'ring' ? RING_X : OBS_X;
 function cleanGates(g) { const o = {}; if (g && typeof g === 'object') for (const k in GATE_D) if (isFinite(g[k]) && g[k] > 200 && g[k] < EW - 200) o[k] = g[k] | 0; return Object.keys(o).length === 5 ? o : null; }
 function wondersInit(s) {
+  // (a world of the other branch keeps its land exactly as that branch made it, and that branch had none of this: no gates, no observatory)
+  if (forkLand()) { FROST_X = CLOCK_X = STORMG_X = RING_X = OBS_X = -1e5; WORLD.gates = null; return; }
   const G0 = cleanGates(WORLD.gates), K = WORLD.land >= 3 ? null : WORLD.known;
   const at = k => {
     if (G0) return G0[k]; let x = X0 + s * GATE_D[k];
@@ -101,7 +103,7 @@ function shrineOf(k) {
   });
 }
 function wondersFinish(cx, x0, x1, here) {
-  if (DIM || WORLD.arena) return;
+  if (DIM || WORLD.arena || forkLand()) return;
   if (here(FROST_X)) buildFrostGate(); if (here(CLOCK_X)) buildClockGate(); if (here(STORMG_X)) buildStormGate(); if (here(RING_X)) buildRingstair(); if (here(OBS_X)) buildObservatory(OBS_X, 1);
   for (let k = floor(x0 / 1100) - 1; k <= floor(x1 / 1100) + 1; k++) { const c = craterOf(k); if (c && here(c.x)) withRng(hh(c.x, 1750, SEED) * 4294967296, () => buildCrater(c)); }
   for (let k = floor(x0 / 900) - 1; k <= floor(x1 / 900) + 1; k++) { const s = shrineOf(k); if (s && here(s.x)) buildSunShrine(s); }
