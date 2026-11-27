@@ -444,7 +444,8 @@ function hitFx(hx, hy, top, dmg, o, kx, involved) {
 function strike(by, e, dmg, kx, ky, o) {
   if (!e.fighter) { const r = damageEnemy(e, dmg, kx, ky, o) > 0; if (r && o.launch && !e.dead && !o.link) applyStatus(e, 'launched', by); return r; }
   const hx = o.hx === undefined ? e.x + 3 : o.hx, hy = o.hy === undefined ? e.y + 10 : o.hy;
-  if (e.remote) { if (e.dead || e.spawnT > 0 || e.noHit) return false; netHit(e, dmg, kx, ky, (o.crit ? 1 : 0) | (o.bite === false ? 2 : 0), 0, by); e.flash = 6; hitFx(hx, hy, e.y, max(1, round(dmg * .8)), o, kx, by === G.p); return true; }
+  // (a hollow in a shared world is the host's: it goes through hurtFighter to the host, not to the arena's list of hits)
+  if (e.remote && !e.ghostH) { if (e.dead || e.spawnT > 0 || e.noHit) return false; netHit(e, dmg, kx, ky, (o.crit ? 1 : 0) | (o.bite === false ? 2 : 0), 0, by); e.flash = 6; hitFx(hx, hy, e.y, max(1, round(dmg * .8)), o, kx, by === G.p); return true; }
   const r = hurtFighter(e, dmg, by ? by.x + 3 : hx - kx, { kx, ky, by, pvp: !!(by && by.fighter), stop: o.stop, shake: o.shake, crit: o.crit, stagger: o.stagger, blunt: o.blunt, launch: o.launch, cold: o.cold, hx, hy, link: o.link, bite: o.bite, hsCut: o.hsCut });
   if (r && o.launch && !e.dead && !o.link) applyStatus(e, 'launched', by); return r;
 }

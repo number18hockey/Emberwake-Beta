@@ -93,7 +93,7 @@ function wBrSend() {
     if (BR.phase === 'lobby') o.ld = { st: 'L', cd: BR.cdEnd ? max(0, ceil((BR.cdEnd - performance.now()) / 1000)) : -1, mode: BR.matchType };
     else {
       if (!BR.btCache || G.time % 6 === 0) BR.btCache = [...BR.bots.values()].map(wBrBotSer);
-      o.ld = { st: 'M', mi: BR.mi, s: BR.seed, ro: BR.ro, nb: BR.nb, t: BR.t, mode: BR.matchType, rg: [BR.ring.n, BR.ring.at], bt: BR.btCache, bk: BR.bk };
+      o.ld = { st: 'M', mi: BR.mi, s: BR.seed, ro: BR.ro, nb: BR.nb, t: BR.t, mode: BR.matchType, rg: [BR.ring.n, BR.ring.at], bt: BR.btCache, bk: BR.bk, ut: BR.ut };
     }
   }
   R.presence(o).catch(() => { });
@@ -143,7 +143,7 @@ function wBrSaw(id, q, s) {
   // I run the echoes: someone is asking one of mine for a pact, or has walked out of one
   if (BR.lead && f && typeof s.po === 'string' && /^B\d{1,2}$/.test(s.po)) { const b = BR.bots.get(s.po); if (b && b.br && !b.dead && !b.remote && !b.br.ally && hypot(b.x - f.x, b.y - f.y) < 160 && b.br.askedBy !== id + ':' + s.k) { b.br.askedBy = id + ':' + s.k; if (brBotAgrees(b, f)) { b.team = brPactTeam(id, b.botTag); b.br.ally = f; b.br.allyT = BR.t; f.team = b.team; b.br.sealed = 0; } else b.br.asked = BR.t; } }
   if (BR.lead && f) for (const b of BR.bots.values()) if (b.br && b.br.ally === f) { if (theirTeam(s) === b.team) b.br.sealed = 1; else if (b.br.sealed || BR.t - b.br.allyT > 600) { b.br.ally = null; b.br.spurned = BR.t; b.team = b.botTag; } else f.team = b.team; }
-  if (Array.isArray(s.tk)) for (const row of s.tk.slice(0, 24)) { if (!Array.isArray(row) || typeof row[1] !== 'string') continue; const sq = num(row[0]) | 0; if (sq <= (BR.tookSeen.get(id) || 0)) continue; BR.tookSeen.set(id, sq); const k = G.drops.findIndex(d => d.uid === row[1]); if (k >= 0) G.drops.splice(k, 1); }
+  if (Array.isArray(s.tk)) for (const row of s.tk.slice(0, 24)) { if (!Array.isArray(row) || typeof row[1] !== 'string') continue; const sq = num(row[0]) | 0; if (sq <= (BR.tookSeen.get(id) || 0)) continue; BR.tookSeen.set(id, sq); brTakeSeen(id, row[1]); const k = G.drops.findIndex(d => d.uid === row[1]); if (k >= 0) G.drops.splice(k, 1); }
   if (Array.isArray(s.td) && s.td.length) {
     BR.applying = true;
     try { for (const row of s.td.slice(0, 40)) {
@@ -158,7 +158,7 @@ function wBrSaw(id, q, s) {
     wSpawnDrop(row[1], n, x, y, vx, vy, id + ':' + seq);
   }
   if (Array.isArray(s.oc)) for (const i of s.oc.slice(0, 200)) { const c = BR.chests[i | 0]; if (c && !c.open) { c.open = true; c.t = 0; } }
-  if (Array.isArray(s.dl) && s.dl.length === 4) { const key = id + ':' + s.dl[0]; if (!BR.dlSeen.has(key)) { BR.dlSeen.add(key); wBrDropPile(num(s.dl[1]), num(s.dl[2]), wBrItemsOk(s.dl[3])); } }
+  if (Array.isArray(s.dl) && s.dl.length === 4) { const key = id + ':' + s.dl[0]; if (!BR.dlSeen.has(key)) { BR.dlSeen.add(key); wBrDropPile(num(s.dl[1]), num(s.dl[2]), wBrItemsOk(s.dl[3]), key); } }
 }
 const theirTeam = s => typeof s.pt === 'string' ? s.pt : '';
 const wBrItemsOk = a => Array.isArray(a) ? a.slice(0, 14).filter(e => Array.isArray(e) && IT[e[0]] && num(e[1]) > 0).map(e => [e[0], clamp(num(e[1]) | 0, 1, 300)]) : [];
@@ -170,6 +170,7 @@ function wBrGone(id) {
 function wBrFromLeader(id, ld) {
   if (BR.leaderId && id !== BR.leaderId) return;
   if (typeof ld.t === 'number' && abs(ld.t - BR.t) > 40) BR.t = ld.t | 0;
+  if (Array.isArray(ld.ut)) brUntakes(id, ld.ut);
   if (Array.isArray(ld.rg)) { const n = clamp(num(ld.rg[0]) | 0, 0, BR_RING.length), at = num(ld.rg[1]) | 0; if (n !== BR.ring.n || at !== BR.ring.at) { const up = n > BR.ring.n; BR.ring = { n, at }; if (up && BR.phase !== 'over') brRingCalled(false); } }
   if (Array.isArray(ld.bt)) for (const a of ld.bt.slice(0, WBR_MAX)) if (Array.isArray(a)) wBrGhostBot(a);
   if (Array.isArray(ld.bk)) for (const e of ld.bk) {
@@ -179,7 +180,7 @@ function wBrFromLeader(id, ld) {
     if (k === G.p) brTookDown(v);
     const why = typeof e[6] === 'string' ? e[6].replace(/[^a-z .,'-]/gi, '').slice(0, 40) : '', beast = !k && why && why === why.toUpperCase();
     G.kfeed.unshift({ a: k ? k.name : beast ? why : '', b: v ? v.name : 'AN ECHO', t: 0, me: k === G.p ? 1 : 0, txt: k || beast ? '' : why || 'fell to the ashfall' }); if (G.kfeed.length > 6) G.kfeed.length = 6; if (v) brFallen(v);
-    wBrDropPile(num(e[3]), num(e[4]), wBrItemsOk(e[5]));
+    wBrDropPile(num(e[3]), num(e[4]), wBrItemsOk(e[5]), e[0] + ':' + sq);
   }
 }
 function wBrGhostBot(a) {

@@ -101,7 +101,8 @@ function brRewardMatch() {
 // stayed to watch it close. Both payers already refuse to pay twice, so every leave path may call this.
 function brPayLeaving() {
   if (!BR.on || !G.p || !G.p.dead || !(BR.place > 0) || BR.phase === 'over' || BR.phase === 'lobby') return;
-  if (BR.wild) brRewardMatch(); else trCareerSave();
+  // (while a pact ally still fights your place is not yet known: the pact may still win, so nothing is paid on leaving)
+  if (BR.wild) { const a = brAlly(); if (a && !a.dead && !a.gone) return; brRewardMatch(); } else trCareerSave();
 }
 
 // ---------------- how hard things hit here ----------------
@@ -248,7 +249,8 @@ function wBrSpill(f) {
   else if (f.br) { if (f.wid && f.wid !== 'fists') out.push([f.wid, 1]); if (f.br.heals > 0) out.push(['br_salve', min(3, f.br.heals)]); if (f.br.wards > 0) out.push(['br_shard', min(2, f.br.wards)]); if (f.br.arrows > 0) out.push(['arrow', min(10, f.br.arrows)]); const bag = Object.entries(f.br.bag).filter(e => IT[e[0]] && e[1] > 0).sort((a, b) => b[1] - a[1]).slice(0, 4); for (const [id, n] of bag) out.push([id, min(6, n)]); }
   return out;
 }
-function wBrDropPile(x, y, items) { items = items.slice(0, 14); items.forEach(([id, n], k) => { if (IT[id] && n > 0) wSpawnDrop(id, n, x + frand(-5, 5), y - 4, (k - (items.length - 1) / 2) * .22, -.8 - frand(.5), 'd' + round(x) + ':' + round(y) + ':' + k); }); }
+// (key names the death, the same on every page, so two falls on one spot never share what they dropped)
+function wBrDropPile(x, y, items, key) { items = items.slice(0, 14); items.forEach(([id, n], k) => { if (IT[id] && n > 0) wSpawnDrop(id, n, x + frand(-5, 5), y - 4, (k - (items.length - 1) / 2) * .22, -.8 - frand(.5), 'd' + key + ':' + k); }); }
 
 // ---------------- starting a match ----------------
 // everyone runs this with the same seed, so everyone stands on the same island
@@ -257,7 +259,7 @@ function wBrEnterMatch(mi, seed, roster, nb) {
   const nick = G.nick, skin = G.skin, hat = G.hat; BR.wild = true; BR.arena = 0; BR.slagY = 1e9;
   wGenRoyale(seed); freshSession(); WORLD.mode = 0; G.nick = nick; G.skin = skin; G.hat = hat; G.clock = .08; updateSun();
   const ro = roster.slice(0, WBR_MAX);
-  Object.assign(BR, { mapHide: false, mi, seed, t: 0, ro, nb: clamp(nb | 0, 0, WBR_MAX - ro.length), rewarded: false, rewardText: '', phase: 'drop', mine: new Set(), bots: new Map(), bk: [], bkSeq: 0, bkSeen: new Map(), dlSeen: new Set(), dl: null, place: 0, spec: null, specT: 0, overT: 0, winner: '', winMe: false, chan: null, note: '', noteT: 0, inStorm: false, poiNow: '', mapOpen: false, lastAlive: 0, lastTeams: 0, ring: { n: 0, at: 0 }, lastFall: 0, pactWith: '', pactFrom: '', pactFromT: 0, teammate: '', pactSeen: false, leaveT: 0, dropsOut: [], dropSeq: 0, dropSeen: new Map(), tookOut: [], tookSeq: 0, tookSeen: new Map(), tileOut: new Map(), applying: false, fallen: [], fallenT: 0, show: null, gifts: [], giftAt: 60 * 60, feast: 0, hazard: null, hounds: 0, bounty: null, mobT: 600, botMobT: 1200 });
+  Object.assign(BR, { mapHide: false, mi, seed, t: 0, ro, nb: clamp(nb | 0, 0, WBR_MAX - ro.length), rewarded: false, rewardText: '', phase: 'drop', mine: new Set(), bots: new Map(), bk: [], bkSeq: 0, bkSeen: new Map(), dlSeen: new Set(), dl: null, place: 0, spec: null, specT: 0, overT: 0, winner: '', winMe: false, chan: null, note: '', noteT: 0, inStorm: false, poiNow: '', mapOpen: false, lastAlive: 0, lastTeams: 0, ring: { n: 0, at: 0 }, lastFall: 0, pactWith: '', pactFrom: '', pactFromT: 0, teammate: '', pactSeen: false, leaveT: 0, dropsOut: [], dropSeq: 0, dropSeen: new Map(), tookOut: [], tookSeq: 0, tookSeen: new Map(), tkBy: new Map(), ut: [], utSeq: 0, utSeen: new Map(), tookIt: new Map(), tileOut: new Map(), applying: false, fallen: [], fallenT: 0, show: null, gifts: [], giftAt: 60 * 60, feast: 0, hazard: null, hounds: 0, bounty: null, mobT: 600, botMobT: 1200 });
   BR.total = BR.ro.length + BR.nb; BR.zones = wBrZones(seed); BR.storm = wBrStormAt(); BR.slots = brSlots(seed, BR.total); NET.deathN = 0; NET.kb = ['', 0]; NET.hits = []; NET.shots = []; NET.seen.clear();
   inv = new Array(PACK_MAX).fill(null); INV_N = packCap(); G.sel = 0; G.food = 80;
   G.p = newPlayer(); Object.assign(G.p, { name: G.nick, brIn: true, ward: 0, team: 'me' }); G.fighters = [G.p]; G.npcs = []; G.enemies = [];
@@ -320,12 +322,12 @@ function wBrDeath(f, by) {
   if (!by) f.cause = txt;
   if (f === G.p) {
     NET.deathN++; NET.kb = [wild ? '' : wBrTag(by), NET.deathN]; if (by && by.brBot && !by.remote) by.kills++;
-    BR.place = wBrAlive().length + 1; const items = wBrSpill(f); BR.dl = [NET.deathN, round(f.x + 3), round(f.y + 10), items.slice(0, 14)]; wBrDropPile(f.x + 3, f.y + 10, items);
+    BR.place = wBrAlive().length + 1; const items = wBrSpill(f); BR.dl = [NET.deathN, round(f.x + 3), round(f.y + 10), items.slice(0, 14)]; wBrDropPile(f.x + 3, f.y + 10, items, wBrMe() + ':' + NET.deathN);
     G.kfeed.unshift({ a: ka, b: f.name, t: 0, me: 2, txt }); BR.spec = by && by.fighter && !by.dead && by !== f ? by : null; BR.specT = 0; f.brUse = null; f.consume = null;
   } else if (f.brBot && !f.remote) {
     if (by === G.p) brTookDown(f); else if (by && by.brBot && !by.remote) by.kills++;
-    const items = wBrSpill(f); wBrDropPile(f.x + 3, f.y + 10, items); f.brUse = null;
-    BR.bk.push([f.botTag, wild ? '' : wBrTag(by), ++BR.bkSeq, round(f.x + 3), round(f.y + 10), items.slice(0, 14), wild ? ka : txt]); if (BR.bk.length > 8) BR.bk.shift();
+    const items = wBrSpill(f), sq = ++BR.bkSeq; wBrDropPile(f.x + 3, f.y + 10, items, f.botTag + ':' + sq); f.brUse = null;
+    BR.bk.push([f.botTag, wild ? '' : wBrTag(by), sq, round(f.x + 3), round(f.y + 10), items.slice(0, 14), wild ? ka : txt]); if (BR.bk.length > 8) BR.bk.shift();
     G.kfeed.unshift({ a: ka, b: f.name, t: 0, me: by === G.p ? 1 : 0, txt });
   }
   brFallen(f);
@@ -415,6 +417,13 @@ function wSpawnDrop(id, n, x, y, vx, vy, uid) {
 // loot that has come to rest is only looked at now and then; loot that falls in lava is gone
 const wDropAsleep = d => d.onGround && d.rest > 30 && (d.t & 15);
 function wDropMoved(d) { d.rest = d.onGround && abs(d.vx) < .02 ? (d.rest | 0) + 1 : 0; if (liqAt(d.x + 3, d.y + 3) !== 2) return false; P(d.x + 3, d.y, 0, -.6, 18, '#ff7a2a', { glow: 1 }); return true; }
-function brTook(d) { if (!d.uid || BR.via === 'solo') return; BR.tookOut.push([++BR.tookSeq, d.uid]); if (BR.tookOut.length > 24) BR.tookOut.shift(); }
+// (two friends can reach one drop before either hears of the other: the leader says who was first, and the other gives it back)
+function brTook(d) { if (!d.uid || BR.via === 'solo') return; BR.tookOut.push([++BR.tookSeq, d.uid]); if (BR.tookOut.length > 24) BR.tookOut.shift(); BR.tookIt.set(d.uid, [d.id, d.n]); if (BR.lead && !BR.tkBy.has(d.uid)) BR.tkBy.set(d.uid, wBrMe()); }
+function brTakeSeen(id, uid) { if (!BR.lead) return; const who = BR.tkBy.get(uid); if (!who) { BR.tkBy.set(uid, id); return; } if (who === id) return; BR.ut.push([++BR.utSeq, id, uid]); if (BR.ut.length > 24) BR.ut.shift(); }
+function brUntakes(id, ut) {
+  const last = BR.utSeen.get(id) || 0; let top = last;
+  for (const r of ut.slice(0, 24)) { if (!Array.isArray(r) || typeof r[2] !== 'string') continue; const sq = num(r[0]) | 0; if (sq <= last) continue; top = max(top, sq); if (r[1] !== wBrMe()) continue; const t = BR.tookIt.get(r[2]); if (t) { BR.tookIt.delete(r[2]); removeItem(t[0], t[1]); say('A friend reached it first.'); } }
+  BR.utSeen.set(id, top);
+}
 // the camera follows whoever you are watching
 function wBrCamTarget() { const p = G.p; if (!wBrOn() || !p.dead) return null; const s = BR.spec; return s && !s.gone ? s : null; }

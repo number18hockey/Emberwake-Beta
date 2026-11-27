@@ -66,6 +66,11 @@ async def main():
     ok = await wait(B, "[...COOP.hghosts.values()].length > 0", 4000); res['guest sees the hollow'] = ok
     await B.evaluate("(() => { const f = [...COOP.hghosts.values()][0]; hurtFighter(f, 30, f.x - 10, { kx: 2, ky: -1 }); })()"); await B.wait_for_timeout(500)
     res['hollow hp on host'] = await A.evaluate("HOL.hp")
+    # and a guest REALLY swings at it (a sword, the mouse button): the blows go to the host and the hollow loses health there
+    await A.evaluate("HOL.inv = 0; HOL.hurtT = 0; window.HP1 = HOL.hp; 1")
+    await B.evaluate("(() => { inv[0] = { id: 'iron_sword', n: 1 }; G.sel = 0; window.N0 = G.p.atkN | 0; window.IV = setInterval(() => { const h = [...COOP.hghosts.values()][0]; if (!h) return; G.cine = null; G.p.x = G.p.px = h.x - 13; G.p.y = G.p.py = h.y; G.p.vx = 0; G.p.face = 1; mouse.wx = h.x + 3; mouse.wy = h.y + 10; mouse.lp = true; }, 250); })()")
+    await B.wait_for_timeout(2500); await B.evaluate("clearInterval(IV)"); await A.wait_for_timeout(600)
+    res['a guest swings a sword at the hollow: blows, hp lost on the host'] = [await B.evaluate("(G.p.atkN | 0) - N0 > 0"), await A.evaluate("HP1 - HOL.hp > 0")]
     await A.evaluate("HOL.inv = 0; HOL.hp = 1; HOL.hurtT = 0; hurtFighter(HOL, 10, HOL.x - 5, { kx: 1, ky: -1 })"); res['hollow dead on host'] = await A.evaluate("HOL.dead"); await A.wait_for_timeout(1600)
     res['hollow gone for guests'] = [await B.evaluate("[...COOP.hghosts.values()].filter(f => !f.dead).length"), await C.evaluate("COOP.hghosts.size")]
     # the sky follows the host

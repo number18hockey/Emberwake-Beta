@@ -100,7 +100,7 @@ async function coopAnswer(text) {
   if (COOP.busy) return; COOP.err = ''; COOP.reply = '';
   if (!rtcOK()) { COOP.err = 'This window cannot connect to others. Open Emberwake.html in Chrome, Safari or Edge to play together.'; return; }
   const o = await unpackCode(text); if (!o || o.k !== 'o' || typeof o.s !== 'string') { COOP.err = "That isn't an invite code. Ask your friend to copy the whole code."; return; }
-  if ((o.v | 0) !== NETV) { COOP.err = versionClash(o.gv); return; }
+  if ((o.v | 0) !== NETV) { COOP.err = versionClash(o.gv, o.v); return; }
   COOP.busy = true; coopReset(); G.skin = FORM.skin | 0; COOP.lastCode = '';
   try {
     const pc = new RTCPeerConnection(ICE), P = { id: 'h', pc, open: false, ok: false, name: cleanName(o.h) || 'HOST', snaps: [] };
@@ -476,7 +476,7 @@ function hostStatus(P, m) { const e = foeById(m.id); if (e && typeof m.k === 'st
 // a guest strikes a hollow: same idea
 function netHitHollow(f, dmg, fromX, o) {
   if (f.dead) return false; sendAll({ t: 'fhit', id: f.nid, dmg: round(dmg * 10) / 10, fx: round(fromX || f.x), kx: r2(o.kx || 0), ky: r2(o.ky || 0), crit: !!o.crit, stagger: o.stagger | 0, b: o.bite === false ? 0 : 1 });
-  f.flash = 6; numPop(f.x + 3, f.y - 2, max(1, round(dmg)), o.crit ? '#ffd35a' : '#ffffff'); return true;
+  f.flash = 6; if (o.hx !== undefined) hitFx(o.hx, o.hy, f.y, max(1, round(dmg)), o, o.kx || 0, o.by === G.p); else numPop(f.x + 3, f.y - 2, max(1, round(dmg)), o.crit ? '#ffd35a' : '#ffffff'); return true;   // (a blow is felt as one on a hollow here)
 }
 // the host's creature catches a guest: the guest's own game decides (so a perfect dodge still dodges)
 function netHurtPeer(f, dmg, fromX, o) {

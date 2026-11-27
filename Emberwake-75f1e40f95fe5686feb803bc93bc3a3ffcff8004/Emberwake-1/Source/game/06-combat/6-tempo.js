@@ -27,13 +27,15 @@ const TEMPO_MAX = 5, TEMPO_HOLD = 210;
 // and quick hands STOKE each blow. A slip costs a step; only real hammering is RUSHED.
 const QK = {
   MAX: 5,                                     // steps of cadence; reaching it starts DRUMFIRE
-  WIND: .05, REC: .09,                        // per step: a light wind-up this much shorter, every follow-through this much shorter (tuned from .1)
+  WIND: .05, REC: .09,                        // per step: a light wind-up this much shorter, every follow-through this much shorter (tuned from .1;
+                                              //  .12 was tried against blind tapping: it made a perfect chain worth 1.39 times the old beat, over the 1.35 aimed at)
   FLOOR: 7,                                   // no blow (wind-up + swing + the wait for the glint) is ever shorter than this (tuned from 6:
                                               //  daggers and fists at the floor out-ran every other weapon)
   NEARW: { easy: 5, normal: 4, hard: 3 },     // ticks after the bright glint that still hold the cadence (NEAR)
   ROLL_T: { easy: 90, normal: 75, hard: 60 }, // how long DRUMFIRE lasts (tuned from 75/60/50: shorter, CRASHes came round so often they out-paid the beat)
   ROLL_OUT: 20, ROLL_FALL: 2,                 // the grace after it (early presses are not held against you) and the step it falls to
-  STOKE_GAP: 9, STOKE_MAX: 4,                 // in DRUMFIRE a press within this many ticks of the last adds a stoke, up to this many
+  STOKE_GAP: 10, STOKE_MAX: 4,                // in DRUMFIRE a press within this many ticks of the last adds a stoke, up to this many (tuned from 9, six taps a second,
+                                              //  in a thumb's reach; at 11 presses only on the glint were stoked too, and a chain out-paid its aim)
   STOKE_DMG: .03, STOKE_PZ: .08,              // what each stoke adds to a blow's damage and to its weight on a guard (the CRASH takes them too; damage tuned from .04)
   DECAY: 20, DODGE_HOLD: 12,                  // out of the chain a step fades every DECAY ticks; a dodge holds them this long
   UP_CLASH: 2, UP_BREAK: 2, UP_RIPOSTE: 2,    // other roads up: winning a clash, breaking a guard, a riposte that lands
@@ -91,10 +93,11 @@ function tickTempo(f) {
   else if (f.rollOut > 0) f.rollOut--;
   if (f.quick > 0 && !(f.rollT > 0) && !(f.rollOut > 0) && f.state === 'normal' && !(f.chainT > 0) && --f.quickT <= 0) { f.quick--; f.quickT = QK.DECAY; }
 }
-// a step of cadence won or lost (n < 0). Five starts DRUMFIRE; any loss during it puts it out
+// a step of cadence won or lost (n < 0). Five starts DRUMFIRE; any loss during it puts it out, down to the same step it burns out to
+// (else a slip late in DRUMFIRE left four steps, and one crisp blow lit a whole new DRUMFIRE)
 function quickStep(f, n) {
   if (!n || !f.fighter) return; const q0 = f.quick | 0; f.quick = clamp(q0 + n, 0, qCap(f));
-  if (n < 0 && f.rollT > 0) { f.rollT = 0; rollEnd(f); }
+  if (n < 0 && f.rollT > 0) { f.rollT = 0; f.quick = min(f.quick, QK.ROLL_FALL); rollEnd(f); }
   else if (f.quick >= QK.MAX && q0 < QK.MAX && !(f.rollT > 0)) {
     f.rollT = rollT(); f.stoke = 0; f.crashS = -1;
     if (f === G.p) { numPop(f.x + 3, f.y - 16, 'DRUMFIRE', '#ffd35a', 2); sfx('drumfire', 0); G.flash = max(G.flash, .12); G.flashCol = '255,211,90'; try { if (mobileDevice && navigator.vibrate) navigator.vibrate(10); } catch (e) { } tempoHint('drumfire', 'DRUMFIRE: five blows in time. For a moment timing lets go: hammer the button and every blow is stoked harder. End it with a heavy blow, a CRASH.'); }
@@ -119,8 +122,8 @@ function beatPress(f, b) {
     if (a.rushed) return;
     // a held wind-up (charging a heavy) is a hold, not a second press
     if (a.phase === 0 && a.charge > 0 && b === a.btn) return;
-    // DRUMFIRE: no press is wrong, and quick ones stoke the next blow
-    if (f.rollT > 0 && a.btn === 'L') { const s0 = f.stoke | 0; f.stoke = clamp(s0 + (gap <= QK.STOKE_GAP ? 1 : -1), 0, QK.STOKE_MAX); if (f.stoke > s0) { if (f === G.p) sfx('rim', 0); if (near(f)) sparks(f.x + 3 + f.face * 7, f.y + 7, 1 + f.stoke, 0, 1.4, ['#ffd35a', '#ffffff']); }   // (a stoke is seen and heard)
+    // DRUMFIRE: no press is wrong, and quick ones stoke the next blow (a slower one just adds none)
+    if (f.rollT > 0 && a.btn === 'L') { const s0 = f.stoke | 0; f.stoke = clamp(s0 + (gap <= QK.STOKE_GAP ? 1 : 0), 0, QK.STOKE_MAX); if (f.stoke > s0) { if (f === G.p) sfx('rim', 0); if (near(f)) sparks(f.x + 3 + f.face * 7, f.y + 7, 1 + f.stoke, 0, 1.4, ['#ffd35a', '#ffffff']); }   // (a stoke is seen and heard)
       // (once the opening has come the next blow starts at once; a heavy pressed as a light is on its way still comes: heavy wins, as in one tick)
       a.go = a.go === 'H' ? 'H' : b; if (a.phase === 2 && a.pt >= beatOpen(a)) f.buf = { b: a.go, t: 2, beat: 1 }; else if (f.buf) f.buf.b = a.go; return; }
     const bb = atkBB(a), open = beatOpen(a), d = a.phase === 2 ? a.pt - open : -99;
@@ -302,10 +305,10 @@ function drawTempoHud(c, p, x, y) {
   const n = p.tempo | 0, full = n >= TEMPO_MAX;
   for (let k = 0; k < TEMPO_MAX; k++) { const on = k < n, px = x + k * 6; c.fillStyle = INK; c.fillRect(px, y, 5, 5); c.fillStyle = on ? (full ? ((G.time >> 2) & 1 ? '#ffffff' : '#fff1a8') : '#ff8a3d') : '#2a2438'; c.fillRect(px + 1, y + 1, 3, 3); if (on && !full) { c.fillStyle = '#ffd35a'; c.fillRect(px + 2, y + 1, 1, 1); } }
   if (full && (G.time >> 3) & 1) textS(c, 'RMB: CRESCENDO', x - textW('RMB: CRESCENDO') - 4, y - 1, '#ffd35a');
-  // the cadence: a thin bar under the pips, a step to a pip (nothing at all at rest). In DRUMFIRE it flickers and burns down
+  // the cadence: a bar under the pips (two pixels: one was lost on a phone), a step to a pip (nothing at all at rest). In DRUMFIRE it flickers and burns down
   const q = p.quick | 0; if (q <= 0) return;
   const roll = p.rollT > 0, w = roll ? max(1, round(TEMPO_MAX * 6 * p.rollT / rollT()) - 1) : q * 6 - 1;
-  c.fillStyle = INK; c.fillRect(x - 1, y + 5, w + 2, 3); c.fillStyle = roll ? ((G.time >> 1) & 1 ? '#ffffff' : '#ffd35a') : p.rollOut > 0 ? '#ff8a3d' : '#e0a020'; c.fillRect(x, y + 6, w, 1);
+  c.fillStyle = INK; c.fillRect(x - 1, y + 5, w + 2, 4); c.fillStyle = roll ? ((G.time >> 1) & 1 ? '#ffffff' : '#ffd35a') : p.rollOut > 0 ? '#ff8a3d' : '#e0a020'; c.fillRect(x, y + 6, w, 2);
 }
 // a foe winding up shows it; a foe's guard shows under its health once it has been tested
 function drawTell(c, e, x, y) {

@@ -139,7 +139,10 @@ function pickRecipe(e, S, st) {
     const k = st.slots.indexOf(null); if (k < 0) { sfx('deny'); smsg('Every slot is full.', '#e2483b'); return; }
     if ((S.kind === 'fire' || S.kind === 'kiln') && st.fuel <= 0 && craftEasy()) addFuel(st, S.kind === 'fire');
     if ((S.kind === 'fire' || S.kind === 'kiln') && st.fuel <= 0) { sfx('deny'); smsg('It needs fuel: sticks, logs, peat, charcoal or coal.', '#e2483b'); return; }
-    payCraft(r); st.slots[k] = { r: e.i, t: 0 }; sfx('place'); return;
+    payCraft(r); st.slots[k] = { r: e.i, t: 0 }; sfx('place');
+    // work that needs more heat than the fire in it gives (glass on logs): the kiln takes a hotter fuel you carry, so the order you do things in does not matter
+    if (S.kind === 'kiln' && WORLD.mode !== 1 && r.temp > 5 * (st.q || .75) && ['coal', 'charcoal', 'cinder'].some(id => hasItem(id) && FUELQ[id] > (st.q || .75))) addFuel(st, false);
+    return;
   }
   UI.job = SETTINGS.craft === 'hands' && GIM[jobKind(S.kind)] ? makeJob(jobKind(S.kind), r, e.i) : easyJob(r, e.i, keys.ShiftLeft || keys.ShiftRight ? 5 : 1); sfx('ui');
 }

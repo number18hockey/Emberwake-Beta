@@ -167,7 +167,7 @@ function sigHost(mode) {
 function sigHostMsg(m) {
   if (m.t !== 'offer' || typeof m.g !== 'string' || !/^[0-9a-f]{12}$/.test(m.g) || typeof m.sdp !== 'string') return;
   const P0 = SIG.guests.get(m.g); if (P0) { if (m.b) P0.bm = m.b | 0; if (P0.answer) sigSend({ t: 'answer', g: m.g, sdp: P0.answer === 'R' ? '' : P0.answer, r: P0.answer === 'R' ? 1 : 0 }); return; }
-  if ((m.v | 0) !== NETV) { sigSend({ t: 'old', g: m.g, v: NETV, gv: GAME_VERSION }); return; }
+  if ((m.v | 0) !== NETV) { sigSend({ t: 'old', g: m.g, v: NETV, gv: GAME_VERSION + 'v' + NETV }); return; }
   if ([...COOP.peers.values()].filter(P => P.ok || P.connT).length >= brMaxG()) { sigSend({ t: 'full', g: m.g }); return; }
   sigAccept(m);
 }
@@ -211,7 +211,7 @@ function sigGuestMsg(m) {
   const P = COOP.peers.get('h'); if (!P || SIG.role !== 'guest') return;
   if (m.t === 'host') {
     if (m.b) P.bm = m.b | 0; P.rz = !!m.z; if (COOP.joined) return;
-    if ((m.v | 0) !== NETV) { sigGuestFail(versionClash(m.gv)); return; }
+    if ((m.v | 0) !== NETV) { sigGuestFail(versionClash(m.gv, m.v)); return; }
     if (!SIG.host) { SIG.host = m; P.name = cleanName(m.n) || 'HOST'; COOP.hostName = P.name; COOP.joinBR = m.mode === 'br' || m.mode === 'wilds'; COOP.joinWorld = String(m.w || '').slice(0, 30); SIG.stage = 'found'; COOP.note = 'Found ' + P.name + (m.mode === 'wilds' ? "'s lobby for THE WILDS" : COOP.joinBR ? "'s battle royale lobby" : "'s world" + (COOP.joinWorld ? ', ' + COOP.joinWorld : '')) + '. Connecting...'; SIG.offerT = 0; }
   } else if (m.g === SIG.myId) {
     if (m.t === 'answer' && !SIG.answered && typeof m.sdp === 'string') {
@@ -220,7 +220,7 @@ function sigGuestMsg(m) {
       if (m.r || !m.sdp || !P.pc) relay(); else P.pc.setRemoteDescription({ type: 'answer', sdp: m.sdp }).catch(relay);
     }
     else if (m.t === 'full') sigGuestFail('That game is full.');
-    else if (m.t === 'old') sigGuestFail(versionClash(m.gv));
+    else if (m.t === 'old') sigGuestFail(versionClash(m.gv, m.v));
   }
 }
 function sigGuestFail(msg) { coopReset(); sigStop(); COOP.err = msg; COOP.note = ''; SIG.stage = ''; }
@@ -233,7 +233,7 @@ function sigTick() {
   if (COOP.peers.size) rlyTick(now);
   if (SIG.room && SIG.roomDirty && now - (SIG.roomT || 0) > RLY_ROOM.ms) sigRoomPush();
   if (SIG.role === 'host') {
-    if (now - SIG.sayT > 2000) { SIG.sayT = now; const n = [...COOP.peers.values()].filter(P => P.ok).length; sigSend({ t: 'host', n: coopName(), mode: SIG.mode || 'world', w: SIG.mode === 'br' || SIG.mode === 'wilds' ? '' : WORLD.name, v: NETV, gv: GAME_VERSION, full: n >= brMaxG() ? 1 : 0 }); }
+    if (now - SIG.sayT > 2000) { SIG.sayT = now; const n = [...COOP.peers.values()].filter(P => P.ok).length; sigSend({ t: 'host', n: coopName(), mode: SIG.mode || 'world', w: SIG.mode === 'br' || SIG.mode === 'wilds' ? '' : WORLD.name, v: NETV, gv: GAME_VERSION + 'v' + NETV, full: n >= brMaxG() ? 1 : 0 }); }
     for (const [g, P] of SIG.guests) if (COOP.peers.get(P.id) !== P && !P.ok && now - P.connT > 30000) SIG.guests.delete(g);
     if (!SIG.viaRoom && NET.room && !window.EW_BROKERS && !COOP.peers.size) { const c = SIG.code, md = SIG.mode; sigStart(c, 'host', sigHostMsg); SIG.mode = md; }
     return;
@@ -242,7 +242,7 @@ function sigTick() {
   // once in, the boards stay open: if the direct line ever breaks, the relay takes over
   if (P.ok || COOP.joined || (BR.on && BR.via === 'rtc')) return;
   if (SIG.answered && !P.relay && !dcOpen(P) && now - P.connT > RLY_AFTER) { SIG.stage = 'relay'; rlyBegin(P); }
-  if (!SIG.answered && SIG.offer && now - SIG.offerT > (SIG.host ? 2500 : 3500) && sigReady()) { SIG.offerT = now; sigSend({ t: 'offer', g: SIG.myId, n: coopName(), sk: G.skin | 0, v: NETV, gv: GAME_VERSION, sdp: SIG.offer === 'R' ? '' : SIG.offer, r: SIG.offer === 'R' ? 1 : 0 }); }
+  if (!SIG.answered && SIG.offer && now - SIG.offerT > (SIG.host ? 2500 : 3500) && sigReady()) { SIG.offerT = now; sigSend({ t: 'offer', g: SIG.myId, n: coopName(), sk: G.skin | 0, v: NETV, gv: GAME_VERSION + 'v' + NETV, sdp: SIG.offer === 'R' ? '' : SIG.offer, r: SIG.offer === 'R' ? 1 : 0 }); }
   const age = now - SIG.startT;
   if (!SIG.room && !SIG.everOk && !SIG.answered && age > 9000) sigGuestFail("Can't reach the internet to look for that game. Check your connection and try again.");
   else if (!SIG.host && !SIG.answered && age > 16000) sigGuestFail('No game is open with that code right now. Check the code, and ask your friend to open PLAY TOGETHER in their world.' + (SIG.room ? '' : ' (Reached ' + SIG.conns.filter(C => C.ok).length + ' of ' + SIG.conns.length + ' message boards.)') + ' A game on the claude.ai page can only be joined from that page; a game in the file or the app, only from the file or the app.');
@@ -250,8 +250,12 @@ function sigTick() {
 }
 
 // ---------------- what this computer can do, in a line ----------------
-function versionClash(gv) {
-  return 'Your friend has a different version of Emberwake' + (gv ? ' (' + String(gv).slice(0, 12) + '; yours is ' + GAME_VERSION + ')' : ' (yours is ' + GAME_VERSION + ')') + '. You both need the same one: send each other the newest Emberwake.html or app.';
+// (the build date alone can read the same for two builds of one day: the network version tells them apart. It rides on the
+//  date we send as well, 12 letters at most, so an older build that only shows the date shows it too)
+function versionClash(gv, v) {
+  let theirs = gv ? String(gv).slice(0, 16).replace(/v(\d+)$/, ' v$1') : ''; if (theirs && !/ v\d+$/.test(theirs) && (v | 0) > 0) theirs += ' v' + (v | 0);
+  const mine = GAME_VERSION + ' v' + NETV;
+  return 'Your friend has a different version of Emberwake' + (theirs ? ' (' + theirs + '; yours is ' + mine + ')' : ' (yours is ' + mine + ')') + '. You both need the same one: send each other the newest Emberwake.html or app.';
 }
 // can this computer make direct links? A public STUN server tells us how we look from outside.
 const PROBE = { st: '' };

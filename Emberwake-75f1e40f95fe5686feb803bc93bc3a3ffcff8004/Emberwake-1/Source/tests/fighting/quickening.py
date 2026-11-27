@@ -182,7 +182,11 @@ async def run():
     await h.ev(FOE); await h.ev("G.p.quick = 4; quickStep(G.p, 1); G.p.stoke = 3; 1"); await h.step(1, KEEP + "mouse.rp = true;")
     cr = await h.ev("({ crash: G.p.atk && G.p.atk.crash, roll: G.p.rollT, out: G.p.rollOut, quick: G.p.quick })")
     print('  a heavy in DRUMFIRE:', cr)
-    ok.append(('a heavy in DRUMFIRE is a CRASH: it takes the stokes, ends DRUMFIRE and costs two steps', cr['crash'] == 3 and cr['roll'] == 0 and cr['out'] == 20 and cr['quick'] == 3))
+    ok.append(('a heavy in DRUMFIRE is a CRASH: it takes the stokes, ends DRUMFIRE and drops to step 2, as burning out does', cr['crash'] == 3 and cr['roll'] == 0 and cr['out'] == 20 and cr['quick'] == 2))
+    # a slip inside DRUMFIRE drops to the same step, so one crisp blow cannot light a whole new DRUMFIRE
+    await h.ev(FOE); sl = await h.ev("(() => { const p = G.p; p.quick = 4; quickStep(p, 1); quickStep(p, -1); const a = [p.quick, p.rollT]; quickStep(p, 1); return a.concat([p.quick, p.rollT > 0]); })()")
+    print('  a slip in DRUMFIRE, then a crisp blow: [quick, rollT, quick, DRUMFIRE again]', sl)
+    ok.append(('a slip inside DRUMFIRE puts it out at step 2, and the next crisp blow climbs to 3, not into DRUMFIRE', sl == [2, 0, 3, False]))
 
     # ---------------- SHAKE-OFF ----------------
     async def reel(every, hit="hurtFighter(G.p, 5, FOE.x + 3, { by: FOE })", prs=None):

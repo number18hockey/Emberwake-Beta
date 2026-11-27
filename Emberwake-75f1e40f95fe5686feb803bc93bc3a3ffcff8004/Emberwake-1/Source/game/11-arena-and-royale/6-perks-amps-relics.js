@@ -69,7 +69,8 @@ function trOfferTick() {
 function drawOffer(c) {
   const o = BR.offer; if (!o) return; const uw = VS.uw, uh = VS.uh, cw = min(150, floor((uw - 24) / 3)), x0 = round((uw - cw * 3 - 8) / 2), keys1 = ['Z', 'X', 'V']; let y = min(round(uh * .73), uh - 76);   // under your feet, so the cards never cover the Wakers on their plinths
   // on a phone, higher up where no touch control lies over a card (nothing moves on a computer)
-  if (mobileDevice && !touchClear(x0 - 2, y - 14, cw * 3 + 12, 58)) { let yy = y; while (yy > 16 && !touchClear(x0 - 2, yy - 14, cw * 3 + 12, 58)) yy -= 4; if (yy > 16) y = yy; }
+  //  (but never above the match's top line, where the title would cover the countdown: there it stops, as clear as it gets)
+  if (mobileDevice && !touchClear(x0 - 2, y - 14, cw * 3 + 12, 58)) { let yy = y; while (yy > 38 && !touchClear(x0 - 2, yy - 14, cw * 3 + 12, 58)) yy -= 4; y = max(38, min(y, yy)); }
   textC(c, o.why === 'start' ? 'CHOOSE A PERK' : 'DAWN: CHOOSE A PERK  (' + max(0, ceil((o.max - o.t) / 60)) + ')', uw / 2, y - 11, '#ffd35a', 1, textO);
   o.ids.forEach((k, i) => {
     const x = x0 + i * (cw + 4), hv = inR(x, y, cw, 40), P0 = TR_PERKS[k];
