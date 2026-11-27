@@ -663,32 +663,33 @@ function drawChatBox(c) {
 }
 
 // ---------------- the host's panel: inviting ----------------
+// the long-code way (the same place as PLAY TOGETHER): make an invite, paste their reply
 function drawCoopLong(c) {
-  const w = min(380, VS.uw - 16), h = 252, x = round((VS.uw - w) / 2), y = round((VS.uh - h) / 2);
-  panel(c, x, y, w, h, 'PLAY TOGETHER'); hit(x, y, w, h, () => { });
-  button(c, x + w - 20, y + 2, 16, 11, 'X', () => { closeUI(); });
-  const fx = x + 8, fw = w - 16; let ty = y + 18;
-  const ppl = [coopName() + (netGuest() ? '' : ' (host)')]; for (const P of COOP.peers.values()) if (P.ok) ppl.push(P.name + (P.id === 'h' ? ' (host)' : ''));
-  drawText(c, 'IN THIS WORLD: ' + ppl.join(', '), fx, ty, '#8ff5e6'); ty += 12;
-  if (!netGuest()) { drawText(c, 'YOUR NAME', fx, ty + 3, '#b9bdd0'); const el = domBox('hname', fx + 62, ty, 120, 12, { input: true, val: FORM.nick || G.nick || 'WAKER' }); const nm = cleanName(el.value); if (nm && nm !== FORM.nick) { FORM.nick = nm; if (G.p) G.p.name = nm; } ty += 16; }
-  if (netGuest()) {
-    ['You are in ' + (COOP.hostName || 'a friend') + "'s world. Only the host can invite.", 'Your pack is saved on this computer for next time.'].forEach((l, i) => drawText(c, l, fx, ty + i * 10, '#d8d4e6'));
-    button(c, fx, y + h - 22, 120, 15, 'LEAVE THEIR WORLD', () => { closeUI(); quitToTitle(); }, { col: '#ff9a8a' }); return;
-  }
-  if (!rtcOK()) { ['This window cannot connect to other computers.', 'Open Emberwake.html in Chrome, Safari or Edge to play together.'].forEach((l, i) => drawText(c, l, fx, ty + i * 10, '#ffb347')); return; }
-  drawText(c, '1  Make an invite code and send it to your friend (any chat app).', fx, ty, '#d8d4e6'); ty += 11;
-  if (!COOP.code) button(c, fx, ty, 150, 15, COOP.busy ? 'MAKING THE CODE...' : 'MAKE AN INVITE CODE', () => { if (!COOP.busy) coopInvite(); });
-  else { domBox('code', fx, ty, fw - 64, 30, { ro: true, val: COOP.code }); button(c, fx + fw - 58, ty, 58, 15, copyLabel(), () => copyText(COOP.code, 'code')); button(c, fx + fw - 58, ty + 17, 58, 13, 'NEW CODE', () => coopInvite()); }
-  ty += 36;
-  drawText(c, '2  They open Emberwake, pick JOIN A FRIEND, paste it, and send', fx, ty, '#d8d4e6'); drawText(c, '   you back a reply code. Paste their reply here:', fx, ty + 10, '#d8d4e6'); ty += 23;
-  domBox('reply', fx, ty, fw - 64, 30, { ph: 'paste their reply code here' });
-  button(c, fx + fw - 58, ty, 58, 15, 'CONNECT', () => { coopConnect(domVal('reply')).then(() => { const el = DOMX.els.get('reply'); if (el && !COOP.err) el.value = ''; }); });
-  ty += 36;
-  const st = COOP.err || COOP.note || ([...COOP.peers.values()].some(P => P.ok) ? 'Invite someone else the same way (up to 3 friends).' : '');
-  if (COOP.copied > 0 && COOP.copyFail) copyHint(c, fx, ty); else if (st) wrapDraw(c, st, fx, ty, fw, COOP.err ? '#ff9a8a' : '#7ddc6f');
-  drawText(c, 'Best on the same Wi-Fi; most home internet works too.', fx, y + h - 22, '#8b8fa3');
-  drawText(c, 'Your world keeps running while this is open. Esc closes it.', fx, y + h - 12, '#8b8fa3');
-  button(c, x + w - 112, y + h - 24, 104, 12, 'BACK TO GAME CODES', () => { COOP.long = false; COOP.err = ''; sfx('ui'); });
+  const S = KIT.sizes, narrow = menuMode() === 'narrow', w0 = min(400, VS.uw - (narrow ? 12 : 24)), fw = w0 - 16, guest = netGuest(), bh = longBoxH(), L = s => wrapC(s, fw);
+  const ppl = [coopName() + (guest ? '' : ' (host)')]; for (const P of COOP.peers.values()) if (P.ok) ppl.push(P.name + (P.id === 'h' ? ' (host)' : ''));
+  const g = L('You are in ' + (COOP.hostName || 'a friend') + "'s world. Only the host can invite. Your pack is saved on this computer for next time."), no = L('This window cannot connect to other computers. Open Emberwake.html in Chrome, Safari or Edge to play together.');
+  const one = L('1  Make an invite code and send it to your friend (any chat app).'), two = L('2  They open Emberwake, pick JOIN A FRIEND, paste it, and send you back a reply code. Paste their reply here:');
+  const stt = COOP.err || COOP.note || ([...COOP.peers.values()].some(P => P.ok) ? 'Invite someone else the same way (up to 3 friends).' : ''), stL = stt ? L(stt) : [];
+  const body = 12 + (guest ? g.length * 9 : !rtcOK() ? S.fh + 6 + no.length * 9 : S.fh + 6 + one.length * 9 + 2 + max(bh, S.bh) + 6 + two.length * 9 + 2 + bh + 6 + max(stL.length * 9, COOP.copied > 0 && COOP.copyFail ? 10 : 0));
+  const F = menuFrame('coop', 400, 29 + body + 4 + S.bh + 10), K = pcard(c, 'coop', 0, 0, 'PLAY TOGETHER : LONG CODES', { frame: F, foot: true, dom: true }), fx = K.x + 8; let ty = K.by;
+  drawText(c, fitText('IN THIS WORLD: ' + ppl.join(', '), fw), fx, ty, '#8ff5e6'); ty += 12;
+  const bbw = KIT.T ? 150 : 130;
+  if (guest) { g.forEach((l, i) => drawText(c, l, fx, ty + i * 9, '#d8d4e6')); kbutton(c, K.x + K.w - 8 - bbw, K.footY + 5, bbw, 'LEAVE THEIR WORLD', () => { closeUI(); quitToTitle(); }, { danger: true, hint: 'Back to the home page. Your pack is kept.' }); return; }
+  drawText(c, 'YOUR NAME', fx, ty + round((S.fh - 8) / 2), '#b9bdd0'); const el = domBox('hname', fx + 62, ty, min(140, fw - 62), S.fh, { input: true, val: FORM.nick || G.nick || 'WAKER' }); const nm = cleanName(el.value); if (nm && nm !== FORM.nick) { FORM.nick = nm; if (G.p) G.p.name = nm; } ty += S.fh + 6;
+  if (!rtcOK()) { no.forEach((l, i) => drawText(c, l, fx, ty + i * 9, '#ffb347')); return; }
+  one.forEach(l => { drawText(c, l, fx, ty, '#d8d4e6'); ty += 9; }); ty += 2;
+  const cbw = KIT.T ? 72 : 58, boxW = fw - cbw - S.gap;
+  if (!COOP.code) kbutton(c, fx, ty, min(fw, 170), COOP.busy ? 'MAKING THE CODE...' : 'MAKE AN INVITE CODE', () => { if (!COOP.busy) coopInvite(); }, { main: true, hint: 'Make a code to send to a friend.' });
+  else { domBox('code', fx, ty, boxW, bh, { ro: true, val: COOP.code }); kbutton(c, fx + fw - cbw, ty, cbw, copyLabel(), () => copyText(COOP.code, 'code'), { small: true, tag: 'btn:COPY', hint: 'Copy the invite to send it.' }); kbutton(c, fx + fw - cbw, ty + S.sm + S.gap, cbw, 'NEW CODE', () => coopInvite(), { small: true, hint: 'Make another invite.' }); }
+  ty += max(bh, S.bh) + 6;
+  two.forEach(l => { drawText(c, l, fx, ty, '#d8d4e6'); ty += 9; }); ty += 2;
+  domBox('reply', fx, ty, boxW, bh, { ph: 'paste their reply code here' });
+  kbutton(c, fx + fw - cbw, ty, cbw, 'CONNECT', () => { coopConnect(domVal('reply')).then(() => { const el = DOMX.els.get('reply'); if (el && !COOP.err) el.value = ''; }); }, { main: !!COOP.code, small: true, hint: 'Connect with the reply they sent.' });
+  ty += bh + 6;
+  if (COOP.copied > 0 && COOP.copyFail) copyHint(c, fx, ty); else stL.forEach((l, i) => drawText(c, l, fx, ty + i * 9, COOP.err ? '#ff9a8a' : '#7ddc6f'));
+  const lw = KIT.T ? 160 : 130;
+  kbutton(c, K.x + K.w - 8 - lw, K.footY + 5 + round((S.bh - S.sm) / 2), lw, 'BACK TO GAME CODES', () => { COOP.long = false; COOP.err = ''; sfx('ui'); }, { small: true, short: 'GAME CODES', hint: 'Back to the short game code.' });
+  pfoot(c, K, kb('Best on the same Wi-Fi. Esc closes this.', 'Best on the same Wi-Fi.'), K.w - lw - 24);
 }
 // ---------------- joining from the title screen with a long invite (the second card of THE SIGNAL BEACON) ----------------
 const LONG_TXT = { one: '1  Paste the invite code your friend sent you:', two: '2  Send this reply code back to your friend:', wifi: 'Best on the same Wi-Fi; most home internet works too.', no: 'This window cannot connect to other computers. Open Emberwake.html in Chrome, Safari or Edge to play together.' };

@@ -369,23 +369,27 @@ function arriveFx(d, first) {
 const DIM_LEADS = { 1: ['slagforge', 'tyrant', 'emoon'], 2: ['rootmother', 'starfall'], 3: ['matriarch', 'g_frost'], 4: ['rimeforge', 'winterstag', 'g_clock'], 5: ['escapement', 'horologist', 'g_storm'], 6: ['thunderanvil', 'stormwright', 'dawnring'], 7: ['dawnforge', 'hollowking'] };
 // ---------------- the rift: a door to every world you have opened ----------------
 function openRift(tx, ty) { if (netGuest()) { say('The rift answers ' + (COOP.hostName || 'your host') + '. When they step through, you follow.'); sfx('deny'); return; } closeUI(); UI.open = 'rift'; UI.rift = { tx, ty }; UI.msg = null; sfx('ui'); G.flags.usedRift = true; }
+// THE RIFT: a door to every world you have opened, a swirling portal its emblem
 function drawRiftUI(c) {
   const R0 = UI.rift; if (!R0 || !G.p || abs(R0.tx * T - G.p.x) > 100 || abs(R0.ty * T - G.p.y) > 80) { closeUI(); return; }
-  const F = G.flags, keys = [['rootkey', 2], ['prismkey', 3]].filter(([key, d]) => !F['dim' + d] && hasItem(key)).length, w = min(VS.uw - 10, 300), h = min(VS.uh - 12, 64 + DIMP.length * 15 + keys * 15), x = round((VS.uw - w) / 2), y = round((VS.uh - h) / 2) - 4; panel(c, x, y, w, h, 'THE RIFT'); hit(x, y, w, h, () => { });
-  button(c, x + w - 13, y + 1, 12, 10, 'x', () => { closeUI(); sfx('ui'); });
-  let yy = y + 16; textS(c, 'Step through to any world you have opened.', x + 8, yy, '#b49cff'); yy += 12;
+  const F0 = G.flags, S = KIT.sizes, attune = [['rootkey', 2], ['prismkey', 3]].filter(([key, d]) => !F0['dim' + d] && hasItem(key)), w0 = min(320, VS.uw - (menuMode() === 'narrow' ? 12 : 24)) - 16;
+  const need = !canEnterDim(1) ? 'Cinderdeep opens when the Furnace Gate does.' : !F0.dim2 ? 'The Rootdark needs a Rootward Key, forged at a Slagforge.' : !F0.dim3 ? 'The Glass Expanse needs a Prism Key.'
+    : !F0.dim4 ? (forkLand() ? 'The worlds past the floors open at gates on the surface. This world was made before there were any: a world made today has them.' : 'The worlds past the floors open at gates on the surface. The Long Winter: the Frost Gate, on a peak in the cold country.') : !F0.dim5 ? 'The Hourworks opens at the Stopped Clocktower, with an Hour Key.' : !F0.dim6 ? 'The Thunderhead opens at the Stormspire, in a thunderstorm, with a Storm Key.' : !F0.dim7 ? 'The Outside waits at the top of the Ringstair. It wants the Dawnring.' : 'Every world is open to you.';
+  const intro = wrapC('Step through to any world you have opened.', w0), NL = wrapC(need, w0), bodyH = intro.length * 9 + 4 + (DIMP.length + attune.length) * (S.bh + S.gap) + 2 + NL.length * 9 + 4;
+  const F = menuFrame('rift', 320, 29 + bodyH + 14), K = pcard(c, 'rift', 0, 0, 'THE RIFT', { frame: F }), x = K.x + 8, w = K.w - 16;
+  const B = { x: K.x + 1, y: K.by, w: K.w - 2, h: K.y + K.h - 14 - K.by }, sc = bodyH > B.h, dy = sc ? kscroll(c, B, bodyH, 'rift') : 0; let yy = K.by + dy;
+  intro.forEach(l => { drawText(c, l, x, yy, KIT.col); yy += 9; }); yy += 4;
   for (let d = 0; d < DIMP.length; d++) {
     const D = DIMP[d], open = canEnterDim(d), here = d === DIM;
-    button(c, x + 8, yy, w - 16, 13, `${D.name}${here ? '   (here)' : open ? '' : '   sealed'}`, () => { if (here || !open) { sfx('deny'); return; } enterDim(d); }, { off: here || !open });
-    yy += 15;
+    kbutton(c, x, yy, w, `${D.name}${here ? '   (here)' : open ? '' : '   sealed'}`, () => { if (here || !open) { sfx('deny'); return; } enterDim(d); }, { off: here || !open, hint: here ? 'You are in this world.' : open ? 'Step through to ' + D.name + '.' : 'Sealed. ' + need });
+    yy += S.bh + S.gap;
   }
-  for (const [key, d] of [['rootkey', 2], ['prismkey', 3]]) if (!F['dim' + d] && hasItem(key)) {
-    button(c, x + 8, yy, w - 16, 14, `Attune the ${IT[key].name}`, () => { removeItem(key, 1); F['dim' + d] = true; G.dirty = true; sfx('quest', 0); G.flash = .7; G.flashCol = '200,160,255'; UI.msg = { s: DIMP[d].name + ' is open.', col: '#e0d2ff', t: 150 }; unlock('dim' + d); }, { on: true }); yy += 16;
+  for (const [key, d] of attune) {
+    kbutton(c, x, yy, w, `Attune the ${IT[key].name}`, () => { removeItem(key, 1); F0['dim' + d] = true; G.dirty = true; sfx('quest', 0); G.flash = .7; G.flashCol = '200,160,255'; UI.msg = { s: DIMP[d].name + ' is open.', col: '#e0d2ff', t: 150 }; unlock('dim' + d); }, { main: true, hint: 'Open ' + DIMP[d].name + ' with the key you carry.' }); yy += S.bh + S.gap;
   }
-  yy += 2; const need = !canEnterDim(1) ? 'Cinderdeep opens when the Furnace Gate does.' : !F.dim2 ? 'The Rootdark needs a Rootward Key, forged at a Slagforge.' : !F.dim3 ? 'The Glass Expanse needs a Prism Key.'
-    : !F.dim4 ? (forkLand() ? 'The worlds past the floors open at gates on the surface. This world was made before there were any: a world made today has them.' : 'The worlds past the floors open at gates on the surface. The Long Winter: the Frost Gate, on a peak in the cold country.') : !F.dim5 ? 'The Hourworks opens at the Stopped Clocktower, with an Hour Key.' : !F.dim6 ? 'The Thunderhead opens at the Stormspire, in a thunderstorm, with a Storm Key.' : !F.dim7 ? 'The Outside waits at the top of the Ringstair. It wants the Dawnring.' : 'Every world is open to you.';
-  for (const l of wrapText(need, w - 16)) { drawText(c, l, x + 8, yy, '#8b8fa3'); yy += 9; }
-  if (UI.msg) { const m = UI.msg; c.globalAlpha = clamp(m.t / 30, 0, 1); textC(c, m.s, x + w / 2, y + h - 12, m.col || '#ffd35a', 1, textO); c.globalAlpha = 1; if (--m.t <= 0) UI.msg = null; }
+  yy += 2; for (const l of NL) { drawText(c, l, x, yy, '#8b8fa3'); yy += 9; }
+  if (sc) kscrollEnd(c);
+  if (UI.msg) { const m = UI.msg, ga = c.globalAlpha; c.globalAlpha = ga * clamp(m.t / 30, 0, 1); textC(c, fitText(m.s, w), K.x + K.w / 2, K.y + K.h - 11, m.col || '#ffd35a', 1, textO); c.globalAlpha = ga; if (--m.t <= 0) UI.msg = null; }
 }
 // ---------------- light, sky and air of the other worlds ----------------
 function dimSun() {

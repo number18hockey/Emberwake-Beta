@@ -100,16 +100,20 @@ function stnList(kind, t) {
   // a forge only lists the work of forges you have reached (or can already use)
   return RECIPES.map((r, i) => ({ r, i })).filter(e => e.r.st === kind && (!(e.r.lvl >= 3) || lvl >= e.r.lvl || G.flags[LVL_SEEN[e.r.lvl]] || WORLD.mode === 1)).map(e => ({ r: e.r, i: e.i, can: canCraft(e.r) && (!e.r.lvl || e.r.lvl <= lvl), lvlOk: !e.r.lvl || e.r.lvl <= lvl })).sort((a, b) => (b.can - a.can) || (b.lvlOk - a.lvlOk));
 }
-function stnBox() { const w = min(VS.uw - 10, 372), h = min(VS.uh - 48, 214), x = round((VS.uw - w) / 2), y = round((VS.uh - h) / 2) - 10; return { x, y, w, h }; }
+// ---------------- the stations: each a place of the menu kit (6-panel-menus.js), its emblem the bench's own sprite ----------------
+// the card (stnBox), the recipe list on the left (L) and the work area on the right (A); tickJob and stnRowXY use them too
+function stnBox() { const F = menuFrame('stn', 384, menuMode() === 'narrow' ? 330 : 240); return { x: F.x, y: F.y, w: F.w, h: F.h }; }
+function stnLay() { const B = stnBox(), lw = min(160, B.w * .46 | 0); return { B, L: { x: B.x + 6, y: B.y + 29, w: lw, h: B.h - 43 }, A: { x: B.x + 12 + lw, y: B.y + 29, w: B.w - lw - 18, h: B.h - 35 } }; }
+// a phone's words for the benches' instructions
+const tapWords = s => !KIT.T ? s : s.replace(/press A, D, A, D\.\.\. each/, 'tap left, right, left, right... each').replace(/hold the mouse/g, 'hold your finger').replace(/the mouse/g, 'your finger').replace(/\bClick\b/g, 'Tap').replace(/\bclick\b/g, 'tap').replace(/ Shift-click makes five\./, '');
 function drawStation(c) {
   const S = UI.stn; if (!S || tileAt(S.tx, S.ty) !== S.t) { closeUI(); return; }
-  const B = stnBox(), st = stnState(S.i, S.t); panel(c, B.x, B.y, B.w, B.h, TP[S.t].name.toUpperCase()); hit(B.x, B.y, B.w, B.h, () => { });
-  button(c, B.x + B.w - 13, B.y + 1, 12, 10, 'x', () => { closeUI(); sfx('ui'); });
-  if (S.kind === 'chest') { drawChest(c, B, st); return; }
-  if (S.kind === 'way') { drawWay(c, B, S); return; }
-  const L = { x: B.x + 4, y: B.y + 15, w: min(160, B.w * .46 | 0), h: B.h - 19 }, A = { x: L.x + L.w + 5, y: B.y + 15, w: B.w - L.w - 13, h: B.h - 19 };
+  const st = stnState(S.i, S.t), col = stnCol(S.kind), name = TP[S.t].name.toUpperCase();
+  if (S.kind === 'chest') { drawChest(c, st, name, col); return; }
+  if (S.kind === 'way') { drawWay(c, S, name, col); return; }
+  const { B, L, A } = stnLay(); pcard(c, 'stn', 0, 0, name, { frame: B, col });
   // recipes
-  const F0 = stnFilter(c, L, stnList(S.kind, S.t)), list = F0.list; L.y += F0.dy; L.h -= F0.dy; const rows = floor((L.h - 2) / 19); UI.scroll = clamp(UI.scroll, 0, max(0, list.length - rows));
+  const F0 = stnFilter(c, L, stnList(S.kind, S.t)), list = F0.list; L.y += F0.dy; L.h -= F0.dy; const rows = max(1, floor((L.h - 2) / 19)); pscroller(L, list.length, rows);
   let tip = null;
   for (let k = 0; k < rows; k++) {
     const e = list[k + UI.scroll]; if (!e) break; const r = e.r, x = L.x, y = L.y + k * 19, hov = inR(x, y, L.w, 18), outId = r.out || Object.keys(r.need)[0];
@@ -119,12 +123,12 @@ function drawStation(c) {
     if (hov) tip = recipeTip(r, e.lvlOk);
     hit(x, y, L.w, 18, () => pickRecipe(e, S, st));
   }
-  if (list.length > rows) drawText(c, `${UI.scroll + 1}-${min(list.length, UI.scroll + rows)}/${list.length} wheel`, L.x + L.w - 70, B.y + B.h - 9, '#6a6485');
+  if (list.length > rows) { const s = `${UI.scroll + 1}-${min(list.length, UI.scroll + rows)}/${list.length} ${pwheel()}`; drawText(c, s, L.x + L.w - textW(s), B.y + B.h - 11, '#6a6485'); }
   if (!list.length) drawText(c, UI.stnCan ? 'Nothing you can make yet.' : 'Nothing here.', L.x + 2, L.y + 4, '#8b8fa3');
-  // the work area
-  c.fillStyle = '#141020'; c.fillRect(A.x, A.y, A.w, A.h);
-  if (PASSIVE[S.kind]) drawPassive(c, A, S, st); else if (UI.job) drawJob(c, A, UI.job); else { const hint = GIM[jobKind(S.kind)] && !craftEasy() ? GIM[jobKind(S.kind)].hint : 'Green means you have everything. Shift-click makes five.'; const B0 = BENCHES.find(b => b.st === S.kind), top = B0 ? wrapText(B0.d.replace(/^Workshop\. /, ''), A.w - 12) : []; top.forEach((l, i) => drawText(c, l, A.x + 6, A.y + 8 + i * 10, '#ffd35a')); wrapText('Click something on the left to make it. ' + hint, A.w - 12).forEach((l, i) => drawText(c, l, A.x + 6, A.y + 14 + (top.length + i) * 10, '#b9bdd0')); }
-  if (UI.msg) { const m = UI.msg; c.globalAlpha = clamp(m.t / 30, 0, 1); textC(c, m.s, A.x + A.w / 2, A.y + A.h - 12, m.col || '#ffd35a', 1, textO); c.globalAlpha = 1; if (--m.t <= 0) UI.msg = null; }
+  // the work area: a sunken tray
+  c.fillStyle = '#2b2740'; c.fillRect(A.x - 1, A.y - 1, A.w + 2, A.h + 2); c.fillStyle = '#141020'; c.fillRect(A.x, A.y, A.w, A.h);
+  if (PASSIVE[S.kind]) drawPassive(c, A, S, st); else if (UI.job) drawJob(c, A, UI.job); else { const hint = GIM[jobKind(S.kind)] && !craftEasy() ? GIM[jobKind(S.kind)].hint : 'Green means you have everything. Shift-click makes five.'; const B0 = BENCHES.find(b => b.st === S.kind), top = B0 ? wrapC(B0.d.replace(/^Workshop\. /, ''), A.w - 12) : []; top.forEach((l, i) => drawText(c, l, A.x + 6, A.y + 8 + i * 10, KIT.col)); wrapC(tapWords('Click something on the left to make it. ' + hint), A.w - 12).forEach((l, i) => drawText(c, l, A.x + 6, A.y + 14 + (top.length + i) * 10, '#b9bdd0')); }
+  if (UI.msg) { const m = UI.msg; c.globalAlpha = clamp(m.t / 30, 0, 1); textC(c, fitText(m.s, A.w - 6), A.x + A.w / 2, A.y + A.h - 12, m.col || '#ffd35a', 1, textO); c.globalAlpha = 1; if (--m.t <= 0) UI.msg = null; }
   if (tip) drawTip(c, tip);
 }
 const smsg = (s, col) => { UI.msg = { s, col, t: 150 }; };
@@ -155,17 +159,18 @@ function addFuel(st, fire) {
   removeItem(id, 1); st.fuel = min(fire ? 9000 : 12000, st.fuel + FUELV[id]); st.q = lerp(st.q || .75, FUELQ[id], .6); sfx('fire', 0); smsg(`+ ${IT[id].name}`, '#ffb347');
 }
 function drawPassive(c, A, S, st) {
-  const fire = S.kind === 'fire', kiln = S.kind === 'kiln', x0 = A.x + 6;
+  const fire = S.kind === 'fire', kiln = S.kind === 'kiln', x0 = A.x + 6, pbw = 74, pbh = KIT.T ? 20 : 12, prh = KIT.T ? 26 : 16;
   let y = A.y + 6;
   if (fire || kiln) {
-    drawText(c, st.fuel > 0 ? (fire ? 'burning' : 'fired') : 'cold', x0, y, st.fuel > 0 ? '#ffb347' : '#8b8fa3'); bar(c, x0 + 46, y + 2, A.w - 112, 4, st.fuel / (fire ? 9000 : 12000), '#ff8a3d', '#a3482e');
-    button(c, A.x + A.w - 58, y - 2, 52, 12, 'ADD FUEL', () => addFuel(st, fire)); y += 16;
+    const fl = st.fuel > 0 && ((performance.now() / 160) | 0) & 1;   // a fire that burns flickers
+    drawText(c, st.fuel > 0 ? (fire ? 'burning' : 'fired') : 'cold', x0, y, st.fuel > 0 ? '#ffb347' : '#8b8fa3'); bar(c, x0 + 46, y + 2, A.w - 58 - pbw, 4, st.fuel / (fire ? 9000 : 12000), fl ? '#ffb347' : '#ff8a3d', '#a3482e');
+    pbtn(c, A.x + A.w - pbw - 4, y - 2, pbw, pbh, 'ADD FUEL', () => addFuel(st, fire), { hint: 'Burn a stick, log, peat, charcoal or coal from your pack.' }); y += prh;
   }
   if (kiln && !craftEasy()) {
-    drawText(c, 'heat', x0, y, '#b9bdd0'); const gw = A.w - 112; for (let k = 0; k < 5; k++) { c.fillStyle = st.temp > k + .5 ? ['#7a3222', '#a3482e', '#e2542b', '#ff8a3d', '#ffd35a'][k] : '#2b2740'; c.fillRect(x0 + 46 + k * (gw / 5 | 0), y + 1, (gw / 5 | 0) - 2, 6); }
+    drawText(c, 'heat', x0, y, '#b9bdd0'); const gw = A.w - 78 - pbw; for (let k = 0; k < 5; k++) { c.fillStyle = st.temp > k + .5 ? ['#7a3222', '#a3482e', '#e2542b', '#ff8a3d', '#ffd35a'][k] : '#2b2740'; c.fillRect(x0 + 46 + k * (gw / 5 | 0), y + 1, (gw / 5 | 0) - 2, 6); }
     textO(c, st.temp.toFixed(1), x0 + 46 + gw + 2, y, '#fff');
-    button(c, A.x + A.w - 58, y - 2, 52, 12, st.open ? 'DAMPER OPEN' : 'DAMPER SHUT', () => { st.open = st.open ? 0 : 1; sfx('ui'); }, { on: !st.open });
-    y += 14; wrapText(st.open ? 'Open: hotter, burns fuel twice as fast. Pots, bricks, glass.' : 'Shut: it smoulders. Logs bake to charcoal only like this.', A.w - 12).forEach(l => { drawText(c, l, x0, y, '#8b8fa3'); y += 9; }); y += 3;
+    pbtn(c, A.x + A.w - pbw - 4, y - 2, pbw, pbh, st.open ? 'DAMPER OPEN' : 'DAMPER SHUT', () => { st.open = st.open ? 0 : 1; sfx('ui'); }, { on: !st.open, hint: 'Open: hotter and hungrier. Shut: it smoulders.' });
+    y += prh - 2; wrapC(st.open ? 'Open: hotter, burns fuel twice as fast. Pots, bricks, glass.' : 'Shut: it smoulders. Logs bake to charcoal only like this.', A.w - 12).forEach(l => { drawText(c, l, x0, y, '#8b8fa3'); y += 9; }); y += 3;
   }
   if (S.kind === 'rack') { drawText(c, st.k > 1.6 ? 'sun and fire: drying fast' : st.k > 1.1 ? (G.sun > .45 ? 'in the sun: drying well' : 'by the fire: drying well') : 'drying slowly (sun or a fire nearby helps)', x0, y, '#8ff5e6'); y += 13; }
   const n = st.slots.length, sw = min(46, (A.w - 12) / n | 0);
@@ -180,7 +185,7 @@ function drawPassive(c, A, S, st) {
     if (kiln && !done && !craftEasy()) { if (st.temp < r.temp) drawText(c, 'too cold', x + 2, y + 36, '#e2483b'); else if (r.shut && st.open) drawText(c, 'shut it', x + 2, y + 36, '#e2483b'); }
     hit(x, y, sw - 4, 34, () => takeSlot(st, k, fire));
   }
-  y += 48; wrapText(fire ? (craftEasy() ? 'Food is ready when the bar fills. Click a slot to take it out.' : 'Food is ready when the bar fills. Leave it and it chars. Click a slot to take it out.') : kiln && craftEasy() ? 'It works while it has fuel. Click a finished slot to take it out.' : kiln ? 'Click a finished slot to take it out. Click an unfinished one to pull it back.' : 'Hang things from the list. Click a slot to take it down.', A.w - 12).forEach(l => { if (y < A.y + A.h - 22) drawText(c, l, x0, y, '#8b8fa3'); y += 9; });
+  y += 48; wrapC(tapWords(fire ? (craftEasy() ? 'Food is ready when the bar fills. Click a slot to take it out.' : 'Food is ready when the bar fills. Leave it and it chars. Click a slot to take it out.') : kiln && craftEasy() ? 'It works while it has fuel. Click a finished slot to take it out.' : kiln ? 'Click a finished slot to take it out. Click an unfinished one to pull it back.' : 'Hang things from the list. Click a slot to take it down.'), A.w - 12).forEach(l => { if (y < A.y + A.h - 22) drawText(c, l, x0, y, '#8b8fa3'); y += 9; });
 }
 function takeSlot(st, k, fire) {
   const sl = st.slots[k]; if (!sl) return; const r = RECIPES[sl.r]; st.slots[k] = null; if (!r) return;
@@ -189,27 +194,34 @@ function takeSlot(st, k, fire) {
   for (const q in r.need) { const l = addItem(q, r.need[q]); if (l) spawnDrop(q, l, G.p.x + 3, G.p.y); } sfx('ui');
 }
 // ---------------- chests and waystones ----------------
-function drawChest(c, B, st) {
-  const x0 = B.x + round((B.w - 191) / 2); let y = B.y + 16; const N = st.items.length; textS(c, (TP[st.t] ? TP[st.t].name : 'Chest').toUpperCase(), x0, y, '#8ff5e6'); drawText(c, 'click a stack to move it across', B.x + 8, B.y + B.h - 12, '#8b8fa3');
-  button(c, x0 + 191 - 120, y - 3, 58, 11, 'TAKE ALL', () => chestTakeAll(st)); button(c, x0 + 191 - 58, y - 3, 58, 11, 'STORE ALL', () => chestStoreAll(st)); y += 10;
+function drawChest(c, st, name, col) {
+  const S = KIT.sizes, N = st.items.length, cr = ceil(N / 10), pr = ceil(INV_N / 10), need = S.sm + 6 + cr * 19 + 6 + 10 + pr * 19 + 2;
+  const F = menuFrame('chest', 260, 29 + need + 16), K = pcard(c, 'chest', 0, 0, name, { frame: F, col }), x0 = K.x + round((K.w - 191) / 2);
+  const B = { x: K.x + 1, y: K.by, w: K.w - 2, h: K.y + K.h - 14 - K.by }, sc = need > B.h, dy = sc ? kscroll(c, B, need, 'chest') : 0; let y = K.by + dy;
+  const bw = KIT.T ? 80 : 66;
+  kbutton(c, x0 + 191 - bw * 2 - S.gap, y, bw, 'TAKE ALL', () => chestTakeAll(st), { small: true, hint: 'Everything in the chest into your pack.' }); kbutton(c, x0 + 191 - bw, y, bw, 'STORE ALL', () => chestStoreAll(st), { small: true, hint: 'Your pack (not the hotbar) into the chest.' });
+  textS(c, 'CHEST', x0, y + round((S.sm - 8) / 2), col); y += S.sm + 6;
   for (let k = 0; k < N; k++) { const x = x0 + (k % 10) * 19, yy = y + floor(k / 10) * 19, hov = inR(x, yy, 18, 18); slotBox(c, x, yy, false, hov); drawStack(c, st.items[k], x, yy); hit(x, yy, 18, 18, () => { const s = st.items[k]; if (!s) return; const l = addItem(s.id, s.n); st.items[k] = l ? { id: s.id, n: l } : null; sfx('ui'); G.dirty = true; }); }
-  y += ceil(N / 10) * 19 + 6; textS(c, 'PACK', x0, y, '#ffd35a'); y += 10;
-  const rows = ceil(INV_N / 10); for (let k = 0; k < INV_N; k++) { const x = x0 + (k % 10) * 19, yy = y + floor(k / 10) * 19; if (yy > B.y + B.h - 19) break; const hov = inR(x, yy, 18, 18); slotBox(c, x, yy, false, hov); drawStack(c, inv[k], x, yy); hit(x, yy, 18, 18, () => { const s = inv[k]; if (!s) return; let n = s.n; for (let q = 0; q < st.items.length && n > 0; q++) { const d = st.items[q]; if (d && d.id === s.id && d.n < IT[s.id].stack) { const m = min(n, IT[s.id].stack - d.n); d.n += m; n -= m; } } for (let q = 0; q < st.items.length && n > 0; q++) if (!st.items[q]) { st.items[q] = { id: s.id, n }; n = 0; } if (n) s.n = n; else inv[k] = null; sfx('ui'); G.dirty = true; }); }
-  void rows;
+  y += cr * 19 + 6; textS(c, 'PACK', x0, y, '#ffd35a'); y += 10;
+  for (let k = 0; k < INV_N; k++) { const x = x0 + (k % 10) * 19, yy = y + floor(k / 10) * 19, hov = inR(x, yy, 18, 18); slotBox(c, x, yy, false, hov); drawStack(c, inv[k], x, yy); hit(x, yy, 18, 18, () => { const s = inv[k]; if (!s) return; let n = s.n; for (let q = 0; q < st.items.length && n > 0; q++) { const d = st.items[q]; if (d && d.id === s.id && d.n < IT[s.id].stack) { const m = min(n, IT[s.id].stack - d.n); d.n += m; n -= m; } } for (let q = 0; q < st.items.length && n > 0; q++) if (!st.items[q]) { st.items[q] = { id: s.id, n }; n = 0; } if (n) s.n = n; else inv[k] = null; sfx('ui'); G.dirty = true; }); }
+  if (sc) kscrollEnd(c);
+  drawText(c, fitText(kb('click a stack to move it across', 'tap a stack to move it across'), K.w - 16), K.x + 8, K.y + K.h - 11, '#8b8fa3');
 }
-function drawWay(c, B, S) {
-  const ws = [...STN.entries()].filter(([i, s]) => s.t === WAYSTONE && tiles[i] === WAYSTONE); let y = B.y + 16;
-  textS(c, 'Touch a stone you have raised to step to it.', B.x + 8, y, '#b49cff'); y += 12;
-  // more stones than fit: nearest first, and the wheel (or a finger) scrolls the rest into view
-  const fit = floor((B.h - 44) / 16) + 1, more = ws.length > fit, rows = more ? max(1, fit - 1) : fit; let list = ws;
-  if (more) { const at = ([i]) => abs((i % WW) * T - G.p.x); list = ws.slice().sort((a, b) => at(a) - at(b)); UI.scroll = clamp(UI.scroll, 0, ws.length - rows); list = list.slice(UI.scroll, UI.scroll + rows); }
-  for (const [i, s] of list) {
-    const x = i % WW, yy = (i / WW) | 0, here = i === S.i, d = round((x * T - G.p.x) / T);
-    button(c, B.x + 8, y, B.w - 16, 14, `${s.name}   ${here ? '(here)' : d > 0 ? d + ' paces east' : -d + ' paces west'}`, () => { if (here) return; closeUI(); travelTo(x, yy); }, { off: here });
-    y += 16; if (!more && y > B.y + B.h - 16) break;
-  }
-  if (more) drawText(c, `${UI.scroll + 1}-${UI.scroll + rows} of ${ws.length}  (wheel)`, B.x + 8, y + 2, '#6a6485');
-  if (ws.length < 2) drawText(c, 'Raise another waystone somewhere else to travel between them.', B.x + 8, y + 4, '#8b8fa3');
+// the waystones: one row per stone you have raised, nearest first; the one you stand at is marked by a lit rune
+function drawWay(c, S, name, col) {
+  const ws = [...STN.entries()].filter(([i, s]) => s.t === WAYSTONE && tiles[i] === WAYSTONE), at = ([i]) => abs((i % WW) * T - G.p.x), list = ws.slice().sort((a, b) => at(a) - at(b));
+  const rh = KIT.sizes.row, intro = wrapC('Touch a stone you have raised to step to it.', 280), lone = ws.length < 2 ? wrapC('Raise another waystone somewhere else to travel between them.', 280) : [];
+  const F = menuFrame('way', 300, 29 + intro.length * 9 + 4 + list.length * rh + 4 + lone.length * 9 + 6), K = pcard(c, 'way', 0, 0, name, { frame: F, col }), x = K.x + 8, w = K.w - 16; let y = K.by;
+  wrapC('Touch a stone you have raised to step to it.', w).forEach(l => { drawText(c, l, x, y, col); y += 9; }); y += 4;
+  const LB = { x, y, w, h: K.y + K.h - 6 - lone.length * 9 - y };
+  klist(c, LB, list.length, rh, (c2, k, rx, ry, rw, rhh) => {
+    const [i, s] = list[k], tx = i % WW, ty = (i / WW) | 0, here = i === S.i, d = round((tx * T - G.p.x) / T), far = here ? 'you are here' : d > 0 ? d + ' paces east' : -d + ' paces west';
+    krow(c2, rx, ry, rw, rhh, () => { if (here) { sfx('deny'); return; } closeUI(); travelTo(tx, ty); }, { sel: here, tag: 'row:way:' + i, hint: here ? 'You are standing at this stone.' : 'Step to ' + s.name + '.' });
+    const ga = c2.globalAlpha, ry0 = ry + round((rhh - 8) / 2);
+    c2.fillStyle = '#4a4460'; c2.fillRect(rx + 6, ry + 3, 6, rhh - 6); if (here) { c2.globalAlpha = ga * (.5 + .5 * abs(sin(performance.now() / 300))); c2.fillStyle = col; c2.fillRect(rx + 8, ry + 5, 2, rhh - 10); c2.globalAlpha = ga; }
+    drawText(c2, fitText(s.name, rw - 26 - textW(far) - 8), rx + 18, ry0, here ? col : '#fff'); drawText(c2, far, rx + rw - 6 - textW(far), ry0, here ? col : '#8b8fa3');
+  });
+  lone.forEach((l, k) => drawText(c, l, x, K.y + K.h - 6 - (lone.length - k) * 9 + 1, '#8b8fa3'));
 }
 function travelTo(x, y) { const p = G.p; streamTo(x * T, true); G.flash = .8; sfx('tele', 0); sfx('shrine', 0); p.x = p.px = x * T + 1; p.y = p.py = (y - 3) * T; p.vx = p.vy = 0; snapCam(); burst(p.x + 3, p.y + 10, 24, ['#b49cff', '#e0d2ff', '#ffffff'], 2, 40, { glow: 1, g: -.02 }); G.flags.travelled = true; }
 // ---------------- the active stations ----------------
@@ -238,7 +250,7 @@ function makeJob(kind, r, ri) {
   return j;
 }
 function chiselLine() { const n = randi(6, 9), pts = []; for (let k = 0; k < n; k++) pts.push([.12 + k / (n - 1) * .76, .5 + (Math.random() - .5) * .5]); return pts; }
-function jobArea() { const B = stnBox(), L = min(160, B.w * .46 | 0); return { x: B.x + 4 + L + 5, y: B.y + 15, w: B.w - L - 13, h: B.h - 19 }; }
+function jobArea() { return stnLay().A; }
 const angD = (a, b) => { let d = a - b; while (d > PI) d -= TAU; while (d < -PI) d += TAU; return d; };
 function tickJob(j) {
   if (j.kind === 'easy') { if (++j.t < j.need) return; const left = j.left - 1; finishJob(j, .62); UI.job = left > 0 && canCraft(j.r) ? easyJob(j.r, j.ri, left) : null; return; }
@@ -290,8 +302,8 @@ function finishJob(j, q) {
 const qBonus = id => { const q = G.quality && G.quality[id]; return q === undefined ? 0 : [-.1, 0, .1, .2][qTier(q)]; };
 function drawJob(c, A, j) {
   const cx = A.x + A.w / 2, cy = A.y + A.h / 2 + 4, it = j.r.out ? IT[j.r.out] : null;
-  textS(c, it ? 'MAKING : ' + it.name.toUpperCase() : 'SIFTING', A.x + 5, A.y + 4, '#ffd35a');
-  button(c, A.x + A.w - 44, A.y + 2, 40, 11, 'STOP', () => { UI.job = null; sfx('ui'); });
+  textS(c, fitText(it ? 'MAKING : ' + it.name.toUpperCase() : 'SIFTING', A.w - 54), A.x + 5, A.y + 4, KIT.col);
+  pbtn(c, A.x + A.w - 44, A.y + 2, 40, KIT.T ? 16 : 11, 'STOP', () => { UI.job = null; sfx('ui'); }, { hint: 'Stop making it.' });
   hit(A.x, A.y + 14, A.w, A.h - 14, () => { });
   const prog = (f, col = '#7ddc6f') => bar(c, A.x + 8, A.y + A.h - 22, A.w - 16, 4, f, col, '#2b2740');
   if (j.kind === 'easy') { prog(j.t / j.need); if (it) c.drawImage(it.icon, round(cx - it.icon.width), round(cy - 22), it.icon.width * 2, it.icon.height * 2); drawText(c, j.left > 1 ? j.left + ' to go' : 'almost done', A.x + 8, A.y + A.h - 34, '#b9bdd0'); return; }
@@ -313,7 +325,7 @@ function drawJob(c, A, j) {
       c.fillStyle = '#3f3a4c'; c.beginPath(); c.arc(cx, cy, R, 0, TAU); c.fill(); c.fillStyle = `rgb(${col})`; c.beginPath(); c.arc(cx, cy, R - 4, 0, TAU); c.fill();
       c.fillStyle = `rgb(${tc})`; c.fillRect(A.x + A.w - 26, A.y + 18, 16, 10); c.fillStyle = '#fff'; drawText(c, 'aim', A.x + A.w - 46, A.y + 19, '#8b8fa3');
       drawText(c, j.w >= .3 ? 'Too fast: it splashes.' : j.w > .1 ? 'Steady...' : 'Stir.', A.x + 8, A.y + 18, j.w >= .3 ? '#e2483b' : '#b9bdd0');
-      button(c, cx - 22, A.y + A.h - 34, 44, 11, 'LADLE', () => finishJob(j, 1));
+      pbtn(c, cx - 24, A.y + A.h - 36, 48, KIT.T ? 16 : 11, 'LADLE', () => finishJob(j, 1), { main: true, hint: 'Ladle it out when the brew matches the swatch.' });
       prog(min(1, j.prog), abs(j.prog - 1) < .12 ? '#7ddc6f' : j.prog > 1.12 ? '#e2483b' : '#ffd35a');
     }
   } else if (j.kind === 'bloom') {
@@ -342,23 +354,30 @@ function drawJob(c, A, j) {
   for (const d of UI.dust || []) { c.fillStyle = d.col; c.fillRect(round(d.x), round(d.y), 2, 2); }
 }
 // ---------------- knapping ----------------
+// ---------------- knapping: a place of the menu kit; each strike throws chips ----------------
 function drawKnap(c) {
-  const w = min(VS.uw - 10, 300), h = 176, x = round((VS.uw - w) / 2), y = round((VS.uh - h) / 2) - 10; panel(c, x, y, w, h, 'KNAPPING'); hit(x, y, w, h, () => { });
-  button(c, x + w - 13, y + 1, 12, 10, 'x', () => { closeUI(); sfx('ui'); });
-  const K = UI.knap = UI.knap || { mat: hasItem('flint') ? 'flint' : 'rock', k: 0, grid: new Array(25).fill(1) };
-  let bx = x + 6, by = y + 16;
-  for (const m of ['rock', 'flint']) { button(c, bx, by, 64, 12, `${IT[m].name.split(' ').pop()} x${countItem(m)}`, () => { K.mat = m; K.grid.fill(1); sfx('ui'); }, { on: K.mat === m, off: !hasItem(m) && WORLD.mode !== 1 }); bx += 68; }
-  const opts = KNAP.filter(q => q.mat.includes(K.mat)); if (K.k >= opts.length) K.k = 0; by += 16;
-  opts.forEach((q, i) => { button(c, x + 6, by + i * 14, 92, 12, IT[q.out].name, () => { K.k = i; sfx('ui'); }, { on: K.k === i }); });
-  const pat = opts[K.k].pat, gx = x + 112, gy = y + 30, cs = 18;
+  const K0 = UI.knap = UI.knap || { mat: hasItem('flint') ? 'flint' : 'rock', k: 0, grid: new Array(25).fill(1) };
+  const S = KIT.sizes, cs = KIT.T ? 22 : 18, lw = 112, opts = KNAP.filter(q => q.mat.includes(K0.mat)); if (K0.k >= opts.length) K0.k = 0;
+  const leftH = S.sm + 6 + opts.length * (S.sm + 4), gridW = 5 * cs, tw0 = min(340, VS.uw - (menuMode() === 'narrow' ? 12 : 24)) - 16 - lw - 10 - gridW - 8, under = tw0 < 70;
+  const txt = 'Knock off the flakes outside the glowing shape. Strike inside it and the stone splits.', tl = wrapC(txt, under ? lw + 10 + gridW : tw0);
+  const F = menuFrame('knap', 340, 29 + max(leftH, gridW + 2 + (under ? 6 + tl.length * 9 : 0)) + 22), K = pcard(c, 'knap', 0, 0, 'KNAPPING', { frame: F }), x = K.x + 8; let by = K.by;
+  const hw = (lw - S.gap) >> 1;
+  ['rock', 'flint'].forEach((m, i) => pbtn(c, x + i * (hw + S.gap), by, hw, S.sm, `${IT[m].name.split(' ').pop()} x${countItem(m)}`, () => { K0.mat = m; K0.grid.fill(1); sfx('ui'); }, { on: K0.mat === m, off: !hasItem(m) && WORLD.mode !== 1, tag: 'btn:' + m, hint: 'Knap ' + IT[m].name.toLowerCase() + '.' }));
+  by += S.sm + 6;
+  opts.forEach((q, i) => pbtn(c, x, by + i * (S.sm + 4), lw, S.sm, IT[q.out].name, () => { K0.k = i; sfx('ui'); }, { on: K0.k === i, hint: 'Shape a ' + IT[q.out].name.toLowerCase() + '.' }));
+  const pat = opts[K0.k].pat, gx = x + lw + 10, gy = K.by, now = performance.now();
   for (let i = 0; i < 25; i++) {
-    const cx = gx + (i % 5) * cs, cy = gy + (i / 5 | 0) * cs, on = K.grid[i], keep = pat[i] === '#', hov = inR(cx, cy, cs - 1, cs - 1);
-    c.fillStyle = on ? (K.mat === 'flint' ? (hov ? '#a8a0b4' : '#8a8296') : (hov ? '#6f97a8' : '#456878')) : '#141020'; c.fillRect(cx, cy, cs - 1, cs - 1);
+    const cx = gx + (i % 5) * cs, cy = gy + (i / 5 | 0) * cs, on = K0.grid[i], keep = pat[i] === '#', hov = inR(cx, cy, cs - 1, cs - 1);
+    c.fillStyle = on ? (K0.mat === 'flint' ? (hov ? '#a8a0b4' : '#8a8296') : (hov ? '#6f97a8' : '#456878')) : '#141020'; c.fillRect(cx, cy, cs - 1, cs - 1);
     if (keep) { c.fillStyle = on ? 'rgba(255,241,168,.5)' : 'rgba(226,72,59,.5)'; c.fillRect(cx + 3, cy + 3, cs - 7, cs - 7); c.fillStyle = '#ffd35a'; c.fillRect(cx, cy, cs - 1, 1); c.fillRect(cx, cy + cs - 2, cs - 1, 1); c.fillRect(cx, cy, 1, cs - 1); c.fillRect(cx + cs - 2, cy, 1, cs - 1); }
-    if (on) hit(cx, cy, cs - 1, cs - 1, () => knapAt(K, i, pat, opts[K.k]));
+    if (on) hit(cx, cy, cs - 1, cs - 1, () => { knapAt(K0, i, pat, opts[K0.k]); for (let k = 0; k < 3; k++) PANEL.chips.push({ x: cx + cs / 2, y: cy + cs / 2, vx: frand(-40, 40), vy: frand(-60, -20), t0: performance.now(), col: K0.mat === 'flint' ? '#c9c2d4' : '#8fb3c2' }); });
   }
-  wrapText('Knock off the flakes outside the glowing shape. Strike inside it and the stone splits.', w - 210).forEach((l, i) => drawText(c, l, gx + 5 * cs + 6, gy + i * 9, '#b9bdd0'));
-  drawText(c, 'Then bind the head to a stick with twine [E].', x + 6, y + h - 12, '#8ff5e6');
+  // the chips each strike throws (a few rects that fall for half a second)
+  PANEL.chips = PANEL.chips.filter(p => now - p.t0 < 500);
+  for (const p of PANEL.chips) { const t = (now - p.t0) / 1000; c.fillStyle = p.col; c.fillRect(round(p.x + p.vx * t), round(p.y + p.vy * t + 160 * t * t), 2, 2); }
+  if (under) tl.forEach((l, i) => drawText(c, l, x, max(gy + gridW, by + opts.length * (S.sm + 4)) + 6 + i * 9, '#b9bdd0'));
+  else tl.forEach((l, i) => drawText(c, l, gx + gridW + 8, gy + i * 9, '#b9bdd0'));
+  drawText(c, fitText(kb('Then bind the head to a stick with twine [E].', 'Then bind the head to a stick with twine, in your pack.'), K.w - 16), x, K.y + K.h - 12, KIT.col);
 }
 function knapAt(K, i, pat, q) {
   if (!hasItem(K.mat) && WORLD.mode !== 1) { sfx('deny'); return; }
@@ -408,19 +427,22 @@ function mapDrawTiles(c, ox, oy, k, vx, vy, vw, vh) {
 }
 const MAPV = { z: 3, cx: -1, cy: -1, drag: null };
 function mapZoom(d) { MAPV.z = clamp(MAPV.z * (d < 0 ? 1.5 : 1 / 1.5), .5, 16); sfx('ui'); }
+// THE FIELD MAP: it unrolls as it opens; ON ME, + and - sit in its head (left of a phone's CLOSE pill)
 function drawMap(c) {
-  const w = min(VS.uw - 10, 520), h = min(VS.uh - 34, 320), x = round((VS.uw - w) / 2), y = round((VS.uh - h) / 2) - 6; panel(c, x, y, w, h, 'FIELD MAP'); hit(x, y, w, h, () => { });
-  // on a phone the CLOSE pill sits over the top right corner: the row of buttons steps left of it
-  let sx = x + w; if (mobileDevice) while (sx > x + 160 && !touchClear(sx - 120, y + 1, 120, 10)) sx -= 4;
-  button(c, sx - 13, y + 1, 12, 10, 'x', () => { closeUI(); sfx('ui'); });
-  if (!MAPCV) { drawText(c, 'Nothing charted yet.', x + 8, y + 20, '#8b8fa3'); return; }
-  button(c, sx - 70, y + 1, 22, 10, '+', () => mapZoom(-1)); button(c, sx - 46, y + 1, 22, 10, '-', () => mapZoom(1)); button(c, sx - 120, y + 1, 48, 10, 'ON ME', () => { MAPV.cx = (G.p.x + 3) / T / MAPS; MAPV.cy = (G.p.y + 10) / T / MAPS; sfx('ui'); });
-  const vx = x + 4, vy = y + 14, vw = w - 8, vh = h - 30, k = MAPV.z;
+  const F = menuFrame('map', 540, 340), u = clamp((performance.now() - PANEL.mapT) / 200, 0, 1), unroll = 1 - (1 - u) ** 3;
+  const head = (c2, rx, ry) => {
+    if (!MAPCV) return; let sx = rx; if (mobileDevice) while (sx > F.x + 150 && !touchClear(sx - 108, ry, 108, 16)) sx -= 4;
+    pbtn(c2, sx - 22, ry, 22, 16, '-', () => mapZoom(1), { hint: 'Zoom out.' }); pbtn(c2, sx - 48, ry, 22, 16, '+', () => mapZoom(-1), { hint: 'Zoom in.' });
+    pbtn(c2, sx - 104, ry, 52, 16, 'ON ME', () => { MAPV.cx = (G.p.x + 3) / T / MAPS; MAPV.cy = (G.p.y + 10) / T / MAPS; sfx('ui'); }, { hint: 'Centre the map on you.' });
+  };
+  const K = pcard(c, 'map', 0, 0, 'FIELD MAP', { frame: F, right: head }), x = K.x, y = K.y, w = K.w, h = K.h;
+  if (!MAPCV) { drawText(c, 'Nothing charted yet.', x + 8, K.by + 4, '#8b8fa3'); return; }
+  const vx = x + 4, vy = K.by - 2, vw = w - 8, vh = h - 29 - 14, k = MAPV.z;
   if (MAPV.cx < 0) { MAPV.cx = (G.p.x + 3) / T / MAPS; MAPV.cy = (G.p.y + 10) / T / MAPS; }
   if (mouse.l && inR(vx, vy, vw, vh)) { if (MAPV.drag) { MAPV.cx -= (mouse.ux - MAPV.drag[0]) / k; MAPV.cy -= (mouse.uy - MAPV.drag[1]) / k; } MAPV.drag = [mouse.ux, mouse.uy]; } else MAPV.drag = null;
   MAPV.cx = clamp(MAPV.cx, 0, WW / MAPS); MAPV.cy = clamp(MAPV.cy, 0, WH / MAPS);
-  const ox = vx + vw / 2 - MAPV.cx * k, oy = vy + vh / 2 - MAPV.cy * k, at = (tx, ty) => [ox + tx / MAPS * k, oy + ty / MAPS * k];
-  c.save(); c.beginPath(); c.rect(vx, vy, vw, vh); c.clip();
+  const ox = vx + vw / 2 - MAPV.cx * k, oy = vy + vh / 2 - MAPV.cy * k, at = (tx, ty) => [ox + tx / MAPS * k, oy + ty / MAPS * k], open = round(vh * unroll);
+  c.save(); c.beginPath(); c.rect(vx, vy, vw, open); c.clip();
   c.fillStyle = '#0c0a14'; c.fillRect(vx, vy, vw, vh); mapDrawTiles(c, ox, oy, k, vx, vy, vw, vh);
   let hov = null; const near = (lx, ly, name) => { if (abs(mouse.ux - lx) < 4 && abs(mouse.uy - ly) < 4) hov = [lx, ly, name]; }, taken = [];
   const label = (s, lx, ly, col) => { const r = [round(lx) + 4, round(ly) - 4, textW(s), 8]; if (taken.some(q => r[0] < q[0] + q[2] + 2 && q[0] < r[0] + r[2] + 2 && r[1] < q[1] + q[3] && q[1] < r[1] + r[3])) return; taken.push(r); textS(c, s, r[0], r[1], col); };
@@ -437,9 +459,12 @@ function drawMap(c) {
   textS(c, 'you', round(mx) + 4, round(my) - 4, '#fff');
   if (hov) { const tw = textW(hov[2]) + 6; c.fillStyle = 'rgba(18,13,31,.9)'; c.fillRect(round(hov[0]) + 5, round(hov[1]) + 3, tw, 10); textS(c, hov[2], round(hov[0]) + 8, round(hov[1]) + 5, '#fff'); }
   c.restore();
-  const pace = round(40 / k * MAPS); textS(c, `${pace} paces`, x + 8, y + h - 13, '#8b8fa3'); c.fillStyle = '#8b8fa3'; c.fillRect(x + 8, y + h - 15, 40, 1);
-  const dx = round((G.p.x + 3) / T - SPAWN_X); textS(c, `${abs(dx)} paces ${dx >= 0 ? 'east' : 'west'} of ${DIM ? 'the rift' : 'Hearthhold'}`, x + 60, y + h - 13, '#8b8fa3');
-  textS(c, 'wheel zoom, drag pan', x + w - 104, y + h - 13, '#6a6485');
+  // the paper's rolled edge, travelling down while it unrolls
+  if (unroll < 1) { c.fillStyle = '#c9b48a'; c.fillRect(vx, vy + open - 2, vw, 3); c.fillStyle = '#8a6a48'; c.fillRect(vx, vy + open + 1, vw, 1); }
+  const pace = round(40 / k * MAPS), fy = y + h - 12; textS(c, `${pace} paces`, x + 8, fy, '#8b8fa3'); c.fillStyle = '#8b8fa3'; c.fillRect(x + 8, fy - 2, 40, 1);
+  const dx = round((G.p.x + 3) / T - SPAWN_X), how = kb('wheel zoom, drag pan', 'drag to pan'), room = w - 60 - 8 - (w > 330 ? textW(how) + 12 : 0);
+  textS(c, fitText(`${abs(dx)} paces ${dx >= 0 ? 'east' : 'west'} of ${DIM ? 'the rift' : 'Hearthhold'}`, room), x + 60, fy, '#8b8fa3');
+  if (w > 330) textS(c, how, x + w - 8 - textW(how), fy, '#6a6485');
 }
 // a corner of the map, always with you
 function drawMinimap(c) {
@@ -472,16 +497,24 @@ const REQ_POOL = [
 ];
 function reqTier() { const F = G.flags; return F.crafted_steel_bar ? 3 : F.crafted_iron_bar ? 2 : F.crafted_copper_bar || F.crafted_cloth ? 1 : 0; }
 function reqFill() { if (!G.reqs) G.reqs = []; const tr = reqTier(); let guard = 0; while (G.reqs.length < 3 && guard++ < 40) { const pool = REQ_POOL.filter(q => q.tier <= tr && !G.reqs.some(r => r.s === q.s)); if (!pool.length) break; G.reqs.push(Object.assign({}, fpick(pool))); } }
+// THE NOTICE BOARD: three requests pinned up, each with HAND IN
 function drawBoard(c) {
-  reqFill(); const w = min(VS.uw - 10, 330), h = 150, x = round((VS.uw - w) / 2), y = round((VS.uh - h) / 2) - 10; panel(c, x, y, w, h, 'NOTICE BOARD'); hit(x, y, w, h, () => { });
-  button(c, x + w - 13, y + 1, 12, 10, 'x', () => { closeUI(); sfx('ui'); });
-  G.reqs.forEach((r, k) => {
-    const yy = y + 16 + k * 40, have = countItem(r.need[0]), ok = have >= r.need[1];
-    c.fillStyle = '#262234'; c.fillRect(x + 5, yy, w - 10, 37); drawText(c, `${r.who}: "${r.s}"`, x + 9, yy + 3, '#fff');
-    drawText(c, `wants ${r.need[1]} ${IT[r.need[0]].name} (you have ${have})`, x + 9, yy + 13, ok ? '#7ddc6f' : '#e2483b'); drawText(c, `gives ${r.give[1]} ${IT[r.give[0]].name}`, x + 9, yy + 23, '#ffd35a');
-    button(c, x + w - 62, yy + 12, 52, 13, 'HAND IN', () => { if (!ok) { sfx('deny'); return; } removeItem(r.need[0], r.need[1]); const l = addItem(r.give[0], r.give[1]); if (l) spawnDrop(r.give[0], l, G.p.x + 3, G.p.y); toastItem(r.give[0], r.give[1]); sfx('quest', 0); G.reqs.splice(k, 1); G.flags.reqsDone = (G.flags.reqsDone || 0) + 1; G.dirty = true; }, { off: !ok });
+  reqFill(); const S = KIT.sizes, w0 = min(360, VS.uw - (menuMode() === 'narrow' ? 12 : 24)), bw = KIT.T ? 72 : 60, tw = w0 - 16 - 12 - bw - 8;
+  const notes = G.reqs.map(r => { const q = wrapC(`${r.who}: "${r.s}"`, tw); return { r, q, h: max(S.bh + 10, 8 + q.length * 9 + 20) }; });
+  const need = notes.reduce((a, n) => a + n.h + S.gap, 0), F = menuFrame('board', 360, 29 + need + 2 + S.bh + 10), K = pcard(c, 'board', 0, 0, 'NOTICE BOARD', { frame: F, foot: true }), x = K.x + 8, w = K.w - 16;
+  const B = { x: K.x + 1, y: K.by, w: K.w - 2, h: K.footY - 2 - K.by }, sc = need > B.h, dy = sc ? kscroll(c, B, need, 'board') : 0; let yy = K.by + dy;
+  notes.forEach(({ r, q, h }, k) => {
+    const have = countItem(r.need[0]), ok = have >= r.need[1];
+    // a note pinned to the board
+    c.fillStyle = '#2b2433'; c.fillRect(x, yy, w, h); c.fillStyle = mix('#2b2433', KIT.col, .5); c.fillRect(x, yy, w, 1); c.fillStyle = '#e2483b'; c.fillRect(x + 4, yy + 2, 2, 2);
+    q.forEach((l, i) => drawText(c, l, x + 10, yy + 4 + i * 9, '#fff'));
+    const ly = yy + 4 + q.length * 9 + 1;
+    drawText(c, fitText(`wants ${r.need[1]} ${IT[r.need[0]].name} (you have ${have})`, tw), x + 10, ly, ok ? '#7ddc6f' : '#e2483b'); drawText(c, fitText(`gives ${r.give[1]} ${IT[r.give[0]].name}`, tw), x + 10, ly + 9, '#ffd35a');
+    kbutton(c, x + w - bw - 6, yy + round((h - S.bh) / 2), bw, 'HAND IN', () => { if (!ok) { sfx('deny'); return; } removeItem(r.need[0], r.need[1]); const l = addItem(r.give[0], r.give[1]); if (l) spawnDrop(r.give[0], l, G.p.x + 3, G.p.y); toastItem(r.give[0], r.give[1]); sfx('quest', 0); G.reqs.splice(k, 1); G.flags.reqsDone = (G.flags.reqsDone || 0) + 1; G.dirty = true; }, { off: !ok, hint: ok ? `Give ${r.who} what they asked for.` : `You need ${r.need[1] - have} more ${IT[r.need[0]].name}.` });
+    yy += h + S.gap;
   });
-  drawText(c, `${G.flags.reqsDone || 0} requests answered. New ones go up as old ones come down.`, x + 6, y + h - 11, '#8b8fa3');
+  if (sc) kscrollEnd(c);
+  pfoot(c, K, `${G.flags.reqsDone || 0} requests answered. New ones go up as old ones come down.`);
 }
 // ---------------- compass ----------------
 function drawCompass(c) {

@@ -94,11 +94,12 @@ function uiMouseDown(btn) {
   if (UI.open === 'inv' && UI.held) { dropHeld(); return true; }
   return !!UI.open && UI.open !== 'score';
 }
+// a tooltip: a small kit card, its bar in the colour of its first line
 function drawTip(c, lines) {
-  let w = 0; for (const l of lines) w = max(w, textW(l[0])); const h = lines.length * 9 + 5;
+  let w = 0; for (const l of lines) w = max(w, textW(l[0])); const h = lines.length * 9 + 7, col = (lines[0] && lines[0][1]) || '#6a6485';
   const x = clamp(mouse.ux + 10, 2, VS.uw - w - 10), y = clamp(mouse.uy + 10, 2, VS.uh - h - 2);
-  c.fillStyle = INK; c.fillRect(x - 1, y - 1, w + 10, h + 2); c.fillStyle = '#2b2740'; c.fillRect(x, y, w + 8, h); c.fillStyle = '#6a6485'; c.fillRect(x, y, w + 8, 1);
-  lines.forEach((l, i) => drawText(c, l[0], x + 4, y + 3 + i * 9, l[1] || '#fff'));
+  c.fillStyle = INK; c.fillRect(x - 1, y - 1, w + 10, h + 2); c.fillStyle = 'rgba(22,17,34,.95)'; c.fillRect(x, y, w + 8, h); c.fillStyle = col; c.fillRect(x, y, w + 8, 2);
+  lines.forEach((l, i) => drawText(c, l[0], x + 4, y + 5 + i * 9, l[1] || '#fff'));
 }
 function itemTip(it) {
   const L = [[it.name, '#ffd35a']];
@@ -254,8 +255,9 @@ function drawHUD(c) {
   if (!SETTINGS.fpsMode) G.picks.forEach((q, i) => { c.globalAlpha = clamp((200 - q.t) / 40, 0, 1); const ic = IT[q.id].icon, y = uh - 16 - i * 12; c.drawImage(ic, 4, y - (ic.height >> 1) + 4); textS(c, `+${q.n} ${IT[q.id].name}`, 24, y, '#fff'); }); c.globalAlpha = 1;
   if (G.sayCur && !UI.open && !G.dialog) {
     const s = G.sayCur, col = s.who === 'vesper' ? '#8ff5e6' : s.who === 'wick' ? '#ffd35a' : '#ff8a3d', w = min(300, uw - 30), lines = wrapText(s.text, w - 16), h = lines.length * 9 + 8, x = round((uw - w) / 2), y = hb.y - 22 - h; let left = floor(s.t / 1.4);
-    c.globalAlpha = clamp((s.text.length * 1.4 + 190 - s.t) / 30, 0, 1); c.fillStyle = 'rgba(18,13,31,.8)'; c.fillRect(x, y, w, h); c.fillStyle = col; c.fillRect(x, y, 2, h);
-    lines.forEach((l, i) => { if (left <= 0) return; drawText(c, l.slice(0, left), x + 8, y + 5 + i * 9, s.who === 'vesper' ? '#c9fff6' : '#fff1a8'); left -= l.length + 1; }); c.globalAlpha = 1;
+    // (the say bubble: a slim kit card, its bar in the speaker's colour)
+    c.globalAlpha = clamp((s.text.length * 1.4 + 190 - s.t) / 30, 0, 1); c.fillStyle = INK; c.fillRect(x - 1, y - 1, w + 2, h + 3); c.fillStyle = 'rgba(22,17,34,.9)'; c.fillRect(x, y, w, h + 1); c.fillStyle = col; c.fillRect(x, y, w, 2);
+    lines.forEach((l, i) => { if (left <= 0) return; drawText(c, l.slice(0, left), x + 8, y + 6 + i * 9, s.who === 'vesper' ? '#c9fff6' : '#fff1a8'); left -= l.length + 1; }); c.globalAlpha = 1;
   }
   if (A) drawKillFeed(c);
   if (p.dead && !WORLD.royale) {
@@ -298,134 +300,70 @@ function drawKillFeed(c) {
   }
   c.globalAlpha = 1;
 }
+// the arena's scores (Tab): a kit card, its crown emblem
 function drawScore(c) {
-  const uw = VS.uw, uh = VS.uh, list = [...G.fighters].sort((a, b) => b.kills - a.kills || a.deaths - b.deaths), w = min(260, uw - 16), h = 34 + list.length * 11, x = round((uw - w) / 2), y = round((uh - h) / 2) - 10;
-  panel(c, x, y, w, h, `${ffaModeLabel()} : ${NET.code.toUpperCase()} : ROUND ${NET.rd + 1}`);
-  drawText(c, 'WAKER', x + 8, y + 16, '#8b8fa3'); drawText(c, 'K', x + w - 122, y + 16, '#8b8fa3'); drawText(c, 'D', x + w - 82, y + 16, '#8b8fa3'); drawText(c, 'K/D', x + w - 48, y + 16, '#8b8fa3');
-  list.forEach((f, i) => { const yy = y + 28 + i * 11, me = f === G.p, kd = f.deaths ? (f.kills / f.deaths).toFixed(1) : f.kills.toFixed(1); if (me) { c.fillStyle = '#2b2740'; c.fillRect(x + 4, yy - 2, w - 8, 10); } drawText(c, f.name + (f.echoBot ? '  (bot)' : f.remote ? '' : '  (you)'), x + 8, yy, me ? '#ffd35a' : f.echoBot ? '#b9bdd0' : '#8ff5e6'); drawText(c, String(f.kills), x + w - 122, yy, '#fff'); drawText(c, String(f.deaths), x + w - 82, yy, '#fff'); drawText(c, kd, x + w - 48, yy, '#fff'); });
-  drawText(c, ringStatusText(), x + 8, y + h - 10, '#7ddc6f');
+  const uw = VS.uw, uh = VS.uh, list = [...G.fighters].sort((a, b) => b.kills - a.kills || a.deaths - b.deaths), w = min(280, uw - 16), h = 29 + 12 + list.length * 11 + 14, x = round((uw - w) / 2), y = round((uh - h) / 2) - 10, ga = c.globalAlpha;
+  kcard(c, x, y, w, h, 'score', `${ffaModeLabel()} : ${NET.code.toUpperCase()} : ROUND ${NET.rd + 1}`);
+  const ty = y + 29; drawText(c, 'WAKER', x + 8, ty, '#8b8fa3'); drawText(c, 'K', x + w - 122, ty, '#8b8fa3'); drawText(c, 'D', x + w - 82, ty, '#8b8fa3'); drawText(c, 'K/D', x + w - 48, ty, '#8b8fa3');
+  list.forEach((f, i) => { const yy = ty + 12 + i * 11, me = f === G.p, kd = f.deaths ? (f.kills / f.deaths).toFixed(1) : f.kills.toFixed(1); if (me) { c.fillStyle = '#3d3320'; c.fillRect(x + 4, yy - 2, w - 8, 10); c.fillStyle = KIT.col; c.fillRect(x + 4, yy - 2, 2, 10); } drawText(c, fitText(f.name + (f.echoBot ? '  (bot)' : f.remote ? '' : '  (you)'), w - 140), x + 8, yy, me ? '#ffd35a' : f.echoBot ? '#b9bdd0' : '#8ff5e6'); drawText(c, String(f.kills), x + w - 122, yy, '#fff'); drawText(c, String(f.deaths), x + w - 82, yy, '#fff'); drawText(c, kd, x + w - 48, yy, '#fff'); });
+  drawText(c, fitText(ringStatusText(), w - 16), x + 8, y + h - 11, '#7ddc6f'); c.globalAlpha = ga;
 }
+// ---------------- THE PACK: THE SATCHEL (a place of the menu kit: 6-panel-menus.js) ----------------
+// invLayout and the 18-tall rows are as they were (the slots and rows are hit where they always were); the cards are the
+// kit's, with a stitched edge, and the strip above the hotbar holds the hint (and any banner the pack covers).
 function drawInv(c) {
-  const L = invLayout(); let tip = null;
+  const L = invLayout(), hb = hotbarLayout(); let tip = null;
   // the panels catch clicks first (so a click never falls through into the world); the slots and rows drawn after them sit on top
   hit(L.gx - 5, L.gy - 16, 199, L.ph, () => { }); hit(L.cx - 5, L.cy - 16, L.cw + 10, L.rows * 19 + 21, () => { });
-  panel(c, L.gx - 5, L.gy - 16, 199, L.ph + 0, `PACK ${INV_N}`); { const hb = hotbarLayout(); textC(c, 'drag to move  :  drag out to drop  :  shift-click: hotbar / pack  :  right-click splits', VS.uw / 2, hb.y - 13, '#b9bdd0', 1, textO); }
-  if (hasItem('rock') || hasItem('flint') || WORLD.mode === 1) button(c, L.gx + 120, L.gy - 15, 68, 10, 'KNAP [K]', () => toggleUI('knap'));
+  menuMotes(c, 'dust', { avoid: [{ x: L.gx - 5, y: L.gy - 16, w: 199, h: L.ph }, { x: L.cx - 5, y: L.cy - 16, w: L.cw + 10, h: L.rows * 19 + 21 }] });
+  pchrome(c, L.gx - 5, L.gy - 16, 199, L.ph, 'inv', `PACK ${INV_N}`, { art: 'satchel' });
+  if (hasItem('rock') || hasItem('flint') || WORLD.mode === 1) pbtn(c, L.gx + 124, L.gy - 14, 64, 12, kb('KNAP [K]', 'KNAP'), () => toggleUI('knap'), { tag: 'btn:KNAP [K]', hint: 'Knap flint or rock into heads for tools.' });
   for (let i = 0; i < INV_N; i++) { const x = L.gx + (i % 10) * 19, y = L.gy + floor(i / 10) * 19, hov = inR(x, y, 18, 18); slotBox(c, x, y, i === G.sel, hov); drawStack(c, inv[i], x, y); if (hov && inv[i] && !UI.held) tip = itemTip(IT[inv[i].id]); hit(x, y, 18, 18, b => slotClick(i, b), true); }
-  const list = craftList(); UI.scroll = clamp(UI.scroll, 0, max(0, list.length - L.rows));
-  panel(c, L.cx - 5, L.cy - 16, L.cw + 10, L.rows * 19 + 21, 'BY HAND'); button(c, L.cx + L.cw - 62, L.cy - 15, 64, 10, 'BOOK [B]', () => toggleUI('book'));
-  drawText(c, 'more at benches [F]', L.cx, L.cy + L.rows * 19 + 7, '#6a6485');
+  const list = craftList(); pscroller({ x: L.cx, y: L.cy, w: L.cw, h: L.rows * 19 }, list.length, L.rows);
+  pchrome(c, L.cx - 5, L.cy - 16, L.cw + 10, L.rows * 19 + 21, 'inv', 'BY HAND'); pbtn(c, L.cx + L.cw - 62, L.cy - 14, 64, 12, kb('BOOK [B]', 'BOOK'), () => toggleUI('book'), { tag: 'btn:BOOK [B]', hint: 'Every bench and what it makes.' });
+  drawText(c, kb('more at benches [F]', 'more at benches'), L.cx, L.cy + L.rows * 19 + 7, '#6a6485');
   for (let r = 0; r < L.rows; r++) {
-    const e = list[r + UI.scroll]; if (!e) break; const x = L.cx, y = L.cy + r * 19, hov = inR(x, y, L.cw, 18), it = IT[e.r.out];
+    const e = list[r + UI.scroll]; if (!e) break; const x = L.cx, y = L.cy + r * 19, hov = inR(x, y, L.cw, 18), it = IT[e.r.out], right = x + L.cw - 2;
     if (hov) { c.fillStyle = '#2b2740'; c.fillRect(x, y, L.cw, 18); }
     slotBox(c, x, y, false, hov && e.can); c.globalAlpha = e.can ? 1 : .4; drawStack(c, { id: e.r.out, n: e.r.n }, x, y); c.globalAlpha = 1;
-    drawText(c, it.name, x + 22, y + 1, e.can ? '#fff' : '#8b8fa3');
-    let nx = x + 22; for (const k in e.r.need) { if (nx > x + L.cw - 10) { drawText(c, '...', nx, y + 10, '#8b8fa3'); break; } const hv = countItem(k), s = `${min(hv, e.r.need[k])}/${e.r.need[k]} ${IT[k].name}`; nx += drawText(c, s, nx, y + 10, hv >= e.r.need[k] ? '#7ddc6f' : '#e2483b') + 5; }
-    if (hov) { tip = itemTip(it).slice(0, 4); tip.push(['NEEDS', '#ffd35a']); for (const k in e.r.need) { const hv = countItem(k); tip.push([`${IT[k].name}: ${hv} of ${e.r.need[k]}`, hv >= e.r.need[k] ? '#7ddc6f' : '#e2483b']); } tip.push([e.can ? 'click to make it' : 'you are missing the red ones', e.can ? '#8ff5e6' : '#b9bdd0']); }
+    drawText(c, fitText(it.name, L.cw - 24), x + 22, y + 1, e.can ? '#fff' : '#8b8fa3');
+    // what it needs, cut to the row: what does not fit is counted (+2), never drawn past the edge
+    const ks = Object.keys(e.r.need); let nx = x + 22;
+    for (let q = 0; q < ks.length; q++) {
+      const k = ks[q], hv = countItem(k), col = hv >= e.r.need[k] ? '#7ddc6f' : '#e2483b', s = `${min(hv, e.r.need[k])}/${e.r.need[k]} ${IT[k].name}`, more = q < ks.length - 1 ? 14 : 0;
+      if (nx + textW(s) > right - more) { const left = ks.length - q; if (q === 0) { nx += drawText(c, fitText(s, right - nx - (left > 1 ? 14 : 0)), nx, y + 10, col) + 3; if (left > 1) drawText(c, '+' + (left - 1), nx, y + 10, '#8b8fa3'); } else drawText(c, '+' + left, nx, y + 10, '#8b8fa3'); break; }
+      nx += drawText(c, s, nx, y + 10, col) + 5;
+    }
+    if (hov) { tip = itemTip(it).slice(0, 4); tip.push(['NEEDS', '#ffd35a']); for (const k in e.r.need) { const hv = countItem(k); tip.push([`${IT[k].name}: ${hv} of ${e.r.need[k]}`, hv >= e.r.need[k] ? '#7ddc6f' : '#e2483b']); } tip.push([e.can ? kb('click to make it', 'tap to make it') : 'you are missing the red ones', e.can ? '#8ff5e6' : '#b9bdd0']); }
     hit(x, y, L.cw, 18, () => craft(e.r));
   }
-  if (list.length > L.rows) drawText(c, `${UI.scroll + 1}-${min(list.length, UI.scroll + L.rows)}/${list.length}`, L.cx + L.cw - 34, L.cy + L.rows * 19 + 7, '#6a6485');
+  if (list.length > L.rows) { const s = `${UI.scroll + 1}-${min(list.length, UI.scroll + L.rows)}/${list.length}`; drawText(c, s, L.cx + L.cw - textW(s), L.cy + L.rows * 19 + 7, '#6a6485'); }
   if (!WORLD.arena || wildOn()) { const t2 = drawGearPanel(c, L.gx, L.ay + 14); if (t2) tip = t2; }
+  invStrip(c, hb);
   if (tip) drawTip(c, tip);
 }
-const CODEX_SETS = ['brawl', 'sword', 'spear', 'fangs', 'maul', 'bow', 'chuks', 'links', 'styles'], CODEX_TABS = ['FISTS', 'BLADE', 'PIKE', 'FANGS', 'MAUL', 'BOW', 'CHAIN', 'LINKS', 'STYLE'];
-// forms that only the movement keys or cursor distance reach: not used with SIMPLE controls
-const fullOnly = (set, id) => SETTINGS.combat === 'simple' && ['far', 'back', 'near', 'hBack'].some(k => set.map[k] === id) && !['up', 'upf', 'down', 'h', 'hUp', 'hDown', 'hFwd', 'dash', 'rip', 'aD', 'aU', 'ha', 'haU', 'haD'].some(k => set.map[k] === id) && !set.map.chain.includes(id) && !set.map.aChain.includes(id);
-const ST_NAME = { pin: 'pinned', hook: 'hooked', burn: 'burning', blind: 'blinded', launched: 'in the air' };
-function drawCodex(c) {
-  const sn = UI.codex || 'sword', w = min(404, VS.uw - 12), h = min(VS.uh - 44, 340), x = round((VS.uw - w) / 2), y = round((VS.uh - h) / 2) - 8;
-  const tx0 = x + 78, tw = floor((w - 82) / CODEX_SETS.length);
-  const tabs = () => CODEX_SETS.forEach((s, i) => button(c, tx0 + i * tw, y + 1, tw - 2, 11, CODEX_TABS[i], () => { UI.codex = s; UI.scroll = 0; sfx('ui'); }, { on: s === sn }));
-  if (sn === 'links') {
-    panel(c, x, y, w, h, `LINKS ${G.linksKnown.size}/${LINK_ORDER.length}`); hit(x, y, w, h, () => { }); tabs();
-    const rows = [{ h: 'SIDEARMS : [R] THROW  [T] SWITCH' }, { t: 'Star Knife: carries a foe into the nearest wall and pins it there.', col: '#e8edf2' }, { t: 'Chain Hook: drags a foe to you, or you to a wall. Big foes pull you in.', col: '#e8edf2' }, { t: 'Ember Flask: bursts into fire that clings. Smoke Pellet: blinds.', col: '#e8edf2' }, { t: 'Launchers (aim up) throw a foe into the air.', col: '#e8edf2' }, { h: 'LINKS : THE RIGHT WEAPON ON THE RIGHT MOMENT' }];
-    for (const id of LINK_ORDER) { const L = LINKS[id], k = G.linksKnown.has(id); rows.push({ L, k, id }); }
-    const vis = floor((h - 32) / 10); UI.scroll = clamp(UI.scroll, 0, max(0, rows.length - vis));
-    for (let i = 0; i < vis; i++) {
-      const r = rows[i + UI.scroll]; if (!r) break; const ry = y + 16 + i * 10;
-      if (r.h) { textS(c, r.h, x + 6, ry, '#ffd35a'); continue; } if (r.t) { drawText(c, r.t, x + 8, ry, '#b9bdd0'); continue; }
-      const L = r.L, names = L.sets.length > 4 ? 'any close weapon' : L.sets.map(s => CODEX_TABS[CODEX_SETS.indexOf(s)]).join(' / ');
-      c.fillStyle = r.k ? '#7ddc6f' : '#4a4460'; c.fillRect(x + 7, ry + 1, 3, 5);
-      drawText(c, r.k ? L.name : '???', x + 13, ry, r.k ? '#fff' : '#8b8fa3');
-      drawText(c, `${ST_NAME[L.st]} + ${names} + ${L.btn === 'L' ? 'LMB' : 'RMB'}`, x + 104, ry, r.k ? '#b9bdd0' : '#6f6a85');
-    }
-    drawText(c, 'A link fires when you attack a foe in that state, close enough.', x + 6, y + h - 10, '#8ff5e6'); return;
-  }
-  if (sn === 'styles') { drawStylesPage(c, x, y, w, h, tabs); return; }
-  const set = MOVESETS[sn]; let kn = 0, tot = 0; for (const k in set.moves) { if (isStyleId(k)) continue; tot++; if (G.known.has(sn + ':' + k)) kn++; }
-  panel(c, x, y, w, h, `FORMS ${kn}/${tot}`); hit(x, y, w, h, () => { }); tabs();
-  { const st = famStep(sn), xp = (G.fam && G.fam[sn]) || 0; textS(c, (FAM_NAME[sn] || '') + ': ' + FAM_STEP[st] + (st < 3 && !famAll() ? '  ' + floor(xp) + '/' + FAM_AT[st + 1] + ' to ' + FAM_STEP[st + 1] : '') + '.  Best at ' + (FAM_LEAN_T[sn] || 'everything') + '.', x + 6, y + h - 30, '#ffd35a'); if (FAM_TEMPO_T[sn]) textS(c, 'In time: ' + FAM_TEMPO_T[sn] + '.', x + w - textW('In time: ' + FAM_TEMPO_T[sn] + '.') - 8, y + h - 30, '#8ff5e6'); }
-  const rows = []; for (const [sec, ids] of set.sections) { rows.push({ h: sec }); for (const id of ids) rows.push({ id, m: set.moves[id] }); }
-  const vis = floor((h - 40) / 9); UI.scroll = clamp(UI.scroll, 0, max(0, rows.length - vis));
-  for (let i = 0; i < vis; i++) {
-    const r = rows[i + UI.scroll]; if (!r) break; const ry = y + 16 + i * 9;
-    if (r.h) { textS(c, r.h, x + 6, ry, '#ffd35a'); c.fillStyle = '#4a4460'; c.fillRect(x + 10 + textW(r.h), ry + 3, w - 18 - textW(r.h), 1); }
-    else { const k = G.known.has(sn + ':' + r.id), lock = !famOpen(sn, r.id) || (r.m.art && !famAll() && !(G.arts && [...G.arts].some(q => q.startsWith(sn) && +q.slice(sn.length) >= r.m.art))), off = fullOnly(set, r.id) || lock; c.fillStyle = off ? '#4a4460' : r.m.btn === 'L' ? '#6c93a8' : '#ff8a3d'; c.fillRect(x + 7, ry, 2, 7); drawText(c, r.m.name, x + 13, ry, off ? '#6a6485' : k ? '#fff' : '#8b8fa3'); if (k && !off) { c.fillStyle = '#7ddc6f'; c.fillRect(x + 108, ry + 2, 3, 3); } drawText(c, lock ? (r.m.art ? 'art of ' + ART_TIER_N[r.m.art] + ' weapons' : 'learned at ' + FAM_STEP[set.tier[r.id]]) : off ? 'FULL controls only (pause menu)' : r.m.hint, x + 116, ry, off ? '#5a5470' : k ? '#b9bdd0' : '#6f6a85'); }
-  }
-  drawText(c, SETTINGS.combat === 'simple' ? 'SIMPLE controls: aim and S choose the form, not A / D.' : 'Forward key = A or D toward your cursor. Back key = away.', x + 6, y + h - 20, '#b9bdd0');
-  drawText(c, 'Fresh forms hit 10% harder. Repeats go dull. Wheel scrolls.', x + 6, y + h - 10, '#8ff5e6');
+// the strip above the hotbar: the hint of what is under the mouse (or was tapped), else how the pack works; it also
+// carries the journal's NEW ENTRY line, which the pack covers on a small screen
+function invStrip(c, hb) {
+  const now = performance.now(), tap = KIT.T && KIT.tapHint && now - KIT.tapHint.t < 2500 ? KIT.tapHint.s : '', h = KIT.T ? tap : KIT.hint;
+  let s = h || kb('drag to move : drag out to drop : shift-click: hotbar / pack : right-click splits', 'drag to move : drag out to drop');
+  if (G.jNew && !SETTINGS.fpsMode && !WORLD.arena) s = kb('NEW JOURNAL ENTRY [J]', 'NEW JOURNAL ENTRY') + '  :  ' + s;
+  if (G.banner && G.banner.t >= 0 && G.banner.t < 230) s = G.banner.text + '  :  ' + s;   // a banner the pack hides
+  s = fitText(s, VS.uw - 24); const w = textW(s) + 14, x = round((VS.uw - w) / 2), y = hb.y - 16;
+  c.fillStyle = INK; c.fillRect(x - 1, y - 1, w + 2, 13); c.fillStyle = 'rgba(22,17,34,.9)'; c.fillRect(x, y, w, 11); c.fillStyle = MENUS.inv.col; c.fillRect(x, y, w, 1);
+  drawText(c, s, x + 7, y + 2, h ? '#d8d4e6' : '#b9bdd0');
 }
-function drawJournal(c) {
-  const w = min(330, VS.uw - 12), h = min(VS.uh - 44, 300), x = round((VS.uw - w) / 2), y = round((VS.uh - h) / 2) - 8, tab = UI.jtab || 'leads';
-  panel(c, x, y, w, h, 'JOURNAL'); hit(x, y, w, h, () => { });
-  button(c, x + 70, y + 1, 50, 11, 'LEADS', () => { UI.jtab = 'leads'; UI.scroll = 0; sfx('ui'); }, { on: tab === 'leads' });
-  button(c, x + 123, y + 1, 50, 11, 'LORE', () => { UI.jtab = 'lore'; UI.scroll = 0; G.jNew = false; sfx('ui'); }, { on: tab === 'lore' });
-  button(c, x + 176, y + 1, 50, 11, 'ECHOES', () => { UI.jtab = 'echo'; UI.scroll = 0; sfx('ui'); }, { on: tab === 'echo' });
-  button(c, x + 229, y + 1, 50, 11, 'BEASTS', () => { UI.jtab = 'beast'; UI.scroll = 0; sfx('ui'); }, { on: tab === 'beast' });
-  if (tab === 'leads') {
-    const open = leadsOpen(), done = LEAD_ORDER.filter(id => G.leads.has(id) && LEADS[id].done()), rows = [];
-    rows.push({ t: open.length ? 'Things you have heard about. Click one to follow it, or none.' : 'No open leads. Talk to people, read notices, wander.', col: '#8b8fa3' });
-    for (const id of open) { const L = LEADS[id], at = leadAt(L); rows.push({ id, title: L.title, sub: at !== null && at !== undefined ? (at * T > G.p.x ? `${round(abs(at * T - G.p.x) / T)} paces east` : `${round(abs(at * T - G.p.x) / T)} paces west`) : '' }); for (const l of wrapText(L.text, w - 24)) rows.push({ t: l, col: '#d8d4e6', id }); }
-    if (done.length) { rows.push({ t: '' }); rows.push({ t: 'FOLLOWED', col: '#7ddc6f' }); for (const id of done) rows.push({ t: '  ' + LEADS[id].title, col: '#6f6a85' }); }
-    const vis = floor((h - 22) / 9); UI.scroll = clamp(UI.scroll, 0, max(0, rows.length - vis));
-    for (let i = 0; i < vis; i++) {
-      const r = rows[i + UI.scroll]; if (!r) break; const ry = y + 17 + i * 9;
-      if (r.title) { const on = G.pin === r.id, hv = inR(x + 4, ry - 1, w - 8, 9); if (hv || on) { c.fillStyle = on ? '#3a3020' : '#2b2740'; c.fillRect(x + 4, ry - 1, w - 8, 9); } c.fillStyle = on ? '#ffd35a' : '#6a6485'; c.fillRect(x + 6, ry, 3, 6); drawText(c, r.title, x + 12, ry, on ? '#ffd35a' : '#fff'); if (r.sub) drawText(c, r.sub, x + w - textW(r.sub) - 8, ry, '#8ff5e6'); if (on) drawText(c, 'following', x + 16 + textW(r.title), ry, '#b85a1e'); hit(x + 4, ry - 1, w - 8, 9, () => { G.pin = G.pin === r.id ? null : r.id; sfx('ui'); }); }
-      else if (r.t) drawText(c, r.t, x + 12, ry, r.col);
-    }
-  } else if (tab === 'echo') drawEchoTab(c, x, y, w, h);
-  else if (tab === 'beast') drawBeastTab(c, x, y, w, h);
-  else {
-    const rows = []; for (const id of G.journal) { if (!JOURNAL[id]) continue; rows.push([JOURNAL[id][0], '#ffd35a']); for (const l of wrapText(JOURNAL[id][1], w - 16)) rows.push([l, '#d8d4e6']); rows.push(['', '']); }
-    const vis = floor((h - 22) / 9); UI.scroll = clamp(UI.scroll, 0, max(0, rows.length - vis));
-    for (let i = 0; i < vis; i++) { const r = rows[i + UI.scroll]; if (!r) break; if (r[0]) drawText(c, r[0], x + 8, y + 17 + i * 9, r[1]); }
-    if (rows.length > vis) drawText(c, 'wheel', x + w - 34, y + 3, '#6a6485');
-  }
-}
-function drawPause(c) {
-  const A = WORLD.arena, big = !A && !DIM && WT_ON && WT_KEYS.length > 0 && VS.uh >= 300, w = min(A ? 340 : 392, VS.uw - 16), h = A ? 158 : big ? 290 : 240, x = round((VS.uw - w) / 2), y = round((VS.uh - h) / 2);
-  panel(c, x, y, w, h, A ? (WORLD.royale ? (BR.wild ? 'THE WILDS : MENU' : 'THE ASHFALL : MENU') : 'FFA ARCADE : MENU') : `${WORLD.name.toUpperCase()} : PAUSED`); hit(x, y, w, h, () => { });
-  if (!A && !DIM) { const s = yearLine(); drawText(c, s, x + w - textW(s) - 6, y + 3, SEASON().col); }
-  if (big) { drawText(c, 'THIS WORLD IS', x + 8, y + 194, '#8b8fa3'); drawTraits(c, x + 8, y + 205, w - 16); }
-  button(c, x + 8, y + 18, 70, 15, 'RESUME', () => { closeUI(); sfx('ui'); });
-  button(c, x + 84, y + 18, 96, 15, A ? (WORLD.royale ? (BR.via !== 'solo' ? 'TO THE LOBBY' : 'LEAVE MATCH') : 'LEAVE FFA') : 'SAVE & QUIT', () => { closeUI(); if (WORLD.royale && BR.on && BR.via !== 'solo') brBackToLobby(); else quitToTitle(); sfx('ui'); });
-  button(c, x + 186, y + 18, 84, 15, muted ? 'SOUND: OFF' : 'SOUND: ON', () => { muted = !muted; sfx('ui'); });
-  if (!A) button(c, x + 276, y + 18, 46, 15, 'SAVE', () => { saveWorld(); sfx('craft'); });
-  if (wildOn() && BR.teammate) button(c, x + w - 66, y + h - 19, 58, 15, 'LEAVE PACT', () => { brBreakPact(false); closeUI(); });
-  // (a phone held upright has a panel narrower than its own top row: there FX goes under SAVE, beside the first line of help,
-  //  and the middle column of the two rows at the bottom narrows to clear the right-hand one. A full-width panel is untouched.)
-  const slim = !A && w < 392, mw = slim ? min(118, w - 112 - 130 - 12) : 118;
-  button(c, A ? x + 276 : slim ? x + w - 64 : x + 328, y + (slim ? 35 : 18), 56, 15, SETTINGS.fx === 'plain' ? 'FX: PLAIN' : 'FX: FULL', () => { SETTINGS.fx = SETTINGS.fx === 'plain' ? 'full' : 'plain'; saveSettings(); sfx('ui'); });   // glow, colour of the air, mist: off for a slow machine
-  if (!A && G.p && !G.boss && !G.duel) button(c, x + w - 112, y + h - 19, 104, 13, 'WAKE AT THE FIRE', () => { closeUI(); wakeAtFire(); });
-  if (!A) button(c, x + w - 112, y + h - 36, 104, 13, netGuest() ? 'LEAVE THEIR WORLD' : COOP.role ? 'PLAY TOGETHER (' + (1 + [...COOP.peers.values()].filter(P => P.ok).length) + ')' : 'PLAY TOGETHER', () => { if (netGuest()) { closeUI(); quitToTitle(); } else { UI.open = 'coop'; COOP.err = ''; sfx('ui'); } });
-  button(c, x + 8, y + h - 19, 118, 13, 'CONTROLS: ' + (SETTINGS.combat === 'simple' ? 'SIMPLE' : 'FULL'), () => { SETTINGS.combat = SETTINGS.combat === 'simple' ? 'full' : 'simple'; saveSettings(); sfx('ui'); });
-  if (!A) button(c, x + 8, y + h - 36, 118, 13, 'CRAFTING: ' + (SETTINGS.craft === 'hands' ? 'HANDS-ON' : 'SIMPLE'), () => { SETTINGS.craft = SETTINGS.craft === 'hands' ? 'simple' : 'hands'; saveSettings(); UI.job = null; sfx('ui'); });
-  // FPS MODE: no particles and a barer HUD (the game stays side-on); FX above is the uploaded version's own switch and is left as it is.
-  // (In a world it sits over DIFFICULTY. An arena's shorter panel has its last line of help there, and no DIFFICULTY: it takes that place.)
-  button(c, x + 130, y + h - (A ? 19 : 36), mw, 13, 'FPS MODE: ' + (SETTINGS.fpsMode ? 'ON' : 'OFF'), () => { SETTINGS.fpsMode = !SETTINGS.fpsMode; if (SETTINGS.fpsMode) G.parts.length = 0; saveSettings(); sfx('ui'); });
-  if (!A) textS(c, 'Cleaner HUD; side-view.', x + 130, y + h - 48, '#8b8fa3');
-  if (!A) button(c, x + 130, y + h - 19, mw, 13, 'DIFFICULTY: ' + DIFF().n, () => { SETTINGS.diff = SETTINGS.diff === 'easy' ? 'normal' : SETTINGS.diff === 'normal' ? 'hard' : 'easy'; saveSettings(); sfx('ui'); });
-  const H = ['A / D  move        SPACE or W  jump        SHIFT  dodge', 'LMB  light blow: strike again on the GLINT   RMB or Q  heavy', ...(SETTINGS.combat === 'simple' ? ['Aim up to launch, aim down or hold S for low blows. Click', 'a creature to punch it, whatever you are holding.'] : ['Where you aim, which keys you hold, whether you are in', 'the air and how far the cursor is all change the attack.']), 'Too soon is HASTY, hammering RUSHED; five in time is DRUMFIRE.', A ? '1-6 weapons    TAB scores    C forms    O sound' : '1-0 / wheel  hotbar     E  pack + crafting     C  forms', A ? 'R  throw sidearm    T  switch sidearm    Echoes leave when a Waker joins.' : 'J  journal + leads   F  talk / use   H  quick heal', A ? '' : 'R  throw sidearm   T  switch sidearm   S held: drop through bridges', A ? '' : 'Ore, keys and such leave your fists free.   K  knap   M  map', A ? '' : 'F beside a station uses it. Hold W/S on ladders. RMB opens doors.', A ? '' : 'V  weapon style (5 per weapon)   X  swap to off hand', A ? '' : 'Tools swing where you point, at rock or beast. Hold RMB: heavy.'];
-  H.forEach((l, i) => drawText(c, l, x + 8, y + 42 + i * 12, i === 2 || i === 3 ? '#8ff5e6' : '#d8d4e6'));
-}
+// (the forms codex, the journal and the pause panel are 10-interface/6-panel-menus.js)
+// a villager speaks: a kit card at HUD level, its bar in the speaker's colour, the portrait in a framed box
 function drawDialog(c) {
   const d = G.dialog, line = d.s.lines[d.i], sp = SPEAKER[line[0]] || { col: '#fff', skin: 0 }, uw = VS.uw, uh = VS.uh;
-  d.t += 1.15; const w = min(380, uw - 16), h = 58, x = round((uw - w) / 2), y = uh - h - 30;
-  panel(c, x, y, w, h); c.fillStyle = '#262234'; c.fillRect(x + 6, y + 6, 46, 46); c.fillStyle = sp.col; c.fillRect(x + 6, y + 50, 46, 2);
+  d.t += 1.15; const w = min(380, uw - 16), L = wrapC(line[1], w - 70), h = max(58, 26 + L.length * 9 + 8), x = round((uw - w) / 2), y = uh - h - 30;
+  c.fillStyle = INK; c.fillRect(x - 1, y - 1, w + 2, h + 2); c.fillStyle = 'rgba(22,17,34,.94)'; c.fillRect(x, y, w, h); c.fillStyle = sp.col; c.fillRect(x, y, w, 2);
+  c.fillStyle = '#2b2740'; c.fillRect(x + 5, y + 5, 48, 48); c.fillStyle = '#262234'; c.fillRect(x + 6, y + 6, 46, 46); c.fillStyle = sp.col; c.fillRect(x + 6, y + 50, 46, 2);
   const hd = SK[sp.skin].head; c.drawImage(hd, x + 29 - hd.width * 2.5, y + 10, hd.width * 5, hd.height * 5);
-  textS(c, line[0], x + 60, y + 7, sp.col);
-  let left = floor(d.t); wrapText(line[1], w - 70).forEach((l, i) => { if (left <= 0) return; drawText(c, l.slice(0, left), x + 60, y + 19 + i * 9, '#fff'); left -= l.length + 1; });
-  if (d.t >= line[1].length && (performance.now() / 400 | 0) & 1) drawText(c, d.i < d.s.lines.length - 1 ? 'click' : 'done', x + w - 30, y + h - 10, '#8b8fa3');
+  textS(c, line[0], x + 60, y + 8, sp.col);
+  let left = floor(d.t); L.forEach((l, i) => { if (left <= 0) return; drawText(c, l.slice(0, left), x + 60, y + 20 + i * 9, '#fff'); left -= l.length + 1; });
+  if (d.t >= line[1].length && (performance.now() / 400 | 0) & 1) { const s = d.i < d.s.lines.length - 1 ? kb('click', 'tap') : 'done'; drawText(c, s, x + w - 8 - textW(s), y + h - 11, '#8b8fa3'); }
   hit(0, 0, uw, uh, () => dialogAdvance());
 }
 function drawUI(c) {

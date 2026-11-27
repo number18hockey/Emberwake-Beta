@@ -108,22 +108,21 @@ async def main():
 
     # I. pause menu buttons cycle the settings
     await h.ev("reset(); UI.open = 'pause'"); await h.step(1, "UI.open = 'pause'")
-    btn = "(() => { const A = WORLD.arena, w = Math.min(A ? 340 : 392, VS.uw - 16), hh = A ? 158 : 240, x = Math.round((VS.uw - w) / 2), y = Math.round((VS.uh - hh) / 2); return [x, y, w, hh]; })()"
-    x, y, w, hh = await h.ev(btn)
+    # (the pause panel is a place of the menu kit: its buttons are found by their tags, whatever the layout)
+    PRESS = "(() => { render(1); const p = kitHit(%r); if (!p) return false; mouse.ux = p.x; mouse.uy = p.y; uiMouseDown(0); return true; })()"
     cyc = []
     for i in range(3):
-        await h.ev("render(1); mouse.ux = %d; mouse.uy = %d; uiMouseDown(0);" % (x + 130 + 59, y + hh - 19 + 6)); cyc.append(await h.ev("SETTINGS.diff"))
-    await h.ev("render(1); mouse.ux = %d; mouse.uy = %d; uiMouseDown(0);" % (x + 8 + 59, y + hh - 19 + 6)); cyc.append(await h.ev("SETTINGS.combat"))
-    await h.ev("mouse.ux = %d; mouse.uy = %d; render(1);" % (x + 130 + 59, y + hh - 19 + 6))
+        await h.ev(PRESS % 'btn:DIFFICULTY'); cyc.append(await h.ev("SETTINGS.diff"))
+    await h.ev(PRESS % 'btn:CONTROLS'); cyc.append(await h.ev("SETTINGS.combat"))
+    await h.ev("(() => { render(1); const p = kitHit('btn:DIFFICULTY'); mouse.ux = p.x; mouse.uy = p.y; render(1); })()")
     im = await h.shot(); im.save(shot('pause_settings.png'))
-    await h.ev("render(1); mouse.ux = %d; mouse.uy = %d; uiMouseDown(0);" % (x + 8 + 59, y + hh - 19 + 6)); cyc.append(await h.ev("SETTINGS.combat"))
+    await h.ev(PRESS % 'btn:CONTROLS'); cyc.append(await h.ev("SETTINGS.combat"))
     res['I pause cycle'] = cyc
     res['I stored'] = await h.ev("localStorage.getItem('ew_settings')")
     # FPS MODE: its button switches it and it is remembered; while it is on no particle is made (and those in the air go at once),
     # the lesser parts of the HUD are not drawn and a plain cross marks the aim while you play. It is switched off again after.
     # (Two of the ten parts looked for stay: the tempo, and a training drill's list of calls, without which a drill cannot be followed.)
-    fx, fy = await h.ev("(() => { const big = !DIM && WT_ON && WT_KEYS.length > 0 && VS.uh >= 300, w = Math.min(392, VS.uw - 16), hh = big ? 290 : 240; return [Math.round((VS.uw - w) / 2) + 130 + 59, Math.round((VS.uh - hh) / 2) + hh - 36 + 6]; })()")
-    FPS = "UI.open = 'pause'; render(1); mouse.ux = %d; mouse.uy = %d; uiMouseDown(0);" % (fx, fy)
+    FPS = "UI.open = 'pause'; " + PRESS % 'btn:FPS MODE'
     HUD = """(() => { const parts = ['drawStyleHud', 'drawFamHud', 'drawDrill', 'drawBless', 'drawMealHud', 'drawGadgetHud', 'drawMinimap', 'drawObjective', 'drawCompass', 'drawTempoHud'], was = {}, seen = new Set(), said = [];
       for (const k of parts) { was[k] = window[k]; window[k] = function () { seen.add(k); return was[k].apply(this, arguments); }; }
       const tS = textS, tO = textO; textS = function (c, s) { said.push(String(s)); return tS.apply(this, arguments); }; textO = function (c, s) { said.push(String(s)); return tO.apply(this, arguments); };
@@ -140,8 +139,7 @@ async def main():
     await h.ev(FPS); await h.ev("G.parts.length = 0;")
     assert fps == [True, False, True] and made == [12, 0, 0] and hud == [[10, 5, False], [2, 0, True]] and not await h.ev("SETTINGS.fpsMode"), 'FPS MODE did not switch, kept making particles, or did not clear the HUD'
     await h.ev("UI.open = 'journal'; UI.jtab = 'leads'; render(1);")
-    jx = await h.ev("(() => { const w = Math.min(330, VS.uw - 12), hh = Math.min(VS.uh - 44, 300), x = Math.round((VS.uw - w) / 2), y = Math.round((VS.uh - hh) / 2) - 8; return [x, y]; })()")
-    await h.ev("render(1); mouse.ux = %d; mouse.uy = %d; uiMouseDown(0);" % (jx[0] + 176 + 25, jx[1] + 6))
+    await h.ev(PRESS % 'tab:LORE')
     res['I journal tab click'] = await h.ev("UI.jtab")
     await h.ev("UI.open = null; hold(null); toggleUI('codex'); render(1);")
     res['I codex opens on'] = await h.ev("UI.codex")

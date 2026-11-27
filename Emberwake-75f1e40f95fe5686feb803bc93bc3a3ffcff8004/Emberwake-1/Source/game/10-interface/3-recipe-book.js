@@ -15,13 +15,13 @@ function stnFilterOf(list) {
   const cats = ['all']; for (const e of list) { const k = catOf(e.r); if (!cats.includes(k)) cats.push(k); }
   if (!cats.includes(UI.stnCat)) UI.stnCat = 'all';
   if (!(cats.length > 2 || list.length > 8)) return { list, dy: 0, cats };
-  return { list: list.filter(e => (UI.stnCat === 'all' || catOf(e.r) === UI.stnCat) && (!UI.stnCan || e.can)), dy: 12, cats };
+  return { list: list.filter(e => (UI.stnCat === 'all' || catOf(e.r) === UI.stnCat) && (!UI.stnCan || e.can)), dy: KIT.sm + 4, cats };
 }
 function stnFilter(c, L, list) {
   const F0 = stnFilterOf(list), cats = F0.cats; if (!F0.dy) return F0;
-  const half = (L.w >> 1) - 1;
-  if (cats.length > 2) button(c, L.x, L.y, half, 10, 'SHOW: ' + CAT_N[UI.stnCat], () => { UI.stnCat = cats[(cats.indexOf(UI.stnCat) + 1) % cats.length]; UI.scroll = 0; sfx('ui'); }, { on: UI.stnCat !== 'all' });
-  button(c, L.x + (cats.length > 2 ? half + 2 : 0), L.y, half, 10, UI.stnCan ? 'CAN MAKE: ON' : 'CAN MAKE: OFF', () => { UI.stnCan = !UI.stnCan; UI.scroll = 0; sfx('ui'); }, { on: !!UI.stnCan });
+  const half = (L.w - KIT.sizes.gap) >> 1, two = cats.length > 2;
+  if (two) pbtn(c, L.x, L.y, half, KIT.sm, 'SHOW: ' + CAT_N[UI.stnCat], () => { UI.stnCat = cats[(cats.indexOf(UI.stnCat) + 1) % cats.length]; UI.scroll = 0; sfx('ui'); }, { on: UI.stnCat !== 'all', tag: 'btn:SHOW', hint: 'Show one kind of thing: ' + cats.map(k => CAT_N[k].toLowerCase()).join(', ') + '.' });
+  pbtn(c, L.x + (two ? half + KIT.sizes.gap : 0), L.y, two ? half : L.w, KIT.sm, UI.stnCan ? 'CAN MAKE: ON' : 'CAN MAKE: OFF', () => { UI.stnCan = !UI.stnCan; UI.scroll = 0; sfx('ui'); }, { on: !!UI.stnCan, tag: 'btn:CAN MAKE', hint: 'Only what you can make now.' });
   return F0;
 }
 function recipeLevelOk(r) {
@@ -71,29 +71,33 @@ function drawRecipeRow(c, r, x, y, w, lvlOk = true) {
 }
 // where a station's recipe row sits on screen (in UI units), for whoever wants to click it
 function stnRowXY(kind, t, pick) {
-  const B = stnBox(), L = { x: B.x + 4, y: B.y + 15, w: min(160, B.w * .46 | 0) }, F0 = stnFilterOf(stnList(kind, t)), k = F0.list.findIndex(pick);
+  const { L } = stnLay(), F0 = stnFilterOf(stnList(kind, t)), k = F0.list.findIndex(pick);
   return k < 0 ? null : [L.x + 30, L.y + F0.dy + (k - UI.scroll) * 19 + 9];
 }
 // ---------------- the book ----------------
+// THE RECIPE BOOK: two facing pages and a spine. The benches on the left page, the chosen bench's work on the right;
+// choosing a bench sweeps a light across the right page.
 function drawBook(c) {
-  const w = min(VS.uw - 10, 430), h = min(VS.uh - 40, 280), x = round((VS.uw - w) / 2), y = round((VS.uh - h) / 2) - 8;
-  panel(c, x, y, w, h, 'RECIPE BOOK  [B]'); hit(x, y, w, h, () => { }); button(c, x + w - 13, y + 1, 12, 10, 'x', () => { closeUI(); sfx('ui'); });
   if (!UI.bookSt) UI.bookSt = 'hand';
-  const lw = 116, rh = clamp(floor((h - 22) / BENCHES.length), 9, 13); let tip = null;
-  BENCHES.forEach((b, k) => {
-    const by = y + 15 + k * rh, on = UI.bookSt === b.st, hov = inR(x + 4, by, lw, rh - 1), built = b.st === 'hand' || (b.item && (G.flags['placed_' + b.item] || hasItem(b.item) || WORLD.mode === 1));
-    if (on || hov) { c.fillStyle = on ? '#3a3350' : '#2b2740'; c.fillRect(x + 4, by - 1, lw, rh - 1); }
-    if (k === 11) { c.fillStyle = '#3d3a52'; c.fillRect(x + 6, by - 2, lw - 4, 1); }
-    drawText(c, b.n, x + 8, by + ((rh - 9) >> 1), on ? '#ffd35a' : built ? '#fff' : '#8b8fa3');
-    hit(x + 4, by - 1, lw, rh - 1, () => { UI.bookSt = b.st; UI.scroll = 0; sfx('ui'); });
+  const S = KIT.sizes, mode = menuMode(), F = menuFrame('book', 460, mode === 'narrow' ? 420 : 320), K = pcard(c, 'book', 0, 0, kb('RECIPE BOOK  [B]', 'RECIPE BOOK'), { frame: F }), now = performance.now();
+  const x = K.x, y = K.y, w = K.w, h = K.h, lw = mode === 'narrow' ? 108 : 122, top = K.by - 2, bot = y + h - 16, ph = bot - top;
+  // the pages and the spine
+  c.fillStyle = '#1d1a29'; c.fillRect(x + 4, top, lw + 2, ph); c.fillRect(x + lw + 12, top, w - lw - 16, ph);
+  c.fillStyle = '#2b2740'; c.fillRect(x + lw + 6, top, 6, ph); c.fillStyle = rgbaHex(KIT.col, .35); c.fillRect(x + lw + 8, top, 2, ph);
+  let tip = null;
+  const rh = KIT.T ? 22 : clamp(floor(ph / BENCHES.length), 11, 14), LB = { x: x + 5, y: top + 1, w: lw, h: ph - 2 };
+  plist(c, LB, BENCHES.length, rh, 'bookL', (k, by) => {
+    const b = BENCHES[k], on = UI.bookSt === b.st, built = b.st === 'hand' || (b.item && (G.flags['placed_' + b.item] || hasItem(b.item) || WORLD.mode === 1));
+    krow(c, LB.x, by - 2, lw - 3, rh - 1, () => { if (UI.bookSt !== b.st) { UI.bookSt = b.st; UI.scroll = 0; PANEL.bookT = performance.now(); sfx('ui'); } }, { sel: on, tag: 'row:bench:' + b.st, hint: b.d });
+    drawText(c, fitText(b.n, lw - 12), LB.x + 5, by - 2 + ((rh - 9) >> 1), on ? KIT.col : built ? '#fff' : '#8b8fa3');
   });
-  const B = BENCHES.find(b => b.st === UI.bookSt) || BENCHES[0], rx = x + lw + 10, rw = w - lw - 16; let ry = y + 15;
-  for (const l of wrapText(B.d, rw)) { drawText(c, l, rx, ry, '#b9bdd0'); ry += 9; }
+  const B = BENCHES.find(b => b.st === UI.bookSt) || BENCHES[0], rx = x + lw + 16, rw = w - lw - 24; let ry = top + 3;
+  for (const l of wrapC(B.d, rw)) { drawText(c, l, rx, ry, '#b9bdd0'); ry += 9; }
   const br = B.item && RECIPES.find(r => r.out === B.item);
-  if (br) { const s = 'Build one at the ' + benchName(br.st) + ': ' + Object.keys(br.need).map(k => br.need[k] + ' ' + IT[k].name.toLowerCase()).join(', ') + '.'; for (const l of wrapText(s, rw)) { drawText(c, l, rx, ry, '#8ff5e6'); ry += 9; } }
+  if (br) { const s = 'Build one at the ' + benchName(br.st) + ': ' + Object.keys(br.need).map(k => br.need[k] + ' ' + IT[k].name.toLowerCase()).join(', ') + '.'; for (const l of wrapC(s, rw)) { drawText(c, l, rx, ry, '#8ff5e6'); ry += 9; } }
   ry += 3;
   const list = RECIPES.map((r, i) => ({ r, i })).filter(e => e.r.st === B.st && recipeHere(e.r) && (e.r.lvl !== 3 || G.flags.seen1 || WORLD.mode === 1)).map(e => ({ r: e.r, lvlOk: recipeLevelOk(e.r), can: canCraft(e.r) && recipeLevelOk(e.r) })).sort((a, b) => b.can - a.can);
-  const rows = max(1, floor((y + h - 12 - ry) / 19)); UI.scroll = clamp(UI.scroll, 0, max(0, list.length - rows));
+  const rows = max(1, floor((bot - 2 - ry) / 19)); pscroller({ x: rx, y: ry, w: rw, h: rows * 19 }, list.length, rows);
   for (let k = 0; k < rows; k++) {
     const e = list[k + UI.scroll]; if (!e) break; const r = e.r, yy = ry + k * 19, hov = inR(rx, yy, rw, 18), outId = r.out || Object.keys(r.need)[0];
     if (hov) { c.fillStyle = '#2b2740'; c.fillRect(rx, yy, rw, 18); }
@@ -101,9 +105,12 @@ function drawBook(c) {
     drawRecipeRow(c, r, rx, yy, rw, e.lvlOk);
     if (hov) tip = recipeTip(r, e.lvlOk);
   }
+  // the sweep of light after choosing a bench
+  const sw = (now - PANEL.bookT) / 320; if (sw < 1) { const ga = c.globalAlpha; c.globalAlpha = ga * .22 * (1 - sw); c.fillStyle = KIT.col; c.fillRect(x + lw + 12 + round((w - lw - 16) * sw) - 12, top, 24, ph); c.globalAlpha = ga; }
+  const fy = y + h - 12, left = kb('use a bench: [F] by it', 'use a bench: USE by it');
   if (!list.length) drawText(c, 'Nothing yet.', rx, ry, '#8b8fa3');
-  else { const s = `${list.length} recipes${list.length > rows ? `: ${UI.scroll + 1}-${min(list.length, UI.scroll + rows)}, wheel scrolls` : ''}`; drawText(c, s, x + w - 6 - textW(s), y + h - 10, '#6a6485'); }
-  drawText(c, 'use a bench: [F] by it', x + 8, y + h - 10, '#6a6485');
+  else { const s = `${list.length} recipes${list.length > rows ? `: ${UI.scroll + 1}-${min(list.length, UI.scroll + rows)}, ${kb('wheel scrolls', 'slide to scroll')}` : ''}`; drawText(c, fitText(s, w - 24 - textW(left)), x + w - 8 - textW(fitText(s, w - 24 - textW(left))), fy, '#6a6485'); }
+  drawText(c, left, x + 8, fy, '#6a6485');
   if (tip) drawTip(c, tip);
 }
 // ---------------- trinket slots, in the WORN panel ----------------

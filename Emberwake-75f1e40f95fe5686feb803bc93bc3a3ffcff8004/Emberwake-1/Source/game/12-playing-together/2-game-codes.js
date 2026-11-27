@@ -293,44 +293,57 @@ function coopRetryTick(now) {
 
 // ---------------- the screens ----------------
 const sigSpaced = s => s.split('').join(' ');
+// PLAY TOGETHER (a place of the menu kit: a campfire with two heads, fireflies): who is here, your name, your game code
+// at scale 3 with COPY and NEW CODE, how it is going, and the way to long codes
 function drawCoopPanel(c) {
   if (COOP.long && !netGuest()) return drawCoopLong(c);
-  const nf = [...COOP.peers.values()].filter(P => P.ok && P.f).length, w = min(380, VS.uw - 16), h = 246 + nf * 12, x = round((VS.uw - w) / 2), y = round((VS.uh - h) / 2);
-  panel(c, x, y, w, h, 'PLAY TOGETHER'); hit(x, y, w, h, () => { });
-  button(c, x + w - 20, y + 2, 16, 11, 'X', () => { closeUI(); });
-  const fx = x + 10, fw = w - 20; let ty = y + 18;
-  // everyone here: how each is connected, and a way to find them
-  drawText(c, 'IN THIS WORLD: ' + coopName() + (netGuest() ? '' : ' (host)'), fx, ty, '#8ff5e6'); ty += 11;
-  for (const P of COOP.peers.values()) {
-    if (!P.ok || !P.f) continue; const f = P.f, here = netFriends().includes(f);
-    drawText(c, P.name + (P.id === 'h' ? ' (host)' : ''), fx + 8, ty, '#e8edf2'); drawText(c, P.ghostPeer ? 'through your host' : linkTag(P), fx + 96, ty, P.relay && !dcOpen(P) ? '#ffd35a' : '#8b8fa3');
-    if (here && !f.dead) button(c, fx + fw - 52, ty - 2, 50, 11, 'GO TO', () => goToFriend(f)); else drawText(c, f.dead ? 'resting' : 'elsewhere', fx + fw - 50, ty, '#6a6485');
-    ty += 12;
+  const S = KIT.sizes, narrow = menuMode() === 'narrow', w0 = min(400, VS.uw - (narrow ? 12 : 24)), fw = w0 - 20, fr = KIT.T ? 24 : 14;
+  const friends = [...COOP.peers.values()].filter(P => P.ok && P.f), guest = netGuest(), ok = netOK(), room = hotbarLayout().y - 4 - (KIT.T ? 42 : 30);
+  const L = s => wrapC(s, fw), who = 14 + friends.length * fr + 3;
+  let body, info = [];
+  const guestL = L('You are in ' + (COOP.hostName || 'a friend') + "'s world. Your pack is saved on this computer for next time."), noL = L('This window cannot connect to other computers. Open Emberwake.html in Chrome, Safari, Edge or Firefox to play together.');
+  const ready = ok && !guest && sigReady(), slow = performance.now() - SIG.startT > 7000;
+  const st = COOP.err ? [COOP.err, '#ff9a8a'] : ready ? ['Ready. Your friends open Emberwake, pick JOIN A FRIEND, and type this code. Up to 3 can join.', '#7ddc6f'] : slow ? ["Can't reach the internet right now, so friends can't find this game. Check your connection, or use long codes.", '#ffb347'] : ['Getting ready...', '#ffd35a'];
+  const stL = L(st[0]), noteL = COOP.note ? L(COOP.note) : [], ch = S.sm * 2 + S.gap + 8;
+  if (guest) body = who + guestL.length * 9 + 4;
+  else if (!ok) body = who + noL.length * 9 + 4;
+  else {
+    body = who + S.fh + 8 + 10 + ch + 6 + stL.length * 9 + 3 + noteL.length * 9 + (COOP.copied > 0 && COOP.copyFail ? 10 : 0);
+    netProbe();
+    for (const s of [netStatus(), SIG.viaRoom ? 'Friends join from this same page on claude.ai.' : 'Friends need this same version (' + GAME_VERSION + '), as the file or the app.', 'Keep the game running while friends play (switching windows is fine).']) { const l = L(s); if (29 + body + (info.length + l.length) * 9 + 4 + S.bh + 10 > room) break; info.push(...l); }
+    body += info.length * 9 + (info.length ? 4 : 0);
+  }
+  const F = menuFrame('coop', 400, 29 + body + S.bh + 10), K = pcard(c, 'coop', 0, 0, 'PLAY TOGETHER', { frame: F, foot: true, dom: true }), fx = K.x + 10, w = K.w - 20; let ty = K.by;
+  // everyone here: how each is connected, and a way to go to them
+  drawText(c, fitText('IN THIS WORLD: ' + coopName() + (guest ? '' : ' (host)'), w), fx, ty, '#8ff5e6'); ty += 14;
+  for (const P of friends) {
+    const f = P.f, here = netFriends().includes(f), tag = P.ghostPeer ? 'through your host' : linkTag(P), ry = ty + round((fr - 8) / 2) - 1, gw = KIT.T ? 56 : 46;
+    drawText(c, fitText(P.name + (P.id === 'h' ? ' (host)' : ''), 90), fx + 6, ry, '#e8edf2'); drawText(c, fitText(tag, w - 110 - gw), fx + 100, ry, P.relay && !dcOpen(P) ? '#ffd35a' : '#8b8fa3');
+    if (here && !f.dead) pbtn(c, fx + w - gw, ty, gw, fr - 3, 'GO TO', () => goToFriend(f), { hint: 'Go to ' + P.name + '.' }); else drawText(c, f.dead ? 'resting' : 'elsewhere', fx + w - textW(f.dead ? 'resting' : 'elsewhere'), ry, '#6a6485');
+    ty += fr;
   }
   ty += 3;
-  if (netGuest()) {
-    ['You are in ' + (COOP.hostName || 'a friend') + "'s world.", 'Your pack is saved on this computer for next time.'].forEach((l, i) => drawText(c, l, fx, ty + i * 10, '#d8d4e6'));
-    button(c, fx, y + h - 22, 120, 15, 'LEAVE THEIR WORLD', () => { closeUI(); quitToTitle(); }, { col: '#ff9a8a' }); return;
-  }
-  if (!netOK()) { ['This window cannot connect to other computers.', 'Open Emberwake.html in Chrome, Safari, Edge or Firefox to play together.'].forEach((l, i) => drawText(c, l, fx, ty + i * 10, '#ffb347')); return; }
+  const bw = KIT.T ? 150 : 130;
+  if (guest) { guestL.forEach((l, i) => drawText(c, l, fx, ty + i * 9, '#d8d4e6')); kbutton(c, K.x + K.w - 8 - bw, K.footY + 5, bw, 'LEAVE THEIR WORLD', () => { closeUI(); quitToTitle(); }, { danger: true, hint: 'Back to the home page. Your pack is kept.' }); pfoot(c, K, '', K.w - bw - 24); return; }
+  if (!ok) { noL.forEach((l, i) => drawText(c, l, fx, ty + i * 9, '#ffb347')); return; }
   sigHost('world');
-  drawText(c, 'YOUR NAME', fx, ty + 3, '#b9bdd0'); const el = domBox('hname', fx + 62, ty, 120, 12, { input: true, val: FORM.nick || G.nick || 'WAKER' }); const nm = cleanName(el.value); if (nm && nm !== FORM.nick) { FORM.nick = nm; if (G.p) G.p.name = nm; } ty += 20;
+  drawText(c, 'YOUR NAME', fx, ty + round((S.fh - 8) / 2), '#b9bdd0'); const el = domBox('hname', fx + 62, ty, min(140, w - 62), S.fh, { input: true, val: FORM.nick || G.nick || 'WAKER' }); const nm = cleanName(el.value); if (nm && nm !== FORM.nick) { FORM.nick = nm; if (G.p) G.p.name = nm; } ty += S.fh + 8;
   drawText(c, 'YOUR GAME CODE', fx, ty, '#b9bdd0'); ty += 10;
-  c.fillStyle = '#16121f'; c.fillRect(fx, ty, fw, 30); c.fillStyle = '#6a6485'; c.fillRect(fx, ty, fw, 1);
-  textC(c, sigSpaced(COOP.gcode || '......'), fx + (fw - 64) / 2, ty + 7, '#ffd35a', 2, textO);
-  button(c, fx + fw - 60, ty + 3, 56, 12, copyLabel(), () => copyText(COOP.gcode, 'gcopy'));
+  // the code itself, big, on a lit strip, with COPY and NEW CODE beside it
+  const cbw = KIT.T ? 72 : 58, cw = w - cbw - S.gap, code = sigSpaced(COOP.gcode || '......'), sc = textW(code) * 3 <= cw - 8 ? 3 : 2;
+  c.fillStyle = '#16121f'; c.fillRect(fx, ty, cw, ch); c.fillStyle = KIT.col; c.fillRect(fx, ty, cw, 1); c.fillStyle = '#2b2740'; c.fillRect(fx, ty + ch - 1, cw, 1);
+  textC(c, code, fx + cw / 2, ty + round((ch - 8 * sc) / 2), '#ffd35a', sc, textO);
+  kbutton(c, fx + w - cbw, ty + 3, cbw, copyLabel(), () => copyText(COOP.gcode, 'gcopy'), { small: true, tag: 'btn:COPY', hint: 'Copy the code to send it.' });
   // a fresh code would cut off anyone using this one, so it's only offered while nobody is here
-  if (!COOP.peers.size) button(c, fx + fw - 60, ty + 16, 56, 11, 'NEW CODE', () => { sigStopHosting(); COOP.gcode = sigNewCode(); sigHost('world'); sfx('ui'); });
-  ty += 36;
-  const ready = sigReady(), slow = performance.now() - SIG.startT > 7000;
-  const st = COOP.err ? [COOP.err, '#ff9a8a'] : ready ? ['Ready. Your friends open Emberwake, pick JOIN A FRIEND, and type this code. Up to 3 can join.', '#7ddc6f'] : slow ? ["Can't reach the internet right now, so friends can't find this game. Check your connection, or use long codes (below).", '#ffb347'] : ['Getting ready...', '#ffd35a'];
-  wrapDraw(c, st[0], fx, ty, fw, st[1]); ty += 24;
-  if (COOP.note) { wrapDraw(c, COOP.note, fx, ty, fw, '#7ddc6f'); ty += 12; }
-  if (COOP.copied > 0 && COOP.copyFail) copyHint(c, fx, ty);
-  netProbe(); drawText(c, netStatus(), fx, y + h - 44, '#8b8fa3');
-  drawText(c, SIG.viaRoom ? 'Friends join from this same page on claude.ai.' : 'Friends need this same version (' + GAME_VERSION + '), as the file or the app.', fx, y + h - 34, '#8b8fa3');
-  drawText(c, 'Keep the game running while friends play (switching windows is fine).', fx, y + h - 24, '#8b8fa3');
-  button(c, x + w - 132, y + h - 15, 124, 11, 'USE LONG CODES INSTEAD', () => { COOP.long = true; COOP.err = ''; sfx('ui'); });
+  if (!COOP.peers.size) kbutton(c, fx + w - cbw, ty + 3 + S.sm + S.gap, cbw, 'NEW CODE', () => { sigStopHosting(); COOP.gcode = sigNewCode(); sigHost('world'); sfx('ui'); }, { small: true, hint: 'A different code (the old one stops working).' });
+  ty += ch + 6;
+  stL.forEach(l => { drawText(c, l, fx, ty, st[1]); ty += 9; }); ty += 3;
+  noteL.forEach(l => { drawText(c, l, fx, ty, '#7ddc6f'); ty += 9; });
+  if (COOP.copied > 0 && COOP.copyFail) { copyHint(c, fx, ty); ty += 10; }
+  info.forEach((l, i) => drawText(c, l, fx, K.footY - 4 - (info.length - i) * 9, '#8b8fa3'));
+  const lw = KIT.T ? 176 : 150;
+  kbutton(c, K.x + K.w - 8 - lw, K.footY + 5 + round((S.bh - S.sm) / 2), lw, 'USE LONG CODES INSTEAD', () => { COOP.long = true; COOP.err = ''; sfx('ui'); }, { small: true, short: 'LONG CODES', hint: 'No internet lookup: you swap two long codes by chat instead.' });
+  pfoot(c, K, kb('Esc closes this; your world keeps running.', 'Your world keeps running while this is open.'), K.w - lw - 24);
 }
 // ---------------- JOIN A FRIEND: THE SIGNAL BEACON (built with the menu kit, 10-interface/4-menu-kit.js) ----------------
 // Two cards: YOU (the name and look you bring) and THEIR CODE (the six-letter game code, a lamp lit for each letter).

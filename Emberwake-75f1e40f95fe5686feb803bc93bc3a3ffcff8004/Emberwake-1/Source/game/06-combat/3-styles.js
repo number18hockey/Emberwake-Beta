@@ -226,30 +226,30 @@ function readScroll() {
   removeItem('scroll', 1); masteryGain(ty, MAST_AT[L] - masteryXp(ty) + .01); say(`The scroll shows a form for your ${WTYPE[ty].n.toLowerCase()}.`);
 }
 
-// ---------------- the STYLES page of the codex ----------------
-function drawStylesPage(c, x, y, w, h, tabs) {
+// ---------------- the STYLES page of the codex (its card and tabs are drawn by drawCodex; B is the box under them) ----------------
+function drawStylesPage(c, B, x, w) {
   const W = G.p && heldOf(G.p), ty = W && W.type === 'weapon' ? weaponType(W) : null;
-  const known = Object.keys(G.mast || {}).filter(t => STYLES[t]), rows = [];
-  panel(c, x, y, w, h, 'STYLES'); hit(x, y, w, h, () => { }); tabs();
+  const known = Object.keys(G.mast || {}).filter(t => STYLES[t]), rows = [], key = kb('V', '');
   if (!ty || !STYLES[ty]) rows.push({ t: 'Hold a weapon to see its styles.', col: '#b9bdd0' });
   else {
     const L = styleLevel(ty), xp = floor(masteryXp(ty));
     rows.push({ h: `${WTYPE[ty].n.toUpperCase()}  RANK ${L}/5   ${L < 5 ? `${xp}/${MAST_AT[L]} mastery` : 'mastered'}` });
     STYLES[ty].forEach(([, name, o], k) => rows.push({ k, on: k < L, name, ctx: ['still', 'moving', 'holding S', 'in the air', 'after a dodge'][k], rider: [o.el === 'pin' ? 'pins' : o.el ? o.el + 's' : '', o.cr ? 'craters' : '', o.st ? 'staggers' : '', o.pull ? 'pulls' : '', o.crit ? 'always crits' : '', o.ifr ? 'untouchable' : ''].filter(Boolean).join(', ') }));
-    rows.push({ h: 'PAIR FINISHERS  land a style, then [X] within a breath' });
-    if (G.gear.off) rows.push({ t: `Off hand: ${IT[G.gear.off.id].name}`, col: '#8ff5e6' }); else rows.push({ t: 'Off hand empty: put a weapon in the OFF slot of your pack screen.', col: '#8b8fa3' });
+    rows.push({ h: kb('PAIR FINISHERS  land a style, then [X] within a breath', 'PAIR FINISHERS  land a style, then swap hands within a breath') });
+    if (G.gear.off) rows.push({ t: `Off hand: ${IT[G.gear.off.id].name}`, col: '#8ff5e6' }); else for (const l of wrapC('Off hand empty: put a weapon in the OFF slot of your pack screen.', w - 4)) rows.push({ t: l, col: '#8b8fa3' });
     for (const dst in PAIR_BASE) { if (dst === W.set) continue; const id = `P_${W.set}_${dst}`, m = MOVESETS[dst].moves[id]; if (m) rows.push({ pair: 1, on: G.pairsKnown && G.pairsKnown.has(id), name: m.name, ctx: `into a ${SET_TITLE[dst]}` }); }
   }
   rows.push({ h: 'TRAINING' });
-  for (const t of wrapText('Every blow you land teaches you a little; style blows and kills teach more. Drills teach the most: [F] at Juno\'s post in the dojo, or at a Practice Post you build at a workbench. Juno shows you the first style of anything you carry to her. Technique scrolls from old chests teach a whole rank.', w - 20)) rows.push({ t, col: '#b9bdd0' });
+  for (const t of wrapC('Every blow you land teaches you a little; style blows and kills teach more. Drills teach the most: ' + kb('[F]', 'USE') + ' at Juno\'s post in the dojo, or at a Practice Post you build at a workbench. Juno shows you the first style of anything you carry to her. Technique scrolls from old chests teach a whole rank.', w - 4)) rows.push({ t, col: '#b9bdd0' });
   if (known.length) { rows.push({ h: 'YOUR WEAPONS' }); for (const t of known) rows.push({ t: `${WTYPE[t].n}: rank ${styleLevel(t)}/5`, col: '#e8edf2' }); }
-  const vis = floor((h - 30) / 10); UI.scroll = clamp(UI.scroll, 0, max(0, rows.length - vis));
-  for (let i = 0; i < vis; i++) {
-    const r = rows[i + UI.scroll]; if (!r) break; const ry = y + 16 + i * 10;
-    if (r.h) { textS(c, r.h, x + 6, ry, '#ffd35a'); continue; } if (r.t) { drawText(c, r.t, x + 8, ry, r.col); continue; }
-    c.fillStyle = r.on ? (r.pair ? '#8ff5e6' : '#ffd35a') : '#4a4460'; c.fillRect(x + 7, ry + 1, 3, 5);
-    if (r.pair) { drawText(c, r.on ? r.name : '???', x + 13, ry, r.on ? '#fff' : '#8b8fa3'); drawText(c, r.ctx, x + 110, ry, '#8b8fa3'); continue; }
-    drawText(c, `${ROMAN[r.k]}  ${r.on ? r.name : '???'}`, x + 13, ry, r.on ? '#fff' : '#8b8fa3'); drawText(c, `V ${r.ctx}`, x + 122, ry, r.on ? '#8ff5e6' : '#6a6485'); if (r.on && r.rider) drawText(c, r.rider, x + 196, ry, '#ffb347');
-  }
+  const c1 = min(104, round(w * .34)), c2 = min(c1 + 82, round(w * .62));
+  plist(c, B, rows.length, 10, 'codex', (i, ry) => {
+    const r = rows[i];
+    if (r.h) { textS(c, fitText(r.h, w), x, ry, '#ffd35a'); return; } if (r.t) { drawText(c, r.t, x + 2, ry, r.col); return; }
+    c.fillStyle = r.on ? (r.pair ? '#8ff5e6' : '#ffd35a') : '#4a4460'; c.fillRect(x + 1, ry + 1, 3, 5);
+    if (r.pair) { drawText(c, fitText(r.on ? r.name : '???', c1 - 10), x + 7, ry, r.on ? '#fff' : '#8b8fa3'); drawText(c, fitText(r.ctx, w - c1), x + c1, ry, '#8b8fa3'); return; }
+    drawText(c, fitText(`${ROMAN[r.k]}  ${r.on ? r.name : '???'}`, c1 - 10), x + 7, ry, r.on ? '#fff' : '#8b8fa3'); drawText(c, fitText((key ? key + ' ' : '') + r.ctx, c2 - c1 - 4), x + c1, ry, r.on ? '#8ff5e6' : '#6a6485');
+    if (r.on && r.rider) drawText(c, fitText(r.rider, w - c2), x + c2, ry, '#ffb347');
+  });
 }
 buildStyles();

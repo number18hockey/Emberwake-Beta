@@ -235,9 +235,12 @@ const ENDING = [
   'You were ash on the wind once. Something said rise. You did.'
 ];
 function drawEndingUI(c) {
-  UI.endT = (UI.endT || 0) + 1; const w = min(VS.uw - 10, 320), x = round((VS.uw - w) / 2), lines = ENDING.map(s => wrapText(s, w - 24)), n = lines.reduce((a, l) => a + l.length, 0), h = 64 + n * 10 + ENDING.length * 6, y = round((VS.uh - h) / 2);
-  c.fillStyle = `rgba(8,6,16,${min(.82, UI.endT / 120)})`; c.fillRect(0, 0, VS.uw, VS.uh);
-  panel(c, x, y, w, h, 'THE DAWNFORGE'); hit(x, y, w, h, () => { }); let yy = y + 18;
-  lines.forEach((L, k) => { const a = clamp((UI.endT - k * 70) / 50, 0, 1); c.globalAlpha = a; for (const l of L) { drawText(c, l, x + 12, yy, k === lines.length - 1 ? '#ffd35a' : '#e8e4f4'); yy += 10; } yy += 6; c.globalAlpha = 1; });
-  if (UI.endT > ENDING.length * 70) button(c, x + w / 2 - 50, y + h - 20, 100, 13, 'CARRY ON', () => { closeUI(); sfx('ui'); G.banner = { text: 'THE DAWN IS LIT', sub: 'the world is yours to keep walking', t: 0 }; });
+  // THE DAWNFORGE: the world darkens, the lines come one by one under a rising sun, then CARRY ON
+  UI.endT = (UI.endT || 0) + 1; const S = KIT.sizes, w0 = min(340, VS.uw - (menuMode() === 'narrow' ? 12 : 24)), lines = ENDING.map(s => wrapC(s, w0 - 24)), n = lines.reduce((a, l) => a + l.length, 0), need = n * 10 + ENDING.length * 6;
+  c.fillStyle = `rgba(8,6,16,${min(.6, UI.endT / 160)})`; c.fillRect(0, 0, VS.uw, VS.uh);
+  const F = menuFrame('ending', 340, 29 + need + 4 + S.bh + 10), K = pcard(c, 'ending', 0, 0, 'THE DAWNFORGE', { frame: F, foot: true, close: false }), ga = c.globalAlpha;
+  const B = { x: K.x + 1, y: K.by, w: K.w - 2, h: K.footY - 2 - K.by }, sc = need > B.h, dy = sc ? kscroll(c, B, need, 'ending') : 0; let yy = K.by + 2 + dy;
+  lines.forEach((L, k) => { const a = clamp((UI.endT - k * 70) / 50, 0, 1); c.globalAlpha = ga * a; for (const l of L) { drawText(c, l, K.x + 12, yy, k === lines.length - 1 ? KIT.col : '#e8e4f4'); yy += 10; } yy += 6; c.globalAlpha = ga; });
+  if (sc) kscrollEnd(c);
+  if (UI.endT > ENDING.length * 70) { const bw = KIT.T ? 112 : 100; kbutton(c, K.x + round((K.w - bw) / 2), K.footY + 5, bw, 'CARRY ON', () => { closeUI(); sfx('ui'); G.banner = { text: 'THE DAWN IS LIT', sub: 'the world is yours to keep walking', t: 0 }; }, { main: true, hint: 'The world is yours to keep walking.' }); }
 }
