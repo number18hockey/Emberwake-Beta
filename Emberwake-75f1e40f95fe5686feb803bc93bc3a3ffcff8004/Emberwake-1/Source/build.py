@@ -89,6 +89,7 @@ canvas{display:block;width:100vw;height:100vh;height:100dvh;image-rendering:pixe
 .touchPill:active,.touchPill.pressed{filter:brightness(1.5)}
 #mobileClose{border-color:rgba(255,211,90,.8);color:#fff1a8}
 #mobileControls.panel #mobileBar{left:auto;right:calc(env(safe-area-inset-right,0px) + 6px);top:calc(env(safe-area-inset-top,0px) + 2px)}
+@media (max-height:380px){#mobileBar{flex-wrap:wrap;align-content:flex-start;max-height:calc(100vh - env(safe-area-inset-top,0px) - env(safe-area-inset-bottom,0px) - 102px - clamp(112px,22vmin,156px))}}
 @media (orientation:portrait){#movePad,#mobileJump,#attackLight{bottom:calc(env(safe-area-inset-bottom,0px) + 66px)}#mobileDash{bottom:calc(env(safe-area-inset-bottom,0px) + max(138px,66px + clamp(54px,13vmin,68px) + 8px))}#attackHeavy{bottom:calc(env(safe-area-inset-bottom,0px) + max(144px,66px + clamp(58px,15vmin,82px) + 8px))}#mobileUse{bottom:calc(env(safe-area-inset-bottom,0px) + 240px)}#mobileBar{top:calc(env(safe-area-inset-top,0px) + 130px)}}
 </style>
 </head>

@@ -97,6 +97,12 @@ function brRewardMatch() {
   brSaveProfile(p);
   BR.rewardText = `+${xp} XP` + (won ? '  ·  +100 COINS' : '') + (ranked ? `  ·  ELO ${p.elo}` : '');
 }
+// Fallen with a final place and leaving before the end (PLAY AGAIN, LEAVE, BACK TO LOBBY): the match counts as if you had
+// stayed to watch it close. Both payers already refuse to pay twice, so every leave path may call this.
+function brPayLeaving() {
+  if (!BR.on || !G.p || !G.p.dead || !(BR.place > 0) || BR.phase === 'over' || BR.phase === 'lobby') return;
+  if (BR.wild) brRewardMatch(); else trCareerSave();
+}
 
 // ---------------- how hard things hit here ----------------
 // A match is won by how you fight, so better metal helps without deciding it: half of what a weapon has over flint
@@ -242,7 +248,7 @@ function wBrSpill(f) {
   else if (f.br) { if (f.wid && f.wid !== 'fists') out.push([f.wid, 1]); if (f.br.heals > 0) out.push(['br_salve', min(3, f.br.heals)]); if (f.br.wards > 0) out.push(['br_shard', min(2, f.br.wards)]); if (f.br.arrows > 0) out.push(['arrow', min(10, f.br.arrows)]); const bag = Object.entries(f.br.bag).filter(e => IT[e[0]] && e[1] > 0).sort((a, b) => b[1] - a[1]).slice(0, 4); for (const [id, n] of bag) out.push([id, min(6, n)]); }
   return out;
 }
-function wBrDropPile(x, y, items) { items = items.slice(0, 14); items.forEach(([id, n], k) => { if (IT[id] && n > 0) spawnDrop(id, n, x + frand(-5, 5), y - 4, (k - (items.length - 1) / 2) * .22, -.8 - frand(.5), true, 'd' + round(x) + ':' + round(y) + ':' + k); }); }
+function wBrDropPile(x, y, items) { items = items.slice(0, 14); items.forEach(([id, n], k) => { if (IT[id] && n > 0) wSpawnDrop(id, n, x + frand(-5, 5), y - 4, (k - (items.length - 1) / 2) * .22, -.8 - frand(.5), 'd' + round(x) + ':' + round(y) + ':' + k); }); }
 
 // ---------------- starting a match ----------------
 // everyone runs this with the same seed, so everyone stands on the same island

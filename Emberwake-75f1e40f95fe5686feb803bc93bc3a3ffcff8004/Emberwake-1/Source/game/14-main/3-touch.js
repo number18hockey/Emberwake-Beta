@@ -96,9 +96,23 @@ bindTouchButton('mobileClose', () => { if (UI.open) { closeUI(); sfx('ui'); } })
 bindTouchButton('mobileChat', () => { if (touchPlay() && !COOP.chatOpen && chatKey()) drawChatBox(ctx); });
 // (PACT is the P key of a match in the Wilds, and is seen only there)
 const touchPactBtn = document.getElementById('mobilePact'), touchMapBtn = document.getElementById('mobileMap'), touchPackBtn = document.getElementById('mobilePack'), touchChatBtn = document.getElementById('mobileChat');
+// Is this patch of the picture (in ui px) clear of every touch control on screen? Something a finger must tap (the Trials'
+// perk cards, the map's zoom) is moved until it is, or a tap there would move, strike or close instead.
+// (Hidden controls measure nothing, so a computer never moves anything.)
+function touchClear(x, y, w, h) {
+  if (!mobileDevice) return true;
+  const r = cv.getBoundingClientRect(), k = cv.width / (r.width || 1) / VS.ui;
+  for (const el of mobileControls.querySelectorAll('#movePad, .touchButton, .touchPill')) {
+    const b = el.getBoundingClientRect(); if (!b.width || !b.height) continue;
+    const bx = (b.left - r.left) * k, by = (b.top - r.top) * k;
+    if (bx < x + w && bx + b.width * k > x && by < y + h && by + b.height * k > y) return false;
+  }
+  return true;
+}
 function syncMobileControls() {
   if (!mobileDevice) return; // (a mouse's clicks and keys are its own business)
-  const play = G.state === 'play' && !G.dialog && !G.cine, visible = play && !UI.open;
+  // a finished match shows its own end panel (PLAY AGAIN, LEAVE): the sticks would only lie over it
+  const play = G.state === 'play' && !G.dialog && !G.cine, over = WORLD.royale && BR.on && BR.phase === 'over', visible = play && !UI.open && !over;
   mobileControls.classList.toggle('visible', visible); mobileControls.classList.toggle('panel', play && !!UI.open); mobileControls.setAttribute('aria-hidden', String(!play));
   // no button for what would do nothing: there is no pack in the Cinder Ring, no map there or before you have drawn one, and nobody to talk to alone
   if (visible) { const ring = WORLD.arena && !WORLD.royale; touchPackBtn.classList.toggle('off', ring); touchMapBtn.classList.toggle('off', ring || (!WORLD.royale && !hasUtil('fieldmap'))); touchChatBtn.classList.toggle('off', !COOP.role); touchPactBtn.classList.toggle('off', !wildOn()); }

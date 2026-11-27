@@ -148,7 +148,9 @@ function easyJob(r, ri, left) { return { kind: 'easy', r, ri, t: 0, need: r.loot
 // ---------------- timed stations: campfire, kiln, drying rack ----------------
 function addFuel(st, fire) {
   if (WORLD.mode === 1) { st.fuel = 9999; st.q = 1; return; }
-  const order = fire ? ['stick', 'bark', 'log', 'peat', 'charcoal', 'coal', 'cinder'] : ['log', 'charcoal', 'coal', 'peat', 'cinder', 'stick', 'bark'];
+  // a kiln whose work needs more heat than logs can give (glass) takes the hottest fuel held first
+  const need = fire ? 0 : max(0, ...(st.slots || []).map(sl => (sl && RECIPES[sl.r] && RECIPES[sl.r].temp) || 0));
+  const order = fire ? ['stick', 'bark', 'log', 'peat', 'charcoal', 'coal', 'cinder'] : need > 5 * FUELQ.log ? ['coal', 'charcoal', 'cinder', 'peat', 'log', 'stick', 'bark'] : ['log', 'charcoal', 'coal', 'peat', 'cinder', 'stick', 'bark'];
   const id = order.find(hasItem); if (!id) { sfx('deny'); smsg('No fuel: sticks, logs, peat, charcoal or coal.', '#e2483b'); return; }
   if (!craftEasy() && st.fuel <= 0 && !hasItem('flint') && !hasItem('torch') && !hasItem('cinder_gland')) { sfx('deny'); smsg('No spark. Carry flint, a torch or a cinder gland.', '#e2483b'); return; }
   removeItem(id, 1); st.fuel = min(fire ? 9000 : 12000, st.fuel + FUELV[id]); st.q = lerp(st.q || .75, FUELQ[id], .6); sfx('fire', 0); smsg(`+ ${IT[id].name}`, '#ffb347');
@@ -199,11 +201,15 @@ function drawChest(c, B, st) {
 function drawWay(c, B, S) {
   const ws = [...STN.entries()].filter(([i, s]) => s.t === WAYSTONE && tiles[i] === WAYSTONE); let y = B.y + 16;
   textS(c, 'Touch a stone you have raised to step to it.', B.x + 8, y, '#b49cff'); y += 12;
-  for (const [i, s] of ws) {
+  // more stones than fit: nearest first, and the wheel (or a finger) scrolls the rest into view
+  const fit = floor((B.h - 44) / 16) + 1, more = ws.length > fit, rows = more ? max(1, fit - 1) : fit; let list = ws;
+  if (more) { const at = ([i]) => abs((i % WW) * T - G.p.x); list = ws.slice().sort((a, b) => at(a) - at(b)); UI.scroll = clamp(UI.scroll, 0, ws.length - rows); list = list.slice(UI.scroll, UI.scroll + rows); }
+  for (const [i, s] of list) {
     const x = i % WW, yy = (i / WW) | 0, here = i === S.i, d = round((x * T - G.p.x) / T);
     button(c, B.x + 8, y, B.w - 16, 14, `${s.name}   ${here ? '(here)' : d > 0 ? d + ' paces east' : -d + ' paces west'}`, () => { if (here) return; closeUI(); travelTo(x, yy); }, { off: here });
-    y += 16; if (y > B.y + B.h - 16) break;
+    y += 16; if (!more && y > B.y + B.h - 16) break;
   }
+  if (more) drawText(c, `${UI.scroll + 1}-${UI.scroll + rows} of ${ws.length}  (wheel)`, B.x + 8, y + 2, '#6a6485');
   if (ws.length < 2) drawText(c, 'Raise another waystone somewhere else to travel between them.', B.x + 8, y + 4, '#8b8fa3');
 }
 function travelTo(x, y) { const p = G.p; streamTo(x * T, true); G.flash = .8; sfx('tele', 0); sfx('shrine', 0); p.x = p.px = x * T + 1; p.y = p.py = (y - 3) * T; p.vx = p.vy = 0; snapCam(); burst(p.x + 3, p.y + 10, 24, ['#b49cff', '#e0d2ff', '#ffffff'], 2, 40, { glow: 1, g: -.02 }); G.flags.travelled = true; }
@@ -405,9 +411,11 @@ const MAPV = { z: 3, cx: -1, cy: -1, drag: null };
 function mapZoom(d) { MAPV.z = clamp(MAPV.z * (d < 0 ? 1.5 : 1 / 1.5), .5, 16); sfx('ui'); }
 function drawMap(c) {
   const w = min(VS.uw - 10, 520), h = min(VS.uh - 34, 320), x = round((VS.uw - w) / 2), y = round((VS.uh - h) / 2) - 6; panel(c, x, y, w, h, 'FIELD MAP'); hit(x, y, w, h, () => { });
-  button(c, x + w - 13, y + 1, 12, 10, 'x', () => { closeUI(); sfx('ui'); });
+  // on a phone the CLOSE pill sits over the top right corner: the row of buttons steps left of it
+  let sx = x + w; if (mobileDevice) while (sx > x + 160 && !touchClear(sx - 120, y + 1, 120, 10)) sx -= 4;
+  button(c, sx - 13, y + 1, 12, 10, 'x', () => { closeUI(); sfx('ui'); });
   if (!MAPCV) { drawText(c, 'Nothing charted yet.', x + 8, y + 20, '#8b8fa3'); return; }
-  button(c, x + w - 70, y + 1, 22, 10, '+', () => mapZoom(-1)); button(c, x + w - 46, y + 1, 22, 10, '-', () => mapZoom(1)); button(c, x + w - 120, y + 1, 48, 10, 'ON ME', () => { MAPV.cx = (G.p.x + 3) / T / MAPS; MAPV.cy = (G.p.y + 10) / T / MAPS; sfx('ui'); });
+  button(c, sx - 70, y + 1, 22, 10, '+', () => mapZoom(-1)); button(c, sx - 46, y + 1, 22, 10, '-', () => mapZoom(1)); button(c, sx - 120, y + 1, 48, 10, 'ON ME', () => { MAPV.cx = (G.p.x + 3) / T / MAPS; MAPV.cy = (G.p.y + 10) / T / MAPS; sfx('ui'); });
   const vx = x + 4, vy = y + 14, vw = w - 8, vh = h - 30, k = MAPV.z;
   if (MAPV.cx < 0) { MAPV.cx = (G.p.x + 3) / T / MAPS; MAPV.cy = (G.p.y + 10) / T / MAPS; }
   if (mouse.l && inR(vx, vy, vw, vh)) { if (MAPV.drag) { MAPV.cx -= (mouse.ux - MAPV.drag[0]) / k; MAPV.cy -= (mouse.uy - MAPV.drag[1]) / k; } MAPV.drag = [mouse.ux, mouse.uy]; } else MAPV.drag = null;

@@ -7,7 +7,7 @@
 //  water; everyone runs their own Waker, digging and building, and
 //  shares it. Loot is everyone's own: each of you gets your share.
 // ============================================================
-const COOP = { role: null, me: '', seq: 1, pid: 0, peers: new Map(), pend: null, out: [], tiles: new Set(), stns: new Set(), applying: false, ghostFx: false, nid: 1, ghosts: new Map(), hghosts: new Map(), chat: [], note: '', t: 0, saveT: 0, uid: 0, hostName: '', busy: false, code: '', reply: '', err: '', chatOpen: false };
+const COOP = { role: null, me: '', seq: 1, pid: 0, peers: new Map(), pend: null, out: [], tiles: new Set(), stns: new Set(), applying: false, ghostFx: false, nid: 1, ghosts: new Map(), hghosts: new Map(), chat: [], note: '', t: 0, saveT: 0, uid: 0, takenU: new Set(), tookU: new Map(), hostName: '', busy: false, code: '', reply: '', err: '', chatOpen: false };
 // (NETV says which games can play together: only those with the same number. It went up to 7 when hats, the Wilds and the two
 // new lands came in: a game without them could not read what this one sends, so the two are told to share the newest files)
 const NETV = 7, MAXG = 3;
@@ -117,7 +117,7 @@ function coopReset() {
   for (const P of COOP.peers.values()) { try { P.dc && P.dc.close(); } catch (e) { } try { P.pc && P.pc.close(); } catch (e) { } if (P.f) P.f.gone = true; }
   if (COOP.pend && COOP.pend.pc) try { COOP.pend.pc.close(); } catch (e) { }
   for (const g of COOP.ghosts.values()) g.dead = true; for (const f of COOP.hghosts.values()) f.gone = true;
-  Object.assign(COOP, { role: null, me: '', pend: null, code: '', reply: '', busy: false, note: '', err: '', chatOpen: false, joined: false, br: false, ring: false, locks: new Map(), myLock: -1, slow: false, entering: false, backlog: [] }); COOP.peers.clear(); COOP.ghosts.clear(); COOP.hghosts.clear(); COOP.tiles.clear(); COOP.stns.clear(); COOP.applying = false;
+  Object.assign(COOP, { role: null, me: '', pend: null, code: '', reply: '', busy: false, note: '', err: '', chatOpen: false, joined: false, br: false, ring: false, locks: new Map(), myLock: -1, slow: false, entering: false, backlog: [] }); COOP.peers.clear(); COOP.ghosts.clear(); COOP.hghosts.clear(); COOP.tiles.clear(); COOP.stns.clear(); COOP.takenU.clear(); COOP.tookU.clear(); COOP.applying = false;
   if (G.fighters) G.fighters = G.fighters.filter(f => !f.gone); WORLD.guest = false;
 }
 function coopLeave() {
@@ -165,7 +165,9 @@ function onMsg(P, m, raw) {
     case 'boom': { const x = num(m.x), y = num(m.y); if (G.p && abs(G.p.x - x) < 120 * T && abs(G.p.y - y) < 80 * T) blastFelt(x, y); if (H) sendAll(m, P); return; }
     case 'lk': onLock(P, m); return;
     case 'drop': netDropIn(m); if (H) sendAll(m, P); return;
-    case 'take': netTakeIn(m); if (H) sendAll(m, P); return;
+    // the host says who reached a thrown thing first: a later take is sent back to give it up
+    case 'take': if (H) { if (typeof m.u !== 'string') return; if (COOP.takenU.has(m.u)) { sendTo(P, { t: 'untake', u: m.u }); return; } netTaken(m.u); } netTakeIn(m); if (H) sendAll(m, P); return;
+    case 'untake': if (!H) netUntake(m); return;
     case 'bye': if (COOP.br) { if (H) brRtcLost(P); else brRtcLost(P); return; } if (H) coopLost(P); else { const was = COOP.joined; guestSave(); coopReset(); if (was) { G.state = 'join'; UI.open = null; G.dialog = null; COOP.err = 'Your host closed their world. Your pack is kept for next time.'; } } return;
     // guests tell the host what they did to its creatures
     case 'hit': if (H) hostHit(P, m); return;
@@ -516,7 +518,14 @@ function netGhostShot(m) {
 function netDropOut(d) { if (wildOn() || !COOP.role || COOP.applying || !d) return; d.uid = COOP.me + ':' + (++COOP.uid); sendAll({ t: 'drop', u: d.uid, id: d.id, n: d.n, x: r1(d.x), y: r1(d.y), vx: r2(d.vx), vy: r2(d.vy) }); }
 function netDropIn(m) { if (!IT[m.id] || !(m.n > 0) || typeof m.u !== 'string' || G.drops.some(d => d.uid === m.u)) return; const x = num(m.x), y = num(m.y); G.drops.push({ id: m.id, n: clamp(m.n | 0, 1, IT[m.id].stack), x, y, px: x, py: y, w: 6, h: 6, vx: num(m.vx), vy: num(m.vy), t: 0, delay: 40, onGround: false, uid: m.u }); }
 function netTakeIn(m) { for (let i = G.drops.length - 1; i >= 0; i--) if (G.drops[i].uid === m.u) G.drops.splice(i, 1); }
-function netTook(d) { if (wildOn()) { brTook(d); return; } if (COOP.role && d.uid) sendAll({ t: 'take', u: d.uid }); }
+function netTook(d) {
+  if (wildOn()) { brTook(d); return; } if (!COOP.role || !d.uid) return;
+  // the host's own pick-up obeys the same first-come rule; a guest remembers what it took until the host may say it was second
+  if (netHost()) { if (COOP.takenU.has(d.uid)) { removeItem(d.id, d.n); return; } netTaken(d.uid); } else { COOP.tookU.set(d.uid, [d.id, d.n]); if (COOP.tookU.size > 300) COOP.tookU.delete(COOP.tookU.keys().next().value); }
+  sendAll({ t: 'take', u: d.uid });
+}
+function netTaken(u) { COOP.takenU.add(u); if (COOP.takenU.size > 3000) COOP.takenU.delete(COOP.takenU.values().next().value); }
+function netUntake(m) { const t = COOP.tookU.get(m.u); if (!t) return; COOP.tookU.delete(m.u); removeItem(t[0], t[1]); say('A friend reached it first.'); }
 
 // ---------------- the sky and the clock follow the host ----------------
 function worldState() { return { t: 'world', c: r2(G.clock * 1e4) / 1e4, ev: G.ev || null, dev: G.dev || null, devT: G.devT | 0, d: r2(worldDays()), wx: G.wx ? [G.wx.k, G.wx.t | 0, r2(G.wx.a)] : 0 }; }

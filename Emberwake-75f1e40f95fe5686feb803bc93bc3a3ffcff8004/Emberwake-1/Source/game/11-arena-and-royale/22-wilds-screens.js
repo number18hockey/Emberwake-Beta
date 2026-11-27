@@ -266,7 +266,7 @@ function wBrDeadPanel(c) {
   if (p.deadT > 60) { const bw = 110, x = round(uw / 2 - bw - 4); if (BR.via !== 'solo') button(c, x, uh - 34, bw, 14, 'BACK TO LOBBY', () => wBrBackToLobby()); else button(c, x, uh - 34, bw, 14, 'PLAY AGAIN', () => brAgain()); button(c, round(uw / 2 + 4), uh - 34, bw, 14, 'LEAVE', () => wBrLeave()); }
 }
 // the island takes a moment to raise: say so instead of freezing on the last frame
-function brAgain() { G.state = 'loading'; G.loadMsg = 'Raising the island...'; setTimeout(wBrSolo, 40); }
+function brAgain() { brPayLeaving(); G.state = 'loading'; G.loadMsg = 'Raising the island...'; setTimeout(wBrSolo, 40); }
 function wBrResults(c) {
   const uw = VS.uw, uh = VS.uh, w = min(280, uw - 16), h = 108, x = round((uw - w) / 2), y = round(uh * .52);
   panel(c, x, y, w, h, BR.winMe ? 'VICTORY' : 'THE ASHFALL SETTLES');

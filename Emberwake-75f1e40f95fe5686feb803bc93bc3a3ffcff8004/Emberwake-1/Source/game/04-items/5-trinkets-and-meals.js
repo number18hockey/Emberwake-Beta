@@ -223,9 +223,11 @@ R('oven', 'glow_stew', 2, { glowcap: 2, meat: 1, jug_w: 1 }, { ret: { jug: 1 } }
 R('oven', 'miner_stew', 2, { rmorel: 2, meat: 1, salt: 1 }); R('oven', 'wakers_feast', 1, { hunter_pie: 1, berry_pie: 1, honey_cake: 1 });
 R('oven', 'cmeat', 2, { meat: 2 }); R('oven', 'tea', 2, { fiber: 4, jug_w: 1 }, { ret: { jug: 1 } });
 // ---------------- saving ----------------
-const trinkSave = () => ({ trink: (G.trink || []).map(id => id || ''), meal: G.meal && G.meal.t > 0 ? { k: G.meal.k, id: G.meal.id, t: round(G.meal.t) } : null, rest: round(G.rest || 0) });
+const trinkSave = () => ({ trink: (G.trink || []).map(id => id || ''), meal: G.meal && G.meal.t > 0 ? { k: G.meal.k, id: G.meal.id, t: round(G.meal.t) } : null, rest: round(G.rest || 0), ...(G.brew && G.brew.t > 0 ? { brew: { k: G.brew.k, t: round(G.brew.t) } } : {}) });
 function trinkLoad(o) {
-  G.trink = []; G.meal = null; G.rest = 0; BOON_C = null; if (!o) { trinkFit(); return; }
+  G.trink = []; G.meal = null; G.rest = 0; G.brew = null; BOON_C = null; if (!o) { trinkFit(); return; }
   if (Array.isArray(o.trink)) o.trink.slice(0, TRINK_MAX).forEach((id, k) => { G.trink[k] = IT[id] && IT[id].type === 'trinket' ? id : null; });
   trinkFit(); if (o.meal && MEALB[o.meal.k]) G.meal = { k: o.meal.k, id: IT[o.meal.id] ? o.meal.id : '', t: clamp(o.meal.t | 0, 0, 30000) }; G.rest = clamp(o.rest | 0, 0, 40000);
+  // a brew is kept like a meal (it used to be lost on SAVE & QUIT)
+  if (o.brew && (o.brew.k === 'swift' || o.brew.k === 'might')) { const t = clamp(o.brew.t | 0, 0, 2400); if (t > 0) G.brew = { k: o.brew.k, t }; }
 }

@@ -19,6 +19,8 @@ async def run():
         await h.step(3)
         if await h.ev("!!G.dialog"): await h.ev("dialogAdvance()")
     print('after juno rank', await h.ev("styleLevel('greatsword')"), await h.ev("masteryXp('greatsword')"))
+    # bare fists at the post: refused, nothing breaks (it used to throw every frame)
+    print('drill with bare fists', await h.ev("(()=>{ const s=inv[0], n=OOPS.n; inv[0]=null; startDrill(0,0,%s); const r=[G.drill, OOPS.n-n]; inv[0]=s; return r; })()" % D))
     # a drill at the dummy: do what it calls for
     await h.ev("(()=>{ const d=%s, p=G.p; p.x=p.px=d.x+14; p.y=p.py=d.y+d.h-p.h; p.face=-1; startDrill(0,0,d); })()" % D)
     print('drill', await h.ev("G.drill && G.drill.steps"))

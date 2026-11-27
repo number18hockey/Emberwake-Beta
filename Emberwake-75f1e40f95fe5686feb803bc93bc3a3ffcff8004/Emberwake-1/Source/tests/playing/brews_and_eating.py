@@ -59,6 +59,10 @@ async def main():
     r = await h.ev("(() => { let n = 20; while (G.p.consume && n < 300) { tick(); n++; } return [n, G.brew && G.brew.k, G.brew && G.brew.t, brewMul('swift'), combatDmgMul(G.p), countItem('swiftbrew')]; })()")
     res['Quickstep: ticks to drink, brew, time left, walk x, blow x, left'] = r
     must(r[1] == 'swift' and r[3] == 1.28 and r[4] == 1 and r[5] == 0, 'the Quickstep brew should start')
+    # a brew is kept over SAVE & QUIT like a meal (it used to be lost)
+    r = await h.ev("(() => { const b = [G.brew.k, G.brew.t], o = JSON.parse(JSON.stringify(trinkSave())); G.brew = null; trinkLoad(o); return [G.brew && G.brew.k, G.brew && G.brew.t === b[1]]; })()")
+    res['Quickstep through a save: brew, same time left'] = r
+    must(r == ['swift', True], 'the Quickstep brew should be saved')
     v1 = await h.ev(WALK)
     await h.ev("G.brew.t = 2;"); await h.step(3, "")
     v2 = await h.ev(WALK)

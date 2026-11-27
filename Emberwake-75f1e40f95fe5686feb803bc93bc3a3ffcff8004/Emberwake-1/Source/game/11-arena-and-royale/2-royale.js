@@ -318,7 +318,7 @@ function brEnterMatch(mi, seed, roster, nb, size, tms, arena) {
   brRide(G.p); snapCam(); G.state = 'play'; UI.open = null; G.cine = null; G.dialog = null;
   BR.total = roster.length + nb; BR.cnt = 99; G.banner = { text: 'THE ASHFALL TRIALS', sub: TR_ARENA_N[BR.arena] + ': ' + BR.total + ' Wakers' + (BR.size > 1 ? ' in ' + BR.nteams + ' teams' : '') + '. The horn sounds in ten.', t: 0 }; sfx('quest', 0);
 }
-function brSolo(size) {
+function brSolo(size) { brPayLeaving();   // PLAY AGAIN after a fall
   BR.via = 'solo'; BR.lead = true; BR.on = true; NET.me = ''; NET.status = 'off'; size = clamp((size || FORM.brsize || 1) | 0, 1, 3); FORM.brsize = size;
   const seed = (Math.random() * 4294967296) >>> 0; brEnterMatch('s' + seed.toString(36), seed, ['me'], BR_FILL - 1, size, null, trArenaPick(seed));
 }

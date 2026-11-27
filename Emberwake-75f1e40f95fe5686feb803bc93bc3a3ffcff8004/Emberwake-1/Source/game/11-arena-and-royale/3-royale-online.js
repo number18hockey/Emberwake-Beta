@@ -62,12 +62,12 @@ function brJoinMatch(ld) {
   brEnterMatch(ld.mi, ld.s >>> 0, ld.ro.filter(x => typeof x === 'string').slice(0, BR_MAX), clamp(num(ld.nb) | 0, 0, BR_MAX), clamp(num(ld.tm) | 0, 1, 3), Array.isArray(ld.tms) ? ld.tms : null, ld.ar | 0);
   BR.t = clamp(num(ld.t) | 0, 0, 60 * 60 * 20); brSend();
 }
-function brBackToLobby() { if (BR.wild) return wBrBackToLobby();
+function brBackToLobby() { if (BR.wild) return wBrBackToLobby(); brPayLeaving();
   BR.lastMi = BR.mi; BR.mi = ''; BR.phase = 'lobby'; BR.cdEnd = 0; BR.startNow = false; BR.lead = false;
   for (const f of NET.peers.values()) f.gone = true; NET.peers.clear(); G.fighters = G.fighters.filter(f => !f.remote && !f.brBot);
   NET.hits = []; NET.shots = []; NET.kb = ['', 0]; G.state = 'brlobby'; UI.open = null; brSend();
 }
-function brLeave() { if (BR.wild) return wBrLeave();
+function brLeave() { if (BR.wild) return wBrLeave(); brPayLeaving();
   if (BR.via === 'room') netLeave(); else if (BR.via === 'rtc') { for (const u of NET.unsubs) try { u(); } catch (e) { } NET.unsubs = []; NET.R = null; coopLeave(); COOP.br = false; }
   BR.on = false; BR.phase = ''; BR.mi = ''; BR.people.clear(); NET.me = ''; NET.status = 'off'; BR.open = false; BR.showOpen = false; if (!BR.following) BR.party = '';
   for (const f of NET.peers.values()) f.gone = true; NET.peers.clear(); G.fighters = G.fighters.filter(f => !f.gone);

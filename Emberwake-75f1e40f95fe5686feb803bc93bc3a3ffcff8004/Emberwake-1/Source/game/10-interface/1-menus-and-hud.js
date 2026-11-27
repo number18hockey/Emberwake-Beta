@@ -586,7 +586,7 @@ function drawUI(c) {
     const lines = INTRO[G.introI].split('\n'), y0 = round(uh * .4 - lines.length * 6); c.globalAlpha = clamp(G.introT / 40, 0, 1);
     lines.forEach((l, i) => textC(c, l, uw / 2, y0 + i * 13, '#fff1a8', 1, textO)); c.globalAlpha = 1;
     if (G.introT > 50) textC(c, 'click to continue', uw / 2, round(uh * .78), '#8b8fa3', 1, textS);
-  } else if (G.cine) {
+  } else if (G.cine && !UI.open) { // a panel opened during a place-name card (Esc, E) is drawn, not hidden behind it
     const ci = G.cine, a = clamp(min((ci.t - 30) / 25, (ci.dur - 20 - ci.t) / 25), 0, 1);
     c.globalAlpha = a; textC(c, ci.title, uw / 2, round(uh * .2), '#ffd35a', uw > 420 ? 3 : 2, textO); if (ci.sub) textC(c, ci.sub, uw / 2, round(uh * .2) + (uw > 420 ? 30 : 22), '#fff', 1, textO); c.globalAlpha = 1;
     if (ci.t > 30) textC(c, 'space to skip', uw / 2, uh - 14, '#6a6485', 1, textS);

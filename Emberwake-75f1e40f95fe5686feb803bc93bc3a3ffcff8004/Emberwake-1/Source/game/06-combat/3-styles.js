@@ -159,10 +159,12 @@ const DRILL_STEP = {
   S0: { t: 'Style I: V standing still', n: 1 }, S1: { t: 'Style II: V on the move', n: 1 }, S2: { t: 'Style III: V holding S', n: 1 }, S3: { t: 'Style IV: V in the air', n: 1 }, S4: { t: 'Style V: V right after a dodge', n: 1 }
 };
 function startDrill(x, y, dummy) {
-  const p = G.p, W = heldOf(p);
+  const p = G.p, W = heldOf(p), ty = weaponType(W);
   if (!W || W.type !== 'weapon') { say('Take a weapon in hand first. The post teaches the weapon you hold.'); sfx('deny'); return; }
   if (G.drill) { endDrill(false, true); return; }
-  const ty = weaponType(W), L = styleLevel(ty), pool = ['L3', 'H1', 'air', 'dodge', 'combo5', 'combo5', 'crisp', 'clean'], steps = [];
+  // bare fists count as a weapon but have no type: the post has nothing of theirs to teach
+  if (!ty || !WTYPE[ty]) { say('Take a weapon in hand first. The post teaches the weapon you hold.'); sfx('deny'); return; }
+  const L = styleLevel(ty), pool = ['L3', 'H1', 'air', 'dodge', 'combo5', 'combo5', 'crisp', 'clean'], steps = [];
   for (let k = 0; k < L; k++) steps.push('S' + k);
   while (steps.length < min(7, 3 + L)) { const s = fpick(pool); if (!steps.includes(s) || s === 'L3') steps.push(s); }
   for (let k = steps.length - 1; k > 0; k--) { const j = (Math.random() * (k + 1)) | 0; [steps[k], steps[j]] = [steps[j], steps[k]]; }
