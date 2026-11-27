@@ -134,7 +134,7 @@ async def phone(pw, label, w, h):
     assert out['begin'] == ['create', 'name', True], 'BEGIN should open a new world with its name ready to type and the keyboard up'
     assert out['typed'] == ['Ash-fen ' + 'x' * 16, ['seed', 'Q', 24], None, False], 'typing should reach the field in hand, by the game\'s own rules, and ENTER should put the keyboard away'
     assert out['screens'] == [], 'every button of every menu should be on the glass, whichever way up the phone is held'
-    assert out['buttons'] == ['JUMP', 'USE', 'HEAVY', 'LIGHT', 'PACK', 'HEAL', 'MENU'], 'the buttons of a world (no map yet, and never a pact)'
+    assert out['buttons'] == ['JUMP', 'DASH', 'USE', 'HEAVY', 'LIGHT', 'PACK', 'HEAL', 'MENU'], 'the buttons of a world (no map yet, and never a pact)'
     assert out['steered'] > 20 and out['jumped'] > 10, 'the stick should steer and JUMP should jump'
     assert out['dug'] == [True, False, True], 'a finger held on the ground should dig where it points'
     assert out['pack'] == ['inv', ['CLOSE']] and out['crafted'] and out['scrolled'] == [True, True] and out['closed'] is None, 'the pack should open, craft by tapping, scroll by sliding, and close'
@@ -143,7 +143,7 @@ async def phone(pw, label, w, h):
     assert out['healed'] and out['use held'] == [True, False], 'HEAL should heal, and USE should be F for as long as it is held'
     assert out['chat'] == [False, [True, 'ew-chat'], [False, True]], 'CHAT should show only with friends, open the line with the keyboard up, and ENTER should say it'
     t = out['trials']
-    assert t['phase'] == 'fight' and 'PACT' not in t['buttons'] and {'JUMP', 'USE', 'HEAVY', 'LIGHT', 'PACK', 'MAP', 'HEAL', 'MENU'} == set(t['buttons']), 'the buttons of a match should be there'
+    assert t['phase'] == 'fight' and 'PACT' not in t['buttons'] and {'JUMP', 'DASH', 'USE', 'HEAVY', 'LIGHT', 'PACK', 'MAP', 'HEAL', 'MENU'} == set(t['buttons']), 'the buttons of a match should be there'
     assert t['steered'] > 20 and t['jumped'] > 10 and t['struck'] and t['chest'] and t['healing'] and t['map'] == [True, False], 'in the Trials the stick, JUMP, LIGHT, USE, HEAL and MAP should all answer'
     assert not out['errors'], 'browser reported an error'
 

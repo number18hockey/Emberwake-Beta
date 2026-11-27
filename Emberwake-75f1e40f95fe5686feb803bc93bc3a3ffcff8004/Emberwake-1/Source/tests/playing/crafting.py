@@ -1,4 +1,4 @@
-# Crafting with the real mouse: a hand recipe from the pack, a plank at the workbench (one click, no mini-game),
+# Crafting with the real mouse: a hand recipe, armour at the workbench, a plank at the workbench,
 # meat on the campfire (fuel goes in by itself), charcoal in the kiln (no damper fiddling).
 import asyncio, sys, os
 sys.path.insert(0, os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), 'helpers'))
@@ -24,7 +24,19 @@ async def main():
     await h.step(10, ""); ims.append(await h.shot()); await h.step(60, "")
     res['workbench: planks, logs'] = await h.ev("[countItem('plank'), countItem('log'), !!UI.job]")
     await h.ev("closeUI()")
-    # 3. the campfire: cook meat; the fire is lit with a stick on its own
+    # 3. armour is easy to make at the same workbench; it no longer needs a separate stand or anvil
+    await h.ev("addItem('hide', 2); addItem('twine', 2); openStation(window.__b[0], window.__b[1]);"); await h.step(2, "")
+    res['armour recipes are available at the workbench'] = await h.ev("RECIPES.filter(r => IT[r.out] && IT[r.out].type === 'armor').every(r => r.st === 'bench')")
+    await h.ev("UI.stnCat = 'armour'; UI.scroll = 0;"); await h.step(1, "")
+    row = await h.ev("stnRowXY('bench', BENCH, e => e.r.out === 'hide_head' && e.can)")
+    res['hide armour row is craftable'] = row is not None
+    if row: await click_ui(*row)
+    await h.step(60, "")
+    res['workbench: hide armour'] = await h.ev("[countItem('hide_head'), countItem('hide'), countItem('twine')]")
+    assert res['armour recipes are available at the workbench'] and res['hide armour row is craftable']
+    assert res['workbench: hide armour'] == [1, 1, 2], 'Hide armour was not crafted at the workbench.'
+    await h.ev("closeUI()")
+    # 4. the campfire: cook meat; the fire is lit with a stick on its own
     await h.ev("(() => { const p = G.p, tx = floor((p.x + 3) / T) - 3, ty = floor((p.y + p.h - 1) / T); setTile(tx, ty, FIRE); window.__f = [tx, ty]; openStation(tx, ty); })()"); await h.step(2, "")
     row = await h.ev("stnRowXY('fire', FIRE, e => e.r.out === 'cmeat')")
     if row: await click_ui(*row)
@@ -35,7 +47,7 @@ async def main():
     await h.step(1200, "")
     res['cooked meat (never charred)'] = await h.ev("[countItem('cmeat'), countItem('charcoal')]")
     await h.ev("closeUI()")
-    # 4. the kiln: charcoal from a log, whatever the damper says
+    # 5. the kiln: charcoal from a log, whatever the damper says
     await h.ev("(() => { const p = G.p, tx = floor((p.x + 3) / T) + 5, ty = floor((p.y + p.h - 1) / T); setTile(tx, ty, FURNACE); window.__k = [tx, ty]; addItem('log', 3); openStation(tx, ty); const st = stnState(ty * WW + tx, FURNACE); st.open = 1; })()"); await h.step(2, "")
     row = await h.ev("stnRowXY('kiln', FURNACE, e => e.r.out === 'charcoal')")
     if row: await click_ui(*row)

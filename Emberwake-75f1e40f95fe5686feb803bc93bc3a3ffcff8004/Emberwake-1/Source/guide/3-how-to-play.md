@@ -10,14 +10,16 @@ Open your pack (**E**). The **BY HAND** list shows everything you can make anywh
 
 Everything else is made at **benches** you build and place. Each bench has one job, so you always know where to go. Stand next to one and press **F**: its list works the same way, and a bench with a long list has a **SHOW** button (weapons, tools, armour...) and a **CAN MAKE** switch. Every item's tooltip says where it is made, and the **recipe book** (**B**) lists every bench, what it is for, how to build it, and everything it makes.
 
+At the Workbench, choose **SHOW: ARMOUR** to see every set together. Armour takes fewer materials than it did, and all of it is made there: no separate stand, and no anvil of the armour's rank.
+
 ![The recipe book](pictures/book.jpg)
 
 | Bench | What it is for |
 | --- | --- |
-| **Workbench** | woodwork: planks, doors, ladders, wooden and bone weapons, and most other benches |
+| **Workbench** | woodwork and armour: planks, doors, ladders, wooden and bone weapons, most other benches, and every piece of armour (metal and other-world sets too) |
 | **Carpenter's Table** | furniture and things to place: crates, barrels, beds, tables, planters, signposts, lamps |
 | **Anvil** | metal weapons and tools. Stone anvil: copper and bronze. Iron anvil: iron and steel. Slagforge: the metals of the other worlds |
-| **Armourer's Stand** | every piece of armour. Metal armour also needs an anvil of the same rank close by |
+| **Armourer's Stand** | an older bench, kept so that worlds which have one stay as they are. It has nothing left to make: armour is made at the Workbench |
 | **Tinker's Table** | gadgets you carry (lanterns, glider, climbing claws, compass, gauges), traps and the ember ballista |
 | **Jeweller's Bench** | trinkets you wear: rings, charms and amulets |
 | **Hearth Oven** | hot meals that give a boon for a few minutes |

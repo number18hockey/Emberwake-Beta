@@ -64,7 +64,7 @@ const CROPS = { berries: { n: 5, t: 6000, col: '#ff6a4a' }, reed: { n: 5, t: 540
 const BOOKS = ['Every guardian wants an offering. The Offering Altar makes them, from what you gather and what the last guardian left.', 'The recipe book [B] lists every bench, and what it makes.',
   'Trinkets go in the trinket slots in your pack. Each guardian you beat opens another.', 'A sweep knocks a foe down. A heavy blow on a foe that is down CRUSHES it.',
   'A perfect dodge opens a counter: attack straight after, aiming up, down or with a heavy blow.', 'Hot meals from the Hearth Oven give a boon. Only one at a time: the last one eaten counts.',
-  'Metal armour is made at the Armourer\'s Stand, with an anvil of its rank close by.', 'Weapons teach you more of their forms the more you use them: BASICS, FOOTWORK, FLOW, MASTERY.',
+  'All armour, metal too, is made at the Workbench. It needs no stand and no anvil.', 'Weapons teach you more of their forms the more you use them: BASICS, FOOTWORK, FLOW, MASTERY.',
   'Strike again as your weapon glints, not before. Blows in time light embers; a heavy blow spends them.', 'Strong weapons hide arts: keep hitting with one and it will teach you. Hold RMB to call them.'];
 
 function buildFurnArt() {

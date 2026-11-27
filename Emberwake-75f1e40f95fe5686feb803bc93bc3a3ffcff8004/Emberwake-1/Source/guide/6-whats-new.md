@@ -11,7 +11,7 @@ This version joins two that had grown apart. One had the Trials, the four worlds
 **Brought in from the other side:**
 
 - **Accounts and hats.** The game opens on a sign-in board. Make an account (a name and a password, kept in this browser) and your worlds are yours alone. Worlds from before go to the first account. Pick a look and a **hat**, and change them later with **CHANGE LOOK**. See *Start here: Signing in*.
-- **Phones and tablets.** Touch controls appear by themselves: a stick, **JUMP**, **USE**, **LIGHT** and **HEAVY**, with buttons for the pack, the map, a quick heal, the menu and chat. The beat is the same under a thumb. See *Controls: On a phone or tablet*.
+- **Phones and tablets.** Touch controls appear by themselves: a stick, **JUMP**, **DASH** (the dodge), **USE**, **LIGHT** and **HEAVY**, with buttons for the pack, the map, a quick heal, the menu and chat. The beat is the same under a thumb. See *Controls: On a phone or tablet*.
 - **You keep your run.** Hold a direction through a blow or a dodge and you keep most of your pace instead of stopping dead. Hands off, you glide to a stop. A blow thrown from standing is exactly as it was.
 - **Weather is felt.** Rain and snow slow you in the open and make the ground slick, snow and ash steal your breath, and creatures see less far in rain and fog. A roof, a ledge or a cave shelters you from all of it.
 - **A thunderstorm has a wind.** It blows the way the rain leans: arrows and thrown things drift on it, and a run with it is quicker than one against it. Lightning likes a tall tree, and a struck tree often comes down.
@@ -21,6 +21,8 @@ This version joins two that had grown apart. One had the Trials, the four worlds
 - **Brews.** Quickstep at a cauldron, Emberheart at a **Brewer's Stand**, and at a **Moon Cauldron** the Doublesoul Draught, which calls a mirror of you to fight at your side. And a new meal, the Willow Omelet. See *How to play: Eating and brews*.
 - **Two new lands** in worlds you forge from now on: the **Mosswood** (deep green, oaks, moss deer) and the **Willowmere** (reeds, still water, willows, willow hens). Worlds made before keep their land exactly as it was.
 - **A third arena for the Ashfall: THE WILDS.** Thirty-two fall from the sky with nothing, over an island 3,500 paces wide with caves beneath it. Dig, gather, make your weapons, make pacts. It pays **souls** and **coins** for the **soul wheel** and the **shop**, where skins and hats are won and worn. See *The Ashfall Trials: A third arena*.
+- **Armour at the Workbench.** Every piece of armour is now made at the Workbench, for fewer materials and with no anvil of its rank close by. An Armourer's Stand in an old world stays where it is.
+- **FPS MODE** in the menu (**Esc**): no particles and a barer HUD, with an aiming cross, for a cleaner and smoother view. The game stays side-on. See *Controls: The menu*.
 - A frame that goes wrong no longer stops the game.
 - **This version can't play with older ones, so send your friends the new files.**
 

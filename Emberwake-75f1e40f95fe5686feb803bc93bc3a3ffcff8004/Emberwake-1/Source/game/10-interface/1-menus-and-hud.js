@@ -365,14 +365,15 @@ function drawRingForm(c) {
 function drawHUD(c) {
   const p = G.p, uw = VS.uw, uh = VS.uh, A = WORLD.arena, wild = wildOn();
   c.drawImage(SPR.heart, 3, 3); bar(c, 15, 4, 72, 7, p.hp / p.maxhp, p.hp < 30 && (G.time >> 3) & 1 ? '#ff9a8a' : '#e2483b', '#8f2233'); textO(c, ceil(max(0, p.hp)), 91, 4, '#fff');
-  if ((!A || wild) && gearOn()) { drawGearHud(c); if (!A) { drawStyleHud(c); drawFamHud(c); drawDrill(c); } }
+  if ((!A || wild) && gearOn()) { drawGearHud(c); if (!A && !SETTINGS.fpsMode) { drawStyleHud(c); drawFamHud(c); drawDrill(c); } }
   bar(c, 15, 14, 72, 4, p.stam / p.maxstam, p.stam < 22 ? '#ffd35a' : '#7ddc6f', p.stam < 22 ? '#b85a1e' : '#2f8a43');
   if ((!A || wild) && WORLD.mode !== 1) { const f = G.food / 100; bar(c, 15, 20, 72, 2, f, f < .25 && (G.time >> 4) & 1 ? '#ff9a8a' : '#e0a050', '#7a4a1a'); if (f < .3) textO(c, f <= 0 ? 'STARVING' : 'HUNGRY', 91, 16, '#e0a050'); }
   if (p.riposte > 0 && (G.time >> 2) & 1) textO(c, 'RIPOSTE READY', 15, 22, '#8ff5e6');
-  else if (!UI.open && WORLD.royale) { if (wild && !mobileDevice && !(BR.t > 60 * 60 || G.note || p.dead)) textS(c, '[LMB] hit / dig  [F] open  [E] pack  [B] recipes  [K] knap  [H] heal  [P] pact  [M] map', 4, 35, '#8b8fa3'); }
-  else if (!UI.open && !mobileDevice) textS(c, A ? '[TAB] scores  [C] forms  [P] menu  1-6 weapons  [R] sidearm [T] swap' : '[E] pack  [K] knap  [F] use  [J] journal  [P] menu', 4, 25, '#8b8fa3');
-  if (!A && G.jNew && (G.time >> 4) & 1) textS(c, 'NEW JOURNAL ENTRY [J]', 4, 32, '#ffd35a');
-  drawBless(c); drawMealHud(c); drawGadgetHud(c); drawCoopHud(c);
+  else if (!UI.open && WORLD.royale) { if (wild && !SETTINGS.fpsMode && !mobileDevice && !(BR.t > 60 * 60 || G.note || p.dead)) textS(c, '[LMB] hit / dig  [F] open  [E] pack  [B] recipes  [K] knap  [H] heal  [P] pact  [M] map', 4, 35, '#8b8fa3'); }
+  else if (!UI.open && !SETTINGS.fpsMode && !mobileDevice) textS(c, A ? '[TAB] scores  [C] forms  [P] menu  1-6 weapons  [R] sidearm [T] swap' : '[E] pack  [K] knap  [F] use  [J] journal  [P] menu', 4, 25, '#8b8fa3');
+  if (!SETTINGS.fpsMode && !A && G.jNew && (G.time >> 4) & 1) textS(c, 'NEW JOURNAL ENTRY [J]', 4, 32, '#ffd35a');
+  if (!SETTINGS.fpsMode) { drawBless(c); drawMealHud(c); drawGadgetHud(c); }
+  drawCoopHud(c);
   if (G.savedNote) { const t = G.savedNote.t; c.globalAlpha = clamp((120 - t) / 30, 0, 1); textS(c, G.savedNote.ok ? (SAVE.db ? 'saved to your account' : 'saved') : 'could not save', 4, A ? 32 : 42, '#7ddc6f'); c.globalAlpha = 1; }
   // hotbar
   const hb = hotbarLayout();
@@ -387,12 +388,12 @@ function drawHUD(c) {
     if (G.armT > 0 && !UI.open) { c.globalAlpha = min(1, G.armT / 30); textO(c, id ? IT[id].name : 'no sidearms', ax + 22, ay + 5, id ? '#ffd35a' : '#8b8fa3'); c.globalAlpha = 1; } }
   const it = heldItem(); if (it && G.selT > 0 && !UI.open) { c.globalAlpha = min(1, G.selT / 30); textC(c, it.name, uw / 2, hb.y - 14, '#fff'); c.globalAlpha = 1; }
   // objective / ring status
-  if (!UI.open) { if (WORLD.royale) brHud(c); else if (A) drawRingStatus(c); else { G.miniH = drawMinimap(c); drawObjective(c); } }
+  if (!UI.open) { if (WORLD.royale) brHud(c); else if (A) drawRingStatus(c); else if (!SETTINGS.fpsMode) { G.miniH = drawMinimap(c); drawObjective(c); } }
   // move feed
   let fy = round(uh * .34);
-  G.feed.forEach((f, i) => { const a = clamp(1 - (f.t - 150) / 60, 0, 1) * (1 - i * .16); if (a <= 0) return; c.globalAlpha = a; const x = 6 + (f.t < 6 ? (6 - f.t) * -3 : 0); if (f.isNew) { textO(c, 'NEW FORM', x, fy, '#8ff5e6'); fy += 9; } textO(c, f.name, x, fy, f.isNew ? '#ffd35a' : f.fresh ? '#fff' : '#8b8fa3'); if (i === 0 && !f.fresh) drawText(c, 'dull', x + textW(f.name) + 5, fy, '#6a6485'); fy += 10; });
+  if (!SETTINGS.fpsMode) G.feed.forEach((f, i) => { const a = clamp(1 - (f.t - 150) / 60, 0, 1) * (1 - i * .16); if (a <= 0) return; c.globalAlpha = a; const x = 6 + (f.t < 6 ? (6 - f.t) * -3 : 0); if (f.isNew) { textO(c, 'NEW FORM', x, fy, '#8ff5e6'); fy += 9; } textO(c, f.name, x, fy, f.isNew ? '#ffd35a' : f.fresh ? '#fff' : '#8b8fa3'); if (i === 0 && !f.fresh) drawText(c, 'dull', x + textW(f.name) + 5, fy, '#6a6485'); fy += 10; });
   c.globalAlpha = 1;
-  if (G.combo.n > 1 && !A) { const r = rankI(), s = `${G.combo.n} HITS`, x = uw - 8 - textW(s, 2), y = round(uh * .34), pop = G.combo.t > 172 ? 1 : 0; textO(c, s, x, y - pop, '#fff', 2); if (r) textO(c, RANKS[r], uw - 8 - textW(RANKS[r]), y + 18, RANK_COL[r]); bar(c, uw - 68, y + 29, 60, 2, G.combo.t / 180, RANK_COL[r], '#4a4460'); }
+  if (!SETTINGS.fpsMode && G.combo.n > 1 && !A) { const r = rankI(), s = `${G.combo.n} HITS`, x = uw - 8 - textW(s, 2), y = round(uh * .34), pop = G.combo.t > 172 ? 1 : 0; textO(c, s, x, y - pop, '#fff', 2); if (r) textO(c, RANKS[r], uw - 8 - textW(RANKS[r]), y + 18, RANK_COL[r]); bar(c, uw - 68, y + 29, 60, 2, G.combo.t / 180, RANK_COL[r], '#4a4460'); }
   // boss bars
   const b = G.boss, v = G.duel;
   if (b && b.state !== 'intro') { const bw = clamp(uw - 300, 110, 220), bx = round((uw - bw) / 2); textC(c, b.name, uw / 2, 5, '#ffd35a', 1, textO); bar(c, bx, 15, bw, 6, b.hp / b.maxhp, b.phase === 2 ? '#ff7a2a' : '#c94a3a', '#8f2233'); if (b.state === 'tired' || b.state === 'stagger') textC(c, 'STAGGERED: STRIKE NOW', uw / 2, 24, (G.time >> 3) & 1 ? '#8ff5e6' : '#fff', 1, textO); else if (b.st && b.st.blind > 0) textC(c, 'BLINDED', uw / 2, 24, '#b9bdd0', 1, textO); }
@@ -403,7 +404,7 @@ function drawHUD(c) {
   if (G.note && G.note.t >= 0) { c.globalAlpha = clamp(min(G.note.t / 15, (240 - G.note.t) / 30), 0, 1); textC(c, G.note.text, uw / 2, wildOn() ? (uw < 300 ? 112 : 48) : 36, '#ffd35a', 1, textO); c.globalAlpha = 1; }
   if (G.linkBanner) { const t = G.linkBanner.t, a = clamp(min(t / 8, (150 - t) / 25), 0, 1), y = round(uh * .36); c.globalAlpha = a; textC(c, G.linkBanner.first ? 'NEW LINK' : 'LINK', uw / 2, y - 12, '#8ff5e6', 1, textO); textC(c, G.linkBanner.name.toUpperCase(), uw / 2 + (t < 8 ? (8 - t) * 3 : 0), y, '#fff1a8', 2, textO); c.globalAlpha = 1; }
   if (G.leadDone) { const t = G.leadDone.t; c.globalAlpha = clamp(min(t / 15, (200 - t) / 30), 0, 1); textC(c, 'LEAD FOLLOWED : ' + G.leadDone.title, uw / 2, 48, '#7ddc6f', 1, textO); c.globalAlpha = 1; }
-  G.picks.forEach((q, i) => { c.globalAlpha = clamp((200 - q.t) / 40, 0, 1); const ic = IT[q.id].icon, y = uh - 16 - i * 12; c.drawImage(ic, 4, y - (ic.height >> 1) + 4); textS(c, `+${q.n} ${IT[q.id].name}`, 24, y, '#fff'); }); c.globalAlpha = 1;
+  if (!SETTINGS.fpsMode) G.picks.forEach((q, i) => { c.globalAlpha = clamp((200 - q.t) / 40, 0, 1); const ic = IT[q.id].icon, y = uh - 16 - i * 12; c.drawImage(ic, 4, y - (ic.height >> 1) + 4); textS(c, `+${q.n} ${IT[q.id].name}`, 24, y, '#fff'); }); c.globalAlpha = 1;
   if (G.sayCur && !UI.open && !G.dialog) {
     const s = G.sayCur, col = s.who === 'vesper' ? '#8ff5e6' : s.who === 'wick' ? '#ffd35a' : '#ff8a3d', w = min(300, uw - 30), lines = wrapText(s.text, w - 16), h = lines.length * 9 + 8, x = round((uw - w) / 2), y = hb.y - 22 - h; let left = floor(s.t / 1.4);
     c.globalAlpha = clamp((s.text.length * 1.4 + 190 - s.t) / 30, 0, 1); c.fillStyle = 'rgba(18,13,31,.8)'; c.fillRect(x, y, w, h); c.fillStyle = col; c.fillRect(x, y, 2, h);
@@ -555,6 +556,10 @@ function drawPause(c) {
   if (!A) button(c, x + w - 112, y + h - 36, 104, 13, netGuest() ? 'LEAVE THEIR WORLD' : COOP.role ? 'PLAY TOGETHER (' + (1 + [...COOP.peers.values()].filter(P => P.ok).length) + ')' : 'PLAY TOGETHER', () => { if (netGuest()) { closeUI(); quitToTitle(); } else { UI.open = 'coop'; COOP.err = ''; sfx('ui'); } });
   button(c, x + 8, y + h - 19, 118, 13, 'CONTROLS: ' + (SETTINGS.combat === 'simple' ? 'SIMPLE' : 'FULL'), () => { SETTINGS.combat = SETTINGS.combat === 'simple' ? 'full' : 'simple'; saveSettings(); sfx('ui'); });
   if (!A) button(c, x + 8, y + h - 36, 118, 13, 'CRAFTING: ' + (SETTINGS.craft === 'hands' ? 'HANDS-ON' : 'SIMPLE'), () => { SETTINGS.craft = SETTINGS.craft === 'hands' ? 'simple' : 'hands'; saveSettings(); UI.job = null; sfx('ui'); });
+  // FPS MODE: no particles and a barer HUD (the game stays side-on); FX above is the uploaded version's own switch and is left as it is.
+  // (In a world it sits over DIFFICULTY. An arena's shorter panel has its last line of help there, and no DIFFICULTY: it takes that place.)
+  button(c, x + 130, y + h - (A ? 19 : 36), 118, 13, 'FPS MODE: ' + (SETTINGS.fpsMode ? 'ON' : 'OFF'), () => { SETTINGS.fpsMode = !SETTINGS.fpsMode; if (SETTINGS.fpsMode) G.parts.length = 0; saveSettings(); sfx('ui'); });
+  if (!A) textS(c, 'Cleaner HUD; side-view.', x + 130, y + h - 48, '#8b8fa3');
   if (!A) button(c, x + 130, y + h - 19, 118, 13, 'DIFFICULTY: ' + DIFF().n, () => { SETTINGS.diff = SETTINGS.diff === 'easy' ? 'normal' : SETTINGS.diff === 'normal' ? 'hard' : 'easy'; saveSettings(); sfx('ui'); });
   const H = ['A / D  move        SPACE or W  jump        SHIFT  dodge', 'LMB  light blow: strike again on the GLINT   RMB or Q  heavy', ...(SETTINGS.combat === 'simple' ? ['Aim up to launch, aim down or hold S for low blows. Click', 'a creature to punch it, whatever you are holding.'] : ['Where you aim, which keys you hold, whether you are in', 'the air and how far the cursor is all change the attack.']), 'Never mash: a blow before the glint is RUSHED. Dodge through a hit.', A ? '1-6 weapons    TAB scores    C forms    O sound' : '1-0 / wheel  hotbar     E  pack + crafting     C  forms', A ? 'R  throw sidearm    T  switch sidearm    Echoes leave when a Waker joins.' : 'J  journal + leads   F  talk / use   H  quick heal', A ? '' : 'R  throw sidearm   T  switch sidearm   S held: drop through bridges', A ? '' : 'Ore, keys and such leave your fists free.   K  knap   M  map', A ? '' : 'F beside a station uses it. Hold W/S on ladders. RMB opens doors.', A ? '' : 'V  weapon style (5 per weapon)   X  swap to off hand', A ? '' : 'Tools swing where you point, at rock or beast. Hold RMB: heavy.'];
   H.forEach((l, i) => drawText(c, l, x + 8, y + 42 + i * 12, i === 2 || i === 3 ? '#8ff5e6' : '#d8d4e6'));
@@ -587,7 +592,7 @@ function drawUI(c) {
     drawHUD(c);
     if (UI.open === 'inv') drawInv(c); else if (UI.open === 'codex') drawCodex(c); else if (UI.open === 'journal') drawJournal(c); else if (UI.open === 'pause') drawPause(c); else if (UI.open === 'coop') drawCoopPanel(c);
     else if (UI.open === 'book') drawBook(c); else if (UI.open === 'stn') drawStation(c); else if (UI.open === 'knap') drawKnap(c); else if (UI.open === 'map') drawMap(c); else if (UI.open === 'board') drawBoard(c); else if (UI.open === 'rift') drawRiftUI(c); else if (UI.open === 'echo') drawEchoUI(c); else if (UI.open === 'ending') drawEndingUI(c);
-    drawCompass(c);
+    if (!SETTINGS.fpsMode) drawCompass(c);
     if (WORLD.arena && !WORLD.royale && keys.Tab && !UI.open) drawScore(c);
     if (G.dialog) drawDialog(c);
     if (UI.held) drawStack(c, UI.held, mouse.ux - 9, mouse.uy - 9);
@@ -595,7 +600,12 @@ function drawUI(c) {
   }
   domSweep();
   HITS = HITS_NEXT;
-  c.drawImage(SPR.cursor, mouse.ux - 3, mouse.uy - 3);
+  // FPS MODE: a plain cross to aim by while you play; every menu keeps the cursor
+  if (SETTINGS.fpsMode && G.state === 'play' && !UI.open && !G.dialog) {
+    const x = round(mouse.ux), y = round(mouse.uy);
+    c.strokeStyle = '#17131f'; c.lineWidth = 3; c.beginPath(); c.moveTo(x - 6, y); c.lineTo(x + 6, y); c.moveTo(x, y - 6); c.lineTo(x, y + 6); c.stroke();
+    c.strokeStyle = '#fff1a8'; c.lineWidth = 1; c.beginPath(); c.moveTo(x - 5, y); c.lineTo(x - 2, y); c.moveTo(x + 2, y); c.lineTo(x + 5, y); c.moveTo(x, y - 5); c.lineTo(x, y - 2); c.moveTo(x, y + 2); c.lineTo(x, y + 5); c.stroke();
+  } else c.drawImage(SPR.cursor, mouse.ux - 3, mouse.uy - 3);
 }
 // ---------------- moving things in and out of the pack ----------------
 // throw what you hold on the cursor into the world in front of you

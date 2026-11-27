@@ -65,23 +65,23 @@ function buildArmor() {
     GEAR_SLOTS.forEach((slot, si) => {
       const id = `${m}_${slot}`, f = GEAR_SHARE[slot], name = `${M.n} ${GEAR_NAMES[M.k][si]}`;
       defI(id, { name, type: 'armor', slot, mat: m, prot: max(1, round(M.prot * f)), wt: round(M.wt * f * 10) / 10, stack: 1, icon: gearIcon(slot, M.k, M.c), desc: `${M.n} armour. Full set: ${M.set}` });
-      const n = { head: 2, body: 4, legs: 3, feet: 2 }[slot];
+      const n = { head: 1, body: 2, legs: 2, feet: 1 }[slot];
       if (m === 'hide') R('bench', id, 1, { hide: n, twine: 1 });
       else if (m === 'leather') R('bench', id, 1, { leather: n, twine: 1 });
-      else if (m === 'padded') R('loom', id, 1, { cloth: n + 1, fiber: 2 });
-      else if (m === 'bone') R('bench', id, 1, { bone: n * 2, leather: 1, twine: 1 });
-      else if (m === 'chitin') R('bench', id, 1, { chitin: n, leather: 1, glue: 1 });
-      else if (m === 'scale') R('bench', id, 1, { scale: n + 1, leather: 1, twine: 1 });
-      else if (m === 'glass') R('anvil', id, 1, { skyglass: n, leather: 1, skysilk: 1 }, { lvl: 2, q: 1 });
-      else if (m === 'deep') R('mason', id, 1, { deepstone: n * 2, hollow_ash: 1, leather: 1 });
-      else if (m === 'fur') R('loom', id, 1, { frost_pelt: n, cloth: 1, fiber: 2 });
-      else R('anvil', id, 1, { [m + '_bar']: n, leather: 1 }, { lvl: m === 'copper' || m === 'bronze' ? 1 : 2, q: 1 });
+      else if (m === 'padded') R('bench', id, 1, { cloth: n + 1, fiber: 1 });
+      else if (m === 'bone') R('bench', id, 1, { bone: n * 2, twine: 1 });
+      else if (m === 'chitin') R('bench', id, 1, { chitin: n, glue: 1 });
+      else if (m === 'scale') R('bench', id, 1, { scale: n, twine: 1 });
+      else if (m === 'glass') R('bench', id, 1, { skyglass: n, skysilk: 1 });
+      else if (m === 'deep') R('bench', id, 1, { deepstone: n, hollow_ash: 1, leather: 1 });
+      else if (m === 'fur') R('bench', id, 1, { frost_pelt: n, cloth: 1 });
+      else R('bench', id, 1, { [m + '_bar']: n, twine: 1 });
     });
   }
   defI('miners_helm', { name: "Miner's Helm", type: 'armor', slot: 'head', mat: 'copper', prot: 4, wt: 2, stack: 1, light: 1, mine: 1.15, icon: gearIcon('head', 'helm', ['#c98a2b', '#7a5218', '#3a2a10', '#fff1a8']), desc: 'A sunmetal pot with a glowcap lamp on the brow. Lights your way and steadies your swing: digs 15% harder.' });
-  R('anvil', 'miners_helm', 1, { copper_bar: 2, glowcap: 2, resin: 1 }, { lvl: 1 });
+  R('bench', 'miners_helm', 1, { copper_bar: 1, glowcap: 1, resin: 1 });
   defI('rust_shell', { name: 'Rustback Shellplate', type: 'armor', slot: 'body', mat: 'rust', prot: 16, wt: 9, stack: 1, poise: .6, shot: .7, icon: gearIcon('body', 'helm', ['#bd5a36', '#7a3222', '#4a1a12', '#f0a070']), desc: 'A whole rustback shell, strapped on. Very heavy. Arrows and spit glance off it; nothing knocks you far.' });
-  R('anvil', 'rust_shell', 1, { rust_plate: 4, leather: 2 }, { lvl: 1 });
+  R('bench', 'rust_shell', 1, { rust_plate: 2, leather: 1 });
 }
 
 // ---------------- what you are wearing, summed up ----------------

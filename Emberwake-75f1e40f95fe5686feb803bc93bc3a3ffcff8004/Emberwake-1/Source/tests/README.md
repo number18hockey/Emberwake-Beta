@@ -32,14 +32,16 @@ Story, screens, controls, the pack and crafting.
 
 - `benches_and_trinkets.py` The benches (each opens and lists its own work), trinkets made, worn and felt, a meal's boon, storage of three sizes kept through a save, planters, the bed, the ballista and traps, and the guardians' offerings.
 - `brews_and_eating.py` Food takes a moment to eat and a blow interrupts it; the Quickstep and Emberheart brews start and fade; the Doublesoul Draught's mirror comes, fights and goes home; the Brewer's Stand and the Moon Cauldron keep their own tile numbers through a save; the new recipes come after all the old ones.
-- `controls_and_settings.py` Simple controls (fists, chains), difficulty, digging by hand, knapping, and the menu settings.
-- `crafting.py` Crafting with the real mouse: a hand recipe from the pack, a plank at the workbench (one click, no mini-game).
+- `building_blocks.py` Every inventory block and wall can be placed with valid support in both survival and free-build modes.
+- `controls_and_settings.py` Simple controls (fists, chains), difficulty, FPS mode, digging by hand, knapping, and the menu settings.
+- `crafting.py` Crafting with the real mouse: a hand recipe, armour made directly at the workbench, a plank at the workbench (one click, no mini-game).
 - `inventory.py` Moving things in and out of the pack with the real mouse: drag between slots, drag out to drop.
 - `screens.py` Screens: echo stones, the journal and other panels.
 - `story.py` The story: discovery scenes, the people of Hearthhold, leads and the journal.
 - `accounts.py` Password-required accounts, signing out on restart, guest-save migration and separate profile saves.
 - `atmosphere.py` The look of the air: glow, the colour of each land and season, mist, each world's own sky, the ember wake, timed trails and the jolt of a hit. Checks that none of it throws anywhere (other worlds, the title, the arenas, a resized window).
 - `phone.py` A phone held both ways: typing a world's name, the stick, the buttons, a finger on the world and the panels, crafting, and a match of the Ashfall Trials. And a computer, where none of that shows or gets in the way.
+- `mobile_controls.py` Touch controls fit narrow screens without overlapping; DASH is the desktop dodge input; a tap on the hotbar picks a slot.
 - `phone_in_the_wilds.py` A phone in a match of the Wilds: its four screens fit the glass, the stick steers the glider, a finger gathers and digs, and PACK, MAP, PACT and MENU answer.
 
 ### world

@@ -1,4 +1,4 @@
-# Simple controls (fists, chains), difficulty, digging by hand, knapping, and the menu settings.
+# Simple controls (fists, chains), difficulty, FPS mode, digging by hand, knapping, and the menu settings.
 import asyncio, sys
 import os, sys
 sys.path.insert(0, os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), 'helpers'))
@@ -119,6 +119,25 @@ async def main():
     await h.ev("render(1); mouse.ux = %d; mouse.uy = %d; uiMouseDown(0);" % (x + 8 + 59, y + hh - 19 + 6)); cyc.append(await h.ev("SETTINGS.combat"))
     res['I pause cycle'] = cyc
     res['I stored'] = await h.ev("localStorage.getItem('ew_settings')")
+    # FPS MODE: its button switches it and it is remembered; while it is on no particle is made (and those in the air go at once),
+    # the lesser parts of the HUD are not drawn and a plain cross marks the aim while you play. It is switched off again after.
+    fx, fy = await h.ev("(() => { const big = !DIM && WT_ON && WT_KEYS.length > 0 && VS.uh >= 300, w = Math.min(392, VS.uw - 16), hh = big ? 290 : 240; return [Math.round((VS.uw - w) / 2) + 130 + 59, Math.round((VS.uh - hh) / 2) + hh - 36 + 6]; })()")
+    FPS = "UI.open = 'pause'; render(1); mouse.ux = %d; mouse.uy = %d; uiMouseDown(0);" % (fx, fy)
+    HUD = """(() => { const parts = ['drawStyleHud', 'drawFamHud', 'drawDrill', 'drawBless', 'drawMealHud', 'drawGadgetHud', 'drawMinimap', 'drawObjective', 'drawCompass', 'drawTempoHud'], was = {}, seen = new Set(), said = [];
+      for (const k of parts) { was[k] = window[k]; window[k] = function () { seen.add(k); return was[k].apply(this, arguments); }; }
+      const tS = textS, tO = textO; textS = function (c, s) { said.push(String(s)); return tS.apply(this, arguments); }; textO = function (c, s) { said.push(String(s)); return tO.apply(this, arguments); };
+      const keep = [G.jNew, G.time, G.feed, G.combo, G.picks, mouse.x, mouse.y, inv[0]]; UI.open = null; G.jNew = true; G.time = 16; G.feed = [{ name: 'TESTMOVE', t: 10, fresh: true }]; G.combo = { n: 3, t: 100 }; G.picks = [{ id: 'log', n: 2, t: 0 }]; hold('iron_sword'); mouse.x = 200 * VS.ui; mouse.y = 100 * VS.ui;
+      let cross = 0, arrow = 0; ctx.stroke = function () { if (this.strokeStyle === '#fff1a8') cross++; return CanvasRenderingContext2D.prototype.stroke.apply(this, arguments); }; ctx.drawImage = function (im) { if (im === SPR.cursor) arrow++; return CanvasRenderingContext2D.prototype.drawImage.apply(this, arguments); };
+      render(1); delete ctx.stroke; delete ctx.drawImage;
+      for (const k of parts) window[k] = was[k]; textS = tS; textO = tO; [G.jNew, G.time, G.feed, G.combo, G.picks, mouse.x, mouse.y, inv[0]] = keep;
+      return [parts.filter(k => seen.has(k)).length, ['[E] pack', 'NEW JOURNAL', 'TESTMOVE', '3 HITS', '+2 '].filter(t => said.some(s => s.includes(t))).length, cross > 0 && !arrow]; })()"""
+    fps = []
+    for i in range(2): await h.ev(FPS); fps.append(await h.ev("SETTINGS.fpsMode"))
+    hud = [await h.ev(HUD)]; await h.ev("G.parts.length = 0; burst(G.p.x, G.p.y, 12, ['#fff'], 2, 30);"); made = [await h.ev("G.parts.length")]
+    await h.ev(FPS); fps.append(await h.ev("SETTINGS.fpsMode")); made.append(await h.ev("G.parts.length")); await h.ev("burst(G.p.x, G.p.y, 12, ['#fff'], 2, 30);"); made.append(await h.ev("G.parts.length")); hud.append(await h.ev(HUD))
+    res['I fps mode: switched, particles (off, switched on, on), HUD parts / notes / cross (off, on)'] = [fps, made, hud, await h.ev("JSON.parse(localStorage.getItem('ew_settings')).fpsMode")]
+    await h.ev(FPS); await h.ev("G.parts.length = 0;")
+    assert fps == [True, False, True] and made == [12, 0, 0] and hud == [[10, 5, False], [1, 0, True]] and not await h.ev("SETTINGS.fpsMode"), 'FPS MODE did not switch, kept making particles, or did not clear the HUD'
     await h.ev("UI.open = 'journal'; UI.jtab = 'leads'; render(1);")
     jx = await h.ev("(() => { const w = Math.min(330, VS.uw - 12), hh = Math.min(VS.uh - 44, 300), x = Math.round((VS.uw - w) / 2), y = Math.round((VS.uh - hh) / 2) - 8; return [x, y]; })()")
     await h.ev("render(1); mouse.ux = %d; mouse.uy = %d; uiMouseDown(0);" % (jx[0] + 176 + 25, jx[1] + 6))

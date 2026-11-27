@@ -42,7 +42,7 @@ Blocks, food and other usable things still do their job when you click empty spa
 
 Touch controls appear by themselves, whichever way up you hold it. With a mouse and keys they never show.
 
-- The **stick** moves you. Pull it down to drop through a bridge or aim low. **JUMP**, **USE**, **LIGHT** and **HEAVY** are the buttons around it. **USE** is the **F** key, and you can hold it.
+- The **stick** moves you. Pull it down to drop through a bridge or aim low. **JUMP**, **DASH**, **USE**, **LIGHT** and **HEAVY** are the buttons around it. **DASH** is the dodge (the **Shift** key). **USE** is the **F** key, and you can hold it.
 - **LIGHT** and **HEAVY** strike at whoever is in front of you. The beat is the same as with a mouse: tap again when your weapon **glints**. Holding a button down does not attack again.
 - **Touch the world** to dig, gather or strike exactly there. Tap the hotbar to change what you hold.
 - **PACK** opens your pack and crafting: tap a recipe to make it, slide a finger to scroll, **CLOSE** to go back. **HEAL** is a quick heal, **MAP** the map (once you have drawn one) and **MENU** the menu.
@@ -57,7 +57,8 @@ Touch controls appear by themselves, whichever way up you hold it. With a mouse 
 - **Crafting: SIMPLE** (the default). At a station you click what you want and it is made after a short bar fills (shift-click makes five). Fires and kilns work whenever they have fuel, and light themselves from your sticks or logs; food never burns. **HANDS-ON** brings back the station games (sawing, the potter's wheel, the bellows, the anvil...), heat and the kiln's damper, and food that chars if you forget it.
 
 - **FX: FULL** (the default): the glow of fires and blades, the colour each land and season gives the air, the morning mist, the embers your Waker trails at a run. **FX: PLAIN** turns those off; try it if the game stutters on an older machine.
+- **FPS MODE: OFF** (the default). Turn it on to stop particle effects and hide the lesser parts of the HUD, for a cleaner and smoother view. Health, stamina, the hotbar, boss bars and a clear aiming cross stay. The game stays side-on (it is not a first-person view), and the world, the fighting and play with friends are the same.
 
 The menu also shows the **day and the season**, and what kind of world this one is (its three traits).
 
-All four are remembered on this computer.
+All five are remembered on this computer.

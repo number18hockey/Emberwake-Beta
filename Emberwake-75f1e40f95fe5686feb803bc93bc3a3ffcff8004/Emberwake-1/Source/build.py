@@ -78,7 +78,9 @@ canvas{display:block;width:100vw;height:100vh;height:100dvh;image-rendering:pixe
 .touchButton:active,.touchButton.pressed{transform:scale(.94);filter:brightness(1.25)}
 #attackLight{right:calc(env(safe-area-inset-right,0px) + 18px);bottom:calc(env(safe-area-inset-bottom,0px) + 18px)}
 #attackHeavy{right:calc(env(safe-area-inset-right,0px) + 18px);bottom:calc(env(safe-area-inset-bottom,0px) + 96px)}
-#mobileJump{left:calc(env(safe-area-inset-left,0px) + 18px + clamp(112px,22vmin,156px) + 8px);bottom:calc(env(safe-area-inset-bottom,0px) + 18px);width:clamp(54px,13vmin,68px);height:clamp(54px,13vmin,68px);border-color:rgba(143,245,230,.72);background:radial-gradient(circle at 35% 28%,rgba(143,245,230,.82),rgba(39,76,88,.9))}
+#mobileJump,#mobileDash{left:calc(env(safe-area-inset-left,0px) + 18px + clamp(112px,22vmin,156px) + 8px);width:clamp(54px,13vmin,68px);height:clamp(54px,13vmin,68px);border-color:rgba(143,245,230,.72);background:radial-gradient(circle at 35% 28%,rgba(143,245,230,.82),rgba(39,76,88,.9))}
+#mobileJump{bottom:calc(env(safe-area-inset-bottom,0px) + 18px)}
+#mobileDash{bottom:calc(env(safe-area-inset-bottom,0px) + 84px);border-color:rgba(255,211,90,.72)}
 #mobileUse{right:calc(env(safe-area-inset-right,0px) + 18px + clamp(58px,15vmin,82px) + 12px);bottom:calc(env(safe-area-inset-bottom,0px) + 35px);width:clamp(48px,12vmin,60px);height:clamp(48px,12vmin,60px);border-color:rgba(143,245,230,.72);background:radial-gradient(circle at 35% 28%,rgba(143,245,230,.82),rgba(39,76,88,.9))}
 #mobileTextInput{display:none;position:fixed;z-index:3;left:0;bottom:0;width:2px;height:2px;padding:0;border:0;opacity:.01;font-size:16px;color:transparent;background:transparent}
 .touch #mobileTextInput{display:block}
@@ -87,7 +89,7 @@ canvas{display:block;width:100vw;height:100vh;height:100dvh;image-rendering:pixe
 .touchPill:active,.touchPill.pressed{filter:brightness(1.5)}
 #mobileClose{border-color:rgba(255,211,90,.8);color:#fff1a8}
 #mobileControls.panel #mobileBar{left:auto;right:calc(env(safe-area-inset-right,0px) + 6px);top:calc(env(safe-area-inset-top,0px) + 2px)}
-@media (orientation:portrait){#movePad,#mobileJump,#attackLight{bottom:calc(env(safe-area-inset-bottom,0px) + 66px)}#attackHeavy{bottom:calc(env(safe-area-inset-bottom,0px) + 144px)}#mobileUse{bottom:calc(env(safe-area-inset-bottom,0px) + 83px)}#mobileBar{top:calc(env(safe-area-inset-top,0px) + 130px)}}
+@media (orientation:portrait){#movePad,#mobileJump,#attackLight{bottom:calc(env(safe-area-inset-bottom,0px) + 66px)}#mobileDash{bottom:calc(env(safe-area-inset-bottom,0px) + 138px)}#attackHeavy{bottom:calc(env(safe-area-inset-bottom,0px) + 144px)}#mobileUse{bottom:calc(env(safe-area-inset-bottom,0px) + 240px)}#mobileBar{top:calc(env(safe-area-inset-top,0px) + 130px)}}
 </style>
 </head>
 <body>
@@ -95,6 +97,7 @@ canvas{display:block;width:100vw;height:100vh;height:100dvh;image-rendering:pixe
 <div id="mobileControls" aria-hidden="true">
   <div id="movePad" aria-label="Move joystick"><div id="moveKnob"></div><span id="moveLabel">MOVE</span></div>
   <button id="mobileJump" class="touchButton" type="button" aria-label="Jump">JUMP</button>
+  <button id="mobileDash" class="touchButton" type="button" aria-label="Dash">DASH</button>
   <button id="mobileUse" class="touchButton" type="button" aria-label="Interact or open">USE</button>
   <button id="attackHeavy" class="touchButton" type="button" aria-label="Right-click attack">HEAVY</button>
   <button id="attackLight" class="touchButton" type="button" aria-label="Left-click attack">LIGHT</button>
