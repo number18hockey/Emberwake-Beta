@@ -14,8 +14,8 @@ const LOOT_T = {
   dune: [['scroll', 0.12, 1, 1], ['salt', .7, 2, 5], ['glass', .4, 1, 3], ['scale', .3, 1, 2], ['tin_ore', .4, 2, 5], ['bronze_bar', .2, 1, 2], ['bronze_kama', .1, 1, 1], ['bone', .5, 1, 4]],
   stilt: [['scroll', 0.1, 1, 1], ['lurker_oil', .4, 1, 2], ['reed', .6, 3, 8], ['peat', .5, 2, 5], ['cloth', .3, 1, 2], ['fieldmap', .15, 1, 1], ['bone_trident', .1, 1, 1], ['jug', .4, 1, 2]],
   mine: [['coal', .6, 2, 6], ['iron_ore', .5, 2, 6], ['tin_ore', .4, 2, 6], ['copper_pick', .12, 1, 1], ['torch', .7, 3, 8], ['charge', .25, 1, 2], ['rope', .4, 1, 2], ['copper_ore', .5, 3, 6]],
-  geode: [['geode_core', .35, 1, 1], ['snow', .9, 3, 8], ['skyglass', .2, 1, 2], ['glass_sai', .05, 1, 1], ['shard', .3, 1, 2]],
-  sky: [['skysilk', .7, 2, 5], ['glider', .15, 1, 1], ['shard', .5, 1, 2], ['glass_glaive', .06, 1, 1], ['skyglass', .3, 1, 2], ['membrane', .4, 1, 2]],
+  geode: [['geode_core', .35, 1, 1], ['snow', .9, 3, 8], ['skyglass', .2, 1, 2], ['glass_daggers', .05, 1, 1], ['shard', .3, 1, 2]],
+  sky: [['skysilk', .7, 2, 5], ['glider', .15, 1, 1], ['shard', .5, 1, 2], ['glass_spear', .06, 1, 1], ['skyglass', .3, 1, 2], ['membrane', .4, 1, 2]],
   vault: [['shard', .6, 1, 3], ['iron_bar', .4, 1, 3], ['salve', .5, 1, 2], ['steel_bar', .15, 1, 1], ['compass', .08, 1, 1], ['fittings', .4, 2, 4]]
 };
 // how far along a find is: 0 everyday, 1 iron and kin, 2 steel and glass, 3 the deep metals

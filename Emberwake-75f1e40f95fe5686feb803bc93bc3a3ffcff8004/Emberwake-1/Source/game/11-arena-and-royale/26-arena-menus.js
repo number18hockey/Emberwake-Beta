@@ -175,15 +175,14 @@ function ffaTile(c, m, x, y, w, h, i) {
   KIT.col = kc;
   if (sel) { c.fillStyle = rgbaHex(m.color, .14); c.fillRect(x + 2, y, w - 2, h); c.fillStyle = m.color; c.fillRect(x, y + h - 1, w, 1); }
   const ix = x + 6, iy = y + round((h - 12) / 2); c.fillStyle = sel ? m.color : '#2b2740'; c.fillRect(ix, iy, 12, 12); c.fillStyle = '#16121f'; c.fillRect(ix + 1, iy + 1, 10, 10); ffaIcon(c, m.id, ix + 2, iy + 2, m.color);
-  const tx = ix + 17, bots = '3 BOTS', bw = textW(bots), room = w - (tx - x) - 4, showB = room - textW(m.name) >= bw + 8, two = h >= 22;
+  const tx = ix + 17, bots = '3 BOTS', bw = textW(bots), room = w - (tx - x) - 4, showB = room - textW(m.name) >= bw + 8, two = false;
   drawText(c, fitText(m.name, room - (showB ? bw + 6 : 0)), tx, y + (two ? round(h / 2) - 9 : round((h - 8) / 2)), sel ? '#fff1a8' : '#fff');
   if (showB) drawText(c, bots, x + w - bw - 5, y + (two ? round(h / 2) - 9 : round((h - 8) / 2)), '#7ddc6f');
-  if (two) drawText(c, fitText(m.desc, room), tx, y + round(h / 2) + 1, sel ? '#d8d4e6' : '#8b8fa3');
 }
 const FFA_FRIENDS = 'Friends pick JOIN A FRIEND on the home page and type your code.', FFA_OFFLINE = 'Private matches need WebRTC. Practice is ready offline with 3 bots.';
 const ffaMiles = s => [['FIRST WIN', s.wins >= 1], ['10 KILLS', s.kills >= 10], ['10 MATCHES', s.matches >= 10]];
 function ffaMileRows(cw) { let r = 1, x = 0; for (const [n] of ffaMiles({})) { const w = textW(n) + 14; if (x && x + w > cw) { r++; x = 0; } x += w; } return r; }
-const ffaRecH = cw => amParaH(ffaMode(FFA.selected).desc, cw) + 6 + 42 + 4 + 6 + 10 + 6 + 10 + ffaMileRows(cw) * 11 + 6 + amParaH(netOK() ? FFA_FRIENDS : FFA_OFFLINE, cw) + 4;
+const ffaRecH = cw => amParaH(ffaMode(FFA.selected).desc, cw) + 6 + 42 + 4 + 6 + 10 + 6 + 10 + ffaMileRows(cw) * 11 + 6 + (netOK() ? 0 : amParaH(FFA_OFFLINE, cw)) + 4;
 // the best of the ten modes by ELO (worked out again only when the saved records change)
 function ffaBest() { const k = String(LS.get(ffaStatsKey(accountId()))), B = AM.ffaBest; if (B && B.k === k) return B.v; const v = FFA_MODES.map(q => ({ q, elo: ffaModeStats(q.id).elo })).sort((a, b) => b.elo - a.elo)[0]; AM.ffaBest = { k, v }; return v; }
 // a private match of the chosen mode, by game code (never inside a scrolling box: the only way to host one)
@@ -205,7 +204,7 @@ function ffaRecBody(c, cx, y, cw) {
   drawText(c, 'MILESTONES', cx, yy, '#8b8fa3'); yy += 10;
   let mx = 0; for (const [n, got] of ffaMiles(st)) { const mw = textW(n) + 14; if (mx && mx + mw > cw) { mx = 0; yy += 11; } c.fillStyle = got ? '#ffd35a' : '#2b2740'; c.fillRect(cx + mx, yy + 1, 6, 6); if (got) { c.fillStyle = '#16121f'; c.fillRect(cx + mx + 2, yy + 3, 2, 2); } drawText(c, n, cx + mx + 9, yy, got ? '#ffd35a' : '#6a6485'); mx += mw; }
   yy += 11 + 6;
-  yy += amPara(c, netOK() ? FFA_FRIENDS : FFA_OFFLINE, cx, yy, cw, '#8b8fa3');
+  if (!netOK()) yy += amPara(c, FFA_OFFLINE, cx, yy, cw, '#8b8fa3');
   return yy + 4 - y;
 }
 // the record as a card of its own, in the mode's colour, with the mode's glyph as its emblem
@@ -343,8 +342,7 @@ function drawCosmeticShop(c) {
     const tx = narrow ? px + 74 : px + 6, tw = narrow ? pw - 80 : pw - 12; let ty = narrow ? py + 8 : py + 54;
     const say = (s, col2) => { if (narrow) drawText(c, fitText(s, tw), tx, ty, col2); else textC(c, fitText(s, tw), px + pw / 2, ty, col2, 1, drawText); ty += 10; };
     say(shopName(k), '#fff1a8'); say(k.rarity, col); say(own ? (wearing ? 'WEARING' : 'OWNED') : shopPrice(k), own ? '#7ddc6f' : k.currency === 'souls' ? '#c77dff' : '#ffd35a');
-    ty += 2; const desc = k.kind === 'trail' ? 'A light-only running trail.' : 'A look, with no change to your strength.';
-    for (const l of wrapC(desc, tw).slice(0, 2)) say(l, '#8b8fa3');
+    ty += 2;
     const label = wearing ? k.id === 0 ? 'WEARING' : 'UNEQUIP' : own ? 'EQUIP' : `BUY ${k.cost} ${k.currency.toUpperCase()}`, poor = !own && p[k.currency] < k.cost, off = (wearing && k.id === 0) || poor;
     const by = py + ph - S.bh - 4 - (BR.menuMsg && !narrow ? 20 : 0), bx = narrow ? tx : px + 6, bw = narrow ? tw : pw - 12;
     kbutton(c, bx, by, bw, label, () => shopAct(k), { main: !off, off, on: wearing && !off, hint: off ? (poor ? 'You need ' + k.cost + ' ' + k.currency + ' for that. Matches pay coins; kills pay souls.' : 'This is what you wear when you wear nothing.') : wearing ? 'Take it off.' : own ? 'Wear it.' : 'Buy it for ' + shopPrice(k).toLowerCase() + ', and wear it.' });
@@ -363,7 +361,7 @@ function drawCosmeticShop(c) {
   });
   COSMETIC_SHOP.rows = L.vis;
   const bk = KIT.T ? 64 : 54;
-  if (!narrow) { const t = kb('Up and Down choose, Enter buys or wears.', 'Tap a look to hold it up.'); if (textW(t) <= cw - bk - 12) drawText(c, t, cx, K.footY + 5 + round((S.bh - 8) / 2), '#6a6485'); }
+
   kbutton(c, K.x + K.w - 8 - bk, K.footY + 5, bk, 'BACK', menuBack, { hint: 'Back to the home page.' });
 }
 function shopKeys(e) {
@@ -429,7 +427,7 @@ Object.assign(MENUS, {
 
 // ---------------- THE WILDS (wDrawBrForm is 22-wilds-screens.js) ----------------
 function wTab(t) { if (BR.menuTab === t) return; BR.menuTab = t; BR.menuScroll = 0; BR.menuMsg = ''; KIT.sy.wq = 0; }
-const wSays = p => { const lv = brPassLevel(); return [['Everyone falls from the sky with nothing. Gather, dig, craft, and be the last one standing.', '#d8d4e6'], ['Kills earn souls; a win pays 100 coins.', '#d8d4e6'], ['Chests hold little. The ashfall moves when Wakers fall, beasts hunt by night, and dig too deep and the lava takes you. ' + (KIT.T ? 'PACT' : '[P]') + ' offers a pact, and leaves one.', '#b9bdd0'], [`${brTitle(lv)}  ·  PASS ${lv}  ·  ${p.xp % 1000}/1000 XP  ·  ${p.wins} WINS`, '#8ff5e6']].concat(NET.room ? [] : [['ONLINE: open this page on claude.ai to find others.', '#ffb347']]); };
+const wSays = p => { const lv = brPassLevel(); return [[`${brTitle(lv)}  ·  PASS ${lv}  ·  ${p.xp % 1000}/1000 XP  ·  ${p.wins} WINS`, '#8ff5e6']]; };
 const wRowH = () => KIT.T ? 30 : 18;
 // the body's height for each page (wide enough at w): what the card asks menuFrame for
 function wBodyH(tab, w) {
@@ -462,9 +460,9 @@ function wBody(c, tab, x, y, w, bot, p) {
     for (const [t, col] of wSays(p)) yy += amPara(c, t, x, yy, w - 4, col) + 4;
     if (need > B.h) kscrollEnd(c);
     const tw = floor((w - S.gap * 2) / 3);
-    kbutton(c, x, gy, tw, 'ONLINE', () => wGo(() => wBrLobbyEnter('room', cleanCode(FORM.brcode) || 'open')), { off: !NET.room, main: !!NET.room, sub: NET.room ? 'everyone here' : tw < 90 ? 'on claude.ai' : 'only on claude.ai', hint: NET.room ? 'Everyone with this page open on claude.ai who types the same room meets here.' : 'Online matches are only on claude.ai: open this page there to find others.' });
-    kbutton(c, x + tw + S.gap, gy, tw, 'HOST', () => wGo(() => { COOP.br = true; wBrLobbyEnter('rtc', 'friends'); }), { off: !netOK(), sub: 'a game code', hint: netOK() ? 'A lobby with a game code for up to 7 friends.' : 'This window cannot connect to other computers.' });
-    kbutton(c, x + (tw + S.gap) * 2, gy, w - (tw + S.gap) * 2, 'SOLO', () => wGo(() => wBrSolo()), { main: !NET.room, sub: 'with echoes', hint: 'A match now, against 31 echoes.' });
+    kbutton(c, x, gy, tw, 'ONLINE', () => wGo(() => wBrLobbyEnter('room', cleanCode(FORM.brcode) || 'open')), { off: !NET.room, main: !!NET.room, sub: tw < 90 ? 'on claude.ai' : 'only on claude.ai', hint: NET.room ? '' : 'Online matches are only on claude.ai: open this page there to find others.' });
+    kbutton(c, x + tw + S.gap, gy, tw, 'HOST', () => wGo(() => { COOP.br = true; wBrLobbyEnter('rtc', 'friends'); }), { off: !netOK(), sub: 'not here', hint: netOK() ? '' : 'This window cannot connect to other computers.' });
+    kbutton(c, x + (tw + S.gap) * 2, gy, w - (tw + S.gap) * 2, 'SOLO', () => wGo(() => wBrSolo()), { main: !NET.room });
     return;
   }
   const wheel = tab === 'wheel', items = wheel ? BR_LOOKS : BR_SHOP_ITEMS, rowH = wRowH(); let yy = y;

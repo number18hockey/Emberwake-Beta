@@ -2,6 +2,28 @@
 
 Newest first.
 
+## Greener, wilder worlds
+
+- **Settings** at the top right of the home page hold every switch: sound (now remembered), attack names, controls, difficulty, crafting, effects, screen motion and FPS mode. The menu's SETTINGS tab has the same ones.
+- **Less text.** The lines that only said what a button does are gone, from the home page to the pack. The game no longer prints HASTY, RUSHED, CRISP or JAMMED over your blows, and **ATTACK NAMES: OFF** hides the name of every attack you land. A line under a button now only says why it is off.
+- **The journal is gone.** The lead at the top right says what to try next; click it for the next lead.
+- **Doors hold.** A closed door is a wall: walking into it no longer opens it. Right-click it within a few paces, or press **F** near it, from either side.
+- **Sleep only at night.** It heals more the more you are hurt, 40 at most, and only once a night (the village fire is the same). By day a bed only marks where you wake.
+- **Weight steadies you.** The more you carry and wear, the less a blow throws you.
+- **Fewer weapon kinds.** Claws, sai, glaives, chain whips and longswords are gone; one you had becomes daggers, a spear, nunchaku or a sword of the same metal.
+- **Weapons do what they say.** A weapon that bleeds now bleeds on every blow, and poison, frost and fire take hold every time, from arrows and thrown weapons too. Poison bubbles green and bleeding drips red, and their numbers are those colours. Weapons that say they stagger, do.
+- **The trident is thrown.** Hold the right button with a spear, trident or halberd and the weapon itself flies, then comes back to your hand.
+- **Plants.** Dig the ground out from under a plant and it comes loose with what it gives. New worlds grow wild potatoes, wild onions, frostmint and emberleaf; **stinging nettles** and **cactus** hurt to brush past; **nightshade** looks like supper and is poison.
+- **Cooking.** Baked potatoes, roast pork and fowl, fried eggs, herb roast, frostmint tea, nettle soup, potato soup, hen stew, ember skewers, cactus stew, a wild salad, pork pie and potato bake. Nightshade makes a venom coat.
+- **Wild game.** Wild pigs graze the green lands, and willow hens roam the moor and the Mosswood too.
+- **The ash adder** lies in long grass, thorn and sand. Its bite poisons you for a long while and turns your stomach: the screen sways and goes green at the edges. Frostmint tea, nettle soup or an antidote settle it (**SCREEN MOTION: CALM** keeps the screen still).
+- **Weather you feel.** **Hail** hurts out in the open. Rain gathers and runs down the screen. In snow the cold builds until it hurts, with frost at the screen's edges.
+- **New worlds** (made from now on; your old worlds keep every hill where it was):
+  - **Mostly green.** The moor, the Mosswood and the Willowmere grow green turf and grass. The cold glass of the Reach and the hot lands come round less often, each as wide as before.
+  - **A fourth face for every land:** THE GREENWOOD, THE DEEPWOOD, THE WILLOW TANGLE and THE BLACKTHORN THICKET (trees shoulder to shoulder), THE FROST FOREST (a forest in the glass), THE DROWNED WOOD, THE CACTUS FLATS (cactus and not one tree), THE RUST GROVE and THE CINDER WOOD.
+  - **The story's places move.** The Warden's crater, the mirror, the mine and the gate, the old watch with the Waker's Blade, the broken spire and the sky altar are laid out by the seed: which side, and how far, change from world to world.
+  - **Sky islands** hold a sky shrine, a nest, a cache of sky-glass weapons, a glider left behind, a garden of glass, or nothing but wind.
+
 ## Faster fights
 
 - **The quickening.** Blows struck on the glint now **quicken**: each crisp one after a hit makes the next come sooner, up to five steps (a thin bar under your embers). Five start **DRUMFIRE**, about a second when timing lets go and quick presses **stoke** every blow; end it with a heavy **CRASH**. One press too soon is only **HASTY** (out of time, a step slower); hammering is still **RUSHED**. Press while a blow throws you to **shake it off** sooner. Computer fighters play the same way, as far as their skill allows. Between people a blow that did not bite now lands soft, as it does on an echo, and a friend's blows on a hollow hit as hard as the host's. Letting go of the left button no longer drops a heavy blow you are charging with the right. Old and new versions cannot play together.

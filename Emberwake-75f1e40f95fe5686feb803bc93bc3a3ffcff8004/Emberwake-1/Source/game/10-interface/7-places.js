@@ -65,7 +65,7 @@ function howtoText(i) {
   if (i === 0) return T ? [['The stick walks. JUMP jumps: twice in the air, once you have learned it.'], ['DASH dodges: a quick dash that slips through blows.'], ['Push the stick down to drop through bridges.'], [''],
     ['PACK opens your pack and crafting. USE uses and talks. MENU holds the world still.'], ['A finger held on the ground digs where it points.']]
     : [['A / D walk. SPACE or W jumps: twice in the air, once you have learned it.'], ['SHIFT dodges: a quick dash that slips through blows.'], ['Hold S to drop through bridges.'], [''],
-    ['E opens your pack and crafting. F uses and talks. M is the map, J the journal, P the menu.']];
+    ['E opens your pack and crafting. F uses and talks. M is the map, P the menu.']];
   if (i === 1) return [['THE BEAT', A], [T ? 'LIGHT strikes a light blow. HEAVY strikes a heavy one.' : 'LEFT MOUSE strikes a light blow. RIGHT MOUSE or Q a heavy one.'],
     ['After each blow your weapon GLINTS. Strike on it: the blow bites, an ember of TEMPO lights, and blows QUICKEN. Five in time: DRUMFIRE, hammer away.', G],
     ['One press too soon is HASTY, out of time. Hammer and you are RUSHED.', R], ['Holding the button does nothing. Pressing while hit gets you up sooner.', R], [''],
@@ -73,10 +73,10 @@ function howtoText(i) {
     ['CLASH: swing into an enemy\'s blow and it is turned aside. Your next blow is the ANSWER.'], ['A foe shows ! before it strikes. Dodge THROUGH the blow, then strike: RIPOSTE.'],
     ['Hit foes in time and their guard BREAKS: they reel. A heavy blow then is a SUNDER.'], ['A WARDED foe turns plain blows from the front: go heavy, clean, or behind it.']];
   if (i === 2) return [['Dig, build, craft. Find three embers below, then four gates above.'], ['Every world has three TRAITS of its own, lands with MOODS, and a year of four seasons.'],
-    [kb('The journal (J) always knows what to try next.', 'The journal always knows what to try next.')]];
+    ['The lead at the top right says what to try next; click it for the next one.']];
   return T ? [['stick', 'walk; down drops through bridges'], ['JUMP', 'jump (twice, once learned)'], ['DASH', 'dodge'], ['LIGHT', 'a light blow'], ['HEAVY', 'a heavy blow'], ['USE', 'use, talk; hold to rekindle'], ['PACK', 'pack and crafting'], ['MAP', 'the map, once you have one'], ['HEAL', 'a quick heal'], ['MENU', 'hold the world still'], ['CHAT', 'talk, with friends'], ['finger', 'on the ground: dig and build']]
     : [['A / D', 'walk'], ['SPACE, W', 'jump (twice, once learned)'], ['SHIFT', 'dodge'], ['S held', 'drop through bridges'], ['LEFT MOUSE', 'a light blow'], ['RIGHT MOUSE, Q', 'a heavy blow'], ['1-0, wheel', 'the hotbar'], ['E', 'pack and crafting'], ['F', 'use, talk'], ['H', 'a quick heal'],
-      ['C', 'forms (the codex)'], ['J', 'journal and leads'], ['M', 'map'], ['K', 'knap a stone'], ['B', 'recipe book'], ['R / T', 'throw / switch sidearm'], ['G', 'drop what you hold'], ['O', 'sound on or off'], ['P, ESC', 'the menu'], ['TAB', 'scores, in an arena'], ['ENTER', 'chat, with friends']];
+      ['C', 'forms (the codex)'], ['M', 'map'], ['K', 'knap a stone'], ['B', 'recipe book'], ['R / T', 'throw / switch sidearm'], ['G', 'drop what you hold'], ['O', 'sound on or off'], ['P, ESC', 'the menu'], ['TAB', 'scores, in an arena'], ['ENTER', 'chat, with friends']];
 }
 // the tab laid out at width w: rows of {t, col, x} (and keys tabs: {k, t}); cached
 function howtoLayout(i, w) {
@@ -107,8 +107,7 @@ function drawHowTo(c) {
   }
   if (need > B.h) kscrollEnd(c);
   const bw = KIT.T ? 72 : 62;
-  kbutton(c, K.x + K.w - 8 - bw, K.footY + 5, bw, 'BACK', menuBack, { main: true, hint: 'Back to the home page.' });
-  const tip = kb('1-4 or < > change the page', 'tap a tab for a page'); if (textW(tip) <= K.w - bw - 28) drawText(c, tip, x, K.footY + 5 + round((S.bh - 8) / 2), '#6a6485');
+  kbutton(c, K.x + K.w - 8 - bw, K.footY + 5, bw, 'BACK', menuBack, { main: true });
 }
 // the head's metronome: a mark runs along a 60x3 bar and strikes NOW every 600 ms
 function howtoBeat(c, rx, ry) {
@@ -197,8 +196,7 @@ function drawWorlds(c) {
   }
   const B = { x: K.x + 6, y: top, w: K.w - 12, h: K.footY - 4 - noteH - top };
   if (!n) {
-    textC(c, 'No worlds yet. Forge your first one.', K.x + K.w / 2, top + 8, '#b9bdd0', 1, drawText);
-    textC(c, kb('+ NEW WORLD below, or press N.', '+ NEW WORLD below.'), K.x + K.w / 2, top + 20, '#8b8fa3', 1, drawText);
+    textC(c, 'No worlds yet.', K.x + K.w / 2, top + 14, '#b9bdd0', 1, drawText);
   } else WORLDS.vis = klist(c, B, n, rowH, worldRow).vis;
   if (note) kmsg(c, K.x + 8, K.footY - noteH, K.w - 16, note);
   const fy = K.footY + 5, x = K.x + 8, g = S.gap;
@@ -242,7 +240,7 @@ function forgeSparks(c) {
 // what this seed makes: the three traits, glowing a moment after a ROLL
 function forgeTraits(c, x, y, w) {
   const g = clamp(1 - (performance.now() - FORGE.t) / 300, 0, 1);
-  if (!FORM.seed.trim()) { let yy = y; for (const l of wrapC('NO SEED: ITS LAND, LIFE AND SKY WILL BE A SURPRISE. Type one, or ROLL until you like what you see.', w)) { drawText(c, l, x, yy, '#8b8fa3'); yy += 9; } return; }
+  if (!FORM.seed.trim()) return;
   if (g > 0) { c.fillStyle = rgbaHex(KIT.col, .22 * g); c.fillRect(x - 3, y - 2, w + 6, forgeTraitsH); }
   drawText(c, fitText('THIS SEED MAKES A WORLD THAT IS', w), x, y, '#8b8fa3'); let yy = y + 12;
   for (const k of traitsOf(seedFrom(FORM.seed))) { const t = TRAITS[k], L = wrapC(t.d, w - 6); drawText(c, t.n, x, yy, TRAIT_COL[t.g]); yy += 9; for (const l of L.slice(0, 2)) { drawText(c, l, x + 6, yy, '#b9bdd0'); yy += 9; } yy += 2; }
@@ -259,15 +257,15 @@ function forgeLeft(c, x, y, w) {
 }
 function forgeRight(c, x, y, w) {
   let yy = y;
-  yy += kchooser(c, x, yy, w, 'RANGE', GEN_RANGE_N, 'size', GEN_RANGE_D);
-  yy += kchooser(c, x, yy, w, 'SHAPE', SHAPE_N, 'shape', SHAPE_D);
-  yy += kchooser(c, x, yy, w, 'MODE', MODE_N, 'mode', MODE_D);
+  yy += kchooser(c, x, yy, w, 'RANGE', GEN_RANGE_N, 'size');
+  yy += kchooser(c, x, yy, w, 'SHAPE', SHAPE_N, 'shape');
+  yy += kchooser(c, x, yy, w, 'MODE', MODE_N, 'mode');
   yy += 2 + klook(c, x, yy, w, { hat: false });
   return yy - y;
 }
 function drawCreate(c) {
   menuBackdrop(c, 'create'); kview('create');
-  const S = KIT.sizes, narrow = menuMode() === 'narrow', fh = KIT.T ? 34 : 28, ch = S.ah + 23;
+  const S = KIT.sizes, narrow = menuMode() === 'narrow', fh = KIT.T ? 34 : 28, ch = S.ah + 6;
   const leftH = fh * 2 + 6 + forgeTraitsH, rightH = ch * 3 + 2 + S.tileH + S.gap + 2, foot = S.bh + 10;
   const F = menuFrame('create', 480, 29 + (narrow ? leftH + 8 + rightH : max(leftH, rightH)) + 6 + foot); menuHero(c, 'create', F);
   const K = kcard(c, F.x, F.y, F.w, F.h, 'create', 'FORGE A NEW WORLD', { foot: true, i: 0 });

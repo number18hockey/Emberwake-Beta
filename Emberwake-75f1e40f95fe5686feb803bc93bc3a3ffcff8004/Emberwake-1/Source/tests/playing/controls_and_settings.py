@@ -130,17 +130,25 @@ async def main():
       let cross = 0, arrow = 0; ctx.stroke = function () { if (this.strokeStyle === '#fff1a8') cross++; return CanvasRenderingContext2D.prototype.stroke.apply(this, arguments); }; ctx.drawImage = function (im) { if (im === SPR.cursor) arrow++; return CanvasRenderingContext2D.prototype.drawImage.apply(this, arguments); };
       render(1); delete ctx.stroke; delete ctx.drawImage;
       for (const k of parts) window[k] = was[k]; textS = tS; textO = tO; [G.jNew, G.time, G.feed, G.combo, G.picks, mouse.x, mouse.y, inv[0]] = keep;
-      return [parts.filter(k => seen.has(k)).length, ['[E] pack', 'NEW JOURNAL', 'TESTMOVE', '3 HITS', '+2 '].filter(t => said.some(s => s.includes(t))).length, cross > 0 && !arrow]; })()"""
+      return [parts.filter(k => seen.has(k)).length, ['TESTMOVE', '3 HITS', '+2 '].filter(t => said.some(s => s.includes(t))).length, cross > 0 && !arrow]; })()"""
     fps = []
     for i in range(2): await h.ev(FPS); fps.append(await h.ev("SETTINGS.fpsMode"))
     hud = [await h.ev(HUD)]; await h.ev("G.parts.length = 0; burst(G.p.x, G.p.y, 12, ['#fff'], 2, 30);"); made = [await h.ev("G.parts.length")]
     await h.ev(FPS); fps.append(await h.ev("SETTINGS.fpsMode")); made.append(await h.ev("G.parts.length")); await h.ev("burst(G.p.x, G.p.y, 12, ['#fff'], 2, 30);"); made.append(await h.ev("G.parts.length")); hud.append(await h.ev(HUD))
     res['I fps mode: switched, particles (off, switched on, on), HUD parts / notes / cross (off, on)'] = [fps, made, hud, await h.ev("JSON.parse(localStorage.getItem('ew_settings')).fpsMode")]
     await h.ev(FPS); await h.ev("G.parts.length = 0;")
-    assert fps == [True, False, True] and made == [12, 0, 0] and hud == [[10, 5, False], [2, 0, True]] and not await h.ev("SETTINGS.fpsMode"), 'FPS MODE did not switch, kept making particles, or did not clear the HUD'
-    await h.ev("UI.open = 'journal'; UI.jtab = 'leads'; render(1);")
-    await h.ev(PRESS % 'tab:LORE')
-    res['I journal tab click'] = await h.ev("UI.jtab")
+    assert fps == [True, False, True] and made == [12, 0, 0] and hud == [[10, 3, False], [2, 0, True]] and not await h.ev("SETTINGS.fpsMode"), 'FPS MODE did not switch, kept making particles, or did not clear the HUD'
+    # ATTACK NAMES: its switch hides the names of the attacks you land (the move feed), and is remembered
+    NAMES = """(() => { const said = [], tO = textO, kf = G.feed; textO = function (c, s) { said.push(String(s)); return tO.apply(this, arguments); };
+      UI.open = null; G.feed = [{ name: 'TESTMOVE', t: 10, fresh: true }]; render(1); textO = tO; G.feed = kf; return said.includes('TESTMOVE'); })()"""
+    shown = [await h.ev(NAMES)]
+    await h.ev("UI.open = 'pause';"); await h.ev(PRESS % 'btn:ATTACK NAMES'); names = [await h.ev("SETTINGS.moveNames")]; shown.append(await h.ev(NAMES))
+    await h.ev("UI.open = 'pause';"); await h.ev(PRESS % 'btn:ATTACK NAMES'); names.append(await h.ev("SETTINGS.moveNames")); shown.append(await h.ev(NAMES))
+    res['I attack names: switched (off, on), names drawn (on, off, on)'] = [names, shown]
+    assert names == [False, True] and shown == [True, False, True], 'ATTACK NAMES did not hide the names of the attacks'
+    # (the journal is gone: J opens nothing)
+    await h.ev("UI.open = null; document.dispatchEvent(new KeyboardEvent('keydown', { code: 'KeyJ', key: 'j', bubbles: true })); 0")
+    res['I J opens nothing'] = await h.ev("UI.open")
     await h.ev("UI.open = null; hold(null); toggleUI('codex'); render(1);")
     res['I codex opens on'] = await h.ev("UI.codex")
     await h.ev("render(1)"); (await h.shot()).save(shot('codex_fists.png'))

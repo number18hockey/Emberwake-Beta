@@ -476,7 +476,8 @@ function island(cx, cy, a, th, force) {
   }
   ISLES.push({ cx, cy, a }); return true;
 }
-function vent(x, topY) { let gy = heights[x]; if (!TP[tileAt(x, gy)].solid || tileAt(x, gy - 1) === WATER || RESV[x] > 1) return false; VENTS.push({ x, cx: x * T + 4, gy, top: topY }); propC(PROP.vent, x, gy + 1, { lit: 1 }); reserve(x - 2, x + 2, 1); return true; }
+// (in a world made since land 6 a vent keeps clear of the small things on the road: it would carry off whoever stood at one)
+function vent(x, topY) { let gy = heights[x]; if (!TP[tileAt(x, gy)].solid || tileAt(x, gy - 1) === WATER || RESV[x] > 1 || (LAND6() && (curioNear(x) || curioNear(x - 6) || curioNear(x + 6)))) return false; VENTS.push({ x, cx: x * T + 4, gy, top: topY }); propC(PROP.vent, x, gy + 1, { lit: 1 }); reserve(x - 2, x + 2, 1); return true; }
 function buildDrift() {
   const shape = WORLD.shape; SKY_Y = max(14, DRIFT_Y - 22);
   island(SKY_X, SKY_Y, 19, 10, true);
@@ -572,8 +573,8 @@ function renderChunk(c) {
     const i = ty * WW + tx, t = tiles[i], w = walls[i], p = TP[t], px = lx * T, py = ly * T, v = (hash2(tx, ty) * 4) | 0;
     if (!p.full || p.ghost) {
       if (w) x.drawImage(WTEX[w][v], px, py);
-      if (t && !p.dyn && !p.liquid && !p.ghost) { x.drawImage(TEX[t][v], px, py); const ch = CHIP.size && CHIP.get(i); if (ch) drawChips(x, ch, px, py, w, v, t); }
-      if (!w && tileAt(tx, ty + 1) === GRASS) for (let k = 0; k < 8; k++) { const f = hh(tx * 8 + k, ty + 1, 5); if (f > .5) { x.fillStyle = FELT[0]; x.fillRect(px + k, py + 7, 1, 1); if (f > .86) { x.fillStyle = '#ffc2a0'; x.fillRect(px + k, py + 6, 1, 1); } } }
+      if (t && !p.dyn && !p.liquid && !p.ghost) { x.drawImage(decorTex(t, tx)[v], px, py); const ch = CHIP.size && CHIP.get(i); if (ch) drawChips(x, ch, px, py, w, v, t); }
+      if (!w && tileAt(tx, ty + 1) === GRASS) { const FE = feltAt(tx); for (let k = 0; k < 8; k++) { const f = hh(tx * 8 + k, ty + 1, 5); if (f > .5) { x.fillStyle = FE[0]; x.fillRect(px + k, py + 7, 1, 1); if (f > .86) { x.fillStyle = FE[3]; x.fillRect(px + k, py + 6, 1, 1); } } } }
       continue;
     }
     const nf = (ax, ay) => { const q = tileAt(ax, ay); return !TP[q].full || TP[q].ghost; };
@@ -585,9 +586,10 @@ function renderChunk(c) {
     if (u) { x.fillStyle = p.hi; x.fillRect(px + (tl ? 2 : 1), py + 1, 8 - (tl ? 2 : 1) - (tr ? 2 : 1), 1); }
     if (d) { x.fillStyle = 'rgba(9,6,24,.38)'; x.fillRect(px + (bl ? 2 : 1), py + 6, 8 - (bl ? 2 : 1) - (br ? 2 : 1), 1); }
     if (u && p.cap === 1) {
-      for (let k = 0; k < 8; k++) { const y0 = (tl && k < 2) || (tr && k > 5) ? 2 : 1, hgt = 2 + (hh(tx * 8 + k, ty, 5) > .55 ? 1 : 0) + (hh(tx * 8 + k, ty, 6) > .86 ? 2 : 0); for (let j = 0; j < hgt; j++) { x.fillStyle = FELT[j === 0 ? 0 : j < hgt - 1 ? 1 : 2]; x.fillRect(px + k, py + y0 + j, 1, 1); } }
-      if (l) for (let j = 0, n = 2 + (hash2(tx, ty) * 3 | 0); j < n; j++) { x.fillStyle = FELT[j ? 2 : 1]; x.fillRect(px + 1, py + 2 + j, 1, 1); }
-      if (r) for (let j = 0, n = 2 + (hash2(ty, tx) * 3 | 0); j < n; j++) { x.fillStyle = FELT[j ? 2 : 1]; x.fillRect(px + 6, py + 2 + j, 1, 1); }
+      const FE = feltAt(tx);   // (green turf in the green lands of a world made since land 6)
+      for (let k = 0; k < 8; k++) { const y0 = (tl && k < 2) || (tr && k > 5) ? 2 : 1, hgt = 2 + (hh(tx * 8 + k, ty, 5) > .55 ? 1 : 0) + (hh(tx * 8 + k, ty, 6) > .86 ? 2 : 0); for (let j = 0; j < hgt; j++) { x.fillStyle = FE[j === 0 ? 0 : j < hgt - 1 ? 1 : 2]; x.fillRect(px + k, py + y0 + j, 1, 1); } }
+      if (l) for (let j = 0, n = 2 + (hash2(tx, ty) * 3 | 0); j < n; j++) { x.fillStyle = FE[j ? 2 : 1]; x.fillRect(px + 1, py + 2 + j, 1, 1); }
+      if (r) for (let j = 0, n = 2 + (hash2(ty, tx) * 3 | 0); j < n; j++) { x.fillStyle = FE[j ? 2 : 1]; x.fillRect(px + 6, py + 2 + j, 1, 1); }
     } else if (u && p.cap) {
       const c1 = p.capC ? p.capC[0] : p.cap === 2 ? '#ffffff' : p.cap === 3 ? '#f0b070' : '#d6d0dc', c2 = p.capC ? p.capC[1] : p.cap === 2 ? '#dcf7f5' : p.cap === 3 ? '#e58a52' : '#b8b2c0';
       for (let k = tl ? 2 : 1; k < (tr ? 6 : 7); k++) { x.fillStyle = p.cap === 3 && (k + tx) % 3 === 0 ? c2 : c1; x.fillRect(px + k, py + 1, 1, 1); if (hh(tx * 8 + k, ty, 8) > .55) { x.fillStyle = c2; x.fillRect(px + k, py + 2, 1, 1); } }

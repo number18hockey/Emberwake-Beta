@@ -169,7 +169,7 @@ async def run():
     under = await h.ev("(() => { const p = G.p, tx = floor(p.x / T); let y = heights[tx] + 30; while (y < DEEP_Y && solidAt(tx, y)) y++; if (y >= DEEP_Y) return -1; p.x = p.px = tx * T + 1; p.y = p.py = (y - 2) * T; G.parts.length = 0; G.wx = { k: 'rain', t: 4000, a: 1 }; for (let i = 0; i < 30; i++) wxParticles(); return G.parts.filter(q => q.rain).length; })()")
     ok.append(('no rain underground', under <= 0))
     sv = await h.ev("(() => { G.days = 7.25; G.curios = { 123: 7 }; const d = snapshotWorld(); return [d.days, d.land, JSON.stringify(d.curios)]; })()")
-    ok.append(('the day of the year, the land version and used curios are saved', sv[0] == 7.25 and sv[1] == 5 and sv[2] == '{"123":7}'))
+    ok.append(('the day of the year, the land version and used curios are saved', sv[0] == 7.25 and sv[1] == 6 and sv[2] == '{"123":7}'))
     sheet([im_elder.resize((330, 240)), im_rain.resize((426, 240)), im_snow.resize((426, 240))][1:], 2, shot('world_weather.png'), ['rain in Kindling', 'snow in Ashrest'])
 
     bad = [n for n, v in ok if not v]

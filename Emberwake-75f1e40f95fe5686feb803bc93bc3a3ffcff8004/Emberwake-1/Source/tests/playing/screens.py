@@ -1,4 +1,4 @@
-# Screens: echo stones, the journal and other panels.
+# Screens: echo stones, the lead at the top right (it took the journal's place) and other panels.
 import asyncio, sys
 import os, sys
 sys.path.insert(0, os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), 'helpers'))
@@ -16,10 +16,14 @@ async def main():
     r = await h.ev("(()=>{ const o=nearestInteract(); if(!o) return null; const l=o.label; o.act(); return [l, UI.open, G.echoes.size]; })()")
     print('echo interact', r)
     await h.step(2); ims.append((await h.shot()).resize((640, 360))); labels.append('echo stone ' + str(r))
-    await h.ev("closeUI(); Object.assign(G.beasts,{slagling:4, husk:9, moonwretch:2}); G.echoes.add(100); G.echoes.add(203); G.flags.seen1=true; UI.open='journal'; UI.jtab='echo';")
-    await h.step(1); ims.append((await h.shot()).resize((640, 360))); labels.append('journal echoes')
-    await h.ev("UI.jtab='beast'; UI.scroll=0;"); await h.step(1); ims.append((await h.shot()).resize((640, 360))); labels.append('journal beasts')
-    await h.ev("UI.jtab='leads'; learn('tyrant',true); learn('emoon',true); learn('rootkey',true);"); await h.step(1); ims.append((await h.shot()).resize((640, 360))); labels.append('journal leads')
+    # the lead box: a click goes on to the next open lead, and past the last to none (then LEADS brings them back)
+    await h.ev("closeUI(); learn('tyrant',true); learn('emoon',true); learn('rootkey',true); G.pin = leadsOpen()[0];")
+    seen = []
+    for i in range(5):
+        seen.append(await h.ev("G.pin || ''")); await h.ev("nextLead();")
+    print('leads in turn', seen)
+    assert len(set(seen)) >= 3 and '' in seen, 'a click on the lead did not go through the open leads and to none'
+    await h.ev("G.pin = leadsOpen()[0];"); await h.step(1); ims.append((await h.shot()).resize((640, 360))); labels.append('the lead box')
     await h.ev("closeUI(); G.flags.gateOpen=true; G.flags.dim1=true; addItem('rootkey',1); enterDim(1, true); G.cine=null; G.banner=null; openRift(SPAWN_X, VIL_Y-1);")
     await h.step(2); ims.append((await h.shot()).resize((640, 360))); labels.append('rift panel (with key)')
     await h.ev("closeUI(); const tx=floor((G.p.x+3)/T)+3, ty=floor((G.p.y+G.p.h-1)/T); setTile(tx,ty,SLAGFORGE); for (const [id,n] of [['tyrant_core',1],['cinder_bar',8],['moon_wax',3],['cinderite_ore',9],['cinder',4]]) addItem(id,n); openStation(tx,ty);")

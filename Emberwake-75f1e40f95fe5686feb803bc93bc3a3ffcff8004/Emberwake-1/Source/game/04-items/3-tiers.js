@@ -121,7 +121,7 @@ R('bench', 'glasswalk', 4, { shardglass: 2 }); R('bench', 'capflesh', 2, { gloam
 Object.assign(LOOT_T, {
   riftcache: [['torch', 1, 4, 8], ['salve', 1, 2, 3], ['jerky', .8, 2, 4], ['rope', .5, 1, 2]],
   kilnruin: [['cinderite_ore', .6, 2, 6], ['cinder', .8, 3, 8], ['ember_bar', .3, 1, 2], ['shard', .5, 1, 3], ['salve', .5, 1, 2], ['charglass', .5, 2, 5], ['coal', .5, 2, 5], ['cinder_sword', .06, 1, 1], ['scroll', .12, 1, 1]],
-  rootruin: [['gloom_ore', .55, 2, 6], ['spore_dust', .7, 2, 5], ['moth_wax', .5, 1, 3], ['salve', .5, 1, 3], ['glowcap', .6, 2, 4], ['cinder_bar', .3, 1, 2], ['gloom_claws', .06, 1, 1], ['scroll', .14, 1, 1]],
-  glassruin: [['prism_ore', .5, 2, 6], ['prism_dust', .7, 2, 5], ['shardglass', .6, 3, 8], ['salve', .6, 1, 3], ['gloom_bar', .3, 1, 2], ['void_silk', .4, 1, 2], ['prism_sai', .06, 1, 1], ['scroll', .16, 1, 1]],
+  rootruin: [['gloom_ore', .55, 2, 6], ['spore_dust', .7, 2, 5], ['moth_wax', .5, 1, 3], ['salve', .5, 1, 3], ['glowcap', .6, 2, 4], ['cinder_bar', .3, 1, 2], ['gloom_daggers', .06, 1, 1], ['scroll', .14, 1, 1]],
+  glassruin: [['prism_ore', .5, 2, 6], ['prism_dust', .7, 2, 5], ['shardglass', .6, 3, 8], ['salve', .6, 1, 3], ['gloom_bar', .3, 1, 2], ['void_silk', .4, 1, 2], ['prism_daggers', .06, 1, 1], ['scroll', .16, 1, 1]],
   glassisle: [['prism_ore', .7, 3, 7], ['prism_dust', .6, 2, 4], ['glasswalk', .6, 6, 16], ['salve', .4, 1, 2], ['starshard', .15, 1, 1]]
 });

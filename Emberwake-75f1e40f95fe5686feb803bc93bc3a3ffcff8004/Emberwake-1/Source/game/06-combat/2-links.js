@@ -78,7 +78,7 @@ function applyStatus(e, k, by, o = {}) {
 // poison and bleeding hurt over time; bleeding hurts more while the victim moves
 function dotTick(e, n, col) {
   if (e.fighter) { if (e.remote) return; e.hp -= n; e.flash = 2; e.regenT = 0; numPop(e.x + 3, e.y - 2, n, col); if (e.hp <= 0) { if (e.yieldAt) { e.hp = 1; e.yieldAt(e); } else killFighter(e, null); } }
-  else damageEnemy(e, n, 0, 0, { dot: 1 });
+  else damageEnemy(e, n, 0, 0, { dot: 1, col });
 }
 function burnTick(e, s) {
   if (e.fighter) { if (e.remote) return; e.hp -= 2; e.flash = 3; e.regenT = 0; numPop(e.x + 3, e.y - 2, 2, '#ff9a3d'); if (e.hp <= 0) { if (e.yieldAt) { e.hp = 1; e.yieldAt(e); } else killFighter(e, s.burnBy); } }
@@ -94,8 +94,9 @@ function tickStatus(e) {
     if (s.burn % 24 === 12 && !e.dead) burnTick(e, s);
     if (liqAt(e.x + e.w / 2, e.y + e.h - 3) === 1) { s.burn = 0; for (let i = 0; i < 8; i++) P(e.x + e.w / 2, e.y + 4, frand(-.6, .6), frand(-1.4, -.4), 40, '#d8d4e6', { g: -.01 }); }
   }
-  if (s.poison > 0) { s.poison--; if (s.poison % 40 === 20 && !e.dead) dotTick(e, e.fighter ? 2 : 3, '#9a5ad0'); if (G.time % 9 === 0) P(e.x + frand(e.w), e.y + frand(e.h), 0, -.4, 18, fpick(['#9a5ad0', '#c9a0e0']), { g: -.01 }); }
-  if (s.bleed > 0) { s.bleed--; const mv = abs(e.vx) > .5 ? 2 : 1; if ((s.bleed % 30) === 15 && !e.dead) dotTick(e, (e.fighter ? 1 : 2) * mv, '#e2483b'); if (G.time % 6 === 0) P(e.x + e.w / 2 + frand(-2, 2), e.y + e.h * .4, frand(-.3, .3), .2, 24, '#c93a2a', { g: .12 }); }
+  // (poison bubbles green and bleeding drips red, and their numbers are those colours, so both are plain to see)
+  if (s.poison > 0) { s.poison--; if (s.poison % 40 === 20 && !e.dead) dotTick(e, e.fighter ? 2 : 4, '#9adc5a'); if (G.time % 5 === 0) P(e.x + frand(e.w), e.y + frand(e.h), frand(-.15, .15), -.5, 20, fpick(['#7ddc6f', '#b8f07a', '#4caf50']), { g: -.012 }); }
+  if (s.bleed > 0) { s.bleed--; const mv = abs(e.vx) > .5 ? 2 : 1; if ((s.bleed % 30) === 15 && !e.dead) dotTick(e, (e.fighter ? 1 : 3) * mv, '#ff5a5a'); if (G.time % 4 === 0) P(e.x + e.w / 2 + frand(-2, 2), e.y + e.h * .4, frand(-.3, .3), .2, 24, fpick(['#c93a2a', '#ff5a5a']), { g: .12 }); }
   if (s.frost > 0) { s.frost--; if (G.time % 7 === 0) P(e.x + frand(e.w), e.y + frand(e.h), 0, -.2, 22, fpick(FROST), { g: 0 }); }
   if (s.blind > 0) { s.blind--; if (G.time % 7 === 0) P(e.x + e.w / 2 + frand(-5, 5), e.y + frand(-2, 4), frand(-.3, .3), -.25, 34, fpick(['#5f5a69', '#8d8794', '#3f3a4c']), { g: -.008, fr: .97 }); }
   if (s.held > 0) { if (e.heldT > 0 && --e.heldT <= 0) { s.held = 0; if (G.link && G.link.e === e && !G.link.L) { G.link = null; G.zoomT = 1; } } e.vx = e.vy = 0; return true; }

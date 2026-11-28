@@ -36,7 +36,7 @@ function wDrawBrForm(c) {
   const bk = KIT.T ? 64 : 54;
   kbutton(c, K.x + K.w - 8 - bk, K.footY + 5, bk, 'BACK', menuBack, { hint: 'Back to the Ashfall Trials.' });
   if (tab === 'wheel') wTurn(c, cx, K.footY + 5, cw - bk - S.gap, p);
-  else if (tab === 'queue') { const t = BR.matchType === 'ranked' || FORM.brRanked ? 'RANKED: your ELO is on the line.' : 'UNRANKED: play for souls and coins.'; if (textW(t) <= cw - bk - 12) drawText(c, t, cx, K.footY + 5 + round((S.bh - 8) / 2), '#6a6485'); }
+
 }
 // the Wilds' lobby: the Trials' lobby in violet (arenaLobby, 26-arena-menus.js)
 function wDrawBrLobby(c) { arenaLobby(c, true); }

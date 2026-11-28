@@ -37,6 +37,8 @@ window.botStep = (key) => {
   const onC = climbAt(p), wet = liqAt(p.x + 3, p.y + 10);
   if (wet) keys.KeyW = true;
   const cx = Math.floor((p.x + 3) / T), dir = key === 'KeyD' ? 1 : -1, hh0 = heights[cx];
+  // (a closed door is a wall now: open it, as a Waker would)
+  { const fx = Math.floor((p.x + 3 + dir * 6) / T); for (let y = Math.floor(p.y / T); y <= Math.floor((p.y + p.h - 1) / T); y++) if (tileAt(fx, y) === DOORC) { toggleDoor(fx, y); break; } }
   if (p.onGround && heights[cx + dir] > hh0 + 5 && [2, 3, 4].some(k => heights[cx + dir * k] <= hh0 + 3)) { pressed.KeyW = true; keys.KeyW = true; p.bot.jumping = true; }
   if (p.bot.still > 4) { if (onC) { keys.KeyW = true; keys[key] = p.bot.still % 40 > 30; } else if (p.onGround) { pressed.KeyW = true; keys.KeyW = true; p.bot.jumping = true; } }
 };
@@ -64,7 +66,7 @@ async def run():
         print('  seed %-6d land %d  home on the %s  the Mosswood %s paces away, %s wide (%.1f%% of the country)  the Willowmere %s paces away, %s wide (%.1f%%)' % (seed, w['land'], w['home'], w['far'].get('mosswood'), (w['run'].get('mosswood') or [0, 0])[1], w['share'].get('mosswood', 0) / 240,
               w['far'].get('willowmere'), (w['run'].get('willowmere') or [0, 0])[1], w['share'].get('willowmere', 0) / 240))
         w['look'] = {b: await h.ev(LOOK + "(%d, %d)" % tuple(w['run'][b])) for b in w['run']}
-    ok.append(('a world made today is land 5', all(W[s]['land'] == 5 for s in SEEDS)))
+    ok.append(('a world made today is land 6 (the newest: it has both lands too)', all(W[s]['land'] == 6 for s in SEEDS)))
     ok.append(('a real stretch of the Mosswood lies within 3000 paces of home on every seed', all(W[s]['far'].get('mosswood', 1e9) < 3000 for s in SEEDS)))
     ok.append(('and of the Willowmere within 4000', all(W[s]['far'].get('willowmere', 1e9) < 4000 for s in SEEDS)))
     ok.append(('the village still stands on the moor', all(W[s]['home'] == 'moor' for s in SEEDS)))
@@ -107,7 +109,8 @@ async def run():
       return { md: cnt('mosswood', false), mn: cnt('mosswood', true), wd: cnt('willowmere', false), wn: cnt('willowmere', true), moor: cnt('moor', false) }; })()""")
     print('  who comes in the Mosswood by day', R['md'], 'by night', R['mn']); print('  who comes in the Willowmere by day', R['wd'], 'by night', R['wn'])
     ok.append(('moss deer in the Mosswood and willow hens in the Willowmere, by day', R['md'].get('mossdeer', 0) > 150 and R['wd'].get('willowhen', 0) > 150))
-    ok.append(('never by night, and never on the moor', not R['mn'].get('mossdeer') and not R['wn'].get('willowhen') and not R['wn'].get('mossdeer') and not R['moor'].get('mossdeer') and not R['moor'].get('willowhen')))
+    ok.append(('never by night, and no deer on the moor', not R['mn'].get('mossdeer') and not R['mn'].get('wildpig') and not R['wn'].get('willowhen') and not R['wn'].get('mossdeer') and not R['moor'].get('mossdeer')))
+    ok.append(('wild pigs and hens roam the moor by day too', R['moor'].get('wildpig', 0) > 0 and R['moor'].get('willowhen', 0) > 0))
     await h.goto(mx + mn // 2)
     sp = await h.ev("""(() => { G.enemies.length = 0; G.clock = .3; updateSun(); G.time = 5000; let seen = {}; for (let i = 0; i < 400 && G.enemies.length < 3; i++) { G.spawnT = 0; spawnTick0(); } for (const e of G.enemies) seen[e.type] = (seen[e.type] || 0) + 1; return seen; })()""")
     print('  left alone in the Mosswood at midday, these came:', sp)
@@ -116,6 +119,8 @@ async def run():
     print('  300 hens leave', D['willowhen']); print('  300 deer leave', D['mossdeer'])
     ok.append(('a hen leaves eggs and feathers, a deer meat, hide and antlers (and now and then a moonseed)', D['willowhen'].get('egg', 0) > 200 and D['willowhen'].get('feather', 0) > 300 and D['mossdeer'].get('meat', 0) > 300 and D['mossdeer'].get('antler', 0) > 120 and 0 < D['mossdeer'].get('moonseed', 0) < 80))
     ok.append(('and all of it can be carried', await h.ev("['egg', 'feather', 'antler', 'moonseed'].every(id => IT[id] && IT[id].icon && IT[id].name)")))
+    # (on a flat, bare patch: in a world made today the Mosswood may hold a wall to turn them, or a nettle to sting the Waker)
+    await h.ev("""(() => { const p = G.p, tx = floor(p.x / T), gy = heights[tx]; for (let x = tx - 8; x <= tx + 60; x++) { for (let y = gy - 14; y < gy; y++) setTile(x, y, AIR); setTile(x, gy, DIRT); setTile(x, gy + 1, DIRT); heights[x] = gy; } p.y = p.py = gy * T - p.h; p.vx = p.vy = 0; })()""")
     F = await h.ev("""(() => { const p = G.p, tx = floor(p.x / T); G.enemies.length = 0; const out = {};
       for (const type of ['willowhen', 'mossdeer']) { const e = spawnMob(type, tx + 3, heights[tx + 3]); const d0 = abs(e.x - p.x), hp = p.hp; for (let i = 0; i < 240; i++) { G.spawnT = 1e9; tick(); } out[type] = [round(d0), round(abs(e.x - p.x)), p.hp === hp, e.dead ? 1 : 0]; e.dead = true; G.enemies.length = 0; }
       return out; })()""")
@@ -132,8 +137,8 @@ async def run():
     ok.append(('worlds made as land 1 to 4 have neither land and no crowns', all(old[str(k)][0] == 0 and old[str(k)][1] == 0 for k in (1, 2, 3, 4))))
     ok.append(('land 5 keeps the traits and moods of land 4', old['5'][2] and old['5'][0] > 0))
     sv = await h.ev("""(async () => { localStorage.clear(); const res = {};
-      for (const land of [5, 4]) { createWorld({ name: 'L' + land, seed: 'moss', size: 1, shape: 0, mode: 0, skin: 0 }); await new Promise(r => setTimeout(r, 500)); if (G.state === 'intro') beginPlay(true);
-        if (land === 4) { WORLD.land = 4; SEED = WORLD.seed; initEndless(); streamTo(SPAWN_X * T, true); }
+      for (const land of [6, 5, 4]) { createWorld({ name: 'L' + land, seed: 'moss', size: 1, shape: 0, mode: 0, skin: 0 }); await new Promise(r => setTimeout(r, 500)); if (G.state === 'intro') beginPlay(true);
+        if (land < 6) { WORLD.land = land; SEED = WORLD.seed; initEndless(); streamTo(SPAWN_X * T, true); }
         const a = []; for (let x = X0 - 6000; x < X0 + 6000; x += 40) a.push(biomeE(x)); saveWorld(true);
         const id = WORLD.id, meta = JSON.parse(localStorage.getItem(profileKey('index'))).find(m => m.id === id); quitToTitle(); await new Promise(r => setTimeout(r, 200));
         await openWorld(meta); await new Promise(r => setTimeout(r, 500)); if (G.state === 'intro') beginPlay(false);
@@ -141,6 +146,7 @@ async def run():
         res[land] = [WORLD.land, a.join() === b.join(), a.filter(q => q === 'mosswood' || q === 'willowmere').length]; quitToTitle(); await new Promise(r => setTimeout(r, 200)); }
       return res; })()""")
     print('  saved and opened again [land, same lands in the same places, sightings of the new lands]:', sv)
+    ok.append(('a new (land-6) world opens as land 6, with its lands where they were', sv['6'][0] == 6 and sv['6'][1] and sv['6'][2] > 0))
     ok.append(('a land-5 world opens as land 5, with its lands where they were', sv['5'][0] == 5 and sv['5'][1] and sv['5'][2] > 0))
     ok.append(('a land-4 world opens as land 4, still without them', sv['4'][0] == 4 and sv['4'][1] and sv['4'][2] == 0))
 
@@ -149,7 +155,7 @@ async def run():
     for seed in SEEDS[:4]:
         await world(h, seed); w = W[seed]; await h.ev("G.p.maxhp = 99999; G.p.hp = 99999; G.enemies.length = 0; spawnTick = () => {}; 1"); line = []
         for b in ('mosswood', 'willowmere'):
-            x0, n = w['run'][b]
+            x0, n = w['run'][b]; n = min(n, 600)   # (a world made today can have a land thousands of paces wide: 600 of it is plenty)
             for key, d, a in (('KeyD', 1, x0 + 3), ('KeyA', -1, x0 + n - 3)):
                 await h.goto(a); await h.ev("G.p.bot = null; 1"); best = 0
                 for k in range(30):

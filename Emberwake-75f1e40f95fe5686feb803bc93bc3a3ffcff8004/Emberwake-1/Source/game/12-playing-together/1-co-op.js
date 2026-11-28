@@ -534,7 +534,7 @@ function onWorld(m) {
   const c = num(m.c, G.clock); if (abs(c - G.clock) > .002 && abs(c - G.clock) < .998) G.clock = c;
   G.ev = m.ev && typeof m.ev === 'object' ? m.ev : null; G.dev = m.dev && typeof m.dev === 'object' ? m.dev : null; G.devT = m.devT | 0;
   if (isFinite(m.d) && abs(m.d - worldDays()) > .02) G.days = max(0, +m.d);
-  const w = m.wx; if (Array.isArray(w) && (w[0] === 'rain' || w[0] === 'snow')) { if (!G.wx || G.wx.k !== w[0]) G.wx = { k: w[0], t: w[1] | 0, a: clamp(num(w[2], 0), 0, 1) }; else G.wx.t = w[1] | 0; } else if (G.wx && G.wx.t > 240) G.wx.t = 240;
+  const w = m.wx; if (Array.isArray(w) && (w[0] === 'rain' || w[0] === 'snow' || w[0] === 'hail')) { if (!G.wx || G.wx.k !== w[0]) G.wx = { k: w[0], t: w[1] | 0, a: clamp(num(w[2], 0), 0, 1) }; else G.wx.t = w[1] | 0; } else if (G.wx && G.wx.t > 240) G.wx.t = 240;
 }
 // through a rift: the host leads, everyone follows
 function netAfterDim() {
@@ -700,8 +700,8 @@ const longBoxH = () => KIT.T ? 40 : 30;
 function joinLongMake() { if (!COOP.busy) { FORM.nick = coopName(); coopAnswer(domVal('invite')); } }
 function joinLongH(w) {
   const S = KIT.sizes, cw = w - 16, L = s => wrapC(s, cw).length * 9, st = COOP.err || COOP.note;
-  if (!rtcOK()) return 29 + L(LONG_TXT.no) + 6 + L(JOIN_PACK) + 6 + S.bh + 10;
-  return 29 + L(LONG_TXT.one) + 2 + longBoxH() + 6 + (COOP.reply ? L(LONG_TXT.two) + 2 + longBoxH() + 4 + L(longThree()) + 4 : 0) + (st || COOP.copyFail ? 20 : 0) + L(JOIN_PACK) + L(LONG_TXT.wifi) + 4 + S.bh + 10;
+  if (!rtcOK()) return 29 + L(LONG_TXT.no) + 6 + S.bh + 10;
+  return 29 + L(LONG_TXT.one) + 2 + longBoxH() + 6 + (COOP.reply ? L(LONG_TXT.two) + 2 + longBoxH() + 4 + L(longThree()) + 4 : 0) + (st || COOP.copyFail ? 20 : 0) + 4 + S.bh + 10;
 }
 function drawJoinLong(c) {
   const L = joinLayout(c, joinLongH); joinYou(c, ...L.you);
@@ -719,7 +719,7 @@ function drawJoinLong(c) {
     const st = COOP.err || COOP.note;
     if (COOP.copied > 0 && COOP.copyFail) { copyHint(c, cx, yy); yy += 20; } else if (st) { kmsg(c, cx, yy, cw, { text: st, kind: COOP.err ? 'err' : 'ok' }); yy += 20; }
   }
-  para(JOIN_PACK, '#8b8fa3'); para(LONG_TXT.wifi, '#8b8fa3');
+
   const bk = KIT.T ? 64 : 60, fy = K.footY + 5, mw = min(170, cw - bk - S.gap);
   if (rtcOK() && !COOP.reply) kbutton(c, cx, fy, mw, COOP.busy ? 'ANSWERING...' : 'MAKE MY REPLY CODE', joinLongMake, { main: true, off: COOP.busy, short: COOP.busy ? 'ANSWERING...' : 'MAKE MY REPLY', hint: COOP.busy ? 'Making your reply...' : 'Answer their invite: your reply code appears below it.' });
   else if (rtcOK()) kbutton(c, cx, fy, mw, copyLabel(), () => copyText(COOP.reply, 'code'), { main: true, hint: 'Copy your reply code, then send it to your friend.' });

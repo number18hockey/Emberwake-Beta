@@ -121,8 +121,14 @@ function crater(x, y, ux, uy, tool, mul, out, soft = 1) {
     const fx = MFX[MAT[t].k] || fx0, hp = hpOf(i);
     if (fx.shatter && hp < 64 * 255 * fx.shatter) { shatter(tx, ty, tool, out); out.broke++; continue; }
     if (aliveOf(i) <= BREAK_LEFT || hp < 64 * 255 * .26 || (aliveOf(i) <= 40 && severed(i))) { breakAt(tx, ty, { tool, by: out.by, rubble: 1, ux, uy }); out.broke++; }
-    else dirtyAt(tx, ty);
+    else { dirtyAt(tx, ty); undercut(tx, ty); }
   }
+}
+// a plant (or litter) standing on a block whose top has been dug away comes loose, and gives what picking it would
+function undercut(tx, ty) {
+  const up = tileAt(tx, ty - 1); if (!up || !TP[up].decor || !TP[up].ground || TP[up].stalk || TP[up].solid) return;
+  const a = CHIP.get(ty * WW + tx); if (!a) return; let gone = 0; for (let c = 0; c < 8; c++) if (!a[c]) gone++;
+  if (gone >= 3) uproot(tx, ty - 1);
 }
 
 // sand, ash and gravel do not hold a crater: what is above pours down into it

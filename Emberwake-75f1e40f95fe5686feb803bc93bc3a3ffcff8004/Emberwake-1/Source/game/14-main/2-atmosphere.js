@@ -45,7 +45,7 @@ function airTarget() {
   if (BIOTINT[bio]) add(BIOTINT[bio], up);
   if (WORLD.royale && !BR.wild) add(BR.arena === 1 ? [255, 104, 64, .09] : [205, 190, 230, .06]);   // the Trials: each arena has its own air
   if (!WORLD.arena) { const M = MOODS[bio] ? moodOf(tx, bio) : MOOD0; if (M.tint) add(M.tint, up * 1.3); if (seasonOn()) { const k = seasonBlend(); add(SEASON().tint, up * (1 - k)); add(SEASONS[(seasonI() + 1) % 4].tint, up * k); } }
-  add([110, 140, 195, .11], wxA('rain') * up); add([205, 225, 255, .08], wxA('snow') * up);
+  add([110, 140, 195, .11], (wxA('rain') + wxA('hail') * .8) * up); add([205, 225, 255, .08], wxA('snow') * up);
   add([70, 95, 200, .1], dk * up * (wt('twomoons') ? 1.3 : 1)); add(wt('embersky') ? [255, 80, 40, .15] : [255, 150, 90, .07], edge * up);
   add([95, 120, 210, .07], (G.underK || 0) * (1 - (G.deepK || 0))); add([255, 90, 60, .09], G.deepK || 0);
   return a > 0 ? [r / a, g / a, b / a, min(.26, a)] : [255, 255, 255, 0];
@@ -93,7 +93,7 @@ function skyTone(top, bot, dn) {
   if (wt('embersky')) { mixIn(bot, [255, 92, 44], .42 * edge); mixIn(top, [116, 30, 44], .3 * edge); mixIn(bot, [250, 200, 170], .12 * dn); }
   if (wt('twomoons')) mixIn(top, [10, 26, 54], .5 * (1 - dn));
   if (seasonOn()) { const k = SEASON().k; if (k === 'ashrest') { mixIn(top, [150, 172, 204], .28 * dn); mixIn(bot, [226, 232, 244], .3 * dn); } else if (k === 'emberfall') mixIn(bot, [255, 196, 140], .3 * dn); else if (k === 'kindling') mixIn(top, [96, 170, 200], .2 * dn); }
-  const r = wxA('rain'), s = wxA('snow'); if (r > 0) { mixIn(top, [58, 66, 88], .62 * r); mixIn(bot, [112, 120, 142], .6 * r); } if (s > 0) { mixIn(top, [140, 150, 172], .45 * s); mixIn(bot, [214, 220, 232], .45 * s); }
+  const r = wxA('rain') + wxA('hail') * .8, s = wxA('snow'); if (r > 0) { mixIn(top, [58, 66, 88], .62 * r); mixIn(bot, [112, 120, 142], .6 * r); } if (s > 0) { mixIn(top, [140, 150, 172], .45 * s); mixIn(bot, [214, 220, 232], .45 * s); }
 }
 function skyStars(c, W, H, S, dn, cx) {
   skyBuild(); const a = (.7 - dn) / .7, px = max(1, S - 1), off = cx * .006 * S;

@@ -47,7 +47,7 @@ const ACCOUNT_TXT = {
   notYou: 'Not you? Choose your name in the ledger.',
   legacy: 'This account is from before passwords. Choose one to keep it yours.',
   who: 'Choose your name in the ledger, or make a new account.',
-  welcome: 'No Wakers here yet. Make an account to keep your worlds. It lives in this browser.'
+  welcome: 'No Wakers here yet.'
 };
 Object.assign(MENUS, {
   accounts: {

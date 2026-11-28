@@ -29,11 +29,23 @@ const AMAT = {
 };
 // how weight is felt. light/heavy/air/dash/bow are attack types; walk, jump, dodge, mine, swing (tool speed), poise (knockback taken), st (stamina)
 const WCLASS = [
-  { n: 'LIGHT', col: '#7ddc6f', walk: 1.04, jump: 1.03, dodge: 1.08, light: 1.08, heavy: .93, air: 1.12, dash: 1.1, bow: 1.06, mine: 1.05, swing: .96, poise: 1.1, st: 1.1, d: 'quick light blows, long dashes, strong in the air; heavy blows land softer' },
-  { n: 'MEDIUM', col: '#ffd35a', walk: 1, jump: 1, dodge: 1, light: 1, heavy: 1, air: 1, dash: 1, bow: 1, mine: 1, swing: 1, poise: .9, st: 1, d: 'balanced' },
-  { n: 'HEAVY', col: '#ff8a3d', walk: .88, jump: .94, dodge: .84, light: .92, heavy: 1.15, air: .85, dash: .86, bow: .9, mine: .9, swing: 1.08, poise: .62, st: .85, d: 'heavy blows land harder and you barely flinch; slower feet, blows, digging and dodges' },
-  { n: 'OVERLOADED', col: '#e2483b', walk: .74, jump: .86, dodge: .62, light: .84, heavy: 1.2, air: .65, dash: .7, bow: .8, mine: .8, swing: 1.16, poise: .5, st: .7, d: 'too much to carry: everything is slow, and a high ledge is out of reach' }
+  { n: 'LIGHT', col: '#7ddc6f', walk: 1.04, jump: 1.03, dodge: 1.08, light: 1.08, heavy: .93, air: 1.12, dash: 1.1, bow: 1.06, mine: 1.05, swing: .96, st: 1.1, d: 'quick light blows, long dashes, strong in the air; heavy blows land softer' },
+  { n: 'MEDIUM', col: '#ffd35a', walk: 1, jump: 1, dodge: 1, light: 1, heavy: 1, air: 1, dash: 1, bow: 1, mine: 1, swing: 1, st: 1, d: 'balanced' },
+  { n: 'HEAVY', col: '#ff8a3d', walk: .88, jump: .94, dodge: .84, light: .92, heavy: 1.15, air: .85, dash: .86, bow: .9, mine: .9, swing: 1.08, st: .85, d: 'heavy blows land harder and you barely flinch; slower feet, blows, digging and dodges' },
+  { n: 'OVERLOADED', col: '#e2483b', walk: .74, jump: .86, dodge: .62, light: .84, heavy: 1.2, air: .65, dash: .7, bow: .8, mine: .8, swing: 1.16, st: .7, d: 'too much to carry: everything is slow, and a high ledge is out of reach' }
 ];
+// what a thing weighs: armour and weapons their own weight, a tool 1, stone, ore and metal heavy, the rest light
+function itemWt(id) {
+  const it = IT[id]; if (!it) return 0;
+  if (it.type === 'armor') return it.wt || 0;
+  if (it.type === 'weapon') return it.fist ? 0 : it.wtype && WTYPE[it.wtype] ? WTYPE[it.wtype].sz : SET_WT[it.set] || 2;
+  if (it.type === 'tool') return 1;
+  return /ore$|_bar$|stone|rock|brick|cobble|basalt|slag|gravel|flint|plate/.test(id) ? .12 : it.tile ? .08 : .03;
+}
+function packLoad() { let s = 0; for (let i = 0; i < INV_N; i++) { const q = inv[i]; if (q) s += itemWt(q.id) * q.n; } return s; }
+// how far a blow throws you: the more you weigh (armour, the weapon in hand and everything in the pack), the less
+// (1.12 with nothing at all, down to .4 at 40 and over)
+function loadPoise() { const L = (gearOn() ? gearStats().load : 0) + packLoad(); return clamp(1.12 - L * .018, .4, 1.12); }
 const WCLASS_AT = [10, 19, 27];
 const SET_WT = { maul: 4, sword: 3, spear: 3, fangs: 2, bow: 2, chuks: 3, brawl: 0 };
 
@@ -108,7 +120,7 @@ const gearOn = () => (!WORLD.arena || wildOn()) && !!G.p;
 function gearMul(kind) {
   if (!gearOn()) return blessMul(kind); const g = gearStats(); let v = (g.cls[kind] !== undefined ? g.cls[kind] : 1) * blessMul(kind);
   if (kind === 'mine') v *= g.mine;
-  if (kind === 'poise') v *= g.poise * (g.tags.has('bulwark') ? .5 : 1);
+  if (kind === 'poise') v *= loadPoise() * g.poise * (g.tags.has('bulwark') ? .5 : 1);
   if (kind === 'walk' && g.tags.has('swift')) v *= 1.08;
   if (kind === 'jump' && (g.tags.has('feather') || g.tags.has('prismatic'))) v *= 1.07;
   if (kind === 'bow' && g.tags.has('draw')) v *= 1.2;

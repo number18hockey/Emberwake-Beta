@@ -83,7 +83,7 @@ function hurtFighter(f, dmg, fromX, o = {}) {
     f.takenT = 70; if (!(soft && f.atk && f.atk.phase === 1)) { f.atk = null; f.state = 'normal'; f.lastMove = null; f.chainT = 0; f.glintT = 0; } f.buf = null;
   } else fsx(f, 'hit2', 0);
   // a blow that lands takes your rhythm with it; one that catches you mid wind-up takes all of it
-  if (!o.env && !o.dot) { if (caught) { f.tempo = 0; numPop(f.x + 3, f.y - 14, 'CAUGHT', '#ff6b6b'); fsx(f, 'caught', 0); if (f === G.p) tempoHint('caught', 'CAUGHT. A blow that lands while you wind up, or after you rush, hurts a quarter more. Watch for the ! over a foe and answer it: dodge, or meet it with a swing of your own.'); } else if (f.tempo > 0) tempoAdd(f, -2); quickStep(f, -(caught ? QK.LOSE_CAUGHT : soft ? QK.LOSE_SOFT : QK.LOSE_HURT)); }
+  if (!o.env && !o.dot) { if (caught) { f.tempo = 0; numPop(f.x + 3, f.y - 14, 'CAUGHT', '#ff6b6b'); fsx(f, 'caught', 0); } else if (f.tempo > 0) tempoAdd(f, -2); quickStep(f, -(caught ? QK.LOSE_CAUGHT : soft ? QK.LOSE_SOFT : QK.LOSE_HURT)); }
   if (f === G.p && o.env) { sfx('hurt', 0); numPop(f.x + 3, f.y - 4, dmg, '#9adcf0'); }
   else if (f === G.p) {
     G.combo.n = 0; G.combo.pts = 0; G.combo.t = 0; addShake(4.5); G.hitstop = max(G.hitstop, 5); sfx('hurt', 0); G.flash = .24; G.flashCol = '226,72,59';
@@ -150,7 +150,8 @@ function tickFighter(f, I) {
       const acc = (f.onGround ? .24 : .15) * (a ? max(ctrl, .6) : ctrl);
       f.vx = along && abs(f.vx) > abs(tgt) ? approach(f.vx, tgt, abs(f.vx) > maxV ? .07 : .03) : approach(f.vx, tgt, acc);
       // walking into a shut door pushes it open
-      if ((f === G.p && !WORLD.arena || wildOn() && !f.remote) && f.state === 'normal') { const tx = floor((f.x + (md > 0 ? f.w + 1.5 : -1.5)) / T); for (let y = floor(f.y / T); y <= floor((f.y + f.h - 1) / T); y++) if (tileAt(tx, y) === DOORC) { if (toggleDoor(tx, y)) G.autoDoors.push({ tx, ty: y, t: 150 }); break; } }
+      // (a door is a wall until it is opened: only the echoes of the Wilds push one open by walking into it)
+      if (f !== G.p && wildOn() && !f.remote && f.state === 'normal') { const tx = floor((f.x + (md > 0 ? f.w + 1.5 : -1.5)) / T); for (let y = floor(f.y / T); y <= floor((f.y + f.h - 1) / T); y++) if (tileAt(tx, y) === DOORC) { if (toggleDoor(tx, y)) G.autoDoors.push({ tx, ty: y, t: 150 }); break; } }
     }
     // hands off the keys you come to a stop (a little later out of a dodge). Anyone but you in the open world is also
     // braked while walking and while reeling from a blow, key or no key, exactly as always: so rivals, echoes and
@@ -208,8 +209,17 @@ function playerInput() {
     dodgeP: !blockM && !!(pressed.ShiftLeft || pressed.ShiftRight), wx: mouse.wx, wy: mouse.wy, blockA, armP: !blockA && !!pressed.KeyR
   };
 }
+// a door under the cursor within DOOR_REACH opens or shuts with the right button, whatever is in hand, from either side
+const DOOR_REACH = 64;
+function doorClick(p, I) {
+  if (p.doorHold) { if (mouse.r) { I.r = I.rp = false; return; } p.doorHold = false; }
+  if (!I.rp || !mouse.rp || p.dead || (WORLD.arena && !wildOn())) return;
+  const tx = floor(mouse.wx / T), ty = floor(mouse.wy / T), t = tileAt(tx, ty); if (t !== DOORC && t !== DOORO) return;
+  const dx = tx * T + 4 - (p.x + 3), dy = ty * T + 4 - (p.y + 10); if (dx * dx + dy * dy > DOOR_REACH * DOOR_REACH) return;
+  toggleDoor(tx, ty); p.doorHold = true; p.toolCharge = -1; I.r = I.rp = false;
+}
 function tickPlayer() {
-  const p = G.p, I = playerInput();
+  const p = G.p, I = playerInput(); doorClick(p, I);
   if (WORLD.royale && !brInput(p, I)) return;
   if (p.consume && !p.brUse) { tickConsume(p); I.md = 0; I.jumpP = I.jumpH = I.l = I.r = I.lp = I.rp = I.dodgeP = I.armP = false; }
   recordCloneInput(I);
@@ -462,7 +472,7 @@ function drawFighterRig(x, f, al, rx, ry) {
   const trail = BR_TRAILS[f.trail | 0];
   drawBrTrail(x, f, trail);
   if (S.scarf) { const sc = f.scarf; for (let i = 1; i < sc.length; i++) seg(x, sc[i - 1].x - rx, sc[i - 1].y - ry, sc[i].x - rx, sc[i].y - ry, i < 3 ? 2.4 : 2, S.scarf[i % 2]); }
-  let wp = null, wp2 = null; if (it) { if (it.held || it.chuks) { wp = it; if (it.dual) wp2 = it; } else if (it.id === 'torch') { TORCH_HELD.held = SPR.i_torch; wp = TORCH_HELD; } }
+  let wp = null, wp2 = null; if (it && !thrownNow(f, it)) { if (it.held || it.chuks) { wp = it; if (it.dual) wp2 = it; } else if (it.id === 'torch') { TORCH_HELD.held = SPR.i_torch; wp = TORCH_HELD; } }
   x.save(); x.scale(f.face, 1); drawRig(x, P, S, wp, wp2); x.restore();
 }
 function drawFighter(f, al) {

@@ -13,7 +13,8 @@ const BR_MOBS = {
   moor: [['ashhare', 4], ['thornback', 3], ['mote', 3], ['husk', 3, 1]], mosswood: [['mossdeer', 5, 0, 1], ['ashhare', 2], ['thornback', 2], ['mote', 2], ['husk', 3, 1]], willowmere: [['willowhen', 5, 0, 1], ['mossdeer', 3, 0, 1], ['mote', 2], ['husk', 2, 1]],
   thorn: [['thornback', 5], ['ashhare', 2], ['mote', 1], ['husk', 3, 1]], fen: [['mote', 3], ['ashhare', 2], ['bat', 3, 1], ['husk', 2, 1]], dunes: [['ashhare', 3], ['mote', 2], ['glassfly', 1], ['husk', 2, 1]], scoria: [['rustback', 4], ['mote', 2], ['husk', 2, 1]], reach: [['mite', 4], ['glassfly', 2], ['ashhare', 2], ['husk', 2, 1]], ash: [['mote', 3], ['husk', 3], ['bat', 2, 1]]
 };
-const BR_PREY = new Set(['ashhare', 'willowhen', 'mossdeer']);
+const BR_PREY = new Set(['ashhare', 'willowhen', 'mossdeer', 'wildpig']);
+for (const [b, add] of Object.entries({ moor: [['wildpig', 2, 0, 1], ['willowhen', 2, 0, 1]], mosswood: [['wildpig', 3, 0, 1]], thorn: [['wildpig', 2, 0, 1], ['adder', 1]], dunes: [['adder', 1]] })) if (BR_MOBS[b]) BR_MOBS[b].push(...add);
 
 // ---------------- creatures ----------------
 // each goes for whichever Waker run by this computer is nearest

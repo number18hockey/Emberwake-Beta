@@ -363,7 +363,7 @@ function enterDim(d, now) {
 function arriveFx(d, first) {
   const p = G.p; G.flash = .9; G.flashCol = DIMP[d].flash || (d === 1 ? '255,140,70' : d === 2 ? '110,240,190' : d === 3 ? '220,200,255' : '255,230,160'); sfx('tele', 0); sfx('shrine', 0);
   burst(p.x + 3, p.y + 10, 30, ['#b49cff', '#e0d2ff', '#ffffff', DIMP[d].col], 2.4, 46, { glow: 1, g: -.02 });
-  if (first) { startCine({ x: p.x + 3, y: p.y, title: DIMP[d].name, sub: DIMP[d].sub, dur: 240 }); unlock('dim' + d); for (const id of DIM_LEADS[d] || []) learn(id, true); G.note = { text: 'New leads in your journal  [J]', t: 0 }; }
+  if (first) { startCine({ x: p.x + 3, y: p.y, title: DIMP[d].name, sub: DIMP[d].sub, dur: 240 }); unlock('dim' + d); for (const id of DIM_LEADS[d] || []) learn(id, true); }
   else G.banner = { text: DIMP[d].name, sub: d ? 'the rift closes behind you' : 'home, such as it is', t: 0 };
 }
 const DIM_LEADS = { 1: ['slagforge', 'tyrant', 'emoon'], 2: ['rootmother', 'starfall'], 3: ['matriarch', 'g_frost'], 4: ['rimeforge', 'winterstag', 'g_clock'], 5: ['escapement', 'horologist', 'g_storm'], 6: ['thunderanvil', 'stormwright', 'dawnring'], 7: ['dawnforge', 'hollowking'] };

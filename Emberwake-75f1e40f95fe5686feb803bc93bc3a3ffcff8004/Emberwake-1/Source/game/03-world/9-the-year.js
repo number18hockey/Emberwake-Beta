@@ -10,10 +10,10 @@
 //  seasons works its age out from how long you have played it.
 // ============================================================
 const SEASONS = [
-  { k: 'kindling', n: 'KINDLING', sub: 'the stalks wake, and what was picked grows back', tint: [140, 255, 170, .05], wx: [['rain', .34]], col: '#7ddc6f' },
+  { k: 'kindling', n: 'KINDLING', sub: 'the stalks wake, and what was picked grows back', tint: [140, 255, 170, .05], wx: [['hail', .07], ['rain', .34]], col: '#7ddc6f' },
   { k: 'highsun', n: 'HIGHSUN', sub: 'long light and short shadows', tint: [255, 232, 150, .06], wx: [['rain', .07]], col: '#ffd35a' },
-  { k: 'emberfall', n: 'EMBERFALL', sub: 'the stalks turn the colour of coals', tint: [255, 150, 70, .075], wx: [['rain', .22]], col: '#ff9a3d' },
-  { k: 'ashrest', n: 'ASHREST', sub: 'the cold comes down off the Reach', tint: [170, 205, 255, .085], wx: [['snow', .5]], col: '#b4e6e8' }
+  { k: 'emberfall', n: 'EMBERFALL', sub: 'the stalks turn the colour of coals', tint: [255, 150, 70, .075], wx: [['hail', .1], ['rain', .22]], col: '#ff9a3d' },
+  { k: 'ashrest', n: 'ASHREST', sub: 'the cold comes down off the Reach', tint: [170, 205, 255, .085], wx: [['hail', .08], ['snow', .5]], col: '#b4e6e8' }
 ];
 const SEASON_DAYS = 3;
 // the season a new world wakes in comes from its seed (old worlds count from Kindling)
@@ -31,7 +31,7 @@ const seasonDrops = () => seasonOn() && SEASON().k === 'emberfall' ? 1.3 : 1;
 const seasonCap = night => seasonOn() && SEASON().k === 'ashrest' && night ? 1 : 0;
 
 // ---------------- weather ----------------
-// G.wx: { k: 'rain' | 'snow', t: ticks left, a: how hard (fades in and out) }
+// G.wx: { k: 'rain' | 'snow' | 'hail', t: ticks left, a: how hard (fades in and out) }
 function tickYear(dc) {
   if (WORLD.arena || DIM) return;
   const d0 = worldDays(), s0 = floor(d0 / SEASON_DAYS) % 4; G.days = d0 + dc; const s1 = seasonI();
@@ -49,11 +49,13 @@ function wxParticles() {
   const w = G.wx; if (!w || w.a <= .02 || WORLD.arena || DIM) return; const cx = G.cam.x, cy = G.cam.y, p = G.p;
   if (!p || realmAt(floor((p.x + 3) / T), floor((p.y + 10) / T)) !== 'surface') return;
   if (w.k === 'rain') { for (let i = 0, n = ceil(w.a * 5 * VS.vw / 420); i < n; i++) P(cx + frand(-30, VS.vw + 90), cy - 6, -1.5, frand(5.4, 6.8), 70, fpick(['#9ac8e8', '#c4e2f4', '#7fb0d8']), { g: 0, fr: 1, rain: 1 }); }
+  // hail: white stones that bounce where they land
+  else if (w.k === 'hail') { for (let i = 0, n = ceil(w.a * 2.2 * VS.vw / 420); i < n; i++) P(cx + frand(-30, VS.vw + 70), cy - 6, frand(-.8, -.3), frand(5, 6.5), 80, fpick(['#ffffff', '#e8f4ff', '#dcf7f5']), { g: .18, fr: .995, hit: 1, sz: 2, sky: 1 }); }
   else if (G.time % 2 === 0) { for (let i = 0, n = ceil(w.a * 2 * VS.vw / 420); i < n; i++) P(cx + frand(-30, VS.vw + 70), cy - 4, frand(-.7, -.2), frand(.5, 1), 420, fpick(['#ffffff', '#e8f4ff', '#cfe6f4']), { g: 0, fr: 1, sky: 1 }); }
 }
 // the weather dims the day a little
 function seasonSun() {
-  if (WORLD.arena || DIM) return; const r = wxA('rain'), s = wxA('snow');
+  if (WORLD.arena || DIM) return; const r = wxA('rain') + wxA('hail') * .8, s = wxA('snow');
   if (r > 0) { G.sun[0] *= 1 - .2 * r; G.sun[1] *= 1 - .16 * r; G.sun[2] *= 1 - .1 * r; }
   if (s > 0) { G.sun[0] *= 1 - .1 * s; G.sun[1] *= 1 - .07 * s; G.sun[2] *= 1 - .03 * s; }
 }
@@ -65,4 +67,4 @@ function rainSound() {
   if (abs(lv - RAINL) > .02) { RAINL = lv; try { RAINS.g.gain.setTargetAtTime(lv * .07, AC.currentTime, .5); } catch (e) { } }
 }
 // a line for the pause screen and the pocket watch
-const yearLine = () => 'DAY ' + dayN() + ' - ' + SEASON().n + (G.wx && G.wx.a > .3 ? ' - ' + (G.wx.k === 'rain' ? 'RAIN' : 'SNOW') : '');
+const yearLine = () => 'DAY ' + dayN() + ' - ' + SEASON().n + (G.wx && G.wx.a > .3 ? ' - ' + (G.wx.k === 'rain' ? 'RAIN' : G.wx.k === 'hail' ? 'HAIL' : 'SNOW') : '');

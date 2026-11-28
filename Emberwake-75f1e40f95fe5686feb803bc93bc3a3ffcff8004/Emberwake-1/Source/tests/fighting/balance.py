@@ -38,7 +38,7 @@ async def run():
     ok.append(('each metal is 8% to 30% better than the one before', all(1.08 <= s <= 1.3 for s in steps)))
 
     # 2. kinds of weapon stay in one band when every one is used well
-    kinds = ['iron_sword', 'iron_shortsword', 'steel_greatsword', 'iron_spear', 'steel_halberd', 'iron_daggers', 'steel_claws', 'iron_battleaxe', 'steel_greataxe', 'steel_nunchaku', 'iron_flail']
+    kinds = ['iron_sword', 'iron_shortsword', 'steel_greatsword', 'iron_spear', 'steel_halberd', 'iron_daggers', 'steel_daggers', 'iron_battleaxe', 'steel_greataxe', 'steel_nunchaku', 'iron_flail']
     res = {}
     for wid in kinds:
         v, info = await dps(h, wid); res[wid] = v; print('  %-18s %-6s dmg %-3d reach %-3d  on the beat: %.1f a second for each point of metal' % (wid, info[0], info[1], info[2], v))

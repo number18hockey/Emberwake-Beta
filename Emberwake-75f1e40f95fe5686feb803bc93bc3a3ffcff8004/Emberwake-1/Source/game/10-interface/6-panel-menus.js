@@ -12,7 +12,7 @@ Object.assign(MENUS, {
   pause: { col: '#c9d2ff', art: 'hourglass', motes: 'stars', place: 'THE WORLD HELD STILL', idle: '' },
   inv: { col: '#d99a5b', art: 'satchel', motes: 'dust', place: 'THE SATCHEL', idle: '' },
   codex: { col: '#9fc3ff', art: 'blade', motes: 'slashes', place: 'THE FORMS', idle: '' },
-  journal: { col: '#b49cff', art: 'quill', motes: 'moths', place: 'THE JOURNAL', idle: '', enter() { const t = UI.jtab || 'leads'; KIT.sy['j_' + t] = UI.scroll >= 9999 ? 1e9 : 0; } },
+
   book: { col: '#ffd35a', art: 'page', motes: 'dust', place: 'THE RECIPE BOOK', idle: '' },
   stn: { col: '#c9a46a', art: 'bench', motes: 'smoke', place: 'THE WORKSHOP', idle: '' },
   chest: { col: '#b07a45', art: 'chest', motes: 'dust', place: 'THE CHEST', idle: '' },
@@ -200,10 +200,10 @@ function pbtn(c, x, y, w, h, label, fn, o = {}) {
   if (!off) { if (o.main) KIT.main = fn; khit(x, y, w, h, fn, tag, o.hint); kctrl({ tag, kind: 'btn', x, y, w, h, fn }); }
   return hv;
 }
-// the hint in a card's foot strip: what is under the mouse (on a phone: the last thing tapped), else the idle line
+// a card's foot strip says only why a button is off, what a setting does, or what a tap just did
 function pfoot(c, K, idle, room) {
-  const now = performance.now(), tap = KIT.T && KIT.tapHint && now - KIT.tapHint.t < 2500 ? KIT.tapHint.s : '', s = KIT.T ? tap : KIT.hint, t = s || idle || '';
-  if (t) drawText(c, fitText(t, room || K.w - 12), K.x + 6, K.footY + round((KIT.bh + 10 - 8) / 2), s ? '#d8d4e6' : '#8b8fa3');
+  const t = kitSaid();
+  if (t) drawText(c, fitText(t, room || K.w - 12), K.x + 6, K.footY + round((KIT.bh + 10 - 8) / 2), '#d8d4e6');
 }
 // n rows of rh px in box B, scrolling (kscroll id) when they do not fit; fn(i, y) draws row i (only the rows in view)
 function plist(c, B, n, rh, id, fn) {
@@ -222,11 +222,10 @@ const pwheel = () => kb('wheel', 'slide');
 // ---------------- THE PAUSE PANEL: THE WORLD HELD STILL ----------------
 // The actions (THE WORLD card) beside a card of tabs: SETTINGS, KEYS (TOUCH on a phone) and THIS WORLD (its traits).
 // A phone held upright gets one card: the actions two by two over the tabs, all of it scrolling over a pinned foot.
-// a touch screen has no J or C key: the journal and the forms codex open from here
+// a touch screen has no C key: the forms codex opens from here
 function pauseBooks(L, A) {
   if (!KIT.T) return;
-  if (!A) L.push({ l: 'JOURNAL', fn: () => toggleUI('journal'), o: { hint: 'Leads, lore, echoes and beasts.' } });
-  L.push({ l: 'FORMS', fn: () => toggleUI('codex'), o: { hint: 'Every form of every weapon, and the links.' } });
+  L.push({ l: 'FORMS', fn: () => toggleUI('codex') });
 }
 function pauseActs(A) {
   const leave = () => { closeUI(); if (WORLD.royale && BR.on && BR.via !== 'solo') brBackToLobby(); else quitToTitle(); sfx('ui'); };
@@ -245,42 +244,24 @@ function pauseActs(A) {
   if (G.p && !G.boss && !G.duel) L.push({ l: 'WAKE AT THE FIRE', fn: () => { closeUI(); wakeAtFire(); }, o: { short: 'TO THE FIRE', hint: 'Walk back to the fire or your bedroll. It costs a meal.' } });
   return L;
 }
-function pauseSets(A) {
-  const L = [
-    { l: muted ? 'SOUND: OFF' : 'SOUND: ON', fn: () => { muted = !muted; sfx('ui'); }, hint: kb('Sound on or off (the O key too).', 'Sound on or off.') },
-    { l: SETTINGS.fx === 'plain' ? 'FX: PLAIN' : 'FX: FULL', fn: () => { SETTINGS.fx = SETTINGS.fx === 'plain' ? 'full' : 'plain'; saveSettings(); sfx('ui'); }, hint: 'Glow, colour of the air and mist. PLAIN for a slow machine.' },   // the uploaded version's own switch
-    { l: 'CONTROLS: ' + (SETTINGS.combat === 'simple' ? 'SIMPLE' : 'FULL'), fn: () => { SETTINGS.combat = SETTINGS.combat === 'simple' ? 'full' : 'simple'; saveSettings(); sfx('ui'); }, hint: 'SIMPLE: where you aim chooses the form. FULL: the keys you hold and the distance do too.' }
-  ];
-  if (!A) L.push({ l: 'CRAFTING: ' + (SETTINGS.craft === 'hands' ? 'HANDS-ON' : 'SIMPLE'), fn: () => { SETTINGS.craft = SETTINGS.craft === 'hands' ? 'simple' : 'hands'; saveSettings(); UI.job = null; sfx('ui'); }, hint: 'HANDS-ON: a little task at each bench. SIMPLE: one click makes it.' });
-  // FPS MODE: no particles and a barer HUD (the game stays side-on)
-  L.push({ l: 'FPS MODE: ' + (SETTINGS.fpsMode ? 'ON' : 'OFF'), sub: 'Cleaner HUD; side-view.', fn: () => { SETTINGS.fpsMode = !SETTINGS.fpsMode; if (SETTINGS.fpsMode) G.parts.length = 0; saveSettings(); sfx('ui'); }, hint: 'No particles and a barer HUD, for speed. Still side-on.' });
-  if (!A) L.push({ l: 'DIFFICULTY: ' + DIFF().n, fn: () => { SETTINGS.diff = SETTINGS.diff === 'easy' ? 'normal' : SETTINGS.diff === 'normal' ? 'hard' : 'easy'; saveSettings(); sfx('ui'); }, hint: 'How hard the creatures of this world hit.' });
-  return L;
-}
+// (the switches are settingRows, 8-settings.js: the same ones the home page's SETTINGS shows)
+const pauseSets = A => settingRows(A);
 // the keys (on a touch screen, the buttons) as [key, what it does]
 function pauseKeys(A) {
   const simple = SETTINGS.combat === 'simple', aim = simple ? 'aim up to launch, aim down or hold S for low blows; click a creature to punch it, whatever you hold' : 'where you aim, the keys you hold, the air and the cursor\'s distance change the attack';
-  const beat = ['the beat', 'strike again on the GLINT. Too soon is HASTY, hammering RUSHED; five in time is DRUMFIRE.'];
+  const beat = ['the beat', 'strike again on the GLINT; five in time is DRUMFIRE.'];
   if (KIT.T) return [['stick', 'walk; push down to drop through bridges'], ['JUMP', 'jump'], ['DASH', 'dodge'], ['LIGHT', 'a light blow'], ['HEAVY', 'a heavy blow'], beat,
     ...(A ? [['finger', 'aims where it points']] : [['USE', 'talk, use; beside a station, use it'], ['PACK', 'pack and crafting'], ['finger', 'held on the ground, digs where it points']]),
     ['MENU', 'this menu'], ...(A ? [['', 'Echoes leave when a Waker joins.']] : [['', 'Ore, keys and such leave your fists free.']])];
   if (A) return [['A / D', 'move'], ['SPACE, W', 'jump'], ['SHIFT', 'dodge'], ['LMB', 'light blow'], ['RMB, Q', 'heavy blow'], ['aim', aim], beat, ['1-6', 'weapons'], ['TAB', 'scores'], ['C', 'forms'], ['O', 'sound'], ['R / T', 'throw / switch sidearm'], ['', 'Echoes leave when a Waker joins.']];
-  return [['A / D', 'move'], ['SPACE, W', 'jump'], ['SHIFT', 'dodge'], ['LMB', 'light blow'], ['RMB, Q', 'heavy blow; tools: hold RMB'], ['aim', aim], beat, ['1-0, wheel', 'hotbar'], ['E', 'pack + crafting'], ['C', 'forms'], ['J', 'journal + leads'],
+  return [['A / D', 'move'], ['SPACE, W', 'jump'], ['SHIFT', 'dodge'], ['LMB', 'light blow'], ['RMB, Q', 'heavy blow; tools: hold RMB'], ['aim', aim], beat, ['1-0, wheel', 'hotbar'], ['E', 'pack + crafting'], ['C', 'forms'],
     ['F', 'talk / use; beside a station, use it'], ['H', 'quick heal'], ['R / T', 'throw / switch sidearm'], ['S held', 'drop through bridges'], ['W / S', 'climb ladders'], ['RMB', 'opens doors'], ['K', 'knap'], ['M', 'map'], ['V', 'weapon style (5 per weapon)'], ['X', 'swap to off hand'], ['', 'Ore, keys and such leave your fists free. Tools swing where you point, at rock or beast.']];
 }
 const pauseTabs = A => A || DIM || !WT_ON || !WT_KEYS.length ? ['SETTINGS', kb('KEYS', 'TOUCH')] : ['SETTINGS', kb('KEYS', 'TOUCH'), 'THIS WORLD'];
 // a tab's body at width w from y; returns its height (draw false only measures)
 function pauseBody(c, x, y, w, tab, A, draw) {
   const S = KIT.sizes;
-  if (tab === 'SETTINGS') {
-    const L = pauseSets(A), cw = floor((w - S.gap) / 2); let yy = y;
-    for (let i = 0; i < L.length; i += 2) {
-      let sub = 0;
-      for (let j = 0; j < 2 && L[i + j]; j++) { const q = L[i + j]; if (draw) kbutton(c, x + j * (cw + S.gap), yy, cw, q.l, q.fn, { sub: q.sub, hint: q.hint }); if (q.sub) sub = 11; }
-      yy += S.bh + S.gap + sub;
-    }
-    return yy - y - S.gap;
-  }
+  if (tab === 'SETTINGS') return settingGrid(c, x, y, w, pauseSets(A), 2, draw);
   if (tab === 'THIS WORLD') {
     let yy = y; if (draw) drawText(c, 'THIS WORLD IS', x, yy, '#8b8fa3'); yy += 12;
     for (const k of WT_KEYS) { const t = TRAITS[k]; if (draw) drawText(c, t.n, x, yy, TRAIT_COL[t.g]); yy += 10; for (const l of wrapC(t.d, w - 8)) { if (draw) drawText(c, l, x + 8, yy, '#b9bdd0'); yy += 9; } yy += 3; }
@@ -387,49 +368,4 @@ function drawCodex(c) {
   });
 }
 
-// ---------------- THE JOURNAL: a quill, moths about the lamp ----------------
-// LEADS (each a row you tap to follow; a new one inks in), LORE, ECHOES, BEASTS; every page scrolls.
-const J_TABS = ['LEADS', 'LORE', 'ECHOES', 'BEASTS'], J_IDS = ['leads', 'lore', 'echo', 'beast'];
-function drawJournal(c) {
-  const tab = UI.jtab || 'leads', now = performance.now();
-  const setTab = nm => { const id = J_IDS[J_TABS.indexOf(nm)]; if (id !== UI.jtab) { UI.jtab = id; UI.scroll = 0; KIT.sy['j_' + id] = 0; if (id === 'lore') G.jNew = false; } };
-  const F = menuFrame('journal', 360, 340), K = pcard(c, 'journal', 0, 0, 'JOURNAL', { frame: F, foot: true }), x = K.x + 8, w = K.w - 16; let yy = K.by + 1;
-  yy += ktabs(c, x, yy, w, J_TABS, J_TABS[J_IDS.indexOf(tab)], setTab) + 2;
-  const B = { x: K.x + 1, y: yy, w: K.w - 2, h: K.footY - 3 - yy };
-  let idle = '';
-  if (tab === 'leads') {
-    const open = leadsOpen(), done = LEAD_ORDER.filter(id => G.leads.has(id) && LEADS[id].done());
-    if (!PANEL.inkInit) { for (const id of open) PANEL.ink.set(id, 0); PANEL.inkInit = true; }
-    const blocks = [];
-    for (const id of open) { const L = LEADS[id], at = leadAt(L), lines = wrapC(L.text, w - 12); blocks.push({ id, L, lines, h: 15 + lines.length * 9, sub: at !== null && at !== undefined ? `${round(abs(at * T - G.p.x) / T)} paces ${at * T > G.p.x ? 'east' : 'west'}` : '' }); }
-    const intro = wrapC(open.length ? kb('Things you have heard about. Click one to follow it, or none.', 'Things you have heard about. Tap one to follow it, or none.') : 'No open leads. Talk to people, read notices, wander.', w);
-    const gap = KIT.sizes.gap, need = intro.length * 9 + 4 + blocks.reduce((a, b) => a + b.h + gap, 0) + (done.length ? 12 + done.length * 9 : 0) + 4, sc = need > B.h, dy = sc ? kscroll(c, B, need, 'j_leads') : 0;
-    let y = B.y + 2 + dy;
-    intro.forEach(l => { drawText(c, l, x, y, '#8b8fa3'); y += 9; }); y += 4;
-    for (const b of blocks) {
-      if (y + b.h > B.y - 4 && y < B.y + B.h + 4) {
-        if (!PANEL.ink.has(b.id)) PANEL.ink.set(b.id, now);
-        const on = G.pin === b.id, ga = c.globalAlpha, ink = clamp((now - PANEL.ink.get(b.id)) / 400, 0, 1);
-        krow(c, x - 2, y, w + 4, b.h, () => { G.pin = G.pin === b.id ? null : b.id; sfx('ui'); }, { sel: on, tag: 'row:lead:' + b.id, hint: on ? 'Following it: the compass points there. Again to stop.' : 'Follow this lead: the compass will point to it.' });
-        c.globalAlpha = ga * (.25 + .75 * ink);
-        const tw = w - 6 - (b.sub ? textW(b.sub) + 6 : 0) - (on ? textW('following') + 6 : 0), tt = fitText(b.L.title, tw);
-        drawText(c, tt, x + 4, y + 3, on ? KIT.col : '#fff'); if (on) drawText(c, 'following', x + 10 + textW(tt), y + 3, '#ffb347');
-        if (b.sub) drawText(c, b.sub, x + w - 2 - textW(b.sub), y + 3, '#8ff5e6');
-        b.lines.forEach((l, i) => drawText(c, l, x + 8, y + 13 + i * 9, '#d8d4e6'));
-        if (ink < 1) { c.fillStyle = KIT.col; c.fillRect(x - 2, y + b.h - 1, round((w + 4) * ink), 1); }
-        c.globalAlpha = ga;
-      }
-      y += b.h + gap;
-    }
-    if (done.length) { y += 2; drawText(c, 'FOLLOWED', x, y, '#7ddc6f'); y += 10; for (const id of done) { drawText(c, fitText(LEADS[id].title, w - 8), x + 8, y, '#6f6a85'); y += 9; } }
-    if (sc) kscrollEnd(c);
-    idle = open.length ? (G.pin ? 'The compass points to the lead you follow.' : kb('Click a lead to follow it.', 'Tap a lead to follow it.')) : '';
-  } else if (tab === 'echo') { drawEchoTab(c, B); idle = 'Echo stones stand by the roads of every world.'; }
-  else if (tab === 'beast') { drawBeastTab(c, B); idle = 'Where a creature lives is written before you meet it.'; }
-  else {
-    const rows = []; for (const id of G.journal) { if (!JOURNAL[id]) continue; rows.push([JOURNAL[id][0], '#ffd35a']); for (const l of wrapC(JOURNAL[id][1], w - 8)) rows.push([l, '#d8d4e6']); rows.push(['', '']); }
-    if (!rows.length) rows.push(['Nothing written yet.', '#8b8fa3']);
-    prows(c, B, rows, 'j_lore'); idle = 'What you have learned, newest at the bottom.';
-  }
-  pfoot(c, K, idle + (KIT.T ? '' : '  (J closes)'));
-}
+

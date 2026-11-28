@@ -29,7 +29,7 @@ const wxWetAt = (x, y) => wxRain() > .35 && !wxCovered(x, y);
 // md is the way they are trying to go: with the wind is a little easier, against it harder
 function wxSpeed(f, md) {
   const k = f.mire > 0 ? .66 : 1; if (f.shel !== false) return k; const w = wxWind(), aw = abs(w);
-  return k * (1 - .16 * wxRain() - .14 * wxSnow() - .07 * wxAsh()) * (md && aw > .12 ? sign(w) === md ? 1 + .09 * aw : 1 - .17 * aw : 1);
+  return k * (1 - .16 * wxRain() - .14 * wxSnow() - .07 * wxAsh() - .1 * wxHail()) * (md && aw > .12 ? sign(w) === md ? 1 + .09 * aw : 1 - .17 * aw : 1);
 }
 const wxSlick = f => f.shel === false && wxRain() + wxSnow() > .3 ? .62 : 1;
 const wxBreath = f => f.shel === false ? 1 - .15 * wxSnow() - .1 * wxAsh() : 1;
@@ -41,7 +41,7 @@ function tickWeatherWays() {
   const p = G.p; if (!p) return;
   for (const f of G.fighters) if (f.mire > 0 && !f.remote) f.mire--;
   const rain = wxRain(), wind = wxWind(), aw = abs(wind);
-  if (rain + wxSnow() + wxAsh() + wxFog() > 0) for (const f of G.fighters) {
+  if (rain + wxSnow() + wxAsh() + wxFog() + wxHail() > 0) for (const f of G.fighters) {
     if (f.dead) continue;
     // who is out in it: looked at afresh a few times a second
     if (f.shel === undefined || (G.time + (f.botI | 0)) % 14 === 0) f.shel = wxCovered(f.x + 3, f.y);

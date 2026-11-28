@@ -46,7 +46,7 @@ async def run():
     # every style of a few weapons, in its own context
     ims, labels = [], []
     errs = []
-    for wid in ['steel_greatsword','bronze_glaive','steel_claws','deep_warhammer','bone_recurve','iron_flail']:
+    for wid in ['steel_greatsword','bronze_spear','steel_daggers','deep_warhammer','bone_recurve','iron_flail']:
         ok = await h.ev("!!IT['%s']" % wid)
         if not ok:
             wid = await h.ev("Object.values(IT).find(i=>i.type==='weapon'&&i.wtype==='%s')?.id" % {'bone_recurve':'recurve'}.get(wid, wid))
@@ -68,7 +68,7 @@ async def run():
             if not str(mid).startswith('S_'): errs.append((wid, k, mid))
     print('styles not started:', errs)
     # pair finisher: land a style with the greatsword, then X into a glaive
-    await h.ev("(()=>{ inv[0]={id:'steel_greatsword',n:1}; G.sel=0; G.gear.off={id:'bronze_glaive',n:1}; })()")
+    await h.ev("(()=>{ inv[0]={id:'steel_greatsword',n:1}; G.sel=0; G.gear.off={id:'bronze_spear',n:1}; })()")
     await h.ev("(()=>{ const d=%s, p=G.p; p.state='normal'; p.atk=null; p.x=p.px=d.x+14; p.y=p.py=d.y+d.h-p.h; p.face=-1; p.stam=p.maxstam; p.pairT=0; d.hp=d.maxhp; })()" % D)
     await h.step(3, AIM)
     await h.step(1, AIM+"pressed.KeyV=true;")

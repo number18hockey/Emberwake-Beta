@@ -44,7 +44,7 @@ const LORE_N = ECHOES.map(a => a.length);
 function echoInfo(id) { const d = floor(id / 100), i = id % 100; return ECHOES[d] && ECHOES[d][i]; }
 function readEcho(id) {
   const E = echoInfo(id); if (!E) return; closeUI(); UI.open = 'echo'; UI.echo = id; sfx('shrine', 0);
-  if (!G.echoes.has(id)) { G.echoes.add(id); G.dirty = true; G.note = { text: `Echo: ${E[0]}  (${G.echoes.size} heard)  [J]`, t: 0 }; burst(G.p.x + 3, G.p.y + 4, 14, ['#8ff5e6', '#ffffff', '#b49cff'], 1.4, 30, { glow: 1, g: -.02 }); }
+  if (!G.echoes.has(id)) { G.echoes.add(id); G.dirty = true; burst(G.p.x + 3, G.p.y + 4, 14, ['#8ff5e6', '#ffffff', '#b49cff'], 1.4, 30, { glow: 1, g: -.02 }); }
 }
 // THE ECHO STONE: what the stone remembers, with rings going out from it; it closes by its close box, CLOSE or Escape
 function drawEchoUI(c) {
@@ -54,7 +54,7 @@ function drawEchoUI(c) {
   textC(c, E[0].toUpperCase(), K.x + K.w / 2, K.by + dy, KIT.col, 1, textO); lines.forEach((l, k) => drawText(c, l, x, K.by + 14 + dy + k * 10, '#e8e4f4'));
   if (sc) kscrollEnd(c);
   const bw = KIT.T ? 72 : 60; kbutton(c, K.x + K.w - 8 - bw, K.footY + 5, bw, 'CLOSE', pclose, { main: true, hint: 'Close the stone.' });
-  pfoot(c, K, 'Every echo you hear is kept in your journal.', K.w - bw - 24);
+  pfoot(c, K, '', K.w - bw - 24);
 }
 // ---------------- the bestiary: where things live and when they come out ----------------
 const BEASTS = {
@@ -81,28 +81,7 @@ const BEASTS = {
   shepherd: ['The Pale Shepherd', 'Waking Lands: late in an EMBER MOON night', 'Leaves at dawn. Its bell calls the Ember Moon.']
 };
 const BEAST_ORDER = Object.keys(BEASTS);
-function beastKill(type) { if (!BEASTS[type]) return; const first = !G.beasts[type]; G.beasts[type] = (G.beasts[type] || 0) + 1; if (first) { G.note = { text: 'Bestiary: ' + BEASTS[type][0] + '  [J]', t: 0 }; G.dirty = true; } }
-// the journal's ECHOES and BEASTS pages, as rows in the journal's box B (10-interface/6-panel-menus.js draws them)
-function drawEchoTab(c, B) {
-  const rows = [], names = ['THE WAKING LANDS', 'CINDERDEEP', 'THE ROOTDARK', 'THE GLASS EXPANSE'], w = B.w - 16;
-  for (const l of wrapC(`Echo stones stand by the roads of every world. ${G.echoes.size} of ${LORE_N.reduce((a, b) => a + b, 0)} heard.`, w)) rows.push([l, '#8b8fa3']); rows.push(['', '']);
-  for (let d = 0; d < ECHOES.length; d++) {
-    if (d && !G.flags['seen' + d] && ![...G.echoes].some(id => floor(id / 100) === d)) continue; rows.push([names[d], '#ffd35a']);
-    ECHOES[d].forEach((E, i) => { if (G.echoes.has(d * 100 + i)) { rows.push(['  ' + E[0], '#8ff5e6']); for (const l of wrapC(E[1], w - 24)) rows.push(['    ' + l, '#d8d4e6']); } else rows.push(['  ???', '#4a4560']); });
-    rows.push(['', '']);
-  }
-  prows(c, B, rows, 'j_echo');
-}
-function drawBeastTab(c, B) {
-  const rows = [], seen = BEAST_ORDER.filter(k => G.beasts[k]).length, w = B.w - 16;
-  for (const l of wrapC(`${seen} of ${BEAST_ORDER.length} known. Where something lives is written even before you meet it.`, w)) rows.push([l, '#8b8fa3']); rows.push(['', '']);
-  for (const k of BEAST_ORDER) {
-    const B0 = BEASTS[k], n = G.beasts[k] || 0;
-    if (n) { rows.push([fitText(`${B0[0]}  x${n}`, w), '#ffd35a']); for (const l of wrapC(B0[1], w - 12)) rows.push(['  ' + l, '#8ff5e6']); for (const l of wrapC(B0[2], w - 12)) rows.push(['  ' + l, '#d8d4e6']); }
-    else { rows.push(['???', '#6a6485']); for (const l of wrapC(B0[1], w - 12)) rows.push(['  ' + l, '#4f6a70']); }
-  }
-  prows(c, B, rows, 'j_beast');
-}
+function beastKill(type) { if (!BEASTS[type]) return; G.beasts[type] = (G.beasts[type] || 0) + 1; G.dirty = true; }
 // ---------------- journal pages and leads for the new worlds ----------------
 Object.assign(JOURNAL, {
   dim1: ['Cinderdeep', 'Behind the Furnace Gate, the Kiln Heart opens onto a world of slag and lava under everything. Cinderite grows in its rock; a Slagforge (built at an iron anvil) can work it. Somewhere off from the rift, a guardian sleeps in a caldera. Touch the rift to go home.'],

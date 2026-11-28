@@ -100,19 +100,32 @@ const MOOD0 = {};
 function moodAt(x) {
   if (!WT_ON || x < 0 || x >= EW) return 0; let m = MOODC[x]; if (m) return m - 1;
   const v = fbm(x * .0013, 133.7, 2); m = v < .455 ? 1 : v > .545 ? 2 : 0; if (m && inWindow(x, 50)) m = 0;
+  // a world made since land 6: now and then the land's fourth face (MOOD3, 13-varied-lands.js)
+  if (LAND6() && !inWindow(x, 50) && fbm(x * .0017, 201.3, 2) > .6) m = 3;
   MOODC[x] = m + 1; return m;
 }
 const moodOf = (x, b) => { const L = MOODS[b]; return L ? L[moodAt(x)] || MOOD0 : MOOD0; };
 // the name of the land under a column, for the banner and the map
 const BIOME2 = { thorn: 'THE THORNWEALD', fen: 'SALLOWMERE', dunes: 'THE SALT DUNES' };
-function landName(b, tx) { if (!DIM && !WORLD.arena && MOODS[b] && tx !== undefined) { const M = moodOf(tx, b); if (M.n) return M.n; } return BIOME[b] || BIOME2[b] || ''; }
+function landName(b, tx) { if (!DIM && !WORLD.arena && MOODS[b] && tx !== undefined) { const M = moodOf(tx, b); if (M.n) return LAND6() && M.n === 'EMBERFELT MOOR' ? 'GREENFELT MOOR' : M.n; } return BIOME[b] || BIOME2[b] || ''; }
 function landSub(b, tx) { return !DIM && !WORLD.arena && MOODS[b] ? moodOf(tx, b).sub || '' : ''; }
 
 // plants on open ground in a world with traits and moods (a world from before them uses the old table in decorColumn).
 // true: this ground was one of ours, whether or not anything was planted
+// the wild plants of a world made since land 6: what grows where, out of a hundred
+const WILD_PLANTS = {
+  moor: [[POTATO, 30], [ONION, 25], [EMBERLEAF, 15], [NETTLE, 20], [NIGHTSHADE, 10]], mosswood: [[POTATO, 20], [MINT, 25], [NETTLE, 25], [NIGHTSHADE, 15], [ONION, 15]],
+  willowmere: [[ONION, 35], [MINT, 35], [NETTLE, 20], [NIGHTSHADE, 10]], thorn: [[EMBERLEAF, 35], [NETTLE, 30], [NIGHTSHADE, 20], [POTATO, 15]], other: [[ONION, 40], [MINT, 30], [NETTLE, 30]]
+};
+const WILD_P = { moor: .05, mosswood: .06, willowmere: .05, thorn: .05 };
+function wildPlant(b, q) { const L = WILD_PLANTS[b] || WILD_PLANTS.other; let s = 0; for (const [t, w] of L) s += w; let r = q * s; for (const [t, w] of L) { r -= w; if (r <= 0) return t; } return L[0][0]; }
 function decorNew(i, below, r, b, M, gk) {
   const m = (k, d = 1) => M[k] === undefined ? d : M[k];
+  const L6 = LAND6(), x = i % WW, y = (i / WW) | 0, r2 = L6 ? hh(x, y, SEED + 991) : 1;
+  if (L6 && below === GRASS && r2 < (WILD_P[b] || .03) * gk) { tiles[i] = wildPlant(b, hh(x, y, SEED + 992)); return true; }
+  if (L6 && (below === SAND || below === SALT) && b === 'dunes' && r2 < (M.cactus ? .13 : .04)) { const h = 1 + floor(hh(x, y, SEED + 993) * 3); for (let k = 0; k < h && tiles[i - k * WW] === AIR; k++) tiles[i - k * WW] = CACTUS; return true; }
   if (below === MUD || below === PEAT) {
+    if (L6 && r2 < .025) { tiles[i] = hh(x, y, SEED + 994) < .5 ? ONION : NIGHTSHADE; return true; }
     const reed = .5 * m('reed'), berry = .04 * m('berry') * gk;
     if (r < reed) tiles[i] = REED; else if (r < reed + berry) tiles[i] = BERRY; else if (M.glow && r > 1 - M.glow) tiles[i] = GLOWCAP;
     return true;

@@ -60,7 +60,8 @@ Feathers can be had in any world: besides the willow hen, the **galewisp** that 
 ![A home: a bed, table and chair, candles, a bookshelf, a weapon rack, a strongbox, a barrel, a planter of berries, a brazier, and outside a ballista, a spike trap, a beehive and a lamp post](pictures/home.jpg)
 
 - **Storage:** crates (10 stacks), barrels (20) and strongboxes (30), as well as chests.
-- **A bed:** you wake there after a fall. Sleep in it (**F**) to pass the night and wake **rested** (you heal for a while). A table, a chair and a light nearby make it **cosy**, and the rest lasts twice as long.
+- **A bed:** you wake there after a fall. You can only **sleep at night** (**F**): the night passes, you heal more the more you are hurt (**40 at most**, from nearly dead; a scratch heals a little), and you wake **rested** (you heal for a while). By day a bed, a bedroll or the village fire only marks where you will wake. A table, a chair and a light nearby make it **cosy**, and the rest lasts twice as long.
+- **Doors** are walls until you open them: right-click one within a few paces, or press **F** near it, from either side. Walking into a closed door no longer opens it.
 - **Planter boxes:** plant berries, reeds, fibre, mushrooms or glowcaps, and come back when it's ripe. Mushrooms like the dark; the rest like the sun.
 - **Beehives** make honey, faster near flowers and berry bushes. **Fountains** fill your empty jugs, and heal you while you rest beside them. **Braziers** keep the cold off.
 - **Defences:** spike traps and snares for whatever walks over them, the **ember ballista** that shoots creatures coming close, and a **warning bell** that rings when they do.
@@ -111,7 +112,7 @@ A fight has a pulse, and you win by keeping it. Keep it well and it speeds up, u
 
 **How hard things hit.** Each metal is about a fifth better than the one before it, all the way up. For the same metal, a slow weapon hits hardest and a long one least, but used well they all end up within reach of each other: pick the one whose rhythm you like. **Tools are not weapons**: a tapped pick or axe does about half what a sword of the same metal does, and a wound-up swing (hold the right button) nearly as much as one.
 
-The practice post in the village teaches all of this: press **F** at it with a weapon in hand. The journal (**J**) keeps a page called *The Beat of a Fight*. On **EASY** the timing is generous and DRUMFIRE lasts longest; **NORMAL** and **HARD** tighten both. The arenas always fight by **NORMAL**.
+The game no longer prints HASTY, RUSHED, CRISP or JAMMED over your blows: the glint, the sound and your embers tell you how a blow went. The practice post in the village teaches all of this: press **F** at it with a weapon in hand. On **EASY** the timing is generous and DRUMFIRE lasts longest; **NORMAL** and **HARD** tighten both. The arenas always fight by **NORMAL**.
 
 ### Keeping your run
 
@@ -174,7 +175,7 @@ Past the three floors there are four more worlds. Each has a gate on the surface
 
 Every guardian in the game leaves a **fragment** the first time it falls. All ten, with stormsteel and sunstone, forge the **Dawnring** at a Thunder Anvil. It opens the Ringstair; at the Cold Hearth in the Outside, with an Ember Offering, it calls the **Hollow King**. What happens after is the end of the story, and you can keep playing.
 
-Each guardian's offering needs things from several worlds and from the surface, so no guardian can be woken by staying in one place. The journal's leads (**J**) say exactly what each one wants. Guardians are harder than they were: more health, a guard to break, and a rage when nearly beaten.
+Each guardian's offering needs things from several worlds and from the surface, so no guardian can be woken by staying in one place. The lead at the top right says what to try next; click it to go on to the next one. Guardians are harder than they were: more health, a guard to break, and a rage when nearly beaten.
 
 ## Places to find
 
@@ -193,7 +194,7 @@ Guards wake when you come near and stay beaten once you clear a place. **Blessin
 
 Creatures live by world, by land, by depth and by event: cinder eels only in lava, gloam hounds hunting in packs in the rootwood, glass sentinels guarding the prism fields, fogwalkers only inside the Long Fog. The bestiary in your journal (**J**) says where each creature lives, even before you have met it.
 
-**Lore** is entirely optional. Echo stones stand by the roads of every world, and the journal keeps what you have heard. Nothing in the game needs you to read any of it.
+**Lore** is entirely optional. Echo stones stand by the roads of every world. Nothing in the game needs you to read any of it.
 
 ## No two worlds alike
 
@@ -223,9 +224,12 @@ Every world you forge from now on has a character of its own, worked out from it
 | --- | --- |
 | **Rain** | you go a little slower and the ground is slick; creatures see a little less far; small clinging flames die quickly (a flask's strip of burning ground burns its full time), and the rain washes the flames off anyone who is burning |
 | **A thunderstorm** | all that rain does, and it has a **wind**, which blows the way the rain leans: arrows and anything thrown or spat drift on it, a run with it is a little quicker and a run against it slower, and it leans on you while you are in the air. A bolt **sets fire** to what it strikes; it likes a tall **tree**, and a struck tree comes down more often than not (a lightning rod takes the bolt to earth instead) |
-| **Snow** | you go slower, the ground is slick, and your breath comes back more slowly |
+| **Snow** | you go slower, the ground is slick, and your breath comes back more slowly. Stand out in it long and the **cold** gets into you: frost creeps in at the edges of the screen, then it starts to hurt. A fire, a torch in hand, warm clothes or a **WARM** meal keep it off |
+| **Hail** | a storm of Kindling, Emberfall or Ashrest. You go a little slower, and now and then a stone hits you for a few points; creatures caught out take it too. Get under a roof or underground |
 | **Ashfall** | a little slower, and short of breath |
 | **The Long Fog** | creatures see about half as far |
+
+In the rain, drops gather on the screen and run down it while you stand out in it (**Effects: PLAIN** turns them off).
 
 **Shelter.** Under a roof, beneath a ledge, in a cave or anywhere below ground, none of it reaches you. Under a clear sky, in the arenas and in the other worlds nothing changes.
 

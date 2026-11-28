@@ -119,6 +119,9 @@ function pluck(tx, ty, tool) {
   burst(cx, cy, 5, [TP[t].dust, '#ffffff'], 1.2, 24, { hit: 1 }); sfx('mine', 0);
   if (t !== BERRY) afterRemove(tx, ty, t);
 }
+// a plant whose ground is gone comes away whole: what picking it gives, and nothing left hanging in the air
+// (picking an emberberry bush leaves the bush to fruit again; with nothing under it, the bush goes too)
+function uproot(tx, ty) { for (let k = 0; k < 2; k++) { const t = tileAt(tx, ty); if (!t || !TP[t].decor || !TP[t].ground) return; pluck(tx, ty, HAND); } }
 // ---------------- taking a tile away entirely ----------------
 function breakAt(tx, ty, o = {}) {
   const i = ty * WW + tx, t = tiles[i]; if (!t || TP[t].hard === Infinity) return;
@@ -143,7 +146,7 @@ function afterRemove(tx, ty, t, o = {}) {
   const up = tileAt(tx, ty - 1), dn = tileAt(tx, ty + 1);
   // cut stalks and undercut trees topple away from whoever did it
   if (TP[up].stalk) { const by = o.by || G.p, dir = by && by.x + 3 < tx * T + 4 ? 1 : by ? -1 : (Math.random() < .5 ? 1 : -1); fell(tx, ty - 1, dir); }
-  else if (up && TP[up].ground && !TP[up].stalk && !TP[up].solid) { if (TP[up].decor) pluck(tx, ty - 1, HAND); else if (TP[up].dyn && TP[up].hard < Infinity) breakAt(tx, ty - 1, { quiet: true }); }
+  else if (up && TP[up].ground && !TP[up].stalk && !TP[up].solid) { if (TP[up].decor) uproot(tx, ty - 1); else if (TP[up].dyn && TP[up].hard < Infinity) breakAt(tx, ty - 1, { quiet: true }); }
   else if (up && MAT[up] && MAT[up].fall && !PLACED.has((ty - 1) * WW + tx)) startFall(tx, ty - 1);
   if (dn === VINE) breakAt(tx, ty + 1, { quiet: true });
   if (dn === ROPE && t !== ROPE) removeRope(tx, ty + 1);
@@ -311,8 +314,7 @@ function toolTick(p, I) {
   // your fists have this click: a creature is under the cursor, or nothing in hand needs it
   if ((!it || it.type !== 'tool') && heldOf(p) === IT.fists) { p.toolCharge = 0; return; }
   const tx = floor(mouse.wx / T), ty = floor(mouse.wy / T), dx = tx * T + 4 - (p.x + 3), dy = ty * T + 4 - (p.y + 10), near = dx * dx + dy * dy < (forge ? 90 : 46) ** 2;
-  // right click: doors, and stations in reach
-  if (mouse.rp && near && (!it || it.type !== 'weapon')) { const t = tileAt(tx, ty); if (t === DOORC || t === DOORO) { toggleDoor(tx, ty); p.toolCharge = -1; return; } }
+  // (right click on a door is doorClick, 07-fighters/1-fighters.js)
   if (!it || it.type === 'tool') {
     // hold right to wind up a heavy blow; let go to bring it down
     if (mouse.r && p.toolCharge >= 0 && !p.strike && p.swingT <= 0) { p.toolCharge = min(50, (p.toolCharge || 0) + 1); p.swingTool = it || HAND; p.face = mouse.wx >= p.x + 3 ? 1 : -1; if (p.toolCharge === 50 && G.time % 20 === 0) sparks(p.x + 3, p.y - 2, 2, 0, .8); if (p.toolCharge === 30) sfx('charge'); return; }
@@ -344,7 +346,9 @@ function finishEat(it) {
   const p = G.p; if (!p || !it || countItem(it.id) < 1) return;
   removeItem(it.id, 1); G.food = min(100, (G.food || 0) + (it.food || 0)); if (it.heal) { p.hp = min(p.maxhp, p.hp + it.heal); numPop(p.x + 3, p.y - 4, '+' + it.heal, '#7ddc6f'); }
   if (it.meal) startMeal(it);
-  if (it.buff === 'tonic') p.tonic = 1800; if (it.buff === 'ward') { p.ward = 1800; if (p.st) p.st.poison = p.st.bleed = 0; } if (it.buff === 'bandage') { p.bandT = 600; if (p.st) p.st.bleed = 0; }
+  if (it.buff === 'tonic') p.tonic = 1800; if (it.buff === 'ward') { p.ward = 1800; p.sick = 0; if (p.st) p.st.poison = p.st.bleed = 0; } if (it.buff === 'bandage') { p.bandT = 600; if (p.st) p.st.bleed = 0; }
+  if (it.cure === 'sick') p.sick = 0;
+  if (it.bad) badFood(p, it);
   if (it.brew) drinkBrew(it.brew);
   sfx('pickup', 0); for (let k = 0; k < 6; k++) P(p.x + 3, p.y + 6, frand(-.8, .8), frand(-1.2, -.3), 18, fpick(it.brew ? ['#8ff5e6', '#c9fff6', '#b49cff'] : ['#ffd35a', '#f4efe6', '#e2483b']), { g: .08 });
   G.flags['ate_' + it.id] = true;
@@ -357,7 +361,7 @@ function tickConsume(p) {
   return true;
 }
 function tickHunger() {
-  const p = G.p, wild = wildOn(); if (!p || p.dead || WORLD.arena && !wild || WORLD.mode === 1) return;
+  const p = G.p, wild = wildOn(); if (p && p.sick > 0) p.sick--; if (!p || p.dead || WORLD.arena && !wild || WORLD.mode === 1) return;
   if (p.eatCd > 0) p.eatCd--; if (p.tonic > 0) p.tonic--; if (p.ward > 0 && !wild) p.ward--;
   if (p.bandT > 0) { p.bandT--; if (p.bandT % 15 === 0 && p.hp < p.maxhp) p.hp++; }
   const spent = max(0, (p.lastStam === undefined ? p.stam : p.lastStam) - p.stam); p.lastStam = p.stam;

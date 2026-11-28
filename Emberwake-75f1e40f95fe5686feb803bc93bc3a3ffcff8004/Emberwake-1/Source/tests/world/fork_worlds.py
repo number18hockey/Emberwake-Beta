@@ -20,23 +20,27 @@ OPEN = "(d => { Object.assign(WORLD, { id: d.id, name: d.name, seed: d.seed | 0,
 # one number for a stretch of land: the stretch is formed, then every tile, wall, ground height, land, tree crown and chest goes into it
 HASH = r"""((off, half) => { const x0 = X0 + off - half, x1 = X0 + off + half; for (let x = x0 - 64; x <= x1 + 64; x += 64) streamTo(x * T, true);
   let h = 2166136261 >>> 0; const eat = v => { h = Math.imul(h ^ (v & 255), 16777619) >>> 0; h = Math.imul(h ^ ((v >> 8) & 255), 16777619) >>> 0; };
+  // (the weapon kinds taken out of the game count as the kind each became: claws and sai daggers, a glaive a spear...)
+  const GONE = id => String(id).replace(/_(claws|sai)$/, '_daggers').replace(/_glaive$/, '_spear').replace(/_chainwhip$/, '_nunchaku').replace(/_longsword$/, '_sword');
   for (let y = 0; y < WH; y++) for (let x = x0; x < x1; x++) { const i = y * WW + x; eat(tiles[i]); eat(walls[i]); }
   for (let x = x0; x < x1; x++) { eat(heights[x]); eat(BIDX[biomeE(x)] || 0); const tr = treeTops.get(x); if (tr) { eat(tr.y); eat(tr.kind * 4 + tr.v); } }
-  for (const [i, k] of [...LOOT].filter(([i]) => i % WW >= x0 && i % WW < x1).sort((a, b) => a[0] - b[0])) { eat(i % WW - x0); eat((i / WW) | 0); for (const s of fillLoot(i, k)) if (s) { for (const ch of s.id) eat(ch.charCodeAt(0)); eat(s.n); } }
+  for (const [i, k] of [...LOOT].filter(([i]) => i % WW >= x0 && i % WW < x1).sort((a, b) => a[0] - b[0])) { eat(i % WW - x0); eat((i / WW) | 0); for (const s of fillLoot(i, k)) if (s) { for (const ch of GONE(s.id)) eat(ch.charCodeAt(0)); eat(s.n); } }
   return h.toString(16); })"""
 # [seed, shape, gen, the world you stand in (0: the surface)]: the stretches looked at, as columns from home
 FAR = [0, 600, -600, 3000, -3000, 9000, -9000]; NEAR = [0, 600, -600]
 CASES = [[4242, 0, 2, 0, FAR], [12345, 0, 2, 0, FAR], [777, 0, 2, 0, FAR], [31337, 0, 2, 0, FAR], [2024, 0, 2, 0, FAR], [7171, 0, 2, 0, FAR], [4242, 2, 2, 0, FAR], [12345, 1, 2, 0, FAR], [808, 0, 1, 0, FAR],
          [4242, 0, 2, 1, NEAR], [4242, 0, 2, 2, NEAR], [12345, 2, 2, 3, NEAR]]
+# (the weapon kinds taken out later count as the kind each became: GONE in HASH. The numbers are the other branch's land
+#  with that one mapping, taken from the last build that matched it exactly)
 GOLD = {'4242/0/2/0': ["c5258b00", "3dc68376", "1117107e", "d94bf623", "77a1131b", "989f04f", "9467062b"],
-        '12345/0/2/0': ["274736fb", "5c16bf92", "ee21aa29", "2d786e61", "805593c6", "dd76abd2", "e6e0632"],
+        '12345/0/2/0': ["274736fb", "5c16bf92", "ee21aa29", "2d786e61", "70e1ad0d", "dd76abd2", "e6e0632"],
         '777/0/2/0': ["e9b59830", "ee0ccf37", "d93e30b8", "21ffa26c", "811726e0", "4e275ae1", "aceb0668"],
         '31337/0/2/0': ["f88e95e0", "dd00021", "cf589a18", "f9530aea", "7f4e9c25", "954b673d", "51323985"],
-        '2024/0/2/0': ["4e171bc4", "dd1fe2d5", "abd8b434", "e3d11b45", "2e18aa8e", "3b9b3fdd", "feb8d319"],
+        '2024/0/2/0': ["4e171bc4", "dd1fe2d5", "abd8b434", "e3d11b45", "2e18aa8e", "3b9b3fdd", "5442663b"],
         '7171/0/2/0': ["9d94a429", "c9cc99a0", "35b6bb44", "443f6d73", "806d832", "b7e8ec4f", "9e6e2e69"],
         '4242/2/2/0': ["b278a49e", "aee17c0f", "cadb0d5b", "be3400bb", "d6c927c0", "277a4b55", "718c96ee"],
-        '12345/1/2/0': ["6763e2e8", "d9ff8cfc", "df7a963a", "7938cbf2", "17dacac2", "f5611fdd", "e6e0632"],
-        '808/0/1/0': ["af8ee215", "731ca562", "53d0e2e2", "da6485b5", "b050415", "ce6dc0bc", "8269d734"],
+        '12345/1/2/0': ["6763e2e8", "d9ff8cfc", "df7a963a", "7938cbf2", "c6269299", "f5611fdd", "e6e0632"],
+        '808/0/1/0': ["af8ee215", "731ca562", "53d0e2e2", "da6485b5", "b050415", "6989f76f", "8269d734"],
         '4242/0/2/1': ["f374f6c6", "acb026b7", "d0400d97"],
         '4242/0/2/2': ["9ae2954a", "2f5c5b7f", "316aed9"],
         '12345/2/2/3': ["bc0e453d", "61aed8dc", "99895864"]}
@@ -74,7 +78,7 @@ async def main():
     b = await what("d.land = 2; d.fork = 1; delete d.hat"); check('a save that says it is of the other branch is', b['fork'] == 1 and b['land'] == 2 and b['moss'] > 50, str(b))
     await opened(pg, "Object.assign(WORLD, { id: 'nw', name: 'New', seed: 4242, size: 1, shape: 0, mode: 0, arena: false }); startWorld(null); 1")
     n = json.loads(await pg.evaluate(FACTS)); meta = await pg.evaluate("worldMeta()")
-    check('a new world is land 5, not of the other branch, and its save says nothing of a fork or a hat', n['fork'] == 0 and n['land'] == 5 and 'fork' not in meta and 'hat' not in meta and meta['land'] == 5, str(n))
+    check('a new world is land 6, not of the other branch, and its save says nothing of a fork or a hat', n['fork'] == 0 and n['land'] == 6 and 'fork' not in meta and 'hat' not in meta and meta['land'] == 6, str(n))
 
     # ---- 2. the land, against the other branch's own build
     bad = 0

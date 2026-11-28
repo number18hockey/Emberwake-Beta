@@ -72,7 +72,7 @@ PLAYERS = r"""window.QP = (() => {
   }
   return { train, duel };
 })(); 1"""
-KINDS = ['iron_sword', 'iron_shortsword', 'steel_greatsword', 'iron_spear', 'steel_halberd', 'iron_daggers', 'steel_claws', 'iron_battleaxe', 'steel_greataxe', 'steel_nunchaku', 'iron_flail']
+KINDS = ['iron_sword', 'iron_shortsword', 'steel_greatsword', 'iron_spear', 'steel_halberd', 'iron_daggers', 'steel_daggers', 'iron_battleaxe', 'steel_greataxe', 'steel_nunchaku', 'iron_flail']
 
 
 async def run():

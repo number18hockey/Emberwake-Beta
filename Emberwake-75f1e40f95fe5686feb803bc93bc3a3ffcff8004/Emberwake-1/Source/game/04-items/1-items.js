@@ -220,7 +220,7 @@ function buildItems() {
   blk('logwall', 'Log Wall', LOGWALL, 'Stacked logs.'); blk('wattle', 'Wattle and Daub', WATTLE, 'Woven sticks plastered with mud.');
   blk('thatch', 'Thatch', THATCH, 'Light roofing. Spans well, holds little.'); blk('cinderbrick', 'Cinderbrick', CINDERBRICK, 'Fireproof deepstone brick.');
   blk('window', 'Window', WINDOW, 'A glazed frame. Lets light in.'); blk('beam', 'Post', BEAM, 'A vertical timber. Carries weight far upward. Walk through it.');
-  blk('beamh', 'Beam', BEAMH, 'A horizontal timber. Spans wide gaps. Stand on it.'); blk('door', 'Door', DOORC, 'Needs three tall clear tiles. [F] or right-click opens it.');
+  blk('beamh', 'Beam', BEAMH, 'A horizontal timber. Spans wide gaps. Stand on it.'); blk('door', 'Door', DOORC, 'Needs three tall clear tiles. Right-click it, or [F] near it, to open or shut it.');
   blk('ladder', 'Ladder', LADDER, 'Climb with W and S.');
   wal('wplank', 'Plank Wall', W_PLANK); wal('wlog', 'Log Back Wall', W_LOG); wal('wwattle', 'Wattle Wall', W_WATTLE); wal('wmud', 'Mudbrick Wall', W_MUDB); wal('wcobble', 'Cobble Wall', W_COBBLE); wal('wcut', 'Cut Stone Wall', W_CUT); wal('wbrick', 'Brick Wall', W_BRICK);
   defI('torch', { name: 'Pod Lantern', type: 'block', tile: TORCH, icon: SPR.i_torch, desc: 'Warm light. Hang it on walls or blocks.' });
@@ -252,7 +252,7 @@ function buildItems() {
   buildTools(); buildWeapons(); buildArmor(); dimItemsPost(); wonderItems(); realmItemsPost();
   defI('scroll', { name: 'Technique Scroll', type: 'scroll', stack: 5, icon: scrollIcon(), desc: 'Brush drawings of a weapon form. Click to read it: the last weapon you held gains a rank of styles.' });
   for (const id of ['knifeblade', 'axehead', 'pickhead', 'shovelhead', 'spearhead']) { const k = KNAP.find(q => q.out === id), [c, x] = mk(10, 10); for (let i = 0; i < 25; i++) if (k.pat[i] === '#') { x.fillStyle = (i % 5 + (i / 5 | 0)) % 3 ? '#8a8296' : '#c9c2d6'; x.fillRect((i % 5) * 2, (i / 5 | 0) * 2, 2, 2); } IT[id].icon = outlined(c); }
-  benchItems(); trinketItems(); furnItems(); offeringItems(); realmOfferings(); brewRecipes(); regroupRecipes();
+  benchItems(); trinketItems(); plantItems(); furnItems(); offeringItems(); realmOfferings(); brewRecipes(); regroupRecipes();
   for (const r of RECIPES) for (const k of Object.keys(r.need).concat(r.out ? [r.out] : [], r.keep || [])) if (!IT[k]) console.warn('recipe item missing', k);
   buildUses();
 }
@@ -414,7 +414,7 @@ let inv = [];
 const packCap = () => WORLD.arena && !wildOn() ? 10 : WORLD.mode === 1 ? PACK_MAX : min(PACK_MAX, PACK0 + (G.worn ? G.worn.size : 0) * 10);
 function fitPack() { const n = packCap(); if (inv.length < PACK_MAX) for (let i = inv.length; i < PACK_MAX; i++) inv[i] = null; const over = []; for (let i = n; i < PACK_MAX; i++) if (inv[i]) { over.push(inv[i]); inv[i] = null; } INV_N = n; for (const s of over) { const l = addItem(s.id, s.n); if (l && G.p) spawnDrop(s.id, l, G.p.x + 3, G.p.y + 4); } }
 function addItem(id, n = 1) {
-  const it = IT[id]; if (!it) return 0; const st = it.stack;
+  id = liveId(id); const it = IT[id]; if (!it) return 0; const st = it.stack;
   for (let i = 0; i < INV_N && n > 0; i++) { const s = inv[i]; if (s && s.id === id && s.n < st) { const k = min(n, st - s.n); s.n += k; n -= k; } }
   for (let i = 0; i < INV_N && n > 0; i++) if (!inv[i]) { const k = min(n, st); inv[i] = { id, n: k }; n -= k; }
   if (G.state === 'play') G.dirty = true;

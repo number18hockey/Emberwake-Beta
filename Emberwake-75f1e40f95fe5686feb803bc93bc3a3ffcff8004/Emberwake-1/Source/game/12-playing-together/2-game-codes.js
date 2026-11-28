@@ -303,14 +303,14 @@ function drawCoopPanel(c) {
   let body, info = [];
   const guestL = L('You are in ' + (COOP.hostName || 'a friend') + "'s world. Your pack is saved on this computer for next time."), noL = L('This window cannot connect to other computers. Open Emberwake.html in Chrome, Safari, Edge or Firefox to play together.');
   const ready = ok && !guest && sigReady(), slow = performance.now() - SIG.startT > 7000;
-  const st = COOP.err ? [COOP.err, '#ff9a8a'] : ready ? ['Ready. Your friends open Emberwake, pick JOIN A FRIEND, and type this code. Up to 3 can join.', '#7ddc6f'] : slow ? ["Can't reach the internet right now, so friends can't find this game. Check your connection, or use long codes.", '#ffb347'] : ['Getting ready...', '#ffd35a'];
+  const st = COOP.err ? [COOP.err, '#ff9a8a'] : ready ? ['Ready. Up to 3 friends can join with this code.', '#7ddc6f'] : slow ? ["Can't reach the internet right now, so friends can't find this game. Check your connection, or use long codes.", '#ffb347'] : ['Getting ready...', '#ffd35a'];
   const stL = L(st[0]), noteL = COOP.note ? L(COOP.note) : [], ch = S.sm * 2 + S.gap + 8;
   if (guest) body = who + guestL.length * 9 + 4;
   else if (!ok) body = who + noL.length * 9 + 4;
   else {
     body = who + S.fh + 8 + 10 + ch + 6 + stL.length * 9 + 3 + noteL.length * 9 + (COOP.copied > 0 && COOP.copyFail ? 10 : 0);
     netProbe();
-    for (const s of [netStatus(), SIG.viaRoom ? 'Friends join from this same page on claude.ai.' : 'Friends need this same version (' + GAME_VERSION + '), as the file or the app.', 'Keep the game running while friends play (switching windows is fine).']) { const l = L(s); if (29 + body + (info.length + l.length) * 9 + 4 + S.bh + 10 > room) break; info.push(...l); }
+    for (const s of [netStatus(), SIG.viaRoom ? 'Friends join from this same page on claude.ai.' : 'Friends need this same version (' + GAME_VERSION + ').']) { const l = L(s); if (29 + body + (info.length + l.length) * 9 + 4 + S.bh + 10 > room) break; info.push(...l); }
     body += info.length * 9 + (info.length ? 4 : 0);
   }
   const F = menuFrame('coop', 400, 29 + body + S.bh + 10), K = pcard(c, 'coop', 0, 0, 'PLAY TOGETHER', { frame: F, foot: true, dom: true }), fx = K.x + 10, w = K.w - 20; let ty = K.by;
@@ -397,11 +397,10 @@ function joinStatus() {
   return st ? { text: st, kind: COOP.err && !COOP.retry ? 'err' : COOP.retry ? 'warn' : 'ok' } : null;
 }
 function joinStage() { const d = '.'.repeat(1 + ((G.time >> 4) % 3)); return SIG.stage === 'relay' ? 'no direct line here, going through the relay' + d : SIG.stage === 'link' ? 'connecting' + d : SIG.stage === 'found' ? 'saying hello' + d : 'searching' + d; }
-const JOIN_PACK = 'You bring your own pack to their world; it is kept for next time.';
 function joinCodeH(w) {
-  const S = KIT.sizes, m = joinStatus(), cw = w - 16, L = s => wrapC(s, cw).length * 9;
-  if (!netOK()) return 29 + 30 + S.sm + 8 + L(JOIN_PACK) + 6 + S.bh + 10;
-  return 29 + 9 + 11 + (KIT.T ? 22 : 20) + 6 + (m ? wrapC(m.text, cw - 8).length * 9 + 2 : 0) + (joinBusy() ? 11 : 0) + 4 + S.sm + 8 + L(JOIN_PACK) + 4 + S.bh + 10;
+  const S = KIT.sizes, m = joinStatus(), cw = w - 16;
+  if (!netOK()) return 29 + 30 + S.sm + 8 + S.bh + 10;
+  return 29 + 9 + (KIT.T ? 22 : 20) + 6 + (m ? wrapC(m.text, cw - 8).length * 9 + 2 : 0) + (joinBusy() ? 11 : 0) + 4 + S.sm + 8 + S.bh + 10;
 }
 function joinCode(c, x, y, w, h) {
   const S = KIT.sizes, K = kcard(c, x, y, w, h, 'join', 'THEIR CODE', { art: 'beacon', i: 1, dom: true, foot: true }), cx = K.x + 8, cw = K.w - 16, busy = joinBusy(); let yy = K.by + 1;
@@ -409,7 +408,6 @@ function joinCode(c, x, y, w, h) {
     for (const l of wrapC('This window cannot connect to other computers. Open Emberwake.html in Chrome, Safari, Edge or Firefox to play together.', cw)) { drawText(c, l, cx, yy, '#ffb347'); yy += 9; }
     yy += 4;
   } else {
-    drawText(c, fitText(kb('Your friend sees it in PLAY TOGETHER (P).', 'Your friend sees it in PLAY TOGETHER.'), cw), cx, yy, '#b9bdd0'); yy += 11;
     const bw = min(cw, KIT.T ? 150 : 132), bh = KIT.T ? 22 : 20;
     joinLamps(c, cx + 4, yy - 1, bw - 8); yy += 9;
     const el = domBig(domBox('gcin', cx, yy, bw, bh, { input: true, ph: 'K7P2QX', onEnter: joinGo, onEsc: el => { el.blur(); KIT.focus = null; }, onTab: (el, back) => { el.blur(); kitNav(back ? -1 : 1, 'field:gcode'); } })); el.maxLength = 8;
@@ -418,14 +416,13 @@ function joinCode(c, x, y, w, h) {
     kctrl({ tag: 'field:gcode', kind: 'btn', x: cx, y: yy, w: bw, h: bh, fn: () => el.focus() });
     if (!KIT.T && document.activeElement !== el && (el.dataset.t0 !== String(KIT.enter.t0) || (KIT.kbd && KIT.focus === 'field:gcode'))) { el.dataset.t0 = KIT.enter.t0; el.focus(); }
     el.style.borderColor = busy ? '#7ddc6f' : '#6a6485';
-    if (bw + 60 <= cw) drawText(c, fitText(kb('then Enter', 'then JOIN'), cw - bw - 8), cx + bw + 8, yy + round((bh - 8) / 2), '#6a6485');
+
     yy += bh + 6;
     const m = joinStatus(); if (m) yy += kmsg(c, cx, yy, cw, m) + 2;
     if (busy) { drawText(c, fitText(joinStage(), cw), cx, yy, '#8b8fa3'); yy += 11; }
     yy += 4;
   }
-  kbutton(c, cx, yy, min(cw, 170), 'I HAVE A LONG INVITE CODE', joinLongOpen, { small: true, short: 'A LONG INVITE CODE', hint: 'A friend sent you a long code instead (it works without the message boards).' }); yy += S.sm + 8;
-  for (const l of wrapC(JOIN_PACK, cw)) { drawText(c, l, cx, yy, '#8b8fa3'); yy += 9; }
+  kbutton(c, cx, yy, min(cw, 170), 'I HAVE A LONG INVITE CODE', joinLongOpen, { small: true, short: 'A LONG INVITE CODE' }); yy += S.sm + 8;
   const bk = KIT.T ? 64 : 60, fy = K.footY + 5, mw = min(150, cw - bk - S.gap);
   if (!netOK()) { } else if (!busy && !COOP.retry) kbutton(c, cx, fy, mw, 'JOIN', joinGo, { main: true, hint: 'Find their game and step in.' });
   else kbutton(c, cx, fy, mw, 'CANCEL', joinCancel, { hint: 'Stop looking for their game.' });

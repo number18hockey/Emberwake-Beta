@@ -78,12 +78,10 @@ Object.assign(SFX, {
   ablaze() { for (let k = 0; k < 4; k++) tone('triangle', NOTE[k + 2], NOTE[k + 2], .3, .09, k * .05); },
   crescendo() { for (const k of [0, 2, 4, 5]) tone('triangle', NOTE[k] * 2, NOTE[k] * 2, .5, .1); tone('sine', 98, 49, .5, .3); noise(.35, .3, 2400, 200, 1); }
 });
-// a hint the first time each thing happens, so the rules are learned by doing
-function tempoHint(k, text) { if (WORLD.arena || !G.flags || G.flags['th_' + k]) return; G.flags['th_' + k] = 1; say(text); G.dirty = true; if (G.journal && !G.journal.includes('tempo')) unlock('tempo'); }
 
 function tempoAdd(f, n) {
   const t0 = f.tempo | 0; f.tempo = clamp(t0 + n, 0, TEMPO_MAX); if (n > 0) { const W = heldOf(f); f.tempoT = TEMPO_HOLD * (W && W.set === 'fangs' ? 1.7 : 1); }
-  if (f.tempo === TEMPO_MAX && t0 < TEMPO_MAX) { fsx(f, 'ablaze', 0); numPop(f.x + 3, f.y - 12, 'ABLAZE', '#ffd35a'); if (f === G.p) tempoHint('ablaze', 'ABLAZE: five embers. A heavy blow (right mouse) now spends them all in one CRESCENDO.'); }
+  if (f.tempo === TEMPO_MAX && t0 < TEMPO_MAX) { fsx(f, 'ablaze', 0); numPop(f.x + 3, f.y - 12, 'ABLAZE', '#ffd35a'); }
 }
 function tickTempo(f) {
   if (f.tempo > 0 && !(WORLD.royale && trKeepTempo(f)) && --f.tempoT <= 0) { f.tempo--; f.tempoT = 50; }
@@ -100,7 +98,7 @@ function quickStep(f, n) {
   if (n < 0 && f.rollT > 0) { f.rollT = 0; f.quick = min(f.quick, QK.ROLL_FALL); rollEnd(f); }
   else if (f.quick >= QK.MAX && q0 < QK.MAX && !(f.rollT > 0)) {
     f.rollT = rollT(); f.stoke = 0; f.crashS = -1;
-    if (f === G.p) { numPop(f.x + 3, f.y - 16, 'DRUMFIRE', '#ffd35a', 2); sfx('drumfire', 0); G.flash = max(G.flash, .12); G.flashCol = '255,211,90'; try { if (mobileDevice && navigator.vibrate) navigator.vibrate(10); } catch (e) { } tempoHint('drumfire', 'DRUMFIRE: five blows in time. For a moment timing lets go: hammer the button and every blow is stoked harder. End it with a heavy blow, a CRASH.'); }
+    if (f === G.p) { numPop(f.x + 3, f.y - 16, 'DRUMFIRE', '#ffd35a', 2); sfx('drumfire', 0); G.flash = max(G.flash, .12); G.flashCol = '255,211,90'; try { if (mobileDevice && navigator.vibrate) navigator.vibrate(10); } catch (e) { } }
     else fsx(f, 'drumfire', 0);
   }
   if (f === G.p && f.quick < q0) sfx('tok', 30);
@@ -110,7 +108,7 @@ function rollEnd(f) { f.rollOut = QK.ROLL_OUT; f.crashS = f.stoke | 0; f.stoke =
 // SHAKE-OFF: pressing while you reel gets you back on your feet sooner (a few presses, not a flurry of them)
 function shakeOff(f) {
   if (!(f.hurtT > 0) || (f.shN | 0) >= QK.SHAKE_N || G.time - (f.shLast === undefined ? -99 : f.shLast) < QK.SHAKE_GAP) return;
-  f.shN = (f.shN | 0) + 1; f.shLast = G.time; f.hurtT = max(1, f.hurtT - QK.SHAKE_OFF); if (f === G.p) tempoHint('shake', 'SHAKE-OFF: pressing while you reel gets you back on your feet sooner. A few presses do it; a flurry does no more.');
+  f.shN = (f.shN | 0) + 1; f.shLast = G.time; f.hurtT = max(1, f.hurtT - QK.SHAKE_OFF);
   if (near(f)) sparks(f.x + 3, f.y + 6, 5, 0, 1.6, ['#ffffff', '#fff1a8']); if (f === G.p) sfx('shakeoff', 0);
 }
 // a press of an attack button: on the glint it carries the chain on; before it, the blow in hand is rushed
@@ -135,7 +133,7 @@ function beatPress(f, b) {
     if (f.rollOut > 0) return;   // the grace after DRUMFIRE: an early press is let go
     // (early presses are counted on through the blows that HASTY presses queue: hammering goes HASTY, HASTY, RUSHED)
     a.pre = (a.pre | 0) + 1;
-    if (a.pre < QK.RUSH_AT && !a.hasty) { a.hasty = b; quickStep(f, -QK.LOSE_HASTY); if (f === G.p) { numPop(f.x + 3, f.y - 10, 'HASTY', '#8a8794'); tempoHint('hasty', 'HASTY: pressed before the glint. The next blow waits for this one to finish, comes out of time, and your blows slow a step. Keep pressing early and you are RUSHED.'); } }
+    if (a.pre < QK.RUSH_AT && !a.hasty) { a.hasty = b; quickStep(f, -QK.LOSE_HASTY); }
     else if (a.pre >= QK.RUSH_AT) { a.hasty = null; rushBlow(f, a); }
     return;
   }
@@ -146,7 +144,7 @@ function beatPress(f, b) {
 }
 function rushBlow(f, a) {
   a.rushed = true; a.beat = 0; f.buf = null; if (!f.noRushCost) tempoAdd(f, -2); f.rushN = (f.rushN | 0) + 1; f.stam = max(0, f.stam - 8); f.stamDelay = max(f.stamDelay | 0, 34); quickStep(f, -QK.MAX);
-  if (f === G.p) { numPop(f.x + 3, f.y - 10, 'RUSHED', '#8a8794'); sfx('rush', 60); tempoHint('rush', 'RUSHED. Hammering before the glint makes weak blows that are slow to recover from. Wait for the glint: only in DRUMFIRE does hammering pay.'); if (G.drill) drillNote('rush'); }
+  if (f === G.p) { sfx('rush', 60); if (G.drill) drillNote('rush'); }
 }
 // the follow-through reaches its opening: the weapon glints
 function beatGlint(a) {
@@ -172,7 +170,7 @@ function edgeOf(a, e, hx, hy) {
   if (set === 'maul') return (k === 'swing' && a.pt >= a.act * .5) || u >= .6 ? 1 : 0;
   return u >= .52 ? 1 : 0;
 }
-const EDGE_HINT = { sword: 'the outer half of the blade', spear: 'the point, at full reach', fangs: 'a blow in the back', maul: 'the end of the swing', chuks: 'the far end of the chain', brawl: 'a punch that beats their wind-up' };
+
 // how a blow's damage, bite and weight follow from how it was struck
 function tempoHit(a, e, edge, crit) {
   const f = a.f, m = a.m, t = f.tempo | 0;
@@ -188,13 +186,12 @@ function tempoHit(a, e, edge, crit) {
 // after a blow lands: tempo, the note, the words
 function tempoLanded(a, e, edge, dmg, hx, hy) {
   const f = a.f, P0 = f === G.p, first = !a.hit; a.lastEdge = edge;
-  if (edge > 0 && first) { G.trails.push({ kind: 'hit', x: hx, y: hy, life: 7, max: 7, a: PI / 4, big: true }); sparks(hx, hy, 6, 0, 2.6, ['#fff1a8', '#ffffff']); if (P0) { tempoHint('clean', 'CLEAN. Where a weapon lands matters: with this one, ' + (EDGE_HINT[a.setName] || 'the far edge of your reach') + ' hits harder and breaks guards faster.'); a.lastEdge = 1; } }
-  else if (edge < 0 && first && P0) numPop(hx, hy - 10, 'JAMMED', '#8a8794');
+  if (edge > 0 && first) { G.trails.push({ kind: 'hit', x: hx, y: hy, life: 7, max: 7, a: PI / 4, big: true }); sparks(hx, hy, 6, 0, 2.6, ['#fff1a8', '#ffffff']); if (P0) a.lastEdge = 1; }
   if (f.answerT > 0 && first) { f.answerT = 0; if (P0) numPop(hx, hy - 14, 'ANSWER', '#8ff5e6'); }
   if (a.rip && first) quickStep(f, QK.UP_RIPOSTE);
   if (a.spent && first && a.setName === 'maul') { f.tempo = max(f.tempo | 0, min(2, a.spent)); f.tempoT = TEMPO_HOLD; }
   if (first && a.beat > 0) {
-    tempoAdd(f, 1 + (a.setName === 'spear' && edge > 0 ? 1 : 0)); if (P0) { beatNote(f.tempo, a.beat === 2); if (a.beat === 2) { if (G.time - (f.wordT || -99) > 50) { f.wordT = G.time; numPop(f.x + 3, f.y - 10, 'CRISP', '#fff1a8'); } sparks(f.x + 3 + (f.glOx || 0), f.y + (f.glOy || 6), 5, 0, 1.8, ['#ffffff', '#fff1a8']); f.stam = min(f.maxstam, f.stam + 4); tempoHint('crisp', 'CRISP: struck right on the glint. Blows in time bite and light embers, and a crisp blow after a hit QUICKENS the next. The thin bar under your embers shows how fast you are.'); } }
+    tempoAdd(f, 1 + (a.setName === 'spear' && edge > 0 ? 1 : 0)); if (P0) { beatNote(f.tempo, a.beat === 2); if (a.beat === 2) { sparks(f.x + 3 + (f.glOx || 0), f.y + (f.glOy || 6), 5, 0, 1.8, ['#ffffff', '#fff1a8']); f.stam = min(f.maxstam, f.stam + 4); } }
   }
   if (a.cresc && first) { numPop(hx, hy - 16, 'CRESCENDO', '#ffd35a', 2); addShake(7); G.trails.push({ kind: 'ring', x: hx, y: hy, r: 46, life: 14, max: 14 }); burst(hx, hy, 34, ['#ffd35a', '#fff1a8', '#ff8a3d', '#ffffff'], 3.6, 34, { glow: 1, g: .02 }); if (P0) G.hitstop = max(G.hitstop, 9); }
   else if (a.spent && first && P0) numPop(hx, hy - 14, 'x' + (1 + .2 * a.spent).toFixed(1), '#ffd35a');
@@ -224,7 +221,7 @@ function tryClash(f, dmg, fromX, o) {
   numPop(fx, f.y - 12, 'CLASH', '#8ff5e6'); fsx(f, 'clash', 0);
   if (f === G.p || by === G.p) { G.hitstop = max(G.hitstop, 6); addShake(3.5); }
   if (WORLD.royale && !BR.wild) { if (f === G.p) BR.st.clash = (BR.st.clash | 0) + 1; if (by && !by.dead && (trAmps(f, a.W) || []).includes('thorn')) strike(f, by, 10, a.face * 2, -1, { stop: 2 }); }
-  if (f === G.p) { comboHit(true); if (WORLD.royale) brFavor(6); tempoHint('clash', 'CLASH. Your blow met theirs and turned it aside. Time a swing into an attack and it cannot hurt you.'); if (G.drill) drillNote('clash'); }
+  if (f === G.p) { comboHit(true); if (WORLD.royale) brFavor(6); if (G.drill) drillNote('clash'); }
   return true;
 }
 // caught in a wind-up or after a rushed blow: it costs more
@@ -239,7 +236,7 @@ function poiseHit(root, amt, o) {
   root.pz = root.mpz; root.sundered = false; root.stagT = root.boss ? 60 : 85; if (!root.boss && !root.noKb) { root.stun = max(root.stun || 0, root.stagT); if (TELL.has(root.state) || root.state === 'swing') { root.state = root.fly ? 'idle' : 'chase'; root.t = 0; } }
   numPop(root.x + root.w / 2, root.y - 10, 'BROKEN', '#ffd35a'); sfx('broken', 0); addShake(3); G.hitstop = max(G.hitstop, 5);
   burst(root.x + root.w / 2, root.y + root.h * .4, 16, ['#ffd35a', '#fff1a8', '#ffffff'], 2.6, 26, { glow: 1 });
-  tempoHint('broken', 'BROKEN. Its guard gave way: it reels, and every blow now hurts it more. Blows in time and heavy blows break guards fastest.');
+ 
   return true;
 }
 function tickPoise(e) {
@@ -250,7 +247,7 @@ function tickPoise(e) {
 // an arrow: the head counts, and so does shooting in time
 function arrowStrike(pr, ow, e) {
   const head = pr.type === 'arrow' && e.h >= 10 && pr.y < e.y + e.h * .3 && !e.root, k = (head ? 1.35 : 1) * (pr.tk || 1);
-  if (head && ow === G.p) { numPop(pr.x, pr.y - 8, 'HEAD', '#fff1a8'); tempoHint('head', 'HEAD. An arrow that lands high hits a third harder.'); }
+  if (head && ow === G.p) { numPop(pr.x, pr.y - 8, 'HEAD', '#fff1a8'); }
   if ((pr.beat || head) && !pr.tempoed) { pr.tempoed = true; tempoAdd(ow, head ? 2 : 1); if (ow === G.p) beatNote(ow.tempo, pr.beat === 2); }
   return { dmg: max(1, round(pr.dmg * k)), bite: !!pr.beat || head || !!pr.stagger || (pr.stop || 0) >= 5, pz: (pr.beat ? 1.4 : 1) * (head ? 1.5 : 1), gb: head };
 }
@@ -259,7 +256,7 @@ function arrowStrike(pr, ow, e) {
 function tempoSunder(a, e, hx, hy) {
   const f = a.f; numPop(hx, hy - 18, 'SUNDER', '#ffd35a', 2); addShake(6); sfx('broken', 0); sfx('crit', 0); G.trails.push({ kind: 'ring', x: hx, y: hy, r: 30, life: 12, max: 12 }, { kind: 'hit', x: hx, y: hy, life: 8, max: 8, a: PI / 4, big: true });
   burst(hx, hy, 26, ['#ffd35a', '#fff1a8', '#ffffff'], 3.4, 30, { glow: 1 }); f.stam = min(f.maxstam, f.stam + 25); tempoAdd(f, 2);
-  if (f === G.p) { G.hitstop = max(G.hitstop, 8); if (slowOK()) G.slowT = max(G.slowT, 10); tempoHint('sunder', 'SUNDER. A heavy blow on a foe whose guard is broken hits half again as hard, and gives back stamina and two embers. Break them, then finish it.'); }
+  if (f === G.p) { G.hitstop = max(G.hitstop, 8); if (slowOK()) G.slowT = max(G.slowT, 10); }
 }
 // WARDED foes carry a shield: plain blows from the front glance off. Heavy, clean and critical blows get through,
 // and so does anything from behind. Breaking its guard drops the shield while it reels.
@@ -271,7 +268,7 @@ function wardGlance(e, root, kx, o) {
   if (!root.warded || root.stagT > 0 || o.dot || o.gb || o.thorn || !kx || sign(kx) !== -(e.dir || 1)) return false;
   const x = e.x + e.w / 2 - (e.dir || 1) * -(e.w / 2 + 2), y = e.y + e.h * .45; sparks(x, y, 7, sign(kx) * -1, 2.2, ['#e8edf2', '#aab3c2', '#ffffff']);
   if (G.time - (root.glT || -99) > 40) { root.glT = G.time; numPop(e.x + e.w / 2, e.y - 8, 'GLANCED', '#aab3c2'); sfx('reflect', 60); }
-  tempoHint('warded', 'WARDED. Its shield turns plain blows from the front. A heavy blow, a clean one, or anything from behind gets through. Break its guard and the shield drops.');
+ 
   return true;
 }
 function drawWard(c, e, x, y) {

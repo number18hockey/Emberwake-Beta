@@ -25,11 +25,13 @@ let GENQ = 0;
 // how a world's land is shaped: 1 for the oldest worlds, 2 for those made when the lands first grew, 3 for new ones
 // (cl: how fast the climate changes, so how wide a land is; wide/tall: the hills; blend: how far one land runs into the next;
 //  dim: how wide the lands of the other worlds are)
-const LANDS = { 1: { cl: 1, wide: 1, tall: 1, blend: 60, dim: 1 }, 2: { cl: .5, wide: .7, tall: 1.25, blend: 110, dim: 1 }, 3: { cl: .32, wide: .62, tall: 1.3, blend: 150, dim: .55 }, 4: { cl: .32, wide: .62, tall: 1.3, blend: 150, dim: .55 }, 5: { cl: .32, wide: .62, tall: 1.3, blend: 150, dim: .55 } };
+const LANDS = { 1: { cl: 1, wide: 1, tall: 1, blend: 60, dim: 1 }, 2: { cl: .5, wide: .7, tall: 1.25, blend: 110, dim: 1 }, 3: { cl: .32, wide: .62, tall: 1.3, blend: 150, dim: .55 }, 4: { cl: .32, wide: .62, tall: 1.3, blend: 150, dim: .55 }, 5: { cl: .32, wide: .62, tall: 1.3, blend: 150, dim: .55 }, 6: { cl: .32, wide: .62, tall: 1.3, blend: 150, dim: .55 } };
 // (4: the lands of 3, and the world's own traits and moods on top: see 8-traits-and-moods.js)
 // (5: all of 4, and two more lands in the mild middle of the world: the Mosswood and the Willowmere. A world keeps the
 //  number it was made with, so no hill of an older world moves; LAND_NEW is what a world made today gets)
-const LAND_NEW = 5, hasNewLands = () => (WORLD.land | 0) >= 5;
+// (6: all of 5, and wild plants (potatoes, herbs, nettles, nightshade, cactus), greener lands, more kinds of land, and
+//  the story's places laid out by the seed instead of always in one order: see LAND6 below and 12-varied-lands.js)
+const LAND_NEW = 6, hasNewLands = () => (WORLD.land | 0) >= 5, LAND6 = () => (WORLD.land | 0) >= 6;
 // (and one more kind of old world: the game had another branch for a while, the one that first had accounts and hats, and a world
 //  made there has land 1 or 2 with the two new lands grown into it its own way, everywhere and from the start. Such a world is
 //  marked WORLD.fork and its land is made exactly as that branch made it, tile for tile, so all you built there stands where it stood)
@@ -37,7 +39,10 @@ const forkLand = () => !!WORLD.fork, midLands = () => hasNewLands() || forkLand(
 const GEN = () => GENV || LANDS[WORLD.land] || LANDS[1];
 function climate(x) {
   const k = GEN().cl;
-  let t = clamp((fbm(x * .00055 * k, 17.3, 3) - .5) * 2.7 + .5, 0, 1), h = clamp((fbm(x * .0008 * k, 53.1, 3) - .5) * 2.7 + .5, 0, 1);
+  // (a world made since land 6 takes its warmth from long stretches dealt by its seed, most of them mild: warmth6,
+  //  13-varied-lands.js. Its wetness keeps a little nearer the middle)
+  const L6 = LAND6();
+  let t = L6 ? clamp(warmth6(x), 0, 1) : clamp((fbm(x * .00055 * k, 17.3, 3) - .5) * 2.7 + .5, 0, 1), h = clamp((fbm(x * .0008 * k, 53.1, 3) - .5) * (L6 ? 2.2 : 2.7) + .5, 0, 1);
   if (WT_ON) { t = clamp(t + WT_T, 0, 1); h = clamp(h + WT_H, 0, 1); if (WT.drowned) t = lerp(t, .5, .3); }   // a long winter, a scorched or a drowned world (which is milder, so fen has room)
   for (const f of FORCE) { const w = smooth((f.r + 70 - abs(x - f.x)) / 70); if (w > 0) { t = lerp(t, f.t, w); h = lerp(h, hasNewLands() ? moorH(f) : f.h, w); } }
   return [t, h];
@@ -47,11 +52,12 @@ function climate(x) {
 const moorH = f => !f.nu && f.t > .34 && f.t < .66 && f.h > .43 && f.h < .6 ? .43 : f.h;
 const bioOf = (t, h) => midLands() ? bioOf5(t, h) : t < .34 ? 'reach' : t > .66 ? (h < .45 ? 'dunes' : h > .7 ? 'ash' : 'scoria') : h > .63 ? 'fen' : h < .37 ? 'thorn' : 'moor';
 // with the new lands: between the thorns and the fen lie the moor, then the Mosswood, then the Willowmere, drier to wetter
-const bioOf5 = (t, h) => t < .34 ? 'reach' : t > .66 ? (h < .45 ? 'dunes' : h > .7 ? 'ash' : 'scoria') : h > .68 ? 'fen' : h < .38 ? 'thorn' : h >= .59 ? 'willowmere' : h >= .47 ? 'mosswood' : 'moor';
+// (a world made since land 6 has narrower cold and hot bands, so the mild green middle is most of it: T_COLD and T_HOT, 13-varied-lands.js)
+const bioOf5 = (t, h) => t < T_COLD() ? 'reach' : t > T_HOT() ? (h < .45 ? 'dunes' : h > .7 ? 'ash' : 'scoria') : h > (LAND6() ? .77 : .68) ? 'fen' : h < (LAND6() ? .32 : .38) ? 'thorn' : h >= .59 ? 'willowmere' : h >= .47 ? 'mosswood' : 'moor';
 function bweights5(t, h) {
-  const cold = smooth((.38 - t) / .08), hot = smooth((t - .62) / .08), temp = max(0, 1 - cold - hot);
-  const wet = smooth((h - .68) / .08), dry = smooth((.38 - h) / .08), mid = max(0, 1 - wet - dry);
-  let grove = smooth((h - .45) / .04) * (1 - smooth((h - .56) / .04)), mere = smooth((h - .58) / .04) * (1 - smooth((h - .67) / .04));
+  const L6 = LAND6(), cold = smooth(((L6 ? .28 : .38) - t) / .08), hot = smooth((t - (L6 ? .72 : .62)) / .08), temp = max(0, 1 - cold - hot);
+  const wet = smooth((h - (L6 ? .77 : .68)) / .08), dry = smooth(((L6 ? .32 : .38) - h) / .08), mid = max(0, 1 - wet - dry);
+  let grove = smooth((h - .45) / .04) * (1 - smooth((h - .56) / .04)), mere = smooth((h - .58) / .04) * (1 - smooth((h - (L6 ? .76 : .67)) / .04));
   const bands = grove + mere; if (bands > mid && bands > 0) { grove *= mid / bands; mere *= mid / bands; }
   const plain = max(0, mid - grove - mere);
   const hw = smooth((h - .66) / .08), hd = smooth((.49 - h) / .08), hm = max(0, 1 - hw - hd);
@@ -148,11 +154,13 @@ function initEndless() {
   // the story's places sit at fixed distances from the village; which side each is on depends on the seed
   const s = hh(1, 2, SEED) < .5 ? 1 : -1;
   SPAWN_X = X0; SHRINE_X = X0 + s * 420; SHRINE2_X = X0 - s * 540; MINE_X = X0 + s * 880; FORGE_X = X0 + s * 1040; GATE_X = X0 + s * 1200; SKY_X = X0 - s * 270; BLADE_X = X0 + s * 228; SPIRE_X = X0 - s * 170;
+  // (a world made since land 6 lays its story's places out by its seed: 13-varied-lands.js)
+  const sN = LAND6() ? storyLayout6() : s;
   FORCE = [{ x: X0, r: 160, t: .5, h: .5 }, { x: SKY_X, r: 80, t: .5, h: .47 }, { x: SHRINE_X, r: CRATER_R + 50, t: .78, h: .9 }, { x: SHRINE2_X, r: 190, t: .12, h: .5 }, { x: MINE_X, r: 160, t: .82, h: .56 }, { x: GATE_X, r: 120, t: .82, h: .56 }, { x: FORGE_X, r: 60, t: .82, h: .56 }];
   // the mild middle of a wide world is narrow, and the two new lands share it with the moor: left to the weather they can lie a day's
   // walk away. So some of each is set down past the story's places: a stretch of the Mosswood on one side, and on the other a wider
   // wood with the Willowmere at its heart (the wood around it keeps a neighbour's peaks from blending into the flat mere)
-  if (hasNewLands()) FORCE.push({ x: X0 - s * 1140, r: 130, t: .5, h: .52, nu: 1 }, { x: X0 + s * 3150, r: 380, t: .5, h: .52, nu: 1 }, { x: X0 + s * 3150, r: 120, t: .5, h: .63, nu: 1 });
+  if (hasNewLands()) FORCE.push({ x: X0 - sN * 1140, r: 130, t: .5, h: .52, nu: 1 }, { x: X0 + sN * 3150, r: 380, t: .5, h: .52, nu: 1 }, { x: X0 + sN * 3150, r: 120, t: .5, h: .63, nu: 1 });
   FLATS = []; const fl = (x, r, k) => { let sum = 0, n = 0; for (let q = x - r; q <= x + r; q += 2) { sum += Hraw(q); n++; } FLATS.push({ x, r, k, h: round(sum / n) }); };
   fl(SPAWN_X, VIL_W + 2, 18); fl(SHRINE2_X, 27, 8); fl(GATE_X, 12, 10); fl(SHRINE_X, 27, 8); fl(MINE_X, 7, 6); fl(BLADE_X + 3, 6, 6); fl(SPIRE_X + 3, 6, 6);
   // [x0, x1, protect depth]: no caves, lakes, trees or wandering structures here
@@ -266,7 +274,8 @@ function decorColumn(x, hs, b, L, M = MOOD0) {
   }
 }
 function treeColumn(x, hs, b, M = MOOD0) {
-  const k = floor(x / 5); if (x !== k * 5 + floor(hh(k, 77, SEED) * 5)) return;
+  // (a dense wood has a tree to every other column, shoulder to shoulder; elsewhere one to every five at most)
+  const st = M.dense ? 2 : 5, k = floor(x / st); if (x !== k * st + floor(hh(k, 77, SEED) * st)) return;
   let ch = b === 'moor' ? .55 : b === 'mosswood' ? .68 : b === 'willowmere' ? .16 : b === 'thorn' ? .7 : b === 'reach' ? .35 : b === 'ash' ? .18 : b === 'fen' ? (forkLand() ? .16 : .14) : b === 'dunes' ? 0 : .1, tall = 1;
   if (WT_ON) { ch = min(.96, ch * (M.tree === undefined ? 1 : M.tree) * (WT.oldgrowth ? 1.5 : WT.barren ? .35 : 1)); tall = (M.th || 1) * (WT.oldgrowth ? 1.55 : 1); }
   if (hh(k, 78, SEED) > ch || abs(surf(x - 1) - hs) > 1 || abs(surf(x + 1) - hs) > 1) return;
@@ -313,7 +322,7 @@ function finishChunk(cx) {
   for (let k = floor(x0 / 80) - 1; k <= floor(x1 / 80) + 1; k++) {
     const sh = WORLD.shape, icx = k * 80 + 15 + floor(hh(k, 902, SEED) * 50); if (!here(icx) || hh(k, 901, SEED) > min(.94, (sh === 1 ? .72 : sh === 2 ? .2 : .42) + (WT_ON && WT.skytorn ? .32 : 0))) continue;
     const a = 5 + floor(hh(k, 904, SEED) * (sh === 1 ? 11 : 7)) + (WT_ON && WT.skytorn ? 2 : 0), icy = 14 + floor(hh(k, 903, SEED) * (DRIFT_Y - 32)); if (abs(icx - SKY_X) < 60 + a || abs(icx - SPAWN_X) < VIL_W + a || min(surf(icx - a), surf(icx), surf(icx + a)) - icy < 46) continue;
-    const made = island(icx, icy, a, 4 + floor(hh(k, 905, SEED) * 5), false); if (made && a >= 7 && newLand(icx) && hh(k, 908, SEED) < .35) withRng(hh(icx, 1450, SEED) * 4294967296, () => skyhouse(icx));
+    const made = island(icx, icy, a, 4 + floor(hh(k, 905, SEED) * 5), false); if (made && LAND6()) skyFeature(icx, icy, a, k); else if (made && a >= 7 && newLand(icx) && hh(k, 908, SEED) < .35) withRng(hh(icx, 1450, SEED) * 4294967296, () => skyhouse(icx));
     if (made && hh(k, 906, SEED) < .5) { const vx = icx + (hh(k, 907, SEED) < .5 ? 1 : -1) * (a + 4); if (vx > x0 - CW && vx < x1 + CW) vent(vx, icy - 7); }
   }
   // water in the Underdark, molten cinder in the Deep
@@ -323,7 +332,7 @@ function finishChunk(cx) {
   for (let x = x0 + randi(0, 5); x < x1; x += randi(3, 8)) {
     if (RESV[x] > 1) continue; const h = heights[x], t = tileAt(x, h), b = biomeE(x); if (!TP[t].solid || TP[t].ghost || tileAt(x, h - 1) === WATER || tileAt(x, h - 1) !== AIR && !TP[tileAt(x, h - 1)].decor) continue;
     if (b === 'dunes' && rand() < .7) continue; const Mo = WT_ON ? moodOf(x, b) : MOOD0; if (Mo.folSkip && rand() < Mo.folSkip) continue;
-    const set = FOL[Mo.fol || (b === 'ash' ? 'ash' : b === 'reach' ? 'reach' : b === 'scoria' || b === 'dunes' ? 'scoria' : b === 'mosswood' || b === 'willowmere' ? b : 'moor')]; fgOn(set[randi(0, set.length - 1)], x, h, { lit: 1 });
+    const set = FOL[Mo.fol || (b === 'ash' ? 'ash' : b === 'reach' ? 'reach' : b === 'scoria' || b === 'dunes' ? 'scoria' : b === 'mosswood' || b === 'willowmere' ? b : LAND6() ? 'mosswood' : 'moor')]; fgOn(set[randi(0, set.length - 1)], x, h, { lit: 1 });
   }
   if (!PROPV) { PROPV = { st: [], cy: [] }; for (let k = 0; k < 12; k++) PROPV.st.push(PROP.stalactite(8 + round(k * 1.2), 100 + k)); for (let k = 0; k < 6; k++) PROPV.cy.push(PROP.crystal(k * 7 + 3)); }
   for (let k = 0, n = CW * WH / 700 | 0; k < n; k++) {

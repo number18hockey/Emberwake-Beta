@@ -158,8 +158,10 @@ function renderView(al) {
   const S = VS.s, W = VS.W, H = VS.H, p = G.p, F = G.flags;
   let cx = lerp(G.cam.px, G.cam.x, al), cy = lerp(G.cam.py, G.cam.y, al);
   if (G.zoomOff) { cx += G.zoomOff[0]; cy += G.zoomOff[1]; const L = G.link; if (L && L.e && L.f) { const u = clamp((G.zoom - 1) / .2, 0, 1), fx = (L.f.x + 3 + L.e.x + L.e.w / 2) / 2, fy = (L.f.y + L.e.y + L.e.h / 2 + 4) / 2; cx = lerp(cx, camX(fx - VS.vw / 2), u); cy = lerp(cy, camY(fy - VS.vh / 2 - 4), u); } }
-  if (G.shake > .15) { cx += frand(-1, 1) * G.shake; cy += frand(-1, 1) * G.shake; }
+  if (G.shake > .15) { cx += frand(-1, 1) * G.shake * (calmOn() ? .4 : 1); cy += frand(-1, 1) * G.shake * (calmOn() ? .4 : 1); }
   if (G.kick) { cx += G.kick.x; cy += G.kick.y; }
+  // sick: the world sways (venom, bad food)
+  { const k = G.state === 'play' ? sickSway(p) : 0; if (k) { cx += sin(G.time * .045) * 6 * k + sin(G.time * .11) * 1.5 * k; cy += sin(G.time * .029 + 1) * 3.5 * k; } }
   cx = camX(cx); cy = camY(cy);
   const ox = round(cx * S), oy = round(cy * S); cx = ox / S; cy = oy / S; G.rcx = cx; G.rcy = cy;
   mouse.wx = cx + mouse.x / S; mouse.wy = cy + mouse.y / S;
@@ -222,7 +224,7 @@ function renderView(al) {
     const x = lerp(pr.px, pr.x, al), y = lerp(pr.py, pr.y, al);
     if (REALMP[pr.type]) REALMP[pr.type](w, pr, x, y);
     else if (pr.type === 'rock') w.drawImage(SPR.rock, round(x - 4), round(y - 4));
-    else if (pr.type === 'javelin') { w.save(); w.translate(round(x), round(y)); w.rotate(atan2(pr.vy, pr.vx)); w.drawImage(pr.spr || SPR.w_spear, -22, -2); w.restore(); }
+    else if (pr.type === 'javelin') { w.save(); w.translate(round(x), round(y)); w.rotate(pr.back ? atan2(-pr.vy, -pr.vx) : atan2(pr.vy, pr.vx)); w.drawImage(pr.spr || SPR.w_spear, -22, -2); w.restore(); }
     else if (pr.type === 'arrow') { w.save(); w.translate(round(x), round(y)); w.rotate(atan2(pr.vy, pr.vx)); w.drawImage(SPR.arrow, -8, -1); w.restore(); }
     else if (pr.type === 'knife') { w.save(); w.translate(round(x), round(y)); w.rotate(pr.t * .6 * (sign(pr.vx) || 1)); w.drawImage(SPR.knife, -3, -1); w.restore(); }
     else if (pr.type === 'star') w.drawImage(SPR.shuriken[(pr.t >> 1) & 1], round(x) - 2, round(y) - 2);
@@ -445,7 +447,7 @@ function tick() {
   refreshFoes(); tickPlayer();
   for (const f of G.fighters) { if (f === G.p) continue; if (f.remote) { if (f.coop || f.ghostH) coopReplay(f); else tickRemote(f); } else if (f.ai) { if (f.onBarge) brBotRide(f); else if (f.brBot && BR.wild && BR.t < BR_HOLD && BR.phase === 'drop') brHover(f); else { tickFighter(f, f.brBot ? brBotThink(f) : f.isClone ? cloneThink(f) : aiThink(f)); if (f.brBot) brBotAfter(f); } } }
   if (G.duel) tickDuel();
-  tickEnemies(); spawnTick(); tickDrops(); tickProjs(); tickParts(); tickStory(); tickStructs(); if (!netGuest() || wildOn()) tickLiquids(); tickCam(); ambient(); ambientMore(); wxParticles(); tickWeatherWays(); atmoTick();
+  tickEnemies(); spawnTick(); tickDrops(); tickProjs(); tickParts(); tickStory(); tickStructs(); if (!netGuest() || wildOn()) tickLiquids(); tickCam(); ambient(); ambientMore(); wxParticles(); tickWeatherWays(); tickWeatherYouFeel(); atmoTick();
   if (!WORLD.arena) { tickFalling(); tickFelled(); tickRubble(); tickDoors(); tickDrill(); tickStations(); if (!G.away) tickHunger(); tickBrews(); if (!netGuest()) tickRegrow(); tickDims(); tickLairs(); tickBless(); tickFurniture(); tickMeal(); if (G.time % 20 === 0) { mapReveal(); G.magR = hasUtil('magnet') ? 76 : 36; } }
   // the Wilds is a whole land: what falls, burns, opens and is made there goes on as in the open world
   if (wildOn()) { tickFalling(); tickFelled(); tickRubble(); tickDoors(); tickDrill(); tickStations(); tickHunger(); tickBrews(); }
@@ -565,7 +567,7 @@ addEventListener('keydown', e => {
   if (k === 'Escape' || k === 'KeyP' && !wildOn()) { if (UI.open) { closeUI(); sfx('ui'); } else toggleUI('pause'); return; }
   if ((k === 'Enter' || k === 'NumpadEnter') && chatKey()) return;
   if (k === 'KeyM' && WORLD.royale) { if (G.p && G.p.onBarge) BR.mapHide = !BR.mapHide; else BR.mapOpen = !BR.mapOpen; sfx('ui'); return; }
-  if (k === 'KeyO' || k === 'KeyM' && (WORLD.arena || !hasUtil('fieldmap'))) { muted = !muted; G.banner = { text: muted ? 'SOUND OFF' : 'SOUND ON', sub: '[O] toggles sound', t: 0 }; return; }
+  if (k === 'KeyO' || k === 'KeyM' && (WORLD.arena || !hasUtil('fieldmap'))) { setMuted(!muted); G.banner = { text: muted ? 'SOUND OFF' : 'SOUND ON', sub: '[O] toggles sound', t: 0 }; return; }
   if (k === 'KeyM') { toggleUI('map'); return; }
   if (k === 'KeyC') { toggleUI('codex'); return; }
   if (k === 'KeyG' && !UI.open) { dropSelected(e.shiftKey); return; }
@@ -575,7 +577,7 @@ addEventListener('keydown', e => {
   if (wildOn() && k === 'KeyB') { toggleUI('book'); return; }
   if (wildOn() && k === 'KeyK') { if (UI.open === 'knap' || hasItem('rock') || hasItem('flint')) toggleUI('knap'); else { brSay('PICK UP A PEBBLE OR FLINT TO KNAP', 110); sfx('deny'); } return; }
   if (WORLD.arena) return;
-  if (k === 'KeyE' || k === 'Tab') toggleUI('inv'); else if (k === 'KeyJ') toggleUI('journal');
+  if (k === 'KeyE' || k === 'Tab') toggleUI('inv');
   else if (k === 'KeyK' && (hasItem('rock') || hasItem('flint'))) toggleUI('knap');
   else if (k === 'KeyB') toggleUI('book');
 });

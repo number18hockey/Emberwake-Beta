@@ -23,17 +23,16 @@ const STYLES = {
   shortsword: [['sundering_arc', "Tailor's Cross", { d: 1.1, s: .85, el: 'bleed' }], ['flash_draw', 'Quickstep Draw', { ifr: 10 }], ['reaping_sweep', 'Hamstring Cut', { el: 'bleed', st: 60 }], ['talon_dive', 'Kestrel Drop', { d: 1.2 }], ['riposte', 'Needle Answer', { d: 1.3, crit: 1 }]],
   sword: [['skullsplitter', 'Hearth Cleave', { cr: 1, d: 1.1 }], ['wake_lunge', 'Ember Rush', { el: 'burn' }], ['rising_fang', 'Kindling Rise', { d: 1.2 }], ['meteor_drop', 'Falling Coal', { cr: 1, el: 'burn' }], ['cyclone', 'Ash Wheel', { ifr: 10 }]],
   sabre: [['ember_wave', 'Moon Crescent', { d: .9, s: .9 }], ['flash_draw', 'Gale Draw', { d: 1.15, dash: 1.3 }], ['reaping_sweep', 'Reed Cutter', { st: 50 }], ['heaven_spiral', 'Kite Spiral', {}], ['riposte', 'Sabre Answer', { crit: 1, el: 'bleed' }]],
-  longsword: [['sundering_arc', 'Long Arc', { rc: 1.15, d: 1.15 }], ['long_thrust', "Pilgrim's Thrust", { dash: 1.2, d: 1.1 }], ['dawnbreaker', 'Dawnbreak', {}], ['crescent_dive', 'Hawk Dive', { d: 1.15 }], ['cyclone', "Knight's Wheel", { rc: 1.1 }]],
+
   greatsword: [['skullsplitter', 'Executioner', { d: 1.45, s: 1.15, cr: 1, st: 70 }], ['wake_lunge', 'Siege Charge', { d: 1.25 }], ['dawnbreaker', 'Mountain Rise', { d: 1.2 }], ['meteor_drop', 'Falling Tower', { cr: 1, d: 1.3 }], ['cyclone', 'Iron Gale', { d: 1.15 }]],
   cleaver: [['skullsplitter', "Butcher's Chop", { el: 'bleed', cr: 1 }], ['flash_draw', 'Hack Run', { el: 'bleed' }], ['reaping_sweep', 'Hock Cut', { el: 'bleed', st: 60 }], ['talon_dive', 'Meat Hook Drop', { pull: 1 }], ['cyclone', 'Bone Spiral', { el: 'bleed' }]],
   spear: [['skewer', 'Heartseeker', { d: 1.3, rc: 1.15 }], ['gale_rush', 'Wind Runner', { dash: 1.2 }], ['vault', 'Pole Vault Kick', {}], ['heron_dive', 'Heron Strike', { d: 1.2 }], ['riposte', 'Return Thrust', { crit: 1 }]],
-  glaive: [['crescent', 'Moon Reaper', { el: 'bleed', d: 1.15 }], ['dragoon', 'Dragoon Rush', {}], ['shin_rake', 'Scythe Sweep', { st: 60 }], ['gyre', 'Gyre Blade', {}], ['windmill', 'Mill Wheel', { ifr: 8 }]],
+
   trident: [['javelin', 'Sea Throw', { el: 'frost' }], ['impale', 'Triple Skewer', { d: 1.15 }], ['hook', 'Netcast', { pull: 1, st: 40 }], ['skyfall', 'Tide Fall', { el: 'frost', cr: 1 }], ['riposte', 'Fork Turn', { el: 'frost' }]],
   halberd: [['impale', 'Halberd Breach', { d: 1.3, st: 50 }], ['dragoon', 'Charging Axe', { d: 1.2 }], ['hook', 'Rider Hook', { pull: 1 }], ['skyfall', 'Guillotine Drop', { cr: 1, d: 1.25 }], ['windmill', 'Bastion Wheel', { d: 1.15 }]],
   daggers: [['flurry', 'Thousand Needles', { d: 1.1 }], ['shadowstep', 'Shadowstep', { ifr: 12 }], ['hamstring', 'Tendon Cut', { el: 'bleed', st: 50 }], ['needle_drop', 'Needle Rain', {}], ['riposte', 'Backstab', { crit: 1, d: 1.4 }]],
   kama: [['cross_rend', 'Reaping Cross', { el: 'bleed' }], ['ghost_cut', 'Harvest Run', {}], ['hamstring', 'Sickle Hook', { pull: 1, el: 'bleed' }], ['gale_reel', 'Sheaf Spin', {}], ['whirl', 'Threshing Wheel', { el: 'bleed' }]],
-  claws: [['thousand', 'Maul of Talons', { d: 1.15 }], ['talon_rush', 'Pounce', { d: 1.15 }], ['gut_rise', 'Gut Rise', { el: 'bleed' }], ['air_nick2', 'Wildcat Flip', { d: 1.2 }], ['coil', 'Coiled Fury', { ifr: 8 }]],
-  sai: [['fade', 'Iron Spikes', { d: 1.2 }], ['lunging', 'Prong Lunge', {}], ['gut_rise', 'Trap Rise', { st: 70 }], ['wasp_rise', 'Wasp Ascent', {}], ['riposte', 'Catch and Turn', { st: 80, crit: 1 }]],
+
   club: [['crater', 'Cave Thump', { cr: 1 }], ['ram', 'Bull Rush', { d: 1.2 }], ['ankle', 'Knee Breaker', { st: 70 }], ['hammerfall', 'Hilltop Drop', { cr: 1 }], ['riposte', 'Return Bonk', { st: 60 }]],
   mace: [['earthsplitter', 'Bell Ringer', { st: 80, cr: 1 }], ['rolling_crush', 'Rolling Thunder', {}], ['sky_arc', 'Chin Splitter', { d: 1.2 }], ['meteor', 'Star Fall', { cr: 1 }], ['grave_spin', 'Flanged Wheel', {}]],
   warhammer: [['cataclysm', 'Worldbreaker', { cr: 1, d: 1.25 }], ['comet', 'Comet Charge', { d: 1.15 }], ['homerun', 'Homerun', { d: 1.2 }], ['meteor', 'Anvil Fall', { cr: 1, d: 1.2 }], ['riposte', "Smith's Answer", { st: 90 }]],
@@ -43,8 +42,7 @@ const STYLES = {
   recurve: [['power_draw', 'Horn Draw', { st: 50, d: 1.15 }], ['flash_volley', 'Horse Archer', {}], ['ground_burst', 'Burrow Burst', {}], ['sky_helix', 'Helix', {}], ['riposte', 'Return Arrow', { crit: 1 }]],
   longbow: [['sunlance', 'Sunlance', { d: 1.2 }], ['slide_shot', 'Long Slide', { d: 1.2 }], ['mortar', 'Siege Arc', { d: 1.2 }], ['starfall', 'Starfall', {}], ['pinning', 'Pin the Shadow', { st: 60 }]],
   nunchaku: [['figure_eight', 'Figure Eight', {}], ['slide_lash', 'Dragon Slide', {}], ['rising_whip', 'Dragon Tail Rise', { d: 1.2 }], ['helicopter', 'Helicopter', {}], ['bell_toll', 'Bell Toll', { st: 70 }]],
-  flail: [['thunderclap', 'Thunderclap', { cr: 1, st: 50 }], ['comet_chain', 'Comet Chain', {}], ['skyward_crack', 'Skyward Crack', { d: 1.2 }], ['hammer_fall', 'Morningstar Fall', { cr: 1 }], ['whirlwind', 'Iron Storm', {}]],
-  chainwhip: [['chain_spear', 'Serpent Strike', { pull: 1 }], ['ghost_lash', 'Ghost Lash', { el: 'bleed' }], ['ankle_whip', 'Snare', { st: 70 }], ['air_wheel', 'Wheel of Knives', { el: 'bleed' }], ['halo', 'Halo of Blades', { el: 'bleed' }]]
+  flail: [['thunderclap', 'Thunderclap', { cr: 1, st: 50 }], ['comet_chain', 'Comet Chain', {}], ['skyward_crack', 'Skyward Crack', { d: 1.2 }], ['hammer_fall', 'Morningstar Fall', { cr: 1 }], ['whirlwind', 'Iron Storm', {}]]
 };
 // a pair finisher is done with the weapon you swap to; what you swapped from flavours it
 const PAIR_BASE = { sword: ['sundering_arc', 'Cleave', { d: 2.4 }], spear: ['impale', 'Breach', { d: 2.2 }], fangs: ['thousand', 'Frenzy', { d: 1.9 }], maul: ['cataclysm', 'Quake', { d: 2.2, cr: 1 }], bow: ['sunlance', 'Volley', { d: 2 }], chuks: ['whirlwind', 'Storm', { d: 1.8 }] };

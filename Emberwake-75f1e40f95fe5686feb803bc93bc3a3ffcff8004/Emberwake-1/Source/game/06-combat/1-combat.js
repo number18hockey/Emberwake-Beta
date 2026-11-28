@@ -269,6 +269,7 @@ function noteMove(f, setName, id, m, fresh) {
 }
 function startAttack(f, btn, I, force) {
   const W = heldOf(f); if (!W || W.type !== 'weapon') return false;
+  if (thrownNow(f, W)) return false;
   if (!force && tryLink(f, btn)) return true;
   const set = MOVESETS[W.set], c = atkContext(f, I); let id = force || resolveMove(set, btn, c); if (!force && f === G.p) id = famGate(W.set, set, id, btn, c);
   let m = set.moves[id]; if (!m) return false;
@@ -323,7 +324,7 @@ function tickAttack(f, I) {
         if (a.charge === ch.min) { a.charged = true; fsx(f, 'charged'); if (f === G.p) G.flash = max(G.flash, a.artCharge ? .3 : .18); sparks(f.x + 3, f.y + 6, a.artCharge ? 22 : 14, 0, 3, a.artCharge ? ['#8ff5e6', '#ffffff', '#ffd35a'] : SPARK); }
         if (a.charge > 6 && G.time % 2 === 0) { const an = frand(TAU), r = frand(14, 26); P(f.x + 3 + cos(an) * r, f.y + 8 + sin(an) * r, -cos(an) * 1.6, -sin(an) * 1.6, 12, fpick(SPARK), { glow: 1, g: 0, fr: 1 }); }
       } else {
-        if (a.charged) { if (a.charge <= ch.min + 8) { a.perfect = true; if (f === G.p) { numPop(f.x + 3, f.y - 12, 'PERFECT RELEASE', '#8ff5e6'); sfx('perfect', 60); tempoHint('release', 'PERFECT RELEASE. Let a charged blow go just as it flashes and it hits a fifth harder.'); } } a.id = ch.into; a.artCharge = null; m = a.m = a.set.moves[a.id]; if (m.leap && f.onGround) { f.vx = a.face * m.leap.vx; f.vy = m.leap.vy; f.onGround = false; f.noCut = true; dust(f.x + 3, f.y + f.h, 5); } a.aimA = atkContext(f, I).elev; a.tx = I.wx; a.ty = I.wy; setAim(a); noteMove(f, a.setName, a.id, m, true); f.hist[f.hist.length - 1] = a.id; a.stale = 1.1; a.fresh = true; }
+        if (a.charged) { if (a.charge <= ch.min + 8) { a.perfect = true; if (f === G.p) { numPop(f.x + 3, f.y - 12, 'PERFECT RELEASE', '#8ff5e6'); sfx('perfect', 60); } } a.id = ch.into; a.artCharge = null; m = a.m = a.set.moves[a.id]; if (m.leap && f.onGround) { f.vx = a.face * m.leap.vx; f.vy = m.leap.vy; f.onGround = false; f.noCut = true; dust(f.x + 3, f.y + f.h, 5); } a.aimA = atkContext(f, I).elev; a.tx = I.wx; a.ty = I.wy; setAim(a); noteMove(f, a.setName, a.id, m, true); f.hist[f.hist.length - 1] = a.id; a.stale = 1.1; a.fresh = true; }
         a.phase = 1; a.pt = 0; beginActive(a);
       }
     }
@@ -387,7 +388,7 @@ function fireArrows(a, count) {
     let vx, vy, g = A.g === undefined ? .05 : A.g;
     if (A.rain) { const tx = a.tx + (A.n > 1 ? (a.shotI - (A.n - 1) / 2) * 10 : 0) + frand(-3, 3), Tf = A.tf || 46; g = .16; vx = clamp((tx - sx) / Tf, -7, 7); vy = (a.ty - sy - .5 * g * Tf * Tf) / Tf; }
     else { const v = A.v || 6.5; if (A.radial) { const th = a.shotI / A.n * TAU; vx = cos(th) * v; vy = sin(th) * v; } else { const th = a.th + (A.spread ? (a.shotI - (A.n - 1) / 2) * A.spread : 0) + (A.burst ? frand(-.025, .025) : 0); vx = fc * cos(th) * v; vy = sin(th) * v; } }
-    spawnProj({ type: A.boom ? 'bomb' : 'arrow', owner: f, x: sx, y: sy, vx, vy, g, r: 3, dmg: max(1, round(a.W.dmg * m.dmg * a.stale * (f.dmgMul || 1) * combatDmgMul(f))), pierce: !!A.pierce, boom: A.boom || 0, life: 190, kb: [m.kb[0], m.kb[1]], crit: a.crit, stagger: m.stagger, stop: m.stop, fx: realmFx(a), beat: a.rushed ? 0 : a.beat, tk: (1 + .07 * (f.tempo | 0)) * (a.rushed ? .7 : 1) });
+    spawnProj({ type: A.boom ? 'bomb' : 'arrow', owner: f, x: sx, y: sy, vx, vy, g, r: 3, dmg: max(1, round(a.W.dmg * m.dmg * a.stale * (f.dmgMul || 1) * combatDmgMul(f))), pierce: !!A.pierce, boom: A.boom || 0, life: 190, kb: [m.kb[0], m.kb[1]], crit: a.crit, stagger: m.stagger, stop: m.stop, fx: realmFx(a), beat: a.rushed ? 0 : a.beat, tk: (1 + .07 * (f.tempo | 0)) * (a.rushed ? .7 : 1), wst: weaponTraits(a.W) });
   }
   fsx(f, 'bolt', 0); fsx(f, 'thrust', 0);
 }
@@ -487,12 +488,11 @@ function applyHit(a, e, hx, hy) {
   const root0 = e.root || e, sunder = !e.fighter && root0.stagT > 0 && a.btn === 'H' && !root0.sundered, whole = !e.fighter && !(root0.stagT > 0); if (sunder) { dmg *= 1.5; root0.sundered = true; }
   dmg = max(1, round(dmg * frand(.93, 1.07)));
   let kx = m.kb[0] * a.face; if (m.kind === 'spin') kx = m.kb[0] * (sign((e.x + e.w / 2) - (f.x + 3)) || a.face); kx *= a.kbm || 1;
-  if (!strike(f, e, dmg, kx, m.kb[1], { stagger: m.flow === 'down' ? max(m.stagger || 0, 45) : m.stagger, launch: TH.bite && m.launch, crit, stop: (m.stop || 0) + (lk && lk.tag ? 2 : 0) + (a.cresc ? 3 : 0), shake: m.shake, blunt: m.blunt, cold: a.W.cold, status: a.W.legendAbility === 'rime' ? 'frost' : null, statusD: 100, hx, hy, bite: TH.bite, pz: TH.pz * (a.pzm || 1), gb: a.btn === 'H' || edge > 0 || !!crit || sunder || !!m.big || !!a.perfect, hsCut: a.btn === 'L' ? (a.q | 0) >> 1 : 0 })) return;
+  if (!strike(f, e, dmg, kx, m.kb[1], { stagger: a.W.stag ? max(m.stagger || 0, m.flow === 'down' ? 45 : 0, 50) : m.flow === 'down' ? max(m.stagger || 0, 45) : m.stagger, launch: TH.bite && m.launch, crit, stop: (m.stop || 0) + (lk && lk.tag ? 2 : 0) + (a.cresc ? 3 : 0), shake: m.shake, blunt: m.blunt, cold: a.W.cold, status: a.W.legendAbility === 'rime' ? 'frost' : null, statusD: 100, hx, hy, bite: TH.bite, pz: TH.pz * (a.pzm || 1), gb: a.btn === 'H' || edge > 0 || !!crit || sunder || !!m.big || !!a.perfect, hsCut: a.btn === 'L' ? (a.q | 0) >> 1 : 0 })) return;
   if (whole && root0.stagT > 0) quickStep(f, QK.UP_BREAK);   // this blow broke its guard
   tempoLanded(a, e, edge, dmg, hx, hy); if (sunder) tempoSunder(a, e, hx, hy); if (WORLD.royale) trAmpHit(a, e, edge, dmg, hx, hy);
   if (P0) { flowSet(a, e, lk, hx, hy); famGain(a.setName, ((a.fresh ? 1 : .4) + (lk && lk.tag ? 1 : 0)) * (e.type === 'dummy' ? .5 : 1)); if (e.type !== 'dummy') artGain(a.W); }
-  if (a.W.burn && !e.dead) applyStatus(e, 'burn', f, { d: 110 });
-  if (!e.dead) { if (a.W.frost) applyStatus(e, 'frost', f, { d: 100 }); if (a.W.poison || (P0 && f.venom > 0)) applyStatus(e, 'poison', f, { d: 260 }); if (a.W.bleed && Math.random() < a.W.bleed) applyStatus(e, 'bleed', f, { d: 180 }); }
+  weaponStatus(a.W, f, e); if (!e.dead && P0 && f.venom > 0) applyStatus(e, 'poison', f, { d: 260 });
   if (a.W.steal && f.hp < f.maxhp) { f.hp = min(f.maxhp, f.hp + max(1, round(dmg * a.W.steal))); }
   if (!e.fighter) realmFxHit(realmFx(a), f, e, dmg, crit, hx, hy, a);
   if (P0 && gearHas('hungry') && f.hp < f.maxhp && Math.random() < .5) f.hp = min(f.maxhp, f.hp + max(1, round(dmg * .06)));
@@ -517,10 +517,21 @@ function explode(x, y, r, dmg, by) {
   boomFx(x, y, r);
   for (const e of foesOf(by)) { if (e.dead || e.noHit) continue; if (circBox(x, y, r, e)) strike(by, e, dmg, (sign(e.x + e.w / 2 - x) || 1) * 3, -2.6, { stop: 4, shake: 2, hx: e.x + e.w / 2, hy: e.y + e.h / 2 }); }
 }
+// what a weapon's material and kind do to whatever it hits. They always happen: a weapon that says it bleeds, bleeds
+// (more bleed in the weapon, a longer bleed), and poison, frost and fire take hold on every blow
+const weaponTraits = W => W && (W.bleed || W.poison || W.frost || W.burn) ? { bleed: W.bleed || 0, poison: W.poison || 0, frost: W.frost || 0, burn: W.burn || 0 } : null;
+function weaponStatus(W, f, e) {
+  if (!W || !e || e.dead) return;
+  if (W.burn) applyStatus(e, 'burn', f, { d: 110 });
+  if (W.frost) applyStatus(e, 'frost', f, { d: 100 });
+  if (W.poison) applyStatus(e, 'poison', f, { d: 300 });
+  if (W.bleed) applyStatus(e, 'bleed', f, { d: round(150 + 300 * W.bleed) });
+}
 function fireProj(a) {
   const f = a.f, m = a.m, fc = a.face, cx = f.x + 3, cy = f.y + 7, dm = (f.dmgMul || 1) * combatDmgMul(f);
   if (m.proj === 'wave') { const el = clamp(a.aimA, -.6, .6); spawnProj({ type: 'wave', owner: f, x: cx + fc * 10, y: cy + 2, vx: fc * cos(el) * 4.8, vy: sin(el) * 4.8, r: 11, dmg: round(a.W.dmg * 2.2 * dm), pierce: true, life: 46, kb: [3.5, -1.5] }); fsx(f, 'wave', 0); }
-  else if (m.proj === 'javelin') spawnProj({ type: 'javelin', owner: f, x: cx + fc * 8, y: cy, vx: fc * cos(a.th) * 6.4, vy: sin(a.th) * 6.4, g: .09, r: 4, dmg: round(a.W.dmg * 2.8 * dm), life: 130, kb: [4, -1], spr: a.W.held });
+  // the spear itself is thrown (the hand is empty until it flies back); a fist has nothing to throw
+  else if (m.proj === 'javelin') { const own = !a.W.fist && !!a.W.held; const pr = spawnProj({ type: 'javelin', owner: f, x: cx + fc * 8, y: cy, vx: fc * cos(a.th) * 6.4, vy: sin(a.th) * 6.4, g: .09, r: 4, dmg: round(a.W.dmg * 2.8 * dm), life: own ? 60 : 130, kb: [4, -1], spr: a.W.held, ret: own, wst: weaponTraits(a.W) }); if (own && pr && !pr.ghost) f.thrown = { pr, wid: a.W.id, t0: G.time }; }
   else if (m.proj === 'knife') spawnProj({ type: 'knife', owner: f, x: cx + fc * 6, y: cy, vx: fc * cos(a.th) * 7, vy: sin(a.th) * 7, g: .03, r: 3, dmg: round(a.W.dmg * 1.3 * dm), life: 90, kb: [1.5, -.4] });
 }
 function fadeTrail(a) {

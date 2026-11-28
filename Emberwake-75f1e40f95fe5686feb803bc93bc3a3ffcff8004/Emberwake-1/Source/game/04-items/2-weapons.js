@@ -24,17 +24,15 @@ const WTYPE = {
   shortsword: { set: 'sword', n: 'Shortsword', k: .88, len: 12, sp: .85, sz: 2, grip: [2, 2], rows: ['...g...........', '...gbbbbbbbbb..', 'phhgwwwwwwwwwwb', '...gBBBBBBBBB..', '...g...........'], d: 'Short and quick. Recovers fast.' },
   sword: { set: 'sword', n: 'Sword', k: 1, len: 15, sp: 1, sz: 3, grip: [2, 2], rows: ['....g..............', '....gbbbbbbbbbbbbb.', 'phhhgwwwwwwwwwwwwwb', '....gBBBBBBBBBBBBB.', '....g..............'], d: 'Balanced in every form.' },
   sabre: { set: 'sword', n: 'Sabre', k: .95, len: 15, sp: .9, sz: 3, grip: [2, 2], crit: .08, rows: ['....g..............', '....gbbbbbbbbbbbb..', 'phhhgwwwwwwwwwwwwbb', '....gBBBBBBBBBBBbb.', '....g...........b..'], d: 'Curved and keen: more critical hits.' },
-  longsword: { set: 'sword', n: 'Longsword', k: 1.08, len: 18, sp: 1.1, sz: 4, grip: [2, 2], rows: ['.....g.................', '.....gbbbbbbbbbbbbbbbb.', 'phhhhgwwwwwwwwwwwwwwwwb', '.....gBBBBBBBBBBBBBBBB.', '.....g.................'], d: 'Long reach, a little slower.' },
+
   greatsword: { set: 'sword', n: 'Greatsword', k: 1.27, len: 21, sp: 1.3, sz: 5, grip: [3, 3], rows: ['......g....................', '......gbbbbbbbbbbbbbbbbbbb.', '......gwwwwwwwwwwwwwwwwwwwb', 'phhhhhgwwwwwwwwwwwwwwwwwwwb', '......gBBBBBBBBBBBBBBBBBBBb', '......gBBBBBBBBBBBBBBBBBBB.', '......g....................'], d: 'Enormous. Every swing is a commitment.' },
   cleaver: { set: 'sword', n: 'Cleaver', k: 1.05, len: 13, sp: 1.05, sz: 3, grip: [2, 2], bleed: .35, rows: ['...gbbbbbbbbb.', '...gwwwwwwwwwb', 'phhgwwwwwwwwwb', '...gBBBBBBBBBB', '...gBBBBBBBBB.'], d: 'A butcher\'s blade. Leaves foes bleeding.' },
   spear: { set: 'spear', n: 'Spear', k: 1, len: 22, sp: 1, sz: 3, grip: [8, 2], rows: ['.'.repeat(25) + 'bb', '.'.repeat(24) + 'bwwbb', 'h'.repeat(23) + 'xwwwwwwb', '.'.repeat(24) + 'bBBbb', '.'.repeat(25) + 'bb'], d: 'Reach and thrusts.' },
-  glaive: { set: 'spear', n: 'Glaive', k: 1.05, len: 22, sp: 1.1, sz: 4, grip: [8, 2], rows: ['.'.repeat(20) + 'bbbbbb..', '.'.repeat(19) + 'bwwwwwwbb', 'h'.repeat(19) + 'xwwwwwwwwwb', '.'.repeat(19) + 'bBBBBBBBb', '.'.repeat(20) + 'bbbbb'], d: 'A long blade on a pole. Sweeps hit harder.' },
-  trident: { set: 'spear', n: 'Trident', k: 1.02, len: 21, sp: 1, sz: 4, grip: [8, 2], rows: ['.'.repeat(22) + 'bbbbb', '.'.repeat(22) + 'b', 'h'.repeat(21) + 'xbwwwwb', '.'.repeat(22) + 'b', '.'.repeat(22) + 'bbbbb'], d: 'Three points. Hard to slip.' },
+  trident: { set: 'spear', n: 'Trident', k: 1.02, len: 21, sp: 1, sz: 4, grip: [8, 2], rows: ['.'.repeat(22) + 'bbbbb', '.'.repeat(22) + 'b', 'h'.repeat(21) + 'xbwwwwb', '.'.repeat(22) + 'b', '.'.repeat(22) + 'bbbbb'], d: 'Three points. Hold RMB to throw it; it flies back to your hand.' },
   halberd: { set: 'spear', n: 'Halberd', k: 1.22, len: 24, sp: 1.25, sz: 5, grip: [9, 2], rows: ['.'.repeat(26) + 'bbb', '.'.repeat(26) + 'bwwb', 'h'.repeat(26) + 'xwwwwwb', '.'.repeat(26) + 'bwwb', '.'.repeat(26) + 'bwwwb', '.'.repeat(27) + 'bbb'], d: 'Axe, spike and pole. Slow, brutal reach.' },
   daggers: { set: 'fangs', n: 'Daggers', k: .7, len: 9, sp: .9, sz: 2, grip: [2, 2], dual: true, rows: ['..g........', '..gbbbbbbb.', 'hhgwwwwwwwb', '..gBBBBBB..', '..g........'], d: 'A blade in each hand.' },
   kama: { set: 'fangs', n: 'Kama', k: .76, len: 9, sp: .95, sz: 2, grip: [1, 2], dual: true, bleed: .3, rows: ['.......bb.', '........wb', 'hhhhhhg.wb', '......gwb.', '.......b..'], d: 'Paired sickles. Hooking cuts that bleed.' },
-  claws: { set: 'fangs', n: 'Claws', k: .64, len: 7, sp: .82, sz: 2, grip: [1, 2], dual: true, rows: ['..wwwww.', '.hbbbbbb', '.hwwwwww', '.hbbbbbb', '..wwwww.'], d: 'Fastest of all. Close, closer, gone.' },
-  sai: { set: 'fangs', n: 'Sai', k: .72, len: 9, sp: .9, sz: 2, grip: [2, 2], dual: true, rows: ['...g.......', '..gg.......', 'hhhgwwwwwwb', '..gg.......', '...g.......'], d: 'Pronged. Catches blades.' },
+
   club: { set: 'maul', n: 'Club', k: 1.16, len: 15, sp: 1, sz: 3, grip: [2, 2], rows: ['..........bbbb..', '.........bwwwwb.', 'hhhhhhhhhbwwwwwb', '.........bBBBBb.', '..........bbbb..'], d: 'A heavy end on a stick.' },
   mace: { set: 'maul', n: 'Mace', k: 1.34, len: 15, sp: 1.05, sz: 3, grip: [2, 2], rows: ['............b.b.b.', '............bwbwb.', 'hhhhhhhhhhhhbwwwwb', '............bBbBb.', '............b.b.b.'], d: 'Flanged. Breaks guards.' },
   warhammer: { set: 'maul', n: 'Warhammer', k: 1.52, len: 17, sp: 1.15, sz: 4, grip: [3, 4], stag: 1, rows: ['..............bbbbbb', '..............bwwwwb', '..............bwBwwb', 'hhhhhhhhhhhhhhbwwwwb', 'phhhhhhhhhhhhhbwwBwb', '..............bwwwwb', '..............bwBwwb', '..............bwwwwb', '..............bbbbbb'], d: 'Staggers whatever it meets.' },
@@ -44,9 +42,17 @@ const WTYPE = {
   recurve: { set: 'bow', n: 'Recurve', k: .95, len: 9, sp: 1, sz: 3, bow: 21, curl: 1, d: 'Horn and glue. Hits hard. Needs arrows.' },
   longbow: { set: 'bow', n: 'Longbow', k: 1.1, len: 9, sp: 1.15, sz: 4, bow: 25, d: 'Long, slow, deadly. Needs arrows.' },
   nunchaku: { set: 'chuks', n: 'Nunchaku', k: .9, len: 12, sp: 1, sz: 3, nun: 'stick', d: 'Two sticks and a chain.' },
-  flail: { set: 'chuks', n: 'Flail', k: 1.02, len: 12, sp: 1.15, sz: 3, nun: 'ball', d: 'A spiked head on a chain. Heavy snaps.' },
-  chainwhip: { set: 'chuks', n: 'Chain Whip', k: .86, len: 13, sp: .95, sz: 3, nun: 'blade', d: 'A blade on a long chain. Quick, cutting.' }
+  flail: { set: 'chuks', n: 'Flail', k: 1.02, len: 12, sp: 1.15, sz: 3, nun: 'ball', d: 'A spiked head on a chain. Heavy snaps.' }
 };
+// weapon types taken out of the game, and the kind each became: the weapon list makes the new kind in the same
+// material, and GONE_IDS turns an old weapon (in a save, a chest, a loot table) into its new one
+const WTYPE_GONE = { claws: 'daggers', sai: 'daggers', glaive: 'spear', chainwhip: 'nunchaku', longsword: 'sword' }, GONE_IDS = {};
+const liveId = id => GONE_IDS[id] || id;
+function weaponsRegone() {
+  for (const e of WLIST) { const to = WTYPE_GONE[e[0]]; if (to) { GONE_IDS[e[1] + '_' + e[0]] = e[1] + '_' + to; e[0] = to; } }
+  const seen = new Set(), keep = WLIST.filter(e => { const k = e[0] + ':' + e[1]; if (seen.has(k)) return false; seen.add(k); return true; });
+  WLIST.length = 0; WLIST.push(...keep);
+}
 const WLIST = [['shortsword', 'copper'], ['shortsword', 'bronze'], ['shortsword', 'iron'], ['sword', 'bronze'], ['sword', 'iron'], ['sword', 'steel'], ['sword', 'ember'], ['sabre', 'iron'], ['sabre', 'glass'],
   ['longsword', 'steel'], ['longsword', 'ember'], ['greatsword', 'steel'], ['greatsword', 'deep'], ['cleaver', 'bone'], ['cleaver', 'iron'],
   ['spear', 'flint'], ['spear', 'bone'], ['spear', 'copper'], ['spear', 'bronze'], ['spear', 'iron'], ['spear', 'steel'], ['glaive', 'bronze'], ['glaive', 'glass'], ['trident', 'bone'], ['trident', 'iron'], ['halberd', 'steel'], ['halberd', 'ember'],
@@ -69,6 +75,7 @@ function bowSpr(h, M, curl) {
 }
 function nunIcon(st) { const [c, x] = mk(16, 16); drawNun(x, 4, 12, -PI / 3, -PI / 8, st); return outlined(c); }
 function buildWeapons() {
+  weaponsRegone();
   const sizeBars = [0, 1, 2, 3, 4, 5], bar = { copper: 'copper_bar', bronze: 'bronze_bar', iron: 'iron_bar', steel: 'steel_bar', ember: 'ember_bar', glass: 'skyglass' };
   const legacy = { 'spear:wood': 'spear', 'daggers:copper': 'fangs', 'warhammer:iron': 'maul' };
   for (const [ty, mt] of WLIST) {

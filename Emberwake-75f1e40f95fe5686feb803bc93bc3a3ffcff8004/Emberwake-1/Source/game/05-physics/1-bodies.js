@@ -77,7 +77,7 @@ function sparks(x, y, n, dirx = 0, sp = 2.4, cols = SPARK) { for (let i = 0; i <
 function dust(x, y, n, col = '#b9bdd0', sp = .8) { for (let i = 0; i < n; i++) P(x + frand(-3, 3), y, frand(-1, 1) * sp, frand(-.7, -.1), frand(14, 28) | 0, col, { g: -.005, fr: .93 }); }
 
 // ---------------- drops ----------------
-function spawnDrop(id, n, x, y, vx, vy, amps) { if (wildOn()) return wSpawnDrop(id, n, x, y, vx, vy, amps); if (!IT[id] || n <= 0 || COOP.applying) return; if (amps && amps.length) { G.drops.push({ id, n: 1, amps, x: x - 3, y: y - 3, px: x - 3, py: y - 3, w: 6, h: 6, vx: vx === undefined ? frand(-1, 1) : vx, vy: vy === undefined ? frand(-2, -.8) : vy, t: 0, delay: 26, onGround: false }); return; } for (const d of G.drops) if (d.id === id && !d.amps && d.t < 40 && abs(d.x + 3 - x) < 8 && abs(d.y + 3 - y) < 8 && d.n + n <= IT[id].stack) { d.n += n; return; } G.drops.push({ id, n, x: x - 3, y: y - 3, px: x - 3, py: y - 3, w: 6, h: 6, vx: vx === undefined ? frand(-1, 1) : vx, vy: vy === undefined ? frand(-2, -.8) : vy, t: 0, delay: 26, onGround: false }); }
+function spawnDrop(id, n, x, y, vx, vy, amps) { id = liveId(id); if (wildOn()) return wSpawnDrop(id, n, x, y, vx, vy, amps); if (!IT[id] || n <= 0 || COOP.applying) return; if (amps && amps.length) { G.drops.push({ id, n: 1, amps, x: x - 3, y: y - 3, px: x - 3, py: y - 3, w: 6, h: 6, vx: vx === undefined ? frand(-1, 1) : vx, vy: vy === undefined ? frand(-2, -.8) : vy, t: 0, delay: 26, onGround: false }); return; } for (const d of G.drops) if (d.id === id && !d.amps && d.t < 40 && abs(d.x + 3 - x) < 8 && abs(d.y + 3 - y) < 8 && d.n + n <= IT[id].stack) { d.n += n; return; } G.drops.push({ id, n, x: x - 3, y: y - 3, px: x - 3, py: y - 3, w: 6, h: 6, vx: vx === undefined ? frand(-1, 1) : vx, vy: vy === undefined ? frand(-2, -.8) : vy, t: 0, delay: 26, onGround: false }); }
 function tickDrops() {
   const p = G.p, a = G.drops, wild = wildOn();
   for (let i = a.length - 1; i >= 0; i--) {
@@ -100,10 +100,27 @@ function spawnProj(o) {
   G.projs.push(pr); if (pr.owner && (pr.owner === G.p || (pr.owner.brBot && !pr.owner.remote)) && !pr.ghost) netShot(pr); netShotOut(pr); return pr;
 }
 function boomFx(x, y, r) { addShake(4); sfx('boom', 60); burst(x, y, 22, SPARK, 3.2, 26, { glow: 1, g: .02 }); G.trails.push({ kind: 'ring', x, y: y + 2, r, life: 10, max: 10 }, { kind: 'hit', x, y, life: 6, max: 6, a: 0, big: true }); }
+// a thrown weapon flies back to the hand that threw it, handle first, hurting nothing on the way
+function tickReturn(pr) {
+  const f = pr.owner; pr.px = pr.x; pr.py = pr.y; pr.t++; pr.bt = (pr.bt || 0) + 1;
+  const done = () => { if (f && f.thrown && f.thrown.pr === pr) f.thrown = null; return true; };
+  if (!f || f.dead || f.gone || pr.bt > 240) return done();
+  const dx = f.x + 3 - pr.x, dy = f.y + 8 - pr.y, d = hypot(dx, dy) || 1, sp = min(9, 2.5 + pr.bt * .3);
+  pr.vx = dx / d * sp; pr.vy = dy / d * sp; pr.x += pr.vx; pr.y += pr.vy;
+  if (d < 10) { if (near(f)) sfx('pickup', 30); return done(); }
+  return false;
+}
+// a weapon thrown and not yet back: the hand is empty and cannot strike with it
+function thrownNow(f, W) {
+  const q = f && f.thrown; if (!q) return false;
+  if (G.time - q.t0 > 320 || G.time < q.t0 || !G.projs.includes(q.pr)) { f.thrown = null; return false; }
+  return !W || W.id === q.wid;
+}
 function tickProjs() {
   const a = G.projs;
   for (let i = a.length - 1; i >= 0; i--) {
     const pr = a[i]; if (pr.arm) { if (tickArm(pr)) a.splice(i, 1); continue; }
+    if (pr.back) { if (tickReturn(pr)) a.splice(i, 1); continue; }
     pr.px = pr.x; pr.py = pr.y; pr.t++; pr.vy += pr.g; pr.x += pr.vx; pr.y += pr.vy;
     let dead = --pr.life <= 0; const tx = floor(pr.x / T), ty = floor(pr.y / T), solid = solidAt(tx, ty), ow = pr.owner;
     if (pr.type === 'shock') { if (solid || !solidAt(tx, ty + 1)) dead = true; if (pr.t % 2 === 0) { dust(pr.x, pr.y + 3, 2, '#8c8999', 1.2); P(pr.x, pr.y, frand(-.4, .4), frand(-2.4, -1), 14, fpick(SPARK), { glow: 1 }); } }
@@ -129,11 +146,14 @@ function tickProjs() {
             pr.hits.add(root);
             if (pr.boom) { explode(pr.x, pr.y, pr.boom, pr.dmg, ow); dead = true; break; }
             const AS = arrowStrike(pr, ow, e); strike(ow, e, AS.dmg, (sign(pr.vx) || 1) * pr.kb[0], pr.kb[1], { stop: pr.stop || 3, shake: 2, crit: pr.crit, stagger: pr.stagger, hx: pr.x, hy: pr.y, bite: AS.bite, pz: AS.pz, gb: AS.gb }); if (pr.fx && !e.fighter) realmFxHit(pr.fx, ow, e, pr.dmg, pr.crit, pr.x, pr.y, pr);
+            if (pr.wst) weaponStatus(pr.wst, ow, e);
             if (!pr.pierce) { dead = true; break; }
           }
         }
       } else for (const f of G.fighters) if ((f.team === 'p' || wildOn() && f.brIn && !f.noHit) && !f.dead && (!f.remote || (f.coop && netHost())) && circBox(pr.x, pr.y, pr.r, f)) { const hit = hurtFighter(f, pr.dmg, pr.x - pr.vx * 6, pr.shock || pr.frost ? { shock: pr.shock, cold: pr.frost } : undefined); if (hit && pr.frost) applyStatus(f, 'frost', null, { d: 90 }); if (hit && pr.burn) applyStatus(f, 'burn', null, { d: 120 }); if (hit && pr.poison) applyStatus(f, 'poison', null, { d: 150 }); if ((hit || f.clashAt === G.time) && !pr.pierce) dead = true; }
     }
+    // (a thrown weapon that hits, lands or runs out of flight turns for home instead)
+    if (dead && pr.ret && !pr.ghost && pr.owner && !pr.owner.dead) { pr.back = true; pr.bt = 0; pr.g = 0; continue; }
     if (dead) a.splice(i, 1);
   }
 }

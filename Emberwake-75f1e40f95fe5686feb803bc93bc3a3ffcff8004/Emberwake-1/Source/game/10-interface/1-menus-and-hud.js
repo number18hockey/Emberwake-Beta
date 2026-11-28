@@ -1,14 +1,14 @@
 // ============================================================
-//  UI: menus, HUD, pack + crafting, forms codex, journal,
+//  UI: menus, HUD, pack + crafting, forms codex,
 //  dialogue, the ring scoreboard. Everything clickable registers
 //  a hit box while it draws; clicks test last frame's boxes.
 // ============================================================
-// a note that names the J or C key reads, on a touch screen, without it (the pause card's JOURNAL and FORMS open them there)
-const noKeys = s => !KIT.T || !s ? s : s.replace(/\[C\] shows them/g, 'FORMS in the menu shows them').replace(/ *\[[JC]\]/g, '');
+// a note that names the C key reads, on a touch screen, without it (the pause card's FORMS opens them there)
+const noKeys = s => !KIT.T || !s ? s : s.replace(/\[C\] shows them/g, 'FORMS in the menu shows them').replace(/ *\[C\]/g, '');
 const inR = (x, y, w, h) => mouse.ux >= x && mouse.ux < x + w && mouse.uy >= y && mouse.uy < y + h;
 const FORM = { name: '', seed: '', size: 1, shape: 0, mode: 0, skin: 0, hat: 0, nick: '', code: '', accountName: '', accountPassword: '', accountConfirm: '', brRanked: false };
 const COSMETIC_SHOP = { tab: 'skin', selected: 0, scroll: 0, rows: 1 };
-const SIZE_D = ['600 x 260 tiles', '900 x 320 tiles', '1400 x 380 tiles', '2200 x 440 tiles: days to cross'], SHAPE_D = ['every seed deals its lands in a new order', 'the Drift is crowded with islands', 'few islands, the Underdark yawns wider'], MODE_D = ['three embers, any order, nothing forced', 'every item, no monsters, build freely'];
+
 let HITS = [], HITS_NEXT = [];
 // HIT_CLIP {y0, y1}: while a scrolling box is drawn (kscroll), boxes outside it are skipped and boxes partly in it are trimmed.
 // tag: the control's full name ('btn:' + label, 'field:' + key, 'row:kind:id', 'tab:' + name), for keys and tests.
@@ -71,7 +71,7 @@ const craftList = () => RECIPES.filter(r => r.st === 'hand' && recipeHere(r)).ma
 function closeUI() { if (UI.stn && COOP.role) { COOP.stns.add(UI.stn.i); netLock(UI.stn.i, false); } UI.job = null; UI.stn = null; UI.msg = null; UI.dust = null; if (UI.held) { const l = addItem(UI.held.id, UI.held.n); if (l) spawnDrop(UI.held.id, l, G.p.x + 3, G.p.y + 4); UI.held = null; } UI.open = null; UI.scroll = 0; }
 function toggleUI(n) {
   if (n === 'map' && !hasUtil('fieldmap')) { say('You have no map. Reeds pressed flat, a little charcoal: you could draw one.'); return; }
-  if (UI.open === n) closeUI(); else { closeUI(); UI.open = n; UI.scroll = 0; if (n === 'map') mapReveal(); if (n === 'journal') { G.jNew = false; UI.scroll = 9999; } if (n === 'codex') { const it = heldItem(); UI.codex = it && it.type === 'weapon' ? it.set : !it || carried(it) ? 'brawl' : (UI.codex || 'brawl'); } }
+  if (UI.open === n) closeUI(); else { closeUI(); UI.open = n; UI.scroll = 0; if (n === 'map') mapReveal(); if (n === 'codex') { const it = heldItem(); UI.codex = it && it.type === 'weapon' ? it.set : !it || carried(it) ? 'brawl' : (UI.codex || 'brawl'); } }
   sfx('ui');
 }
 function slotClick(i, btn) {
@@ -94,7 +94,7 @@ function slotClick(i, btn) {
 }
 function uiMouseDown(btn) {
   UI.focus = null; UI.dn = btn === 0 ? { x: mouse.ux, y: mouse.uy, had: !!UI.held } : null;
-  for (let i = HITS.length - 1; i >= 0; i--) { const h = HITS[i]; if (inR(h.x, h.y, h.w, h.h)) { if (h.hint) KIT.tapHint = { s: h.hint, t: performance.now() }; h.fn(btn); if (UI.open === 'stn' && UI.stn && COOP.role) COOP.stns.add(UI.stn.i); return true; } }
+  for (let i = HITS.length - 1; i >= 0; i--) { const h = HITS[i]; if (inR(h.x, h.y, h.w, h.h)) { h.fn(btn); if (UI.open === 'stn' && UI.stn && COOP.role) COOP.stns.add(UI.stn.i); return true; } }
   if (G.state !== 'play' || G.dialog) return true;
   if (UI.open === 'inv' && UI.held) { dropHeld(); return true; }
   return !!UI.open && UI.open !== 'score';
@@ -135,7 +135,7 @@ function drawLogo(c, cy, sub) {
 }
 // ---------------- the home screen ----------------
 // A dusk view of the land with embers rising through it, and three boards: alone, with friends, the arenas.
-const TITLE = { hint: '', pan: null, subI: 0 };
+const TITLE = { pan: null, subI: 0 };
 const TITLE_SUBS = ['THREE EMBERS : GO ANYWHERE', 'SEVEN WORLDS UNDER A BROKEN RING', 'EVERY BLOW IS A CHOICE', 'DIG, BUILD, FIGHT, WAKE THE DAWN'];
 function titleScene() { G.clock = .6; updateSun(); TITLE.pan = null; }
 // the land drifts slowly by behind the boards
@@ -160,12 +160,11 @@ function titleCard(c, x, y, w, h, title, col, art, rows) {
   c.fillStyle = INK; c.fillRect(x - 1, y - 1, w + 2, h + 2); c.fillStyle = 'rgba(22,17,34,.88)'; c.fillRect(x, y, w, h);
   c.fillStyle = col; c.fillRect(x, y, w, 2); c.fillStyle = '#2b2740'; c.fillRect(x, y + h - 1, w, 1); c.fillRect(x, y + 23, w, 1);
   TITLE_ART[art](c, x + 6, y + 5); textS(c, title, x + 28, y + 9, col);
-  rows.forEach((r, i) => {
-    const by = y + 29 + i * 33; button(c, x + 6, by, w - 12, 18, r[0], r[2], r[4] || {});
-    let sub = String(r[1]); while (sub.length > 3 && textW(sub) > w - 14) sub = sub.slice(0, -1); drawText(c, sub, x + 8, by + 21, '#8b8fa3');
-    if (inR(x + 6, by, w - 12, 30)) TITLE.hint = r[3] || '';
-  });
+  rows.forEach((r, i) => button(c, x + 6, y + 29 + i * 22, w - 12, 18, r[0], r[1], r[2] || {}));
 }
+const titleCardH = n => 29 + n * 22 + 2;
+// the home page's SETTINGS button, at its top right
+function titleSettings(c, x, y, w) { button(c, x, y, w, 14, 'SETTINGS', () => { G.state = 'settings'; sfx('ui'); }); MENU_ART.cog(c, x - 18, y - 1); }
 function drawTitle(c) {
   const uw = VS.uw, uh = VS.uh, now = performance.now();
   titleDrift(now);
@@ -177,37 +176,32 @@ function drawTitle(c) {
   const last = SAVE.list && SAVE.list[0];
   const goWorlds = note => { G.state = 'worlds'; UI.scroll = 0; UI.confirm = null; G.menuNote = ''; G.worldNote = note || ''; sfx('ui'); };
   const alone = [
-    last ? ['CONTINUE', String(last.name || 'World').slice(0, 14) + '  ' + fmtTime(last.played || 0), () => { openWorld(last); sfx('quest', 0); }, 'Back into ' + (last.name || 'your world') + ', right where you left it.', { col: '#ffd35a' }]
-         : ['BEGIN', 'forge your first world', () => { G.state = 'create'; Object.assign(FORM, { name: 'World 1', seed: rollSeed() }); UI.focus = 'name'; sfx('ui'); }, 'A new land, a cold fire, and three embers to find.', { col: '#ffd35a' }],
-    ['WORLDS', 'new, load, copy', () => goWorlds(''), 'Every world you have made. Forge a new one, or paste one a friend sent.']];
+    last ? ['CONTINUE', () => { openWorld(last); sfx('quest', 0); }, { col: '#ffd35a' }]
+         : ['BEGIN', () => { G.state = 'create'; Object.assign(FORM, { name: 'World 1', seed: rollSeed() }); UI.focus = 'name'; sfx('ui'); }, { col: '#ffd35a' }],
+    ['WORLDS', () => goWorlds('')]];
   const friends = [
-    ['JOIN A FRIEND', 'world or private FFA code', () => { G.state = 'join'; UI.focus = null; COOP.err = ''; COOP.note = ''; COOP.long = false; nick(); sfx('ui'); }, 'Join a friend\'s world or private FFA match with their game code.'],
-    ['HOST A WORLD', 'open one, then invite', () => goWorlds('Open a world, then press P and choose PLAY TOGETHER for a code.'), 'Open one of your worlds, press P, choose PLAY TOGETHER: friends join with the code.']];
+    ['JOIN A FRIEND', () => { G.state = 'join'; UI.focus = null; COOP.err = ''; COOP.note = ''; COOP.long = false; nick(); sfx('ui'); }],
+    ['HOST A WORLD', () => goWorlds('Open a world, then press P and choose PLAY TOGETHER for a code.')]];
   const arenas = [
-    ['FFA ARCADE', '10 combat modes · 3 bots', () => { G.state = 'ring'; UI.focus = null; nick(); sfx('ui'); }, 'Ten weapon-focused arenas, three opponents in quick play, personal ratings, and private matches by code.'],
-    ['THE ASHFALL TRIALS', 'outlast the field', () => { G.state = 'brform'; UI.focus = null; nick(); if (FORM.brcode === undefined) FORM.brcode = ''; sfx('ui'); }, 'Twelve Wakers, one island. Scavenge, team up, survive the nights. About twelve minutes.']];
-  TITLE.hint = '';
+    ['FFA ARCADE', () => { G.state = 'ring'; UI.focus = null; nick(); sfx('ui'); }],
+    ['THE ASHFALL TRIALS', () => { G.state = 'brform'; UI.focus = null; nick(); if (FORM.brcode === undefined) FORM.brcode = ''; sfx('ui'); }]];
+  const shop = () => { G.state = 'shop'; COSMETIC_SHOP.scroll = 0; sfx('ui'); }, howto = () => { G.state = 'howto'; sfx('ui'); };
   if (uw >= 430) {
-    const cw = min(158, floor((uw - 28) / 3)), gap = min(10, floor((uw - cw * 3) / 4)), x0 = round((uw - cw * 3 - gap * 2) / 2), cy = max(ly + 62, round(uh * .37)), ch = 96;
+    const cw = min(158, floor((uw - 28) / 3)), gap = min(10, floor((uw - cw * 3) / 4)), x0 = round((uw - cw * 3 - gap * 2) / 2), cy = max(ly + 62, round(uh * .39)), ch = titleCardH(2);
     titleCard(c, x0, cy, cw, ch, 'ALONE', '#ffd35a', 'fire', alone);
     titleCard(c, x0 + cw + gap, cy, cw, ch, 'WITH FRIENDS', '#7ddc6f', 'friends', friends);
     titleCard(c, x0 + (cw + gap) * 2, cy, cw, ch, 'THE ARENAS', '#ff6b6b', 'arena', arenas);
-    const by = min(uh - 36, cy + ch + 10), bw = min(90, floor((uw - 40) / 6)), bx = round((uw - bw * 6 - 20) / 2);
-    button(c, bx, by, bw, 14, muted ? 'SOUND: OFF' : 'SOUND: ON', () => { muted = !muted; sfx('ui'); }); if (inR(bx, by, bw, 14)) TITLE.hint = 'Sound on or off (also the O key while playing).';
-    button(c, bx + bw + 4, by, bw, 14, 'DIFFICULTY: ' + DIFF().n, () => { SETTINGS.diff = SETTINGS.diff === 'easy' ? 'normal' : SETTINGS.diff === 'normal' ? 'hard' : 'easy'; saveSettings(); sfx('ui'); }); if (inR(bx + bw + 4, by, bw, 14)) TITLE.hint = 'How hard blows land on you, and how wide the timing of your own blows is.';
-    button(c, bx + (bw + 4) * 2, by, bw, 14, 'CONTROLS: ' + (SETTINGS.combat === 'simple' ? 'SIMPLE' : 'FULL'), () => { SETTINGS.combat = SETTINGS.combat === 'simple' ? 'full' : 'simple'; saveSettings(); sfx('ui'); }); if (inR(bx + (bw + 4) * 2, by, bw, 14)) TITLE.hint = 'SIMPLE: aim and S choose the form. FULL: movement keys and distance change it too.';
-    button(c, bx + (bw + 4) * 3, by, bw, 14, 'HOW TO PLAY', () => { G.state = 'howto'; sfx('ui'); }); if (inR(bx + (bw + 4) * 3, by, bw, 14)) TITLE.hint = 'The keys, and how a fight works.';
-    button(c, bx + (bw + 4) * 4, by, bw, 14, 'COSMETIC SHOP', () => { G.state = 'shop'; COSMETIC_SHOP.scroll = 0; sfx('ui'); });
-    button(c, bx + (bw + 4) * 5, by, bw, 14, 'SOCIAL', socialOpen); if (inR(bx + (bw + 4) * 5, by, bw, 14)) TITLE.hint = 'Find friends, chat, see when they are playing, and gift Ember coins.';
+    const by = min(uh - 30, cy + ch + 10), bw = min(96, floor((uw - 40) / 3)), bx = round((uw - bw * 3 - 8) / 2);
+    button(c, bx, by, bw, 14, 'HOW TO PLAY', howto);
+    button(c, bx + bw + 4, by, bw, 14, 'COSMETIC SHOP', shop);
+    button(c, bx + (bw + 4) * 2, by, bw, 14, 'SOCIAL', socialOpen);
+    titleSettings(c, uw - 82, 6, 76);   // (drawn after the boards, so their buttons come first, as they always have)
   } else {
     // a narrow window: one plain column
     const bw = min(176, uw - 16), bx = round((uw - bw) / 2); let by = max(ly + 56, round(uh * .36));
-    for (const r of [...alone, ...friends, ...arenas]) { button(c, bx, by, bw, 16, r[0], r[2], r[4] || {}); if (inR(bx, by, bw, 16)) TITLE.hint = r[3]; by += 19; }
-    button(c, bx, by, bw, 14, 'COSMETIC SHOP', () => { G.state = 'shop'; COSMETIC_SHOP.scroll = 0; sfx('ui'); }); by += 16;
-    button(c, bx, by, bw, 14, 'HOW TO PLAY', () => { G.state = 'howto'; sfx('ui'); }); by += 16;
-    button(c, bx, by, bw, 14, 'SOCIAL', socialOpen); if (inR(bx, by, bw, 14)) TITLE.hint = 'Find friends, chat, see when they are playing, and gift Ember coins.';
+    for (const r of [...alone, ...friends, ...arenas]) { button(c, bx, by, bw, 16, r[0], r[1], r[2] || {}); by += 19; }
+    for (const [l, fn] of [['SETTINGS', () => { G.state = 'settings'; sfx('ui'); }], ['HOW TO PLAY', howto], ['COSMETIC SHOP', shop], ['SOCIAL', socialOpen]]) { button(c, bx, by, bw, 14, l, fn); by += 16; }
   }
-  { let h = TITLE.hint || (mobileDevice ? 'touch to move and fight' : 'mouse + keyboard'); while (h.length > 3 && textW(h) > uw - 12) h = h.slice(0, -1); textC(c, h, uw / 2, uh - 15, TITLE.hint ? '#d8d4e6' : '#8b8fa3', 1, textO); }
   const vs = 'version ' + GAME_VERSION; textS(c, vs, uw - textW(vs) - 4, uh - 10, '#6a6485');
 }
 // (how to play, the worlds board and the forge are 7-places.js)
@@ -219,14 +213,12 @@ const rollSeed = () => fpick(SEED_A) + '-' + fpick(SEED_B) + '-' + (10 + floor(M
 // ---------------- in-game HUD ----------------
 function drawHUD(c) {
   const p = G.p, uw = VS.uw, uh = VS.uh, A = WORLD.arena, wild = wildOn();
+  drawWeatherYouFeel(c); drawSick(c);
   c.drawImage(SPR.heart, 3, 3); bar(c, 15, 4, 72, 7, p.hp / p.maxhp, p.hp < 30 && (G.time >> 3) & 1 ? '#ff9a8a' : '#e2483b', '#8f2233'); textO(c, ceil(max(0, p.hp)), 91, 4, '#fff');
   if ((!A || wild) && gearOn()) { drawGearHud(c); if (!A) { if (!SETTINGS.fpsMode) { drawStyleHud(c); drawFamHud(c); } drawDrill(c); } }
   bar(c, 15, 14, 72, 4, p.stam / p.maxstam, p.stam < 22 ? '#ffd35a' : '#7ddc6f', p.stam < 22 ? '#b85a1e' : '#2f8a43');
   if ((!A || wild) && WORLD.mode !== 1) { const f = G.food / 100; bar(c, 15, 20, 72, 2, f, f < .25 && (G.time >> 4) & 1 ? '#ff9a8a' : '#e0a050', '#7a4a1a'); if (f < .3) textO(c, f <= 0 ? 'STARVING' : 'HUNGRY', 91, 16, '#e0a050'); }
   if (p.riposte > 0 && (G.time >> 2) & 1) textO(c, 'RIPOSTE READY', 15, 22, '#8ff5e6');
-  else if (!UI.open && WORLD.royale) { if (wild && !SETTINGS.fpsMode && !mobileDevice && !(BR.t > 60 * 60 || G.note || p.dead)) textS(c, '[LMB] hit / dig  [F] open  [E] pack  [B] recipes  [K] knap  [H] heal  [P] pact  [M] map', 4, 35, '#8b8fa3'); }
-  else if (!UI.open && !SETTINGS.fpsMode && !mobileDevice) textS(c, A ? (FFA.active ? FFA.mode === 'crystal' ? '[TAB] scores  [F] place / detonate crystal  [P] menu' : FFA.mode === 'shield' ? '[TAB] scores  [G] guard  [P] menu' : '[TAB] scores  [C] forms  [P] menu  1-6 weapons  [R] sidearm' : '[TAB] scores  [C] forms  [P] menu  1-6 weapons  [R] sidearm [T] swap') : '[E] pack  [K] knap  [F] use  [J] journal  [P] menu', 4, 25, '#8b8fa3');
-  if (!SETTINGS.fpsMode && !A && G.jNew && (G.time >> 4) & 1) textS(c, kb('NEW JOURNAL ENTRY [J]', 'NEW JOURNAL ENTRY'), 4, 32, '#ffd35a');
   if (!SETTINGS.fpsMode) { drawBless(c); drawMealHud(c); drawGadgetHud(c); }
   drawCoopHud(c);
   if (G.savedNote) { const t = G.savedNote.t; c.globalAlpha = clamp((120 - t) / 30, 0, 1); textS(c, G.savedNote.ok ? (SAVE.db ? 'saved to your account' : 'saved') : 'could not save', 4, A ? 32 : 42, '#7ddc6f'); c.globalAlpha = 1; }
@@ -246,7 +238,7 @@ function drawHUD(c) {
   if (!UI.open) { if (WORLD.royale) brHud(c); else if (A) drawRingStatus(c); else if (!SETTINGS.fpsMode) { G.miniH = drawMinimap(c); drawObjective(c); } }
   // move feed
   let fy = round(uh * .34);
-  if (!SETTINGS.fpsMode) G.feed.forEach((f, i) => { const a = clamp(1 - (f.t - 150) / 60, 0, 1) * (1 - i * .16); if (a <= 0) return; c.globalAlpha = a; const x = 6 + (f.t < 6 ? (6 - f.t) * -3 : 0); if (f.isNew) { textO(c, 'NEW FORM', x, fy, '#8ff5e6'); fy += 9; } textO(c, f.name, x, fy, f.isNew ? '#ffd35a' : f.fresh ? '#fff' : '#8b8fa3'); if (i === 0 && !f.fresh) drawText(c, 'dull', x + textW(f.name) + 5, fy, '#6a6485'); fy += 10; });
+  if (!SETTINGS.fpsMode && moveNamesOn()) G.feed.forEach((f, i) => { const a = clamp(1 - (f.t - 150) / 60, 0, 1) * (1 - i * .16); if (a <= 0) return; c.globalAlpha = a; const x = 6 + (f.t < 6 ? (6 - f.t) * -3 : 0); if (f.isNew) { textO(c, 'NEW FORM', x, fy, '#8ff5e6'); fy += 9; } textO(c, f.name, x, fy, f.isNew ? '#ffd35a' : f.fresh ? '#fff' : '#8b8fa3'); if (i === 0 && !f.fresh) drawText(c, 'dull', x + textW(f.name) + 5, fy, '#6a6485'); fy += 10; });
   c.globalAlpha = 1;
   if (!SETTINGS.fpsMode && G.combo.n > 1 && !A) { const r = rankI(), s = `${G.combo.n} HITS`, x = uw - 8 - textW(s, 2), y = round(uh * .34), pop = G.combo.t > 172 ? 1 : 0; textO(c, s, x, y - pop, '#fff', 2); if (r) textO(c, RANKS[r], uw - 8 - textW(RANKS[r]), y + 18, RANK_COL[r]); bar(c, uw - 68, y + 29, 60, 2, G.combo.t / 180, RANK_COL[r], '#4a4460'); }
   // boss bars
@@ -279,11 +271,13 @@ function drawHUD(c) {
 function drawObjective(c) {
   const uw = VS.uw, p = G.p, id = G.pin, L = id && LEADS[id];
   if (WORLD.mode === 1 && !L) return;
-  if (!L) { if (leadsOpen().length) textS(c, kb('[J] leads', 'leads'), uw - 52, 6 + (G.miniH || 0), '#6a6485'); drawMileWay(c, uw, 18 + (G.miniH || 0)); return; }
+  if (!L) { if (leadsOpen().length && WORLD.mode !== 1) { const s = 'LEADS', x = uw - textW(s) - 8, y = 6 + (G.miniH || 0); textS(c, s, x, y, '#8b8fa3'); hit(x - 2, y - 2, textW(s) + 4, 11, nextLead); } drawMileWay(c, uw, 18 + (G.miniH || 0)); return; }
   const qw = min(160, uw - 200), lines = wrapText(L.text, qw - 10), at = leadAt(L), qh = 14 + min(3, lines.length) * 9 + (at !== null && at !== undefined ? 9 : 0), qx = uw - qw - 4, oy = G.miniH || 0;
   c.fillStyle = 'rgba(18,13,31,.62)'; c.fillRect(qx, 4 + oy, qw, qh); c.fillStyle = '#ffd35a'; c.fillRect(qx, 4 + oy, 2, qh);
   textS(c, 'LEAD : ' + L.title.toUpperCase(), qx + 6, 7 + oy, '#ffd35a'); lines.slice(0, 3).forEach((l, i) => textS(c, l, qx + 6, 17 + oy + i * 9, '#fff'));
   if (at !== null && at !== undefined) { const d = at * T - p.x, m = round(abs(d) / T); textS(c, m < 8 ? 'you are here' : d > 0 ? `→ ${m} paces east` : `← ${m} paces west`, qx + 6, 17 + oy + min(3, lines.length) * 9, '#8ff5e6'); }
+  // (a click on the box goes on to the next open lead, then to none)
+  hit(qx, 4 + oy, qw, qh, nextLead);
   drawMileWay(c, uw, 6 + oy + qh);
 }
 function ringStatusText() { if (NET.via === 'rtc') return (netHost() ? 'PRIVATE CODE ' + sigSpaced(COOP.gcode || '......') + ' : ' : (COOP.hostName || 'HOST') + '\'S FFA : ') + (NET.peers.size + 1) + ' WAKER' + (NET.peers.size ? 'S' : ''); return NET.status === 'online' ? `ONLINE : ${NET.peers.size + 1} WAKER${NET.peers.size ? 'S' : ''}` : NET.status === 'connecting' ? 'CONNECTING...' : 'OFFLINE : PRACTICE'; }
@@ -330,7 +324,7 @@ function drawInv(c) {
   for (let i = 0; i < INV_N; i++) { const x = L.gx + (i % 10) * 19, y = L.gy + floor(i / 10) * 19, hov = inR(x, y, 18, 18); slotBox(c, x, y, i === G.sel, hov); drawStack(c, inv[i], x, y); if (hov && inv[i] && !UI.held) tip = itemTip(IT[inv[i].id]); hit(x, y, 18, 18, b => slotClick(i, b), true); }
   const list = craftList(); pscroller({ x: L.cx, y: L.cy, w: L.cw, h: L.rows * 19 }, list.length, L.rows);
   pchrome(c, L.cx - 5, L.cy - 16, L.cw + 10, L.rows * 19 + 21, 'inv', 'BY HAND'); pbtn(c, L.cx + L.cw - 62, L.cy - 14, 64, 12, kb('BOOK [B]', 'BOOK'), () => toggleUI('book'), { tag: 'btn:BOOK [B]', hint: 'Every bench and what it makes.' });
-  drawText(c, kb('more at benches [F]', 'more at benches'), L.cx, L.cy + L.rows * 19 + 7, '#6a6485');
+
   for (let r = 0; r < L.rows; r++) {
     const e = list[r + UI.scroll]; if (!e) break; const x = L.cx, y = L.cy + r * 19, hov = inR(x, y, L.cw, 18), it = IT[e.r.out], right = x + L.cw - 2;
     if (hov) { c.fillStyle = '#2b2740'; c.fillRect(x, y, L.cw, 18); }
@@ -351,13 +345,11 @@ function drawInv(c) {
   invStrip(c, hb);
   if (tip) drawTip(c, tip);
 }
-// the strip above the hotbar: the hint of what is under the mouse (or was tapped), else how the pack works; it also
-// carries the journal's NEW ENTRY line, which the pack covers on a small screen
+// the strip above the hotbar: a banner the pack hides, or why a button is off (nothing else)
 function invStrip(c, hb) {
-  const now = performance.now(), tap = KIT.T && KIT.tapHint && now - KIT.tapHint.t < 2500 ? KIT.tapHint.s : '', h = KIT.T ? tap : KIT.hint;
-  let s = h || kb('drag to move : drag out to drop : shift-click: hotbar / pack : right-click splits', 'drag to move : drag out to drop');
-  if (G.jNew && !SETTINGS.fpsMode && !WORLD.arena) s = kb('NEW JOURNAL ENTRY [J]', 'NEW JOURNAL ENTRY') + '  :  ' + s;
-  if (G.banner && G.banner.t >= 0 && G.banner.t < 230) s = G.banner.text + '  :  ' + s;   // a banner the pack hides
+  const h = KIT.why || '';
+  let s = h; if (G.banner && G.banner.t >= 0 && G.banner.t < 230) s = G.banner.text + (s ? '  :  ' + s : '');
+  if (!s) return;
   s = fitText(s, VS.uw - 24); const w = textW(s) + 14, x = round((VS.uw - w) / 2), y = hb.y - 16;
   c.fillStyle = INK; c.fillRect(x - 1, y - 1, w + 2, 13); c.fillStyle = 'rgba(22,17,34,.9)'; c.fillRect(x, y, w, 11); c.fillStyle = MENUS.inv.col; c.fillRect(x, y, w, 1);
   drawText(c, s, x + 7, y + 2, h ? '#d8d4e6' : '#b9bdd0');
@@ -377,7 +369,7 @@ function drawDialog(c) {
 }
 function drawUI(c) {
   HITS_NEXT = []; kitBegin(); const uw = VS.uw, uh = VS.uh, st = G.state;
-  if (st === 'title') drawTitle(c); else if (st === 'shop') drawCosmeticShop(c); else if (st === 'accounts') drawAccounts(c); else if (st === 'howto') drawHowTo(c); else if (st === 'worlds') drawWorlds(c); else if (st === 'create') drawCreate(c); else if (st === 'ring') drawRingForm(c); else if (st === 'brform') drawBrForm(c); else if (st === 'bropen') drawBrOpen(c); else if (st === 'brlobby') drawBrLobby(c); else if (st === 'join') drawJoin(c); else if (st === 'wcopy') drawWorldCopy(c); else if (st === 'wpaste') drawWorldPaste(c);
+  if (st === 'title') drawTitle(c); else if (st === 'settings') drawSettings(c); else if (st === 'shop') drawCosmeticShop(c); else if (st === 'accounts') drawAccounts(c); else if (st === 'howto') drawHowTo(c); else if (st === 'worlds') drawWorlds(c); else if (st === 'create') drawCreate(c); else if (st === 'ring') drawRingForm(c); else if (st === 'brform') drawBrForm(c); else if (st === 'bropen') drawBrOpen(c); else if (st === 'brlobby') drawBrLobby(c); else if (st === 'join') drawJoin(c); else if (st === 'wcopy') drawWorldCopy(c); else if (st === 'wpaste') drawWorldPaste(c);
   else if (st === 'loading') drawLoading(c);
   else if (st === 'intro') drawIntro(c);
   else if (G.cine && !UI.open) { // a panel opened during a place-name card (Esc, E) is drawn, not hidden behind it
@@ -388,7 +380,7 @@ function drawUI(c) {
   } else {
     if (UI.open && UI.open !== 'score') menuVeil(c, UI.open);
     drawHUD(c);
-    if (UI.open === 'inv') drawInv(c); else if (UI.open === 'codex') drawCodex(c); else if (UI.open === 'journal') drawJournal(c); else if (UI.open === 'pause') drawPause(c); else if (UI.open === 'coop') drawCoopPanel(c);
+    if (UI.open === 'inv') drawInv(c); else if (UI.open === 'codex') drawCodex(c); else if (UI.open === 'pause') drawPause(c); else if (UI.open === 'coop') drawCoopPanel(c);
     else if (UI.open === 'book') drawBook(c); else if (UI.open === 'stn') drawStation(c); else if (UI.open === 'knap') drawKnap(c); else if (UI.open === 'map') drawMap(c); else if (UI.open === 'board') drawBoard(c); else if (UI.open === 'rift') drawRiftUI(c); else if (UI.open === 'echo') drawEchoUI(c); else if (UI.open === 'ending') drawEndingUI(c);
     if (!SETTINGS.fpsMode) drawCompass(c);
     if (WORLD.arena && !WORLD.royale && keys.Tab && !UI.open) drawScore(c);

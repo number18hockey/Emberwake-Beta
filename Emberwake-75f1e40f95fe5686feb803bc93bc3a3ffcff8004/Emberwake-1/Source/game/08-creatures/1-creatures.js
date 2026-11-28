@@ -21,7 +21,7 @@ const overlap = (a, b, pad = 0) => a.x < b.x + b.w + pad && a.x + a.w > b.x - pa
 function damageEnemy(e, dmg, kx, ky, o = {}) {
   if (e.ghost) return e.ghostDying ? 0 : netHitGhost(e, dmg, kx, ky, o);
   const root = e.root || e; if (e.dead || root.dead || root.invuln) return 0;
-  if (o.dot) { root.hp -= dmg; e.flash = 3; numPop(e.x + e.w / 2, e.y - 2, dmg, '#ff9a3d'); if (root.hp <= 0) killEnemy(root); return 1; }
+  if (o.dot) { root.hp -= dmg; e.flash = 3; numPop(e.x + e.w / 2, e.y - 2, dmg, o.col || '#ff9a3d'); if (root.hp <= 0) killEnemy(root); return 1; }
   // a blow that does not bite (a lone light blow, a rushed one) hurts but does not stop a sturdy foe in its tracks
   const glance = wardGlance(e, root, kx, o), bite = !glance && (o.bite !== false || !hasPoise(root) || root.stagT > 0); if (glance) dmg *= .35;
   dmg = max(1, round(dmg * (e.dmgMul || 1) * (root.vuln || 1) * (root.stagT > 0 ? 1.3 : 1) * (o.blunt && e.armor ? max(e.armor, .9) : e.armor || 1)));
@@ -107,7 +107,7 @@ function spawnHollow(x, y) {
   while (boxHits(h.x, h.y, h.w, h.h)) h.y -= T; h.py = h.y; h.ai.atkCd = 50; G.fighters.push(h);
   burst(h.x + 3, h.y + 10, 16, ['#3a2f4a', '#c58cf2', '#17121f'], 2, 30, { g: -.01 }); return h;
 }
-function hollowDrops(f) { const x = f.x + 3, y = f.y + 8, r = Math.random(); if (f.elite) { spawnDrop('steel_bar', randi(1, 3), x, y); spawnDrop('salve', 2, x, y); if (Math.random() < .6) spawnDrop(fpick(f.elite === 'castellan' ? ['steel_greatsword', 'steel_halberd', 'ember_sword', 'steel_greataxe', 'steel_body'] : ['steel_longsword', 'iron_flail', 'steel_spear', 'iron_battleaxe', 'iron_head']), 1, x, y); if (f.elite === 'castellan') spawnDrop('ember_bar', randi(1, 2), x, y); } spawnDrop('shard', randi(1, 2), x, y); spawnDrop('hollow_ash', randi(1, 3), x, y); if (r < .4) spawnDrop('salve', 1, x, y); else if (r < .7) spawnDrop(f.arms[0], randi(2, 4), x, y); if (Math.random() < .5) spawnDrop('cinder', randi(1, 3), x, y); }
+function hollowDrops(f) { const x = f.x + 3, y = f.y + 8, r = Math.random(); if (f.elite) { spawnDrop('steel_bar', randi(1, 3), x, y); spawnDrop('salve', 2, x, y); if (Math.random() < .6) spawnDrop(fpick(f.elite === 'castellan' ? ['steel_greatsword', 'steel_halberd', 'ember_sword', 'steel_greataxe', 'steel_body'] : ['steel_sword', 'iron_flail', 'steel_spear', 'iron_battleaxe', 'iron_head']), 1, x, y); if (f.elite === 'castellan') spawnDrop('ember_bar', randi(1, 2), x, y); } spawnDrop('shard', randi(1, 2), x, y); spawnDrop('hollow_ash', randi(1, 3), x, y); if (r < .4) spawnDrop('salve', 1, x, y); else if (r < .7) spawnDrop(f.arms[0], randi(2, 4), x, y); if (Math.random() < .5) spawnDrop('cinder', randi(1, 3), x, y); }
 // with friends here, each creature goes after whichever of you is nearest
 function coopTarget(e) { let best = G.p, bd = 1e9; const ex = e.x + e.w / 2, ey = e.y + e.h / 2; for (const f of netPlayers()) { if (f.dead || f.noHit) continue; const d = abs(f.x + 3 - ex) + abs(f.y + 10 - ey) * 1.4 - (f === e.tgtF ? 40 : 0); if (d < bd) { bd = d; best = f; } } e.tgtF = best; return best; }
 function tickEnemies() {

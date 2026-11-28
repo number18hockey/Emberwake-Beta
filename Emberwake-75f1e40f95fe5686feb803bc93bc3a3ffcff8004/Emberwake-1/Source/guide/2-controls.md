@@ -6,16 +6,15 @@
 | **Space** or **W** | jump (hold **S** to drop through bridges) |
 | **Shift** | dodge (dodge through a hit at the last moment, then strike back: a riposte) |
 | **Left mouse** | a light blow. Strike again when your weapon **glints**, not before: in time, blows come faster and faster (see *Fighting: the beat*). Quick presses pay only in **DRUMFIRE** and to shake off a blow. Holding it down does not attack. Clicking a creature always punches it, whatever you hold |
-| **Right mouse** or **Q** | a heavy blow: spends your tempo for a harder hit (hold to charge); also opens doors |
+| **Right mouse** or **Q** | a heavy blow: spends your tempo for a harder hit (hold to charge; a spear, trident or halberd is thrown, and flies back to your hand). Pointed at a door within a few paces, it opens or shuts the door, from either side |
 | **V** | change weapon style (five per weapon, unlocked by training) |
 | **X** | swap to your off-hand weapon (pairs make combo finishers) |
 | **1** to **0**, mouse wheel | hotbar |
 | **E** | your pack, what you wear, and crafting by hand |
 | **B** | the recipe book: every bench, what it is for and what it makes |
 | **G** | drop one of what you hold (**Shift+G** drops the whole stack) |
-| **F** | talk, use a bench, sleep, plant, take honey, wake a guardian with its offering, touch a rift or an echo stone |
+| **F** | talk, use a bench, sleep (at night), open or shut a door near you, plant, take honey, wake a guardian with its offering, touch a rift or an echo stone |
 | **H** | quick heal |
-| **J** | journal: leads, lore, echoes, bestiary |
 | **M** | map (once you have drawn one; in the battle royale, the island) |
 | **K** | knapping (optional: stone heads can also be made by hand from flint) |
 | **C** | forms (your moves) |
@@ -50,15 +49,20 @@ Touch controls appear by themselves, whichever way up you hold it. With a mouse 
 - **PACT** shows in a Wilds match: it offers and accepts a pact, and tapped twice leaves it.
 - Tap a name, a seed, a game code or an account field to type in it: your keyboard comes up.
 
-## The menu (Esc)
+## Settings
 
+**SETTINGS** at the top right of the home page holds every switch, and the menu (**Esc**) has the same ones under its **SETTINGS** tab (less difficulty and crafting in a match).
+
+- **Sound: ON** (the default). **O** switches it while you play too. It is remembered.
+- **Attack names: ON** (the default): the name of each attack you land shows at the left of the screen. Turn it **OFF** to fight without them.
 - **Controls: SIMPLE** (the default). Only where you aim (up, straight, down) and holding **S** choose your attack, so you never lunge or dash across the screen by surprise. **FULL** brings back the extra forms tied to the movement keys and how far away the cursor is (the forms page, **C**, greys them out in SIMPLE).
 - **Difficulty: EASY** (the default): you take 30% less damage, heal twice as fast, get hungry more slowly, and the timing of your blows is generous. **NORMAL** is the original balance. **HARD**: 25% more damage taken, slower healing, faster hunger.
 - **Crafting: SIMPLE** (the default). At a station you click what you want and it is made after a short bar fills (shift-click makes five). Fires and kilns work whenever they have fuel, and light themselves from your sticks or logs; food never burns. **HANDS-ON** brings back the station games (sawing, the potter's wheel, the bellows, the anvil...), heat and the kiln's damper, and food that chars if you forget it.
 
-- **FX: FULL** (the default): the glow of fires and blades, the colour each land and season gives the air, the morning mist, the embers your Waker trails at a run. **FX: PLAIN** turns those off; try it if the game stutters on an older machine.
+- **Effects: FULL** (the default): the glow of fires and blades, the colour each land and season gives the air, the morning mist, the embers your Waker trails at a run, and rain running down the screen. **Effects: PLAIN** turns those off; try it if the game stutters on an older machine.
+- **Screen motion: FULL** (the default). **CALM** shakes the screen less, and keeps it still when you are sick (it only tints).
 - **FPS MODE: OFF** (the default). Turn it on to stop particle effects and hide the lesser parts of the HUD, for a cleaner and smoother view. Health, stamina, the hotbar, boss bars and a clear aiming cross stay. The game stays side-on (it is not a first-person view), and the world, the fighting and play with friends are the same.
 
 The menu also shows the **day and the season**, and what kind of world this one is (its three traits).
 
-All five are remembered on this computer.
+All of them are remembered on this computer.

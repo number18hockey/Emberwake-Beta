@@ -17,17 +17,17 @@ Object.assign(LOOT_T, {
   tools: [['copper_pick', .2, 1, 1], ['bronze_axe', .15, 1, 1], ['copper_hammer', .15, 1, 1], ['bronze_shovel', .12, 1, 1], ['fittings', .6, 2, 6], ['iron_bar', .3, 1, 2], ['whetstone', .4, 1, 1], ['rope', .5, 1, 3], ['chain', .25, 1, 2]],
   mill: [['ration', .5, 1, 3], ['jerky', .5, 2, 4], ['salt', .5, 2, 5], ['berries', .5, 2, 5], ['rope', .4, 1, 2], ['twine', .5, 2, 4], ['cloth', .3, 1, 2], ['tea', .3, 1, 2], ['torch', .5, 2, 5]],
   fort: [['arrow', .6, 8, 16], ['iron_bar', .5, 1, 3], ['steel_bar', .2, 1, 2], ['salve', .5, 1, 2], ['jerky', .5, 2, 4], ['hollow_ash', .5, 1, 3], ['smoke', .3, 2, 4], ['shuriken', .35, 3, 6], ['iron_sabre', .1, 1, 1], ['iron_daggers', .1, 1, 1], ['steel_spear', .06, 1, 1], ['chain', .2, 1, 2], ['leather', .4, 1, 3]],
-  castle: [['steel_bar', .5, 1, 3], ['iron_bar', .5, 2, 4], ['ember_bar', .15, 1, 1], ['salve', .5, 1, 3], ['poultice', .3, 1, 2], ['scroll', .3, 1, 1], ['steel_longsword', .12, 1, 1], ['steel_halberd', .1, 1, 1], ['steel_greataxe', .08, 1, 1], ['iron_flail', .1, 1, 1], ['glass_sabre', .06, 1, 1], ['steel_head', .1, 1, 1], ['steel_body', .07, 1, 1], ['compass', .1, 1, 1], ['spyglass', .1, 1, 1], ['lantern', .1, 1, 1]],
-  pyramid: [['salt', .6, 2, 5], ['glass', .5, 1, 3], ['scale', .4, 1, 3], ['bronze_bar', .4, 1, 3], ['tin_bar', .3, 1, 3], ['shard', .5, 1, 3], ['venom', .3, 1, 2], ['skyglass', .2, 1, 2], ['geode_core', .1, 1, 1], ['scroll', .25, 1, 1], ['bronze_kama', .15, 1, 1], ['glass_sai', .08, 1, 1], ['glass_glaive', .06, 1, 1], ['spyglass', .08, 1, 1]],
+  castle: [['steel_bar', .5, 1, 3], ['iron_bar', .5, 2, 4], ['ember_bar', .15, 1, 1], ['salve', .5, 1, 3], ['poultice', .3, 1, 2], ['scroll', .3, 1, 1], ['steel_sword', .12, 1, 1], ['steel_halberd', .1, 1, 1], ['steel_greataxe', .08, 1, 1], ['iron_flail', .1, 1, 1], ['glass_sabre', .06, 1, 1], ['steel_head', .1, 1, 1], ['steel_body', .07, 1, 1], ['compass', .1, 1, 1], ['spyglass', .1, 1, 1], ['lantern', .1, 1, 1]],
+  pyramid: [['salt', .6, 2, 5], ['glass', .5, 1, 3], ['scale', .4, 1, 3], ['bronze_bar', .4, 1, 3], ['tin_bar', .3, 1, 3], ['shard', .5, 1, 3], ['venom', .3, 1, 2], ['skyglass', .2, 1, 2], ['geode_core', .1, 1, 1], ['scroll', .25, 1, 1], ['bronze_kama', .15, 1, 1], ['glass_daggers', .08, 1, 1], ['glass_spear', .06, 1, 1], ['spyglass', .08, 1, 1]],
   temple: [['snow', .6, 3, 8], ['skyglass', .4, 1, 3], ['shard', .5, 1, 3], ['glass', .4, 1, 3], ['salve', .4, 1, 2], ['scroll', .2, 1, 1], ['glass_longbow', .08, 1, 1], ['glass_head', .08, 1, 1], ['glass_body', .06, 1, 1], ['glass_sabre', .06, 1, 1]],
   wreck: [['rope', .6, 1, 3], ['cloth', .5, 1, 3], ['twine', .5, 2, 5], ['chain', .3, 1, 2], ['fittings', .5, 2, 5], ['salt', .4, 2, 4], ['lurker_oil', .3, 1, 2], ['jug', .3, 1, 1], ['iron_bar', .3, 1, 2], ['compass', .1, 1, 1], ['spyglass', .08, 1, 1], ['bone_trident', .1, 1, 1]],
-  den: [['bone', .7, 2, 6], ['hide', .5, 1, 3], ['tusk', .3, 1, 2], ['meat', .5, 1, 3], ['scale', .3, 1, 2], ['chitin', .3, 1, 2], ['membrane', .3, 1, 2], ['venom', .25, 1, 1], ['bone_claws', .12, 1, 1], ['chitin_claws', .08, 1, 1], ['bone_head', .1, 1, 1]],
-  dungeon: [['shard', .6, 1, 3], ['iron_bar', .5, 1, 3], ['steel_bar', .3, 1, 2], ['salve', .5, 1, 2], ['poultice', .3, 1, 2], ['whetstone', .3, 1, 1], ['venomcoat', .15, 1, 1], ['iron_sabre', .12, 1, 1], ['steel_claws', .08, 1, 1], ['deep_greatsword', .05, 1, 1], ['deep_warhammer', .05, 1, 1], ['deep_head', .05, 1, 1], ['emberlamp', .06, 1, 1]],
+  den: [['bone', .7, 2, 6], ['hide', .5, 1, 3], ['tusk', .3, 1, 2], ['meat', .5, 1, 3], ['scale', .3, 1, 2], ['chitin', .3, 1, 2], ['membrane', .3, 1, 2], ['venom', .25, 1, 1], ['bone_daggers', .12, 1, 1], ['chitin_daggers', .08, 1, 1], ['bone_head', .1, 1, 1]],
+  dungeon: [['shard', .6, 1, 3], ['iron_bar', .5, 1, 3], ['steel_bar', .3, 1, 2], ['salve', .5, 1, 2], ['poultice', .3, 1, 2], ['whetstone', .3, 1, 1], ['venomcoat', .15, 1, 1], ['iron_sabre', .12, 1, 1], ['steel_daggers', .08, 1, 1], ['deep_greatsword', .05, 1, 1], ['deep_warhammer', .05, 1, 1], ['deep_head', .05, 1, 1], ['emberlamp', .06, 1, 1]],
   library: [['scroll', .45, 1, 1], ['cloth', .5, 1, 3], ['glue', .4, 1, 2], ['fieldmap', .15, 1, 1], ['compass', .1, 1, 1], ['tea', .4, 1, 2], ['salve', .3, 1, 1]],
   armory: [['iron_shortsword', .2, 1, 1], ['iron_spear', .2, 1, 1], ['iron_battleaxe', .15, 1, 1], ['steel_sword', .1, 1, 1], ['iron_head', .15, 1, 1], ['iron_body', .1, 1, 1], ['arrow', .6, 10, 20], ['shuriken', .4, 3, 8], ['whetstone', .4, 1, 2]],
   mcamp: [['coal', .6, 2, 6], ['iron_ore', .5, 2, 6], ['tin_ore', .4, 2, 5], ['copper_ore', .5, 2, 6], ['torch', .7, 3, 8], ['rope', .4, 1, 2], ['charge', .3, 1, 2], ['ration', .4, 1, 2], ['bronze_pick', .12, 1, 1], ['iron_shovel', .08, 1, 1], ['miners_helm', .15, 1, 1]],
   nest: [['twine', .6, 2, 6], ['venom', .5, 1, 2], ['chitin', .5, 1, 3], ['membrane', .4, 1, 2], ['bone', .5, 1, 4], ['salve', .3, 1, 1], ['venomcoat', .15, 1, 1], ['chitin_head', .08, 1, 1]],
-  sky2: [['skysilk', .7, 2, 5], ['skyglass', .4, 1, 2], ['membrane', .4, 1, 2], ['shard', .5, 1, 2], ['salve', .3, 1, 1], ['glider', .1, 1, 1], ['glass_glaive', .06, 1, 1]]
+  sky2: [['skysilk', .7, 2, 5], ['skyglass', .4, 1, 2], ['membrane', .4, 1, 2], ['shard', .5, 1, 2], ['salve', .3, 1, 1], ['glider', .1, 1, 1], ['glass_spear', .06, 1, 1]]
 });
 
 // ---------------- what the new tiles look like ----------------
@@ -450,11 +450,13 @@ function placeInteract(L) {
     L.push({ x: o.x * T + 4, y: (o.y + 1) * T, r: 14, label: used ? 'the stone is resting' : 'ask for a blessing', act: () => blessAt(i) });
   }
 }
-// cobwebs hold you, old spikes bite
+// cobwebs hold you, old spikes bite, nettles and cactus sting as you brush past
 function placeHazards(f) {
   if (f !== G.p || f.dead || WORLD.arena) return;
-  const x0 = floor((f.x + 1) / T), x1 = floor((f.x + f.w - 2) / T), y0 = floor((f.y + 2) / T), y1 = floor((f.y + f.h - 1) / T); let web = false, spike = false;
-  for (let y = y0; y <= y1; y++) for (let x = x0; x <= x1; x++) { const t = tileAt(x, y); if (t === COBWEB) web = true; else if (t === SPIKES && y === y1) spike = true; }
+  const x0 = floor((f.x + 1) / T), x1 = floor((f.x + f.w - 2) / T), y0 = floor((f.y + 2) / T), y1 = floor((f.y + f.h - 1) / T); let web = false, spike = false, sting = null;
+  for (let y = y0; y <= y1; y++) for (let x = x0; x <= x1; x++) { const t = tileAt(x, y); if (t === COBWEB) web = true; else if (t === SPIKES && y === y1) spike = true; else if (TP[t] && TP[t].sting) sting = TP[t].sting; }
+  if (f.stingT > 0) f.stingT--;
+  else if (sting && !(f.inv > 0) && !(f.iDodge > 0)) { f.stingT = 48; if (hurtFighter(f, sting === 'cactus' ? 3 : 2, f.x + 3 - (f.face || 1) * 2, { env: 1 })) applyStatus(f, sting === 'cactus' ? 'bleed' : 'poison', null, { d: sting === 'cactus' ? 90 : 150 }); }
   if (web) { f.vx *= .62; if (f.vy > .7) f.vy = .7; else if (f.vy < -1.6) f.vy *= .85; if (G.time % 12 === 0) P(f.x + 3, f.y + 8, frand(-.3, .3), frand(-.3, .1), 20, '#e6e6f0'); }
   if (spike && !(f.inv > 0) && !(f.iDodge > 0) && f.hurtT <= 0 && f.vy >= 0) hurtFighter(f, 12, f.x + 3 - (f.face || 1) * 4, { kx: -(f.face || 1) * 1.2, ky: -3.4 });
 }

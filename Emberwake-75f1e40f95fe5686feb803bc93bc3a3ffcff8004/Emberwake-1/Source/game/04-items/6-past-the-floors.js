@@ -143,6 +143,6 @@ function realmItemsPost() {
 Object.assign(LOOT_T, {
   winterruin: [['rime_ore', .55, 2, 5], ['glacier_ice', .6, 2, 6], ['frost_pelt', .5, 1, 2], ['frostbell', .5, 1, 3], ['salve', .6, 1, 3], ['prism_bar', .3, 1, 2], ['jerky', .5, 2, 4], ['rime_daggers', .05, 1, 1], ['scroll', .16, 1, 1]],
   hourruin: [['hour_ore', .55, 2, 5], ['ancient_gear', .8, 2, 4], ['hour_sand', .5, 1, 3], ['salve', .6, 1, 3], ['rime_bar', .3, 1, 2], ['mainspring_coil', .2, 1, 1], ['hour_kama', .05, 1, 1], ['scroll', .16, 1, 1]],
-  stormruin: [['storm_ore', .55, 2, 5], ['charged_shard', .7, 2, 4], ['skyfeather', .6, 1, 3], ['salve', .6, 1, 3], ['hour_bar', .3, 1, 2], ['storm_glass', .3, 1, 2], ['storm_claws', .05, 1, 1], ['scroll', .16, 1, 1]],
-  outsideruin: [['dawn_ore', .5, 2, 5], ['last_ember', .7, 1, 3], ['voidrock', .5, 3, 6], ['salve', .7, 1, 3], ['storm_bar', .3, 1, 2], ['sunstone', .3, 1, 2], ['dawn_sai', .05, 1, 1], ['scroll', .2, 1, 1]]
+  stormruin: [['storm_ore', .55, 2, 5], ['charged_shard', .7, 2, 4], ['skyfeather', .6, 1, 3], ['salve', .6, 1, 3], ['hour_bar', .3, 1, 2], ['storm_glass', .3, 1, 2], ['storm_daggers', .05, 1, 1], ['scroll', .16, 1, 1]],
+  outsideruin: [['dawn_ore', .5, 2, 5], ['last_ember', .7, 1, 3], ['voidrock', .5, 3, 6], ['salve', .7, 1, 3], ['storm_bar', .3, 1, 2], ['sunstone', .3, 1, 2], ['dawn_daggers', .05, 1, 1], ['scroll', .2, 1, 1]]
 });

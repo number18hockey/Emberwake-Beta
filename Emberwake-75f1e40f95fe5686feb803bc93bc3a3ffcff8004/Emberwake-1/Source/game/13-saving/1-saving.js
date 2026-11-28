@@ -330,11 +330,11 @@ function startWorld(data) {
       } else if (!old) G.regrewNote = true;
       G.worn = new Set(!old && Array.isArray(data.worn) ? data.worn.filter(id => IT[id] && IT[id].pack) : []); INV_N = packCap();
       G.gear = { head: null, body: null, legs: null, feet: null }; if (!old && Array.isArray(data.gear)) GEAR_SLOTS.forEach((s, k) => { const id = data.gear[k]; if (IT[id] && IT[id].type === 'armor' && IT[id].slot === s) G.gear[s] = { id, n: 1 }; }); GEAR_C = null; trinkLoad(!old ? data.boons : null);
-      if (!old && IT[data.off] && IT[data.off].type === 'weapon') G.gear.off = { id: data.off, n: 1 };
+      { const off = liveId(data.off); if (!old && IT[off] && IT[off].type === 'weapon') G.gear.off = { id: off, n: 1 }; }
       G.mast = {}; if (data.mast && typeof data.mast === 'object') for (const k in data.mast) if (STYLES[k] && isFinite(data.mast[k])) G.mast[k] = max(0, +data.mast[k]); fightLoad(data.fight, data.known); G.pairsKnown = new Set(Array.isArray(data.pairs) ? data.pairs.filter(isStyleId) : []);
       G.food = clamp(num(data.food, 100), 0, 100); G.quality = data.quality && typeof data.quality === 'object' ? data.quality : {}; G.reqs = Array.isArray(data.reqs) ? data.reqs.filter(r => r && Array.isArray(r.need) && IT[r.need[0]] && Array.isArray(r.give) && IT[r.give[0]]) : null;
       // a world from before the lands were dealt at random regrows, and you wake in it with nothing
-      inv = new Array(PACK_MAX).fill(null); if (!old) (Array.isArray(data.inv) ? data.inv : []).forEach((s, i) => { if (!Array.isArray(s)) return; const id = LEGACY[s[0]] || s[0]; if (i < INV_N && IT[id]) inv[i] = { id, n: clamp(s[1] | 0, 1, IT[id].stack) }; });
+      inv = new Array(PACK_MAX).fill(null); if (!old) (Array.isArray(data.inv) ? data.inv : []).forEach((s, i) => { if (!Array.isArray(s)) return; const id = LEGACY[s[0]] || liveId(s[0]); if (i < INV_N && IT[id]) inv[i] = { id, n: clamp(s[1] | 0, 1, IT[id].stack) }; });
       G.flags = data.flags && typeof data.flags === 'object' ? data.flags : {}; G.journal = Array.isArray(data.journal) ? data.journal.filter(j => JOURNAL[j]) : ['waking', 'forge'];
       G.echoes = new Set((Array.isArray(data.echoes) ? data.echoes : []).filter(n => isFinite(n) && echoInfo(n))); G.beasts = data.beasts && typeof data.beasts === 'object' ? data.beasts : {};
       G.lairs = new Set((Array.isArray(data.lairs) ? data.lairs : []).filter(s => typeof s === 'string')); G.bless = Array.isArray(data.bless) && BLESS[data.bless[0]] ? { k: data.bless[0], t: clamp(num(data.bless[1]), 0, BLESS_T) } : null;
@@ -358,13 +358,13 @@ function startWorld(data) {
     for (const s of G.p.scarf) { s.x = s.ox = G.p.x + 3; s.y = s.oy = G.p.y + 5; }
     snapCam(); G.dirty = !data; updateSun();
     if (!data && WORLD.mode === 0) { G.state = 'intro'; G.introI = 0; G.introT = 0; } else beginPlay(!data);
-    if (G.oldNote) { G.oldNote = false; G.banner = { text: 'THE LAND HAS CHANGED', sub: 'this world regrew. you wake with nothing; your embers and journal remain', t: 0 }; G.dirty = true; }
-    else if (G.regrewNote) { G.regrewNote = false; G.banner = { text: 'THE LAND HAS CHANGED', sub: 'the world now goes on forever. your pack, embers and journal remain', t: 0 }; G.dirty = true; }
+    if (G.oldNote) { G.oldNote = false; G.banner = { text: 'THE LAND HAS CHANGED', sub: 'this world regrew. you wake with nothing; your embers remain', t: 0 }; G.dirty = true; }
+    else if (G.regrewNote) { G.regrewNote = false; G.banner = { text: 'THE LAND HAS CHANGED', sub: 'the world now goes on forever. your pack and embers remain', t: 0 }; G.dirty = true; }
     if (!data) saveWorld(true);
   }, 40);
 }
 
-const FORGE_KIT = ['sword', 'spear', 'fangs', 'maul', 'bow', 'nunchaku', 'steel_pick', 'steel_axe', 'steel_hammer', 'plank', 'steel_shovel', 'steel_longsword', 'glass_sabre', 'ember_greataxe', 'ember_longbow', 'cutstone', 'cobble', 'beam', 'beamh', 'door',
+const FORGE_KIT = ['sword', 'spear', 'fangs', 'maul', 'bow', 'nunchaku', 'steel_pick', 'steel_axe', 'steel_hammer', 'plank', 'steel_shovel', 'steel_sword', 'glass_sabre', 'ember_greataxe', 'ember_longbow', 'cutstone', 'cobble', 'beam', 'beamh', 'door',
   'ladder', 'window', 'thatch', 'torch', 'wplank', 'wcut', 'bench', 'furnace', 'anvil2', 'bloomery', 'loom', 'cauldron', 'chest', 'campfire', 'mudbrick', 'brick', 'logwall', 'platform', 'dirt', 'sand', 'gravel', 'clay', 'charge', 'waystone', 'salve', 'shuriken', 'hook', 'flask', 'frostflask', 'smoke'];
 // compact codecs for the new layers: chipped tiles, built parts, back walls, the map, stations
 // a dug tile keeps its crater: 64 cells at two bits each (gone, badly cracked, cracked, whole)
@@ -402,7 +402,7 @@ function applyStn(arr) { if (Array.isArray(arr)) for (const o of arr) restoreStn
 function restoreStn(o) {
   {
     if (!o || !(o.i >= 0 && o.i < WW * WH) || tiles[o.i] !== o.t) return; const s = stnState(o.i, o.t);
-    if (Array.isArray(o.items) && s.items) o.items.forEach((q, k) => { if (k < s.items.length) s.items[k] = Array.isArray(q) && IT[q[0]] ? { id: q[0], n: clamp(q[1] | 0, 1, IT[q[0]].stack) } : null; });
+    if (Array.isArray(o.items) && s.items) o.items.forEach((q, k) => { const id = Array.isArray(q) ? liveId(q[0]) : null; if (k < s.items.length) s.items[k] = id && IT[id] ? { id, n: clamp(q[1] | 0, 1, IT[id].stack) } : null; });
     // a job is kept as [recipe number, time, what it makes]. A world made in the game's other branch counts its recipes differently,
     // so where the number does not make that thing, the job is found again by what it makes (among the stations that work by themselves)
     if (Array.isArray(o.slots) && s.slots) o.slots.forEach((q, k) => {

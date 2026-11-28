@@ -93,7 +93,9 @@ function fixLeadTexts() {
   LEADS.mine.text = `An old mine shaft in Rustfall, ${sideOf(MINE_X)} of the village, drops all the way to the road through the Deep.`;
 }
 const LEAD_ORDER = Object.keys(LEADS);
-function learn(id, quiet) { if (!LEADS[id] || G.leads.has(id) || LEADS[id].done()) return; G.leads.add(id); G.dirty = true; if (!quiet) { G.note = { text: 'New lead: ' + LEADS[id].title + '  [J]', t: 0 }; sfx('quest', 0); } if (!G.pin && LEADS[id].at && !quiet) G.pin = id; }
+function learn(id, quiet) { if (!LEADS[id] || G.leads.has(id) || LEADS[id].done()) return; G.leads.add(id); G.dirty = true; if (!quiet) { G.note = { text: 'New lead: ' + LEADS[id].title, t: 0 }; sfx('quest', 0); } if (!G.pin && LEADS[id].at && !quiet) G.pin = id; }
+// the lead after this one (the HUD's lead box, clicked): every open lead in turn, then none
+function nextLead() { const o = leadsOpen(); if (!o.length) { G.pin = null; return; } const i = o.indexOf(G.pin); G.pin = i < 0 ? o[0] : i + 1 < o.length ? o[i + 1] : null; sfx('ui'); }
 function leadsOpen() { return LEAD_ORDER.filter(id => G.leads.has(id) && !LEADS[id].done()); }
 const SPEAKER = { WICK: { col: '#ffd35a', skin: 5 }, VESPER: { col: '#8ff5e6', skin: 4 }, JUNO: { col: '#ff8a7a', skin: 6 }, BRAM: { col: '#f0b070', skin: 7 }, PELL: { col: '#ffd35a', skin: 8 }, NELL: { col: '#ffa07c', skin: 9 }, ODO: { col: '#8fb4c0', skin: 10 } };
 const SCRIPTS = {
@@ -104,7 +106,7 @@ const SCRIPTS = {
     ['WICK', 'Go after them in any order you like, or none. Nobody here will make you. Juno in the dojo can teach you a few tricks. Bram at the smithy can make you things.'],
     ['WICK', 'You came with nothing, so start with what the ground gives. Pebbles, flint, sticks, grass. Knock a blade off a flint, twist grass into twine, and bind them to a stick.'],
     ['WICK', 'Eat when you can. Cook when you can. And if you fall, the fire will wake you here.']],
-    end() { G.flags.metWick = true; unlock('wick'); unlock('survival'); learn('tools', true); learn('food', true); learn('stations', true); learn('blade', true); learn('home', true); for (const id of ['warden', 'vesper', 'keeper', 'juno', 'bram']) learn(id, true); G.pin = 'juno'; G.note = { text: 'New leads in your journal  [J]', t: 0 }; sfx('quest', 0); G.dirty = true; }
+    end() { G.flags.metWick = true; unlock('wick'); unlock('survival'); learn('tools', true); learn('food', true); learn('stations', true); learn('blade', true); learn('home', true); for (const id of ['warden', 'vesper', 'keeper', 'juno', 'bram']) learn(id, true); G.pin = 'juno'; sfx('quest', 0); G.dirty = true; }
   },
   wick_any: { lines: [['WICK', 'The crater, the glass mountains, the bottom of the world. Pick one. Or fell stalks and build a house. The embers have waited this long.']] },
   wick_tools: { lines: [['WICK', 'Still bare-handed? Pick up a flint, press [K], knock the flakes off around the shape. Three grass fibers twist into twine. Head, stick, twine: a tool.'], ['WICK', 'An axe for stalks, a pick for rock. Hands only dig soft ground.']] },
@@ -202,7 +204,8 @@ function folkTalk(n) { const L = n.skin === 9 ? VILL_N : VILL_O, who = n.skin ==
 const VILL_N = ['The fire in the square has not gone out in my lifetime. Wick will not let it.', 'Pell keeps climbing the watchtower to look at the islands. One day the wind will take him with it.', 'If you go down into the Deep, take water. Or a reason to come back.', 'Juno threw a star clean through my laundry once. Pinned my shirt to the dojo wall. Still there.'];
 const VILL_O = ['Rustfall is all ore and rolling things. The rustbacks curl up and come at you like barrels. A star stops them.', 'Bram says his grandfather worked the old forge, before the Keeper. Bram says a lot of things.', 'Night is longer than it used to be. I count it.', 'Hollowborn come up from the Deep sometimes. They fight like you do. That is what scares me.'];
 function embers() { return (G.flags.dbl ? 1 : 0) + (G.flags.e2 ? 1 : 0) + (G.flags.e3 ? 1 : 0); }
-function unlock(id) { if (G.journal.includes(id) || !JOURNAL[id]) return; G.journal.push(id); G.jNew = true; G.dirty = true; G.note = { text: 'Journal: ' + JOURNAL[id][0] + '  [J]', t: 0 }; }
+// (the journal is gone; its pages are still kept with the world, so saves stay the same)
+function unlock(id) { if (G.journal.includes(id) || !JOURNAL[id]) return; G.journal.push(id); G.dirty = true; }
 function say(text, who = 'ember') {
   const now = G.time | 0, said = G.saidAt || (G.saidAt = new Map()), last = said.get(text);
   if ((last !== undefined && now - last < 5400 && now >= last) || (G.sayCur && G.sayCur.text === text) || G.says.some(s => s.text === text)) return;
@@ -254,7 +257,7 @@ function interactables() {
     if (SPOTS.board) L.push({ x: SPOTS.board.x * T + 4, y: SPOTS.board.y * T, r: 14, label: 'read the notice board', act: boardAct });
     const p = G.p, ptx = floor((p.x + 3) / T), pty = floor((p.y + 10) / T);
     for (const o of tileObjs.values()) { if (abs(o.x - ptx) > 6 || abs(o.y - pty) > 5) continue; const k = STATIONS[o.id]; if (k) L.push({ x: o.x * T + 4, y: (o.y + 1) * T, r: 14, label: k === 'way' ? 'touch the waystone' : k === 'rift' ? 'step into the ' + TP[o.id].name.toLowerCase() : 'use the ' + TP[o.id].name.toLowerCase(), act: () => openStation(o.x, o.y) }); else if (o.id === BEDROLL) L.push({ x: o.x * T + 4, y: (o.y + 1) * T, r: 12, label: 'sleep', act: () => sleepAt(o.x, o.y) }); }
-    for (let y = pty - 2; y <= pty + 1; y++) for (let x = ptx - 2; x <= ptx + 2; x++) { const t = tileAt(x, y); if ((t === DOORC || t === DOORO) && tileAt(x, y + 1) !== t) L.push({ x: x * T + 4, y: (y + 1) * T, r: 13, label: t === DOORC ? 'open the door' : 'close the door', act: () => toggleDoor(x, y) }); }
+    for (let y = pty - 3; y <= pty + 2; y++) for (let x = ptx - 4; x <= ptx + 4; x++) { const t = tileAt(x, y); if ((t === DOORC || t === DOORO) && tileAt(x, y + 1) !== t) L.push({ x: x * T + 4, y: (y + 1) * T, r: 34, label: t === DOORC ? 'open the door' : 'close the door', act: () => toggleDoor(x, y) }); }
     if (SPOTS.camp) L.push({ x: SPOTS.camp.x * T + 4, y: SPOTS.camp.y * T, r: 12, label: 'rest by the fire', act: campAct });
     { const d = G.enemies.find(e => e.type === 'dummy' && !e.tempPost); if (d) L.push({ x: d.x + 4, y: d.y + d.h, r: 22, label: G.drill ? 'stop the drill' : 'drill at the post', act: () => startDrill(0, 0, d) }); }
     if (SPOTS.spire) L.push({ x: SPOTS.spire.x * T + 4, y: SPOTS.spire.y * T, r: 18, label: 'read the carving', act: spireAct });
@@ -289,9 +292,20 @@ function boardAct() {
   if (fresh.length) { const id = fresh[0]; learn(id); say('A notice, nailed over older notices: ' + LEADS[id].text); }
   else say('Old notices. A lost goat. A warning about rustbacks. A drawing of the ring in the sky, mended, by a child.');
 }
-// (a night slept through still counts toward the season)
-function sleepAt(x, y) { const p = G.p; G.respawn = { x, y }; const night = G.dn < .4; if (night) { G.days = worldDays() + ((.27 - G.clock + 1) % 1); G.clock = .27; G.flash = .9; say('You sleep until the light comes back.'); } else say('You rest a while. You will wake here if you fall.'); p.hp = min(p.maxhp, p.hp + 30); G.food = max(0, G.food - (night ? 12 : 3)); sfx('heal'); G.dirty = true; }
-function campAct() { const p = G.p; G.respawn = { x: SPOTS.camp.x, y: SPOTS.camp.y }; if (p.hp < p.maxhp) { p.hp = p.maxhp; numPop(p.x + 3, p.y - 4, 'RESTED', '#ffd35a'); } sfx('heal'); saveWorld(true); say('You sit with the fire a while. The village will wake you here if you fall.'); }
+// sleep comes only at night, and the night passes (it still counts toward the season). It heals more the more you are
+// hurt, SLEEP_HEAL at most; by day a bed or the fire only marks where you wake if you fall
+const SLEEP_HEAL = 40;
+// (night by the clock as well as by the light: the light only catches up with the clock on the next tick)
+const canSleep = () => { const c = ((G.clock % 1) + 1) % 1; return G.dn < .4 && (c > .55 || c < .25); };
+const sleepHeal = p => round(SLEEP_HEAL * clamp(1 - p.hp / p.maxhp, 0, 1));
+function sleepAt(x, y) {
+  const p = G.p; G.respawn = { x, y }; G.dirty = true;
+  if (!canSleep()) { say('You can only sleep at night.'); sfx('deny'); return false; }
+  const h = sleepHeal(p); G.days = worldDays() + ((.27 - G.clock + 1) % 1); G.clock = .27; G.flash = .9;
+  p.hp = min(p.maxhp, p.hp + h); G.food = max(0, G.food - 12); if (h) numPop(p.x + 3, p.y - 4, '+' + h, '#7ddc6f');
+  say('You sleep until the light comes back.'); sfx('heal'); return true;
+}
+function campAct() { G.respawn = { x: SPOTS.camp.x, y: SPOTS.camp.y }; if (canSleep()) sleepAt(SPOTS.camp.x, SPOTS.camp.y); else { sfx('ui'); say('The village will wake you here if you fall.'); } saveWorld(true); }
 function spireAct() { if (!G.flags.spireRead) { G.flags.spireRead = true; unlock('spire'); G.dirty = true; sfx('quest', 0); } say('Carved into the lookout: THE RING WAS NOT BROKEN. IT WAS OPENED. Someone has scratched a second line under it: by whom.'); }
 function pedTake(o) {
   const id = pedItem(o); if (!id) return;

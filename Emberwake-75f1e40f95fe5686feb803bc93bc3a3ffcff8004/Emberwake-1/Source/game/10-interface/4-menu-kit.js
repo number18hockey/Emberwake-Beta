@@ -364,7 +364,7 @@ function kcard(c, x, y, w, h, id, title, o = {}) {
   if (o.close) kclose(c, x + w - 20, y + 4, o.close);
   return { x, y, w, h, by: y + 29, footY: o.foot ? y + foot : y + h, a };
 }
-function kfootHint(c, K, w) { const s = KIT.hintPrev || ''; if (s) drawText(c, fitText(s, w || K.w - 12), K.x + 6, K.footY + round((KIT.bh + 10 - 8) / 2), '#d8d4e6'); }
+function kfootHint(c, K, w) { const s = KIT.whyPrev || ''; if (s) drawText(c, fitText(s, w || K.w - 12), K.x + 6, K.footY + round((KIT.bh + 10 - 8) / 2), '#d8d4e6'); }
 
 // ---------------- buttons ----------------
 function kbutton(c, x, y, w, label, fn, o = {}) {
@@ -382,9 +382,10 @@ function kbutton(c, x, y, w, label, fn, o = {}) {
   textC(c, s, x + (key ? (w - 37) / 2 : w / 2), y + round((h - 8) / 2), lc, 1, drawText);
   // (the keycap is 2 px wider than ENTER's letters, so the R stays inside its border)
   if (key) { const kx = x + w - 37, ky = y + round((h - 10) / 2); c.fillStyle = '#4a4460'; c.fillRect(kx, ky, 33, 10); c.fillStyle = '#1d1a29'; c.fillRect(kx + 1, ky + 1, 31, 8); drawText(c, 'ENTER', kx + 2, ky + 1, '#6a6485'); }
-  if (o.sub) drawText(c, fitText(o.sub, w), x + 1, y + h + 3, '#8b8fa3');
+  // (a line under a button only says why it is off)
+  if (o.sub && off) drawText(c, fitText(o.sub, w), x + 1, y + h + 3, '#8b8fa3');
   if (foc) kring(c, x, y, w, h);
-  if (lit || (off && inR(x, y, w, h))) khint(o.hint);
+  if (lit) khint(o.hint); else if (off && inR(x, y, w, h) && o.hint) KIT.why = o.hint;
   if (!off) { if (o.main) KIT.main = fn; khit(x, y, w, h, fn, tag, o.hint); kctrl({ tag, kind: 'btn', x, y, w, h, fn }); }
   return hv;
 }
@@ -595,7 +596,7 @@ function kitDrawToast(c) {
 // ---------------- each frame ----------------
 function kitBegin() {
   const now = performance.now();
-  KIT.fields = []; KIT.main = null; KIT.endMain = null; KIT.ctrls = []; KIT.scrollers = []; KIT.hint = ''; HIT_CLIP = null; KIT.col = '#ffd35a';
+  KIT.fields = []; KIT.main = null; KIT.endMain = null; KIT.ctrls = []; KIT.scrollers = []; KIT.hint = ''; KIT.why = ''; HIT_CLIP = null; KIT.col = '#ffd35a';
   if (KIT.mx !== mouse.x || KIT.my !== mouse.y) { KIT.kbd = false; KIT.mx = mouse.x; KIT.my = mouse.y; }
   if (UI.open !== 'pause') VEIL.frozen = false;
   const key = G.state + '|' + (UI.open || '');
@@ -607,17 +608,14 @@ function kitBegin() {
     if (id && MENUS[id]) { if (MENUS[id].enter) MENUS[id].enter(); if (G.state !== 'play' && MENUS[id].sound) sfx(MENUS[id].sound); }
   }
 }
+function kitSaid() { const now = performance.now(), tap = KIT.tapHint && now - KIT.tapHint.t < 2500 ? KIT.tapHint.s : ''; return KIT.why || tap || ''; }
 function kitEnd(c) {
   c.globalAlpha = 1; if (HIT_CLIP) HIT_CLIP = null; if (KIT.T) kitUnpad();
   const st = G.state, M = MENUS[st];
-  if (st !== 'play' && st !== 'title' && M) {
-    const now = performance.now(), tap = KIT.T && KIT.tapHint && now - KIT.tapHint.t < 2500 ? KIT.tapHint.s : '';
-    let s = KIT.T ? tap : KIT.hint; const on = !!s;
-    if (!s) s = typeof M.idle === 'function' ? M.idle() : M.idle || '';
-    if (s) textC(c, fitText(s, VS.uw - 12), VS.uw / 2, round(VS.uh - 15), on ? '#d8d4e6' : '#8b8fa3', 1, textO);
-  }
+  // the line at the bottom says only why a button is off, what a setting does, or what a tap just did (no idle words)
+  if (st !== 'play' && st !== 'title' && M) { const s = kitSaid(); if (s) textC(c, fitText(s, VS.uw - 12), VS.uw / 2, round(VS.uh - 15), '#d8d4e6', 1, textO); }
   kitDrawToast(c);
-  KIT.fieldsPrev = KIT.fields; KIT.mainPrev = KIT.main; KIT.ctrlsPrev = KIT.ctrls; KIT.scrollersPrev = KIT.scrollers; KIT.hintPrev = KIT.hint;
+  KIT.fieldsPrev = KIT.fields; KIT.mainPrev = KIT.main; KIT.ctrlsPrev = KIT.ctrls; KIT.scrollersPrev = KIT.scrollers; KIT.hintPrev = KIT.hint; KIT.whyPrev = KIT.why;
 }
 // typing reached a field: its error mark goes, and the place may clear its messages
 function kitTyped(key) { if (key) KIT.err[key] = 0; const M = MENUS[G.state]; if (M && M.typed) M.typed(key); }

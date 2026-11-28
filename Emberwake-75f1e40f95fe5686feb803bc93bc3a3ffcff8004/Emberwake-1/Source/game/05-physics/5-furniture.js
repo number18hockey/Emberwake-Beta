@@ -211,7 +211,7 @@ function rackAct(i, s) {
 }
 function bedSleep(x, y) {
   const cosy = !!(furnNear(x, y, [TABLE], 8, 4) && furnNear(x, y, [CHAIR], 8, 4) && (furnNear(x, y, [LAMPPOST, CANDLES, CHANDELIER, BRAZIER, TORCH], 8, 5) || nearFireAt(x, y)));
-  sleepAt(x, y); G.rest = cosy ? 36000 : 18000; G.dirty = true;
+  if (!sleepAt(x, y)) return; G.rest = cosy ? 36000 : 18000; G.dirty = true;
   numPop(G.p.x + 3, G.p.y - 12, cosy ? 'COSY: RESTED' : 'RESTED', '#ffd35a'); if (cosy) G.flags.cosy = true;
 }
 // world dressing: crops, the hung weapon, flames, the ballista's aim, a swinging bell

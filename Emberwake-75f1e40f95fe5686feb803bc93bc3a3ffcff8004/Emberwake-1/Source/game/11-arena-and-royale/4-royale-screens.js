@@ -5,49 +5,45 @@
 // ---------------- THE ASHFALL TRIALS' FORM: FALLING ASH (built with the menu kit; helpers in 26-arena-menus.js) ----------------
 // Wide: three cards, YOU, THE MATCH and GO. A short screen: YOU and THE MATCH share a scrolling card beside GO.
 // A phone held upright: one scrolling card, with PLAY WITH ECHOES and BACK pinned at its foot.
-const TR_HELP = 'Twelve Wakers on plinths round the Hearth. A horn. Then about twelve minutes: scavenge chests and bushes, reforge at camps, live through three nights, win the crowd\'s favor. The ashfall closes on the Hearth. The last Waker or team standing wins.';
+
 function trGo(fn) { UI.focus = null; const nick = cleanName(FORM.nick) || 'WAKER'; FORM.nick = nick; G.nick = nick; G.skin = FORM.skin | 0; G.state = 'loading'; G.loadMsg = 'Raising the island...'; setTimeout(fn, 30); sfx('quest', 0); }
 function trWilds() { BR.wild = true; BR.menuTab = 'queue'; BR.menuScroll = 0; BR.menuMsg = ''; FORM.skin = G.skin | 0; FORM.hat = G.hat | 0; UI.focus = null; AM.walT = performance.now(); sfx('ui'); }
-const trArenaDesc = () => BR.arenaWant === 1 ? 'One mountain; a sea of slag rises. High ground buys time.' : BR.arenaWant === 0 ? 'Rolling hills; the ashfall closes from both ends.' : 'The island or the mountain, whichever the horn calls.';
-const trTeamDesc = () => { const d = TR_SIZE_D[FORM.brsize] || ''; return d.charAt(0).toUpperCase() + d.slice(1) + (FORM.brsize > 1 ? ': a fallen teammate can be rekindled.' : '.'); };
-const trRecord = () => { const C = trCareer(); return C.n ? 'Your record: ' + C.n + ' trials, ' + C.w + ' won, ' + C.k + ' taken down.' : 'No trials yet. Your record starts with the first.'; };
+const trRecord = () => { const C = trCareer(); return C.n ? 'Your record: ' + C.n + ' trials, ' + C.w + ' won, ' + C.k + ' taken down.' : ''; };
 // YOU: name, look and the match code
 const trYouH = () => (KIT.T ? 34 : 28) * 2 + 2 + KIT.sizes.tileH + KIT.sizes.gap + 4;
 function trYou(c, x, y, w) {
   let yy = y; yy += kfield(c, x, yy, w, 'nick', 'NAME', 'WAKER', { hint: 'The name over your head on the island.' }) + 2;
   yy += klook(c, x, yy, w, { hat: false }) + 2;
-  kfield(c, x, yy, w, 'brcode', 'MATCH', 'open  (or a private code)', { hint: 'Leave it open to meet anyone, or type a word your friends type too.' });
+  kfield(c, x, yy, w, 'brcode', 'MATCH', 'open  (or a private code)');
 }
-// THE MATCH: teams and arena as segments with their own little pictures, the rules in a paragraph, your record
-const trMatchH = (w, help = true) => { const sg = KIT.sizes.sm + 4; return 10 + sg + amParaH(trTeamDesc(), w) + 6 + 10 + sg * 2 + amParaH(trArenaDesc(), w) + 6 + (help ? amParaH(TR_HELP, w) + 6 : 0) + amParaH(trRecord(), w); };
-function trMatch(c, x, y, w, help = true) {
+// THE MATCH: teams and arena as segments with their own little pictures, and your record
+const trMatchH = w => { const sg = KIT.sizes.sm + 4, r = trRecord(); return 10 + sg + 6 + 10 + sg * 2 + 4 + (r ? amParaH(r, w) : 0); };
+function trMatch(c, x, y, w) {
   let yy = y;
   drawText(c, 'TEAMS', x, yy, '#b9bdd0'); yy += 10;
-  yy += ksegment(c, x, yy, w, ['SOLO', 'DUOS', 'TRIOS'], TR_SIZE_N[FORM.brsize], op => { FORM.brsize = BR.sizeWant = TR_SIZE_N.indexOf(op); }, { icons: [1, 2, 3].map(n => (c, ix, iy) => amHeads(c, ix, iy, n)), hints: ['Every Waker for themselves.', 'Teams of two.', 'Teams of three.'] });
-  yy += amPara(c, trTeamDesc(), x, yy, w, '#8b8fa3') + 6;
+  yy += ksegment(c, x, yy, w, ['SOLO', 'DUOS', 'TRIOS'], TR_SIZE_N[FORM.brsize], op => { FORM.brsize = BR.sizeWant = TR_SIZE_N.indexOf(op); }, { icons: [1, 2, 3].map(n => (c, ix, iy) => amHeads(c, ix, iy, n)) }) + 6;
   drawText(c, 'ARENA', x, yy, '#b9bdd0'); yy += 10;
   const cur = TR_ARENA_PICK[BR.arenaWant], set = op => { if (op === 'WILDS') trWilds(); else BR.arenaWant = TR_ARENA_PICK.indexOf(op); };
-  yy += ksegment(c, x, yy, w, ['ASHEN ISLE', 'EMBER PEAK'], cur, set, { icons: [amIsleIcon, amPeakIcon], hints: ['Rolling hills; the ashfall closes from both ends.', 'One mountain; a sea of slag rises.'] });
-  yy += ksegment(c, x, yy, w, ['EITHER', 'WILDS'], cur, set, { icons: [amEitherIcon, amChuteIcon], hints: ['Whichever the horn calls.', 'THE WILDS: thirty-two Wakers fall from the sky with nothing. Its own form, matches and shop.'] });
-  yy += amPara(c, trArenaDesc(), x, yy, w, '#8b8fa3') + 6;
-  if (help) yy += amPara(c, TR_HELP, x, yy, w, '#d8d4e6') + 6;
-  amPara(c, trRecord(), x, yy, w, '#8b8fa3');
+  yy += ksegment(c, x, yy, w, ['ASHEN ISLE', 'EMBER PEAK'], cur, set, { icons: [amIsleIcon, amPeakIcon] });
+  yy += ksegment(c, x, yy, w, ['EITHER', 'WILDS'], cur, set, { icons: [amEitherIcon, amChuteIcon] }) + 4;
+  const r = trRecord(); if (r) amPara(c, r, x, yy, w, '#8b8fa3');
 }
-// GO: the ways in, each with a line under it saying what it is
+// GO: the ways in (a line under one says only why it is off)
 function trGoList() {
   const L = [], n = OPENB.list.size;
-  L.push({ label: 'PLAY ONLINE', fn: () => trGo(() => { BR.sizeWant = FORM.brsize; brLobbyEnter('room', cleanCode(FORM.brcode) || 'open'); }), off: !NET.room, sub: NET.room ? 'Everyone here who picks the same match meets.' : 'only on claude.ai', hint: NET.room ? 'Everyone with this page open on claude.ai who picks the same match meets here.' : 'Online lobbies are only on claude.ai: open this page there to find others.' });
+  L.push({ label: 'PLAY ONLINE', fn: () => trGo(() => { BR.sizeWant = FORM.brsize; brLobbyEnter('room', cleanCode(FORM.brcode) || 'open'); }), off: !NET.room, sub: 'only on claude.ai', hint: NET.room ? '' : 'Online lobbies are only on claude.ai: open this page there to find others.' });
   if (netOK()) {
-    L.push({ label: 'MAKE A PARTY  (HOST A LOBBY)', short: 'MAKE A PARTY', fn: () => trGo(() => { COOP.br = true; BR.sizeWant = FORM.brsize; brLobbyEnter('rtc', 'friends'); }), sub: 'A game code for your friends.', hint: 'A game code for your friends. Open it to face other people.' });
-    if (openUsable()) L.push({ label: 'OPEN MATCHES  (' + n + ' open now)', short: 'OPEN MATCHES (' + n + ')', fn: () => { G.state = 'bropen'; sfx('ui'); }, sub: 'Walk into an open lobby.', hint: 'Walk into a lobby someone has opened to everyone.' });
+    L.push({ label: 'MAKE A PARTY  (HOST A LOBBY)', short: 'MAKE A PARTY', fn: () => trGo(() => { COOP.br = true; BR.sizeWant = FORM.brsize; brLobbyEnter('rtc', 'friends'); }) });
+    if (openUsable()) L.push({ label: 'OPEN MATCHES  (' + n + ' open now)', short: 'OPEN MATCHES (' + n + ')', fn: () => { G.state = 'bropen'; sfx('ui'); } });
   }
-  L.push({ label: 'PLAY WITH ECHOES' + (FORM.brsize > 1 ? '  (' + TR_SIZE_N[FORM.brsize] + ')' : ''), short: 'PLAY WITH ECHOES', fn: () => trGo(() => brSolo(FORM.brsize)), echoes: true, sub: 'You and eleven echoes.', hint: 'A match of your own against echoes, the island\'s ghosts.' });
+  L.push({ label: 'PLAY WITH ECHOES' + (FORM.brsize > 1 ? '  (' + TR_SIZE_N[FORM.brsize] + ')' : ''), short: 'PLAY WITH ECHOES', fn: () => trGo(() => brSolo(FORM.brsize)), echoes: true });
   return L;
 }
-const trGoH = L => L.length * (KIT.sizes.bh + 3 + 9 + 6);
+const trGoStep = b => KIT.sizes.bh + (b.off ? 3 + 9 + 6 : 6);
+const trGoH = L => L.reduce((s, b) => s + trGoStep(b), 0);
 function trGoDraw(c, x, y, w, L) {
   let yy = y; const main = NET.room ? 'PLAY ONLINE' : 'PLAY WITH';
-  for (const b of L) { kbutton(c, x, yy, w, b.label, b.fn, { main: !b.off && b.label.startsWith(main), off: b.off, short: b.short, sub: fitText(b.sub, w), hint: b.hint }); yy += KIT.sizes.bh + 3 + 9 + 6; }
+  for (const b of L) { kbutton(c, x, yy, w, b.label, b.fn, { main: !b.off && b.label.startsWith(main), off: b.off, short: b.short, sub: b.sub ? fitText(b.sub, w) : '', hint: b.hint }); yy += trGoStep(b); }
 }
 function drawBrForm(c) { if (BR.wild) return wDrawBrForm(c);
   menuBackdrop(c, 'brform'); kview('brform');
@@ -77,10 +73,9 @@ function drawBrForm(c) { if (BR.wild) return wDrawBrForm(c);
     return;
   }
   // wide: YOU | THE MATCH | GO
-  const yw = min(KIT.T ? 196 : 184, floor(F0.w * .3)), mw = F0.w - yw - gw - 16, youH = trYouH() + 8 + amParaH(TR_HELP, yw - 16), F = menuFrame('brform', 640, max(goH, 29 + youH + 4, 29 + trMatchH(mw - 16, false) + 4));
+  const yw = min(KIT.T ? 196 : 184, floor(F0.w * .3)), mw = F0.w - yw - gw - 16, youH = trYouH() + 8, F = menuFrame('brform', 640, max(goH, 29 + youH + 4, 29 + trMatchH(mw - 16) + 4));
   const Y = kcard(c, F.x, F.y, yw, F.h, 'brform', 'YOU', { i: 0 }); trYou(c, Y.x + 8, Y.by + 1, yw - 16);
-  { const B = { x: Y.x + 1, y: Y.by + trYouH() + 4, w: Y.w - 2, h: Y.y + Y.h - 3 - Y.by - trYouH() - 4 }, need = amParaH(TR_HELP, yw - 16) + 4, dy = need > B.h ? kscroll(c, B, need, 'trhelp') : 0; c.fillStyle = '#2b2740'; c.fillRect(Y.x + 8, B.y + 1, yw - 16, 1); amPara(c, TR_HELP, Y.x + 8, B.y + 6 + dy, yw - 16, '#b9bdd0'); if (need > B.h) kscrollEnd(c); }
-  const M = kcard(c, F.x + yw + 8, F.y, mw, F.h, 'brform', 'THE MATCH', { i: 1, right: heads }); trMatch(c, M.x + 8, M.by + 1, mw - 16, false);
+  const M = kcard(c, F.x + yw + 8, F.y, mw, F.h, 'brform', 'THE MATCH', { i: 1, right: heads }); trMatch(c, M.x + 8, M.by + 1, mw - 16);
   const G2 = kcard(c, F.x + yw + mw + 16, F.y, gw, F.h, 'brform', 'GO', { foot: true, i: 2 }); trGoDraw(c, G2.x + 8, G2.by + 1, gw - 16, L);
   kbutton(c, G2.x + G2.w - 8 - bk, G2.footY + 5, bk, 'BACK', menuBack, { hint: 'Back to the home page.' });
 }
