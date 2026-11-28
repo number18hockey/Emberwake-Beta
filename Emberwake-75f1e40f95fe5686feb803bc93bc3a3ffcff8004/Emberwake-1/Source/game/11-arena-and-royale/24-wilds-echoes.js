@@ -110,9 +110,13 @@ function wBrNav() { const z = BR.storm, on = !!z && z.dps > 0; WBR_NAV.L = on ? 
 // route, as the echoes of the Trials do. The pathfinder does not plan digging, so when it finds no way the echo goes on as
 // echoes here always have (wBrSteer below): straight at it, and through whatever is in the way
 function wBrWalk(f, I, gx, gy) {
-  const way = navTo(f, I, gx, gy, wBrNav()); if (way === 'stuck') wBrSteer(f, I, gx); else { I.wx = f.x + 3 + I.md * 40; I.wy = f.y + 8; wBrStuck(f, I); }
+  const way = navTo(f, I, gx, gy, wBrNav()); if (way === 'stuck') wBrSteer(f, I, gx); else { I.wx = f.x + 3 + I.md * 40; I.wy = f.y + 8; wBrStuck(f, I); wBrNoClimb(f); }
   return way;
 }
+// (the route never takes a ladder or a vine. Caught on one on the way, as a leap past an outpost's ladder catches it, an echo
+// hangs there neither rising nor falling, which to the route is an updraft to go sideways out of; with a wall or the side of
+// a hole at its feet it never does. So on a route it lets go of what it holds, and does not take hold of the one it is at)
+function wBrNoClimb(f) { const col = floor((f.x + 3) / T); f.climbing = false; f.letGo = f.letGoX === col ? max(f.letGo | 0, 2) : 2; f.letGoX = col; }
 // getting nowhere? (hopping on the spot is not getting anywhere: only where they stand counts)
 function wBrStuck(f, I) {
   const br = f.br, cx = f.x + 3; if (f.onGround) br.gy = f.y;

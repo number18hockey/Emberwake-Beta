@@ -199,8 +199,13 @@ function navTo(f, I, gx, gy, o) {
     // a leap over a drop starts from the very lip, at a run; any other starts where it stands
     let d = 0; for (let j = i + 2; j <= L && !d; j++) d = sign(p[j * 3] - ax);
     const lip = d && navFit(ax + d, ay) && !navFirm(ax + d, ay), off = ax * T + 4 - cx;
-    I.md = d || (abs(off) > 2 ? sign(off) : 0);
-    if (!lip || (d > 0 ? f.x + f.w >= (ax + 1) * T - 2 : f.x <= ax * T + 2)) I.jumpP = I.jumpH = true;
+    // (a leap straight up past the end of a ledge overhead: a body is not quite a tile wide, and a shoulder left under the
+    // ledge would stop it dead, so it stands still wholly inside its own column first, and goes straight up)
+    let q = i + 1, under = false; while (q < L && p[q * 3] === ax && p[q * 3 + 1] === ay) q++;
+    if (p[q * 3] === ax && p[q * 3 + 1] < ay) for (const sx of [ax - 1, ax + 1]) if (navFit(sx, ay)) for (let y = top - 2; y < ay - 2 && !under; y++) under = navK(sx, y) === 1;
+    if (under && (abs(off) > .8 || abs(f.vx) > .25)) { I.md = abs(off) > .8 ? sign(off) : 0; return 'go'; }
+    I.md = under ? 0 : d || (abs(off) > 2 ? sign(off) : 0);
+    if (under || !lip || (d > 0 ? f.x + f.w >= (ax + 1) * T - 2 : f.x <= ax * T + 2)) I.jumpP = I.jumpH = true;
     return 'go';
   }
   // in the air: steer by the cells of the route in turn, as each is passed
