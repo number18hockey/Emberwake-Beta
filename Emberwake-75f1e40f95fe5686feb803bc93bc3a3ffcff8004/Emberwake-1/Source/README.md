@@ -14,6 +14,20 @@ python3 build.py --no-app  # the game and the guide
 
 It writes three things next to this folder: **Emberwake.html** (the game), **Emberwake Guide.html** and **Emberwake.app**.
 
+## Social board
+
+The optional social board has username accounts, friend requests, private chat, friend-only activity, and a separate online Ember-coin wallet. It needs the included Python service; the normal static GitHub Pages build cannot provide cross-device accounts or messages.
+
+From this folder, run:
+
+```
+python3 social_server.py
+```
+
+Then open `http://127.0.0.1:8765/Emberwake.html`. The default service binds to localhost and stores its SQLite database at `~/.emberwake-social/social.sqlite3`. New social accounts receive 100 online Ember coins by default; set `EMBERWAKE_STARTER_COINS` before starting the service to change that. These coins do not use or change arena balances.
+
+For internet use, deploy the game and service on the same origin behind HTTPS, and keep the database on persistent storage. Do not expose the development server directly to the public internet. The service uses standard-library Python only; `EMBERWAKE_SOCIAL_HOST` and `EMBERWAKE_SOCIAL_PORT` configure its bind address and port. Presence expires after 90 seconds without a heartbeat and is returned only to accepted friends.
+
 `build.py` refuses to build if two files define the same name, because in one big script the second would silently replace the first. If Node.js is installed, it also checks the code for syntax errors.
 
 ## What's where

@@ -65,7 +65,7 @@ PAGE = '''<!DOCTYPE html>
 <title>Emberwake</title>
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <style>
-html,body{margin:0;width:100%;height:100%;height:100dvh;background:#0e0b14;overflow:hidden;overscroll-behavior:none}
+html,body{margin:0;width:100%;height:100%;height:100dvh;background:#0e0b14;overflow:hidden;overscroll-behavior:none;touch-action:manipulation}
 canvas{display:block;width:100vw;height:100vh;height:100dvh;image-rendering:pixelated;image-rendering:crisp-edges;cursor:none;outline:none;touch-action:none;user-select:none;-webkit-user-select:none}
 #mobileControls{display:none;position:fixed;inset:0;z-index:2;pointer-events:none;touch-action:none;user-select:none;-webkit-user-select:none}
 #mobileControls.visible,#mobileControls.panel{display:block}
