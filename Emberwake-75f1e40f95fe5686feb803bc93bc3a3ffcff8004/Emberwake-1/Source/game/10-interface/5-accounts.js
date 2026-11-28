@@ -104,7 +104,8 @@ function accountSetSubmit() {
 function accountsBack() {
   const A = ACCOUNT;
   if (A.form !== 'list') { if (A.active) { FORM.skin = G.skin; FORM.hat = G.hat; } A.form = 'list'; accountWipe(); A.err = {}; A.msg = null; sfx('ui'); return; }
-  if (A.loginId) { accountChooseAnother(); return; }
+  // (the signed-in card's own BACK goes home: so does Escape there)
+  if (A.loginId && !(A.active && A.loginId === A.active.id)) { accountChooseAnother(); return; }
   if (A.active) { G.state = 'title'; sfx('ui'); return; }
   A.msg = { text: 'Choose your name or make an account to go on.', kind: 'warn' }; sfx('deny');
 }
@@ -160,7 +161,7 @@ function drawAccounts(c) {
 // a phone held upright: the ledger alone, or folded to the chosen row with the door opened under it
 function drawAccountColumn(c) {
   const A = ACCOUNT, S = KIT.sizes, p = accountChosen(), n = A.profiles.length, foot = S.bh + 10;
-  if (!p) { const F = menuFrame('accounts', 228, 29 + n * S.row + 6 + foot); accountLedger(c, F.x, F.y, F.w, F.h, 0); return; }
+  if (!p) { const F = menuFrame('accounts', 228, 29 + n * S.row + 6 + foot); accountLedger(c, F.x, F.y, F.w, F.h, 0, !!A.active); return; }
   const lh = 29 + S.row + 4 + foot, st = accountDoorState(p), dh = 29 + accountDoorH(st, 228 - 16, p) + 6 + foot;
   const F = menuFrame('accounts', 228, lh + 8 + dh);
   const K = kcard(c, F.x, F.y, F.w, lh, 'accounts', 'THE LEDGER', { art: 'ledger', foot: true, i: 0 });
@@ -168,12 +169,15 @@ function drawAccountColumn(c) {
   kbutton(c, K.x + 6, K.footY + 5, K.w - 12, 'CHOOSE ANOTHER', accountChooseAnother, { hint: 'Back to every name in the ledger.' });
   accountDoor(c, F.x, F.y + lh + 8, F.w, F.h - lh - 8, 1);
 }
-function accountLedger(c, x, y, w, h, i) {
-  const A = ACCOUNT, S = KIT.sizes, n = A.profiles.length;
+// (back: the ledger alone on an upright phone, someone signed in: a BACK home beside + CREATE ACCOUNT)
+function accountLedger(c, x, y, w, h, i, back) {
+  const A = ACCOUNT, S = KIT.sizes, n = A.profiles.length, bw = back ? (KIT.T ? 64 : 60) : 0, mw = K => K.w - 12 - (back ? bw + S.gap : 0);
   const K = kcard(c, x, y, w, h, 'accounts', 'THE LEDGER', { art: 'ledger', right: n + (n === 1 ? ' WAKER' : ' WAKERS'), foot: true, i });
   A.vis = klist(c, { x: K.x + 6, y: K.by, w: K.w - 12, h: K.footY - 4 - K.by }, n, S.row, accountRow).vis;
-  kbutton(c, K.x + 6, K.footY + 5, K.w - 12, '+ CREATE ACCOUNT', accountMake, { hint: 'A new Waker: a name, a password and a look.' });
+  kbutton(c, K.x + 6, K.footY + 5, mw(K), '+ CREATE ACCOUNT', accountMake, { short: '+ CREATE', hint: 'A new Waker: a name, a password and a look.' });
+  if (back) accountHome(c, K.x + K.w - 6 - bw, K.footY + 5, bw);
 }
+const accountHome = (c, x, y, w, main) => kbutton(c, x, y, w, 'BACK', () => { G.state = 'title'; sfx('ui'); }, { main, hint: 'Back to the home page.' });
 function accountRow(c, i, x, y, w, h) {
   const A = ACCOUNT, p = A.profiles[i], me = !!A.active && A.active.id === p.id, legacy = !p.salt || !p.hash, sel = A.loginId === p.id;
   krow(c, x, y, w, h, () => accountChoose(p.id), { sel, tag: 'row:account:' + p.name, hint: me ? 'You are signed in as ' + p.name + '.' : legacy ? 'An older account: choose a password for it.' : kb('Sign in as ', 'Tap to sign in as ') + p.name + '.' });
@@ -225,12 +229,14 @@ function accountDoor(c, x, y, w, h, i) {
     const hw = floor((cw - S.gap) / 2);
     kbutton(c, cx, yy, hw, 'CHANGE LOOK', accountLookOpen, { short: 'LOOK', hint: 'A new face or hat for ' + me.name + '.' });
     kbutton(c, cx + hw + S.gap, yy, cw - hw - S.gap, 'SIGN OUT', () => { accountLogout(); sfx('ui'); }, { hint: 'Your worlds are saved first.' }); yy += S.bh + S.gap;
-    kbutton(c, cx, yy, cw, 'BACK', () => { G.state = 'title'; sfx('ui'); }, { main: true, hint: 'Back to the home page.' });
+    accountHome(c, cx, yy, cw, true);
   } else {
     for (const l of wrapC(ACCOUNT_TXT.who, cw)) { drawText(c, l, cx, yy, '#d8d4e6'); yy += 9; }
     c.save(); c.translate(K.x + round(K.w / 2) - 24, yy + 8); c.scale(3, 3); MENU_ART.lantern(c, 0, 0); c.restore();
   }
   if (scroll) kscrollEnd(c);
+  // nobody chosen while someone is signed in: the way home is in the foot
+  if (st === 'who' && A.active && !A.msg) accountHome(c, cx, K.footY + 5, cw, true);
   kmsg(c, cx, K.footY + 5, cw, A.msg);
 }
 function drawAccountWelcome(c) {

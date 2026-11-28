@@ -156,7 +156,7 @@ const KIT = {
   T: mobileDevice, zoom: true,
   sizes: mobileDevice ? { bh: 24, sm: 20, fh: 22, tab: 22, row: 32, aw: 24, ah: 22, gap: 8, close: 0, tileW: 30, tileH: 32 }
                       : { bh: 18, sm: 14, fh: 16, tab: 14, row: 24, aw: 14, ah: 14, gap: 4, close: 16, tileW: 20, tileH: 22 },
-  fields: [], fieldsPrev: [], main: null, mainPrev: null, ctrls: [], ctrlsPrev: [], scrollers: [], scrollersPrev: [],
+  fields: [], fieldsPrev: [], main: null, mainPrev: null, endMain: null, ctrls: [], ctrlsPrev: [], scrollers: [], scrollersPrev: [],
   hint: '', hintPrev: '', tapHint: null, focus: null, kbd: false, caps: false, err: {}, reveal: {},
   enter: { key: '', t0: 0, view: '' }, sy: {}, toast: null, cache: new Map(), col: '#ffd35a', mx: null, my: null, scrollNow: null
 };
@@ -377,10 +377,11 @@ function kbutton(c, x, y, w, label, fn, o = {}) {
   else if (lit) { bd = acc; fill = '#3a3350'; lc = acc; }
   else { bd = '#4a4460'; fill = '#262234'; lc = o.danger ? '#ff9a8a' : '#fff'; }
   c.fillStyle = bd; c.fillRect(x, y, w, h); c.fillStyle = fill; c.fillRect(x + 1, y + 1, w - 2, h - 2);
-  const key = o.main && !off && !KIT.T && w >= textW(label) + 44, room = w - 8 - (key ? 35 : 0);
+  const key = o.main && !off && !KIT.T && w >= textW(label) + 46, room = w - 8 - (key ? 37 : 0);
   const s = textW(label) <= room ? label : o.short && textW(o.short) <= room ? o.short : fitText(label, room);
-  textC(c, s, x + (key ? (w - 35) / 2 : w / 2), y + round((h - 8) / 2), lc, 1, drawText);
-  if (key) { const kx = x + w - 35, ky = y + round((h - 10) / 2); c.fillStyle = '#4a4460'; c.fillRect(kx, ky, 31, 10); c.fillStyle = '#1d1a29'; c.fillRect(kx + 1, ky + 1, 29, 8); drawText(c, 'ENTER', kx + 3, ky + 1, '#6a6485'); }
+  textC(c, s, x + (key ? (w - 37) / 2 : w / 2), y + round((h - 8) / 2), lc, 1, drawText);
+  // (the keycap is 2 px wider than ENTER's letters, so the R stays inside its border)
+  if (key) { const kx = x + w - 37, ky = y + round((h - 10) / 2); c.fillStyle = '#4a4460'; c.fillRect(kx, ky, 33, 10); c.fillStyle = '#1d1a29'; c.fillRect(kx + 1, ky + 1, 31, 8); drawText(c, 'ENTER', kx + 2, ky + 1, '#6a6485'); }
   if (o.sub) drawText(c, fitText(o.sub, w), x + 1, y + h + 3, '#8b8fa3');
   if (foc) kring(c, x, y, w, h);
   if (lit || (off && inR(x, y, w, h))) khint(o.hint);
@@ -426,7 +427,7 @@ function kfield(c, x, y, w, key, label, ph, o = {}) {
     const sx = x + w - sw - 1, st = shown ? 'HIDE' : 'SHOW', sh = kin(sx, by + 1, sw, fh - 2);
     c.fillStyle = sh ? '#3a3350' : '#1d1a29'; c.fillRect(sx, by + 1, sw, fh - 2); c.fillStyle = '#2b2740'; c.fillRect(sx, by + 1, 1, fh - 2);
     textC(c, st, sx + sw / 2, ty, sh ? col : '#8b8fa3', 1, drawText);
-    khit(sx, by, sw + 1, fh, () => { if (o.toggle) o.toggle(); else KIT.reveal[key] = !KIT.reveal[key]; sfx('ui'); }, 'btn:SHOW', shown ? 'Hide the password.' : 'Show the password as you type it.');
+    khit(sx, by, sw + 1, fh, () => { if (o.toggle) o.toggle(); else KIT.reveal[key] = !KIT.reveal[key]; UI.focus = key; KIT.focus = tag; sfx('ui'); }, 'btn:SHOW', shown ? 'Hide the password.' : 'Show the password as you type it.');
   }
   if (hv || f) khint(o.hint);
   KIT.fields.push(key); kctrl({ tag, kind: 'field', key, x, y: by, w, h: fh });
@@ -594,12 +595,13 @@ function kitDrawToast(c) {
 // ---------------- each frame ----------------
 function kitBegin() {
   const now = performance.now();
-  KIT.fields = []; KIT.main = null; KIT.ctrls = []; KIT.scrollers = []; KIT.hint = ''; HIT_CLIP = null; KIT.col = '#ffd35a';
+  KIT.fields = []; KIT.main = null; KIT.endMain = null; KIT.ctrls = []; KIT.scrollers = []; KIT.hint = ''; HIT_CLIP = null; KIT.col = '#ffd35a';
   if (KIT.mx !== mouse.x || KIT.my !== mouse.y) { KIT.kbd = false; KIT.mx = mouse.x; KIT.my = mouse.y; }
   if (UI.open !== 'pause') VEIL.frozen = false;
   const key = G.state + '|' + (UI.open || '');
   if (key !== KIT.enter.key) {
     const [ws, wo] = KIT.enter.key.split('|'), was = ws === 'play' ? wo : ws, id = kitPlace();
+    if (ws !== 'play' && G.state === 'play') KIT.toast = null; // a sign-in's welcome does not follow you into play
     KIT.enter.key = key; KIT.enter.t0 = now; KIT.enter.view = ''; KIT.focus = null; KIT.kbd = false; KIT.err = {}; KIT.tapHint = null;
     if (was && MENUS[was] && MENUS[was].leave) MENUS[was].leave();
     if (id && MENUS[id]) { if (MENUS[id].enter) MENUS[id].enter(); if (G.state !== 'play' && MENUS[id].sound) sfx(MENUS[id].sound); }
@@ -650,6 +652,8 @@ function kitKey(e) {
   if (st === 'title') { if (k === 'KeyA' && !e.repeat && !UI.focus && ACCOUNT.active) { accountsOpen(); return use(); } return false; }
   if (st === 'intro' || st === 'loading') return false;
   if (st === 'play') {
+    // the arenas' dead and results cards are drawn by the HUD with no panel open: Enter presses their first button
+    if ((k === 'Enter' || k === 'NumpadEnter') && !UI.open && !G.dialog && KIT.endMain) { KIT.endMain(); return use(); }
     const M = MENUS[UI.open]; if (!UI.open || !M || G.dialog) return false;
     if ((k === 'Enter' || k === 'NumpadEnter') && KIT.mainPrev) { KIT.mainPrev(); return use(); }
     if (M.keys && k !== 'Escape' && k !== 'Tab' && M.keys(e)) return use();

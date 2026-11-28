@@ -48,7 +48,7 @@ async def main():
         await until("!ACCOUNT.busy && !!ACCOUNT.msg"); wrong_kb = await h.ev("[G.state, ACCOUNT.msg && ACCOUNT.msg.kind, FORM.accountPassword, UI.focus]")
         await pg.keyboard.type('ember-wake-123'); await key('Enter'); await until("G.state === 'title'")
         await pg.wait_for_timeout(100); signed_kb = await h.ev("[G.state, ACCOUNT.active && ACCOUNT.active.name, KIT.toast && KIT.toast.text, FORM.accountPassword, LS.get('ew2.last')]")
-        # Escape, signed in: the A key opens the board on your own row; Escape clears the choice, then goes home
+        # Escape, signed in: the A key opens the board on your own row; Escape goes straight home, as its BACK does
         await key('a'); opened = await h.ev("[G.state, ACCOUNT.loginId === ACCOUNT.active.id]")
         await key('Escape'); e1 = await h.ev("[G.state, ACCOUNT.loginId]"); await key('Escape'); e2 = await h.ev("G.state")
         # Escape, signed out: the field lets go, the choice clears, then the board says what to do (and stays)
@@ -82,7 +82,8 @@ async def main():
             'Enter with a wrong password: stays, says so, clears it, keeps the focus': wrong_kb == ['accounts', 'err', '', 'accountPassword'],
             'Enter signs in, welcomes, forgets the password': signed_kb[:4] == ['title', 'Waker', 'Welcome back, Waker.', ''] and signed_kb[4] == ids[0],
             'A opens the board on your own row': opened == ['accounts', True],
-            'Escape signed in: clears the choice, then home': e1 == ['accounts', None] and e2 == 'title',
+            # (the signed-in card's own row is chosen: Escape does what its BACK does and goes straight home)
+            'Escape signed in: straight home, like its BACK': e1[0] == 'title' and e2 == 'title',
             'Escape signed out: field, choice, then a warning': o1 == [None, True] and o2 is None and o3 == ['accounts', 'warn', None],
             'Enter on an empty form marks the name': empty == ['create', 'accountName', True],
             'Tab walks the fields': [t1, t2] == ['accountPassword', 'accountConfirm'],

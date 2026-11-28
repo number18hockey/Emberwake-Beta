@@ -626,7 +626,7 @@ function domBox(id, x, y, w, h, o = {}) {
   if (!el) {
     el = document.createElement(o.input ? 'input' : 'textarea'); el.spellcheck = false; el.autocomplete = 'off'; el.setAttribute('autocapitalize', 'off'); el.id = 'ew-' + id;
     Object.assign(el.style, { position: 'fixed', zIndex: 5, background: '#16121f', color: '#e8edf2', border: '1px solid #6a6485', fontFamily: 'Menlo, Consolas, monospace', padding: '3px 5px', resize: 'none', outline: 'none', boxSizing: 'border-box', wordBreak: 'break-all', borderRadius: '2px' });
-    el.addEventListener('keydown', e => { e.stopPropagation(); if (o.onEnter && e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); o.onEnter(el); } if (o.onCtrlEnter && e.key === 'Enter' && (e.ctrlKey || e.metaKey)) { e.preventDefault(); o.onCtrlEnter(el); } if (o.onEsc && e.key === 'Escape') { e.preventDefault(); o.onEsc(el); } });
+    el.addEventListener('keydown', e => { e.stopPropagation(); if (o.onEnter && e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); o.onEnter(el); } if (o.onCtrlEnter && e.key === 'Enter' && (e.ctrlKey || e.metaKey)) { e.preventDefault(); o.onCtrlEnter(el); } if (o.onEsc && e.key === 'Escape') { e.preventDefault(); o.onEsc(el); } if (o.onTab && e.key === 'Tab') { e.preventDefault(); o.onTab(el, e.shiftKey); } });
     el.addEventListener('keyup', e => e.stopPropagation()); el.addEventListener('mousedown', e => e.stopPropagation());
     document.body.appendChild(el); DOMX.els.set(id, el);
   }
@@ -635,6 +635,8 @@ function domBox(id, x, y, w, h, o = {}) {
   el.readOnly = !!o.ro; if (o.ph !== undefined) el.placeholder = o.ph; if (o.val !== undefined && el.value !== o.val && (o.ro || document.activeElement !== el)) el.value = o.val;
   DOMX.used.add(id); return el;
 }
+// a box for a code or a name: the large capitals of the game's own type, not the small print of a text box
+function domBig(el) { el.style.textTransform = 'uppercase'; el.style.letterSpacing = '3px'; el.style.fontSize = max(12, round(parseFloat(el.style.fontSize) * 1.6)) + 'px'; return el; }
 function domSweep() {
   if (COOP.copied > 0) COOP.copied--; for (const [id, el] of DOMX.els) if (!DOMX.used.has(id) && el.style.display !== 'none') { el.style.display = 'none'; if (document.activeElement === el) el.blur(); } DOMX.used.clear(); }
 const domVal = id => { const el = DOMX.els.get(id); return el ? el.value : ''; };
@@ -675,7 +677,7 @@ function drawCoopLong(c) {
   drawText(c, fitText('IN THIS WORLD: ' + ppl.join(', '), fw), fx, ty, '#8ff5e6'); ty += 12;
   const bbw = KIT.T ? 150 : 130;
   if (guest) { g.forEach((l, i) => drawText(c, l, fx, ty + i * 9, '#d8d4e6')); kbutton(c, K.x + K.w - 8 - bbw, K.footY + 5, bbw, 'LEAVE THEIR WORLD', () => { closeUI(); quitToTitle(); }, { danger: true, hint: 'Back to the home page. Your pack is kept.' }); return; }
-  drawText(c, 'YOUR NAME', fx, ty + round((S.fh - 8) / 2), '#b9bdd0'); const el = domBox('hname', fx + 62, ty, min(140, fw - 62), S.fh, { input: true, val: FORM.nick || G.nick || 'WAKER' }); const nm = cleanName(el.value); if (nm && nm !== FORM.nick) { FORM.nick = nm; if (G.p) G.p.name = nm; } ty += S.fh + 6;
+  drawText(c, 'YOUR NAME', fx, ty + round((S.fh - 8) / 2), '#b9bdd0'); const el = domBig(domBox('hname', fx + 62, ty, min(140, fw - 62), S.fh, { input: true, val: FORM.nick || G.nick || 'WAKER' })); const nm = cleanName(el.value); if (nm && nm !== FORM.nick) { FORM.nick = nm; if (G.p) G.p.name = nm; } ty += S.fh + 6;
   if (!rtcOK()) { no.forEach((l, i) => drawText(c, l, fx, ty + i * 9, '#ffb347')); return; }
   one.forEach(l => { drawText(c, l, fx, ty, '#d8d4e6'); ty += 9; }); ty += 2;
   const cbw = KIT.T ? 72 : 58, boxW = fw - cbw - S.gap;
@@ -771,7 +773,7 @@ function scribeSeal(c, x, y) {
 }
 function scribeCopy() { copyText(COOP.wcode, 'wcode'); if (!COOP.copyFail) { SCRIBE.sealT = performance.now(); KIT.tapHint = { s: 'Copied. Send it to a friend.', t: performance.now() }; sfx('quest', 0); } }
 const SCRIBE_COPY = 'This text is the whole world: land, buildings, chests and your pack. Copy it, then in the other game (or a browser) choose WORLDS, PASTE A WORLD, and paste it there.';
-const SCRIBE_PASTE = 'Paste a world copied with COPY in another game’s world list. It is added to your worlds; nothing here is replaced.';
+const SCRIBE_PASTE = 'Paste a world copied with COPY in another game\'s world list. It is added to your worlds; nothing here is replaced.';
 function drawWorldCopy(c) {
   menuBackdrop(c, 'wcopy'); kview('wcopy');
   const S = KIT.sizes, w0 = min(440, VS.uw - (menuMode() === 'narrow' ? 12 : 24)), lines = wrapC(SCRIBE_COPY, w0 - 16).length, F = menuFrame('wcopy', 440, 29 + lines * 9 + 6 + 120 + 22 + S.bh + 10);

@@ -155,7 +155,12 @@ cv.addEventListener('pointermove', e => {
 });
 for (const type of ['pointerup', 'pointercancel', 'lostpointercapture']) cv.addEventListener(type, e => {
   if (e.pointerType !== 'touch' || e.pointerId !== canvasTouchPointer) return;
-  canvasTouchPointer = null; setMouse(e); const tap = touchTap; touchTap = null;
+  canvasTouchPointer = null; setMouse(e); const tap = touchTap, menu = G.state !== 'play' || !!UI.open; touchTap = null;
   if (tap && !tap.slid && type === 'pointerup') uiMouseDown(0);
-  mouse.l = mouse.r = mouse.held = false; uiMouseUp(); focusMobileText(UI.focus);
+  mouse.l = mouse.r = mouse.held = false; uiMouseUp();
+  // only a tap brings the phone's keyboard up: a finger sliding a list past the chosen password does not
+  if (!tap || !tap.slid) focusMobileText(UI.focus);
+  // a lifted finger points at nothing: or the control (or tooltip) where it lifted stays lit on the next screen
+  // (a finger on the world is left where it was: a strike may still be on its way to it)
+  if (menu || G.state !== 'play' || UI.open) { mouse.x = mouse.y = -999; mouse.ux = mouse.uy = -999 / VS.ui; }
 });

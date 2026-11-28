@@ -141,7 +141,8 @@ const amParaH = (s, w, lh = 9) => wrapC(s, w).length * lh;
 function amHead(c, skin, hat, x, y, o = {}) {
   c.fillStyle = '#2b2740'; c.fillRect(x - 2, y + 15, 18, 3); c.fillStyle = '#4a4460'; c.fillRect(x - 1, y + 14, 16, 1);
   const ga = c.globalAlpha; if (o.dim) c.globalAlpha = ga * .45; khead(c, skin, hat, x, y, 2); c.globalAlpha = ga;
-  if (o.crown) { c.fillStyle = '#ffd35a'; c.fillRect(x + 3, y - 4, 8, 2); c.fillRect(x + 3, y - 6, 1, 2); c.fillRect(x + 6, y - 7, 2, 3); c.fillRect(x + 10, y - 6, 1, 2); }
+  // the leader's crown: on a bare head, or beside a hat (never painted over it; above a hat is the card's title)
+  if (o.crown) { if (hat) { x += 14; y += 6; } c.fillStyle = '#ffd35a'; c.fillRect(x + 3, y - 4, 8, 2); c.fillRect(x + 3, y - 6, 1, 2); c.fillRect(x + 6, y - 7, 2, 3); c.fillRect(x + 10, y - 6, 1, 2); }
 }
 
 // ---------------- THE FFA ARCADE: SAND AND BANNERS ----------------
@@ -182,10 +183,16 @@ function ffaTile(c, m, x, y, w, h, i) {
 const FFA_FRIENDS = 'Friends pick JOIN A FRIEND on the home page and type your code.', FFA_OFFLINE = 'Private matches need WebRTC. Practice is ready offline with 3 bots.';
 const ffaMiles = s => [['FIRST WIN', s.wins >= 1], ['10 KILLS', s.kills >= 10], ['10 MATCHES', s.matches >= 10]];
 function ffaMileRows(cw) { let r = 1, x = 0; for (const [n] of ffaMiles({})) { const w = textW(n) + 14; if (x && x + w > cw) { r++; x = 0; } x += w; } return r; }
-const ffaRecH = cw => amParaH(ffaMode(FFA.selected).desc, cw) + 6 + 42 + 4 + 6 + 10 + 6 + 10 + ffaMileRows(cw) * 11 + 6 + (netOK() ? KIT.sizes.sm + 3 + amParaH(FFA_FRIENDS, cw) : amParaH(FFA_OFFLINE, cw)) + 4;
+const ffaRecH = cw => amParaH(ffaMode(FFA.selected).desc, cw) + 6 + 42 + 4 + 6 + 10 + 6 + 10 + ffaMileRows(cw) * 11 + 6 + amParaH(netOK() ? FFA_FRIENDS : FFA_OFFLINE, cw) + 4;
 // the best of the ten modes by ELO (worked out again only when the saved records change)
 function ffaBest() { const k = String(LS.get(ffaStatsKey(accountId()))), B = AM.ffaBest; if (B && B.k === k) return B.v; const v = FFA_MODES.map(q => ({ q, elo: ffaModeStats(q.id).elo })).sort((a, b) => b.elo - a.elo)[0]; AM.ffaBest = { k, v }; return v; }
-// the chosen mode's record: its words, six numbers, a bar against the best mode, milestones, and a private match of it
+// a private match of the chosen mode, by game code (never inside a scrolling box: the only way to host one)
+function ffaHostBtn(c, x, y, w) {
+  const m = ffaMode(FFA.selected), kc = KIT.col; KIT.col = m.color;
+  kbutton(c, x, y, w, 'HOST PRIVATE MATCH  ·  CODE', () => ffaEnter(m.id, true), { small: true, short: 'HOST A PRIVATE MATCH', hint: 'A private ' + m.name + ' with a game code. ' + FFA_FRIENDS });
+  KIT.col = kc;
+}
+// the chosen mode's record: its words, six numbers, a bar against the best mode, milestones, and how friends join
 function ffaRecBody(c, cx, y, cw) {
   const S = KIT.sizes, m = ffaMode(FFA.selected), st = ffaModeStats(m.id), ratio = st.deaths ? (st.kills / st.deaths).toFixed(2) : st.kills.toFixed(2); let yy = y;
   yy += amPara(c, m.desc, cx, yy, cw, '#d8d4e6') + 6;
@@ -198,17 +205,14 @@ function ffaRecBody(c, cx, y, cw) {
   drawText(c, 'MILESTONES', cx, yy, '#8b8fa3'); yy += 10;
   let mx = 0; for (const [n, got] of ffaMiles(st)) { const mw = textW(n) + 14; if (mx && mx + mw > cw) { mx = 0; yy += 11; } c.fillStyle = got ? '#ffd35a' : '#2b2740'; c.fillRect(cx + mx, yy + 1, 6, 6); if (got) { c.fillStyle = '#16121f'; c.fillRect(cx + mx + 2, yy + 3, 2, 2); } drawText(c, n, cx + mx + 9, yy, got ? '#ffd35a' : '#6a6485'); mx += mw; }
   yy += 11 + 6;
-  if (netOK()) {
-    const kc = KIT.col; KIT.col = m.color;
-    kbutton(c, cx, yy, cw, 'HOST PRIVATE MATCH  ·  CODE', () => ffaEnter(m.id, true), { small: true, short: 'HOST A PRIVATE MATCH', hint: 'A private ' + m.name + ' with a game code. ' + FFA_FRIENDS });
-    KIT.col = kc; yy += S.sm + 3; yy += amPara(c, FFA_FRIENDS, cx, yy, cw, '#8b8fa3');
-  } else yy += amPara(c, FFA_OFFLINE, cx, yy, cw, '#8b8fa3');
+  yy += amPara(c, netOK() ? FFA_FRIENDS : FFA_OFFLINE, cx, yy, cw, '#8b8fa3');
   return yy + 4 - y;
 }
 // the record as a card of its own, in the mode's colour, with the mode's glyph as its emblem
 function ffaRecCard(c, x, y, w, h, i) {
-  const m = ffaMode(FFA.selected), K = kcard(c, x, y, w, h, 'ring', m.name, { col: m.color, art: 'ffamode', i, right: (c, rx, ry) => ffaDot(c, rx, ry) });
-  const B = { x: K.x + 1, y: K.by, w: K.w - 2, h: K.y + K.h - 3 - K.by }, need = ffaRecH(K.w - 16) + 3, dy = need > B.h ? kscroll(c, B, need, 'ffarec') : 0;
+  const m = ffaMode(FFA.selected), net = netOK(), K = kcard(c, x, y, w, h, 'ring', m.name, { col: m.color, art: 'ffamode', i, foot: net, right: (c, rx, ry) => ffaDot(c, rx, ry) });
+  if (net) ffaHostBtn(c, K.x + 8, K.footY + 5, K.w - 16);
+  const B = { x: K.x + 1, y: K.by, w: K.w - 2, h: (net ? K.footY - 2 : K.y + K.h - 3) - K.by }, need = ffaRecH(K.w - 16) + 3, dy = need > B.h ? kscroll(c, B, need, 'ffarec') : 0;
   ffaRecBody(c, K.x + 8, K.by + 3 + dy, K.w - 16);
   if (need > B.h) kscrollEnd(c);
 }
@@ -231,9 +235,10 @@ function ffaModes(c, x, y, w, h, i, narrow) {
   const K = kcard(c, x, y, w, h, 'ring', 'THE FFA ARCADE', { foot: true, i, right: (c, rx, ry) => { const s = narrow ? '10 MODES' : '10 MODES  ·  3 BOTS EACH'; drawText(c, s, rx - textW(s), ry + 5, '#8b8fa3'); } });
   const cx = K.x + 8, cw = K.w - 16, top = K.by + 2, bot = K.footY - 5;
   if (narrow) {
-    const th = KIT.T ? 34 : 28, gap = S.gap, need = S.bh + gap + 2 + FFA_MODES.length * (th + gap) + 4 + 16 + ffaRecH(cw - 4), B = { x: K.x + 1, y: top - 2, w: K.w - 2, h: bot - top + 4 }, dy = need > B.h ? kscroll(c, B, need, 'ffamodes') : 0;
+    const th = KIT.T ? 34 : 28, gap = S.gap, net = netOK(), need = S.bh + gap + 2 + (net ? S.sm + gap + 2 : 0) + FFA_MODES.length * (th + gap) + 4 + 16 + ffaRecH(cw - 4), B = { x: K.x + 1, y: top - 2, w: K.w - 2, h: bot - top + 4 }, dy = need > B.h ? kscroll(c, B, need, 'ffamodes') : 0;
     let yy = top + dy;
     kbutton(c, cx, yy, cw - 4, 'QUICK PLAY  ·  RANDOM MODE', ffaQuickPlay, { short: 'QUICK PLAY', hint: 'A random mode of the ten (R).' }); yy += S.bh + gap + 2;
+    if (net) { ffaHostBtn(c, cx, yy, cw - 4); yy += S.sm + gap + 2; }
     FFA_MODES.forEach((m, k) => { ffaTile(c, m, cx, yy, cw - 4, th, k); yy += th + gap; });
     // the chosen mode's record under the list, behind a bar of its colour
     yy += 4; c.fillStyle = mode.color; c.fillRect(cx, yy, cw - 4, 2); ffaIcon(c, mode.id, cx, yy + 4, mode.color); drawText(c, mode.name, cx + 12, yy + 4, mode.color); ffaDot(c, cx + cw - 4, yy - 1); yy += 16;
@@ -516,13 +521,15 @@ Object.assign(MENUS, {
 // INVITE (the party word, the game code, OPEN TO OTHERS, FIND AN OPEN MATCH). LEAVE is in the foot.
 function lobInfo(wild) {
   const me = wild ? wBrMe() : brMe(), host = BR.via === 'rtc' && netHost(), list = [{ id: me, n: G.nick, me: true, sk: G.skin | 0, pt: BR.party || '', tw: BR.wish | 0 }];
-  for (const [id, q] of BR.people) list.push({ id, n: q.n || 'WAKER', ph: q.ph, sk: q.sk === undefined ? [...String(id)].reduce((a, ch) => a + ch.charCodeAt(0), 0) % 4 : q.sk, pt: q.pt || '', tw: q.tw | 0 });
+  for (const [id, q] of BR.people) list.push({ id, n: q.n || 'WAKER', ph: q.ph, ht: q.ht | 0, sk: q.sk === undefined ? [...String(id)].reduce((a, ch) => a + ch.charCodeAt(0), 0) % 4 : q.sk, pt: q.pt || '', tw: q.tw | 0 });
   list.sort((a, b) => (a.ph === 'M') - (b.ph === 'M') || (a.id < b.id ? -1 : 1));
   const sz = clamp(BR.sizeWant | 0, 1, 3) || 1, parties = wild ? [] : [...new Set(list.map(e => e.pt).filter(p => p && list.filter(q => q.pt === p).length > 1))];
   const now = performance.now(), cd = BR.lead ? (BR.cdEnd ? max(0, ceil((BR.cdEnd - now) / 1000)) : -1) : BR.lastCd > 0 ? BR.lastCd : -1, off = BR.via === 'room' && NET.status === 'offline';
   let st;
   if (off) st = ['The live room cannot be reached from here.', 'warn'];
   else if (BR.via === 'room' && !NET.me) st = ['Joining the lobby...', 'info'];
+  // (a guest who came back first leads the lobby while the host plays on: it has no game code to give)
+  else if (BR.via === 'rtc' && BR.lead && !host) st = [(COOP.hostName || 'The host') + ' is in a match. START NOW starts the next one here.', 'ok'];
   else if (BR.via === 'rtc' && BR.lead) st = [BR.lobbyN > 1 ? 'Everyone here? Press START NOW. Echoes fill the empty places.' : 'Give your friends the game code' + (wild ? '' : ', or open the lobby to others') + '. Then START NOW.', 'ok'];
   else if (BR.busy && cd < 0) st = ['A match is running. The next one starts when it ends (or start now).', 'warn'];
   else if (cd >= 0) st = [(wild ? 'The sky opens in ' : 'The horn sounds in ') + cd + 's' + (BR.lobbyN < 2 ? '  (echoes fill the empty places)' : ''), 'ok'];
@@ -537,7 +544,7 @@ function lobWakers(c, x, y, w, I) {
   const per = max(1, floor(w / lobCell())), cell = floor(w / per), n = min(I.list.length, per * 2);
   for (let i = 0; i < n; i++) {
     const e = I.list[i], cx = x + (i % per) * cell + round(cell / 2), cy = y + floor(i / per) * lobRowH, lead = e.id === BR.leaderId && e.ph !== 'M', pi = I.parties.indexOf(e.pt);
-    amHead(c, e.sk, e.me ? G.hat | 0 : 0, cx - 7, cy + 6, { crown: lead, dim: e.ph === 'M' });
+    amHead(c, e.sk, e.me ? G.hat | 0 : e.ht | 0, cx - 7, cy + 6, { crown: lead, dim: e.ph === 'M' });
     if (pi >= 0) { c.fillStyle = TR_TEAMCOL[pi % TR_TEAMCOL.length]; c.fillRect(cx - 9, cy + 24, 18, 1); }
     const busy = e.ph === 'M' && (performance.now() / 1500 | 0) % 2, nm = fitText(busy ? 'IN A MATCH' : e.n + (!I.wild && I.sz > 1 && e.tw ? ' ' + e.tw : ''), cell - 4); textC(c, nm, cx, cy + 27, e.ph === 'M' ? '#6a6485' : e.me ? '#ffd35a' : '#8ff5e6', 1, drawText);
   }
@@ -645,7 +652,7 @@ function arenaLobby(c, wild) {
     const F = menuFrame('bropen', 380, openListH(380)); drawOpenList(c, F.x, F.y, F.w, F.h, { close: () => { BR.showOpen = false; sfx('ui'); }, i: 3 });
   }
 }
-const lobIdle = () => BR.wild ? 'Wait for the others, or start. Escape leaves.' : BR.lead ? kb('START NOW when everyone is here. Escape leaves the lobby.', 'START NOW when everyone is here.') : 'The match starts when the leader says so.';
+const lobIdle = () => BR.wild ? kb('Wait for the others, or start. Escape leaves.', 'Wait for the others, or start.') : BR.lead ? kb('START NOW when everyone is here. Escape leaves the lobby.', 'START NOW when everyone is here.') : 'The match starts when the leader says so.';
 Object.assign(MENUS, {
   brlobby: {
     col: '#e0d2b4', art: 'plinth', motes: 'ashfall', place: 'THE PLINTHS', sound: 'chime', glow: { x: .5, y: .8 }, still: true,
@@ -694,7 +701,7 @@ function amEndCard(c, o) {
   }
   if (inner > B.h) kscrollEnd(c);
   const n = o.buttons.length, fy = K.footY + 5;
-  if (n) { const bw = floor((cw - S.gap * (n - 1)) / n); o.buttons.forEach(([label, fn, hint], i) => kbutton(c, K.x + 8 + i * (bw + S.gap), fy, i === n - 1 && n > 1 ? cw - (bw + S.gap) * (n - 1) : bw, label, fn, { main: i === 0, hint })); }
+  if (n) { KIT.endMain = o.buttons[0][1]; const bw = floor((cw - S.gap * (n - 1)) / n); o.buttons.forEach(([label, fn, hint], i) => kbutton(c, K.x + 8 + i * (bw + S.gap), fy, i === n - 1 && n > 1 ? cw - (bw + S.gap) * (n - 1) : bw, label, fn, { main: i === 0, hint })); }
   else if (o.footNote) drawText(c, fitText(o.footNote, cw), K.x + 8, fy + round((S.bh - 8) / 2), '#8b8fa3');
   c.globalAlpha = ga;
 }

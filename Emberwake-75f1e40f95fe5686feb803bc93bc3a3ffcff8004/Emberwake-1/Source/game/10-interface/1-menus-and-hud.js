@@ -3,6 +3,8 @@
 //  dialogue, the ring scoreboard. Everything clickable registers
 //  a hit box while it draws; clicks test last frame's boxes.
 // ============================================================
+// a note that names the J or C key reads, on a touch screen, without it (the pause card's JOURNAL and FORMS open them there)
+const noKeys = s => !KIT.T || !s ? s : s.replace(/\[C\] shows them/g, 'FORMS in the menu shows them').replace(/ *\[[JC]\]/g, '');
 const inR = (x, y, w, h) => mouse.ux >= x && mouse.ux < x + w && mouse.uy >= y && mouse.uy < y + h;
 const FORM = { name: '', seed: '', size: 1, shape: 0, mode: 0, skin: 0, hat: 0, nick: '', code: '', accountName: '', accountPassword: '', accountConfirm: '', brRanked: false };
 const COSMETIC_SHOP = { tab: 'skin', selected: 0, scroll: 0, rows: 1 };
@@ -57,9 +59,12 @@ const hotN = () => WORLD.arena && !wildOn() ? 6 : 10;
 const hotbarLayout = () => ({ x: round((VS.uw - hotN() * 19 + 1) / 2), y: VS.uh - 22 });
 function invLayout() {
   const wide = VS.uw >= 420, gw = 189, cw = 190, pr = ceil(INV_N / 10), ph = pr * 19 + 20, rows = wide ? clamp(floor((VS.uh - 90) / 19), 4, 9) : clamp(floor((VS.uh - 150 - ph) / 19), 2, 6);
-  const tw = wide ? gw + cw + 14 : cw, x0 = round((VS.uw - tw) / 2), y0 = wide ? round(max(34, (VS.uh - rows * 19) / 2 - 20)) : 34;
-  const nr = wide ? rows : max(2, rows - 3);
-  return { gx: x0, gy: y0, cx: wide ? x0 + gw + 14 : x0, cy: wide ? y0 : y0 + ph + 18 + 80, cw, rows: nr, ph, ay: y0 + ph + 2 };
+  // a screen held upright with room to spare: the cards start under the HUD's bars, and the BY HAND list takes the height
+  // that is left above the strip (its last line, 'more at benches', included)
+  const low = !wide && VS.uh - 56 - (46 + ph + 98) >= 38;
+  const tw = wide ? gw + cw + 14 : cw, x0 = round((VS.uw - tw) / 2), y0 = wide ? round(max(34, (VS.uh - rows * 19) / 2 - 20)) : low ? 46 : 34, cy = wide ? y0 : y0 + ph + 18 + 80;
+  const nr = wide ? rows : low ? floor((VS.uh - 56 - cy) / 19) : max(2, rows - 3);
+  return { gx: x0, gy: y0, cx: wide ? x0 + gw + 14 : x0, cy, cw, rows: nr, ph, ay: y0 + ph + 2 };
 }
 const craftMiss = r => Object.keys(r.need).reduce((n, k) => n + (countItem(k) >= r.need[k] ? 0 : 1), 0);
 const craftList = () => RECIPES.filter(r => r.st === 'hand' && recipeHere(r)).map(r => ({ r, can: canCraft(r), miss: craftMiss(r) })).sort((a, b) => b.can - a.can || a.miss - b.miss);
@@ -107,7 +112,7 @@ function itemTip(it) {
     const q = qBonus(it.id), tr = ['bleed', 'poison', 'frost', 'burn', 'steal', 'stag'].filter(k => it[k]).map(k => ({ bleed: 'bleeds', poison: 'poisons', frost: 'chills', burn: 'burns', steal: 'drinks life', stag: 'staggers' }[k]));
     L.push([`${it.dmg} damage${q ? ` (${q > 0 ? '+' : ''}${round(q * 100)}% ${QN[qTier(G.quality[it.id])].toLowerCase()})` : ''}${it.wsp ? (it.wsp < .95 ? ', quick' : it.wsp > 1.08 ? ', slow' : '') : ''}`, '#fff']);
     if (tr.length || it.crit) L.push([[...tr, it.crit ? 'keen' : ''].filter(Boolean).join(', '), '#ffb347']);
-    L.push([`${Object.keys(MOVESETS[it.set].moves).filter(k => !isStyleId(k)).length} forms  [C]`, '#8ff5e6']); if (STYLES[weaponType(it)]) L.push([`styles: rank ${styleLevel(weaponType(it))}/5 (V)`, '#ffd35a']);
+    L.push([`${Object.keys(MOVESETS[it.set].moves).filter(k => !isStyleId(k)).length} forms` + kb('  [C]', ''), '#8ff5e6']); if (STYLES[weaponType(it)]) L.push([`styles: rank ${styleLevel(weaponType(it))}/5 (V)`, '#ffd35a']);
   }
   else if (it.type === 'tool') L.push([`${{ pick: 'pick', axe: 'axe', shovel: 'shovel', hammer: 'hammer', knife: 'knife' }[it.kind]} : power ${it.power}, works ${TIER_N[it.tier].replace(/^an? /, '').replace(' tool', '')} rock and softer`, '#fff']);
   else if (it.type === 'food') L.push([`food +${it.food || 0}${it.heal ? `, heals ${it.heal}` : ''}`, '#7ddc6f']);
@@ -219,7 +224,7 @@ function drawHUD(c) {
   if (p.riposte > 0 && (G.time >> 2) & 1) textO(c, 'RIPOSTE READY', 15, 22, '#8ff5e6');
   else if (!UI.open && WORLD.royale) { if (wild && !SETTINGS.fpsMode && !mobileDevice && !(BR.t > 60 * 60 || G.note || p.dead)) textS(c, '[LMB] hit / dig  [F] open  [E] pack  [B] recipes  [K] knap  [H] heal  [P] pact  [M] map', 4, 35, '#8b8fa3'); }
   else if (!UI.open && !SETTINGS.fpsMode && !mobileDevice) textS(c, A ? (FFA.active ? FFA.mode === 'crystal' ? '[TAB] scores  [F] place / detonate crystal  [P] menu' : FFA.mode === 'shield' ? '[TAB] scores  [G] guard  [P] menu' : '[TAB] scores  [C] forms  [P] menu  1-6 weapons  [R] sidearm' : '[TAB] scores  [C] forms  [P] menu  1-6 weapons  [R] sidearm [T] swap') : '[E] pack  [K] knap  [F] use  [J] journal  [P] menu', 4, 25, '#8b8fa3');
-  if (!SETTINGS.fpsMode && !A && G.jNew && (G.time >> 4) & 1) textS(c, 'NEW JOURNAL ENTRY [J]', 4, 32, '#ffd35a');
+  if (!SETTINGS.fpsMode && !A && G.jNew && (G.time >> 4) & 1) textS(c, kb('NEW JOURNAL ENTRY [J]', 'NEW JOURNAL ENTRY'), 4, 32, '#ffd35a');
   if (!SETTINGS.fpsMode) { drawBless(c); drawMealHud(c); drawGadgetHud(c); }
   drawCoopHud(c);
   if (G.savedNote) { const t = G.savedNote.t; c.globalAlpha = clamp((120 - t) / 30, 0, 1); textS(c, G.savedNote.ok ? (SAVE.db ? 'saved to your account' : 'saved') : 'could not save', 4, A ? 32 : 42, '#7ddc6f'); c.globalAlpha = 1; }
@@ -247,9 +252,11 @@ function drawHUD(c) {
   if (b && b.state !== 'intro') { const bw = clamp(uw - 300, 110, 220), bx = round((uw - bw) / 2); textC(c, b.name, uw / 2, 5, '#ffd35a', 1, textO); bar(c, bx, 15, bw, 6, b.hp / b.maxhp, b.phase === 2 ? '#ff7a2a' : '#c94a3a', '#8f2233'); if (b.state === 'tired' || b.state === 'stagger') textC(c, 'STAGGERED: STRIKE NOW', uw / 2, 24, (G.time >> 3) & 1 ? '#8ff5e6' : '#fff', 1, textO); else if (b.st && b.st.blind > 0) textC(c, 'BLINDED', uw / 2, 24, '#b9bdd0', 1, textO); }
   else if (v && !v.yielded) { const bw = clamp(uw - 300, 110, 220), bx = round((uw - bw) / 2); textC(c, 'VESPER, THE GLASS WAKER', uw / 2, 5, '#8ff5e6', 1, textO); bar(c, bx, 15, bw, 6, v.hp / v.maxhp, v.phase === 2 ? '#8ff5e6' : '#6fb9c9', '#3f7f92'); }
   // banners and notes
-  if (G.biomeT > 0 && !G.banner && G.state === 'play') { const a = min(1, G.biomeT / 40, (200 - G.biomeT) / 30); c.globalAlpha = max(0, a); const s = G.biomeN || BIOME[G.biome] || ''; textC(c, s, uw / 2, round(uh * .2), '#fff', 2, textO); if (s) { c.fillStyle = '#ffd35a'; c.fillRect(round(uw / 2 - 30), round(uh * .2) + 20, 60, 1); if (G.biomeS) textC(c, G.biomeS, uw / 2, round(uh * .2) + 25, '#d8d4e6', 1, textO); } c.globalAlpha = 1; }
-  if (G.banner && G.banner.t >= 0) { const t = G.banner.t, a = clamp(min(t / 25, (230 - t) / 30), 0, 1); c.globalAlpha = a; const wild = wildOn(); textC(c, G.banner.text, uw / 2, round(uh * .24), '#ffd35a', wild && textW(G.banner.text, 2) > uw - 8 ? 1 : 2, textO); if (G.banner.sub) (wild ? wrapText(G.banner.sub, uw - 8) : [G.banner.sub]).forEach((l, i) => textC(c, l, uw / 2, round(uh * .24) + 22 + i * 10, '#fff', 1, textO)); c.globalAlpha = 1; }
-  if (G.note && G.note.t >= 0) { c.globalAlpha = clamp(min(G.note.t / 15, (240 - G.note.t) / 30), 0, 1); textC(c, G.note.text, uw / 2, wildOn() ? (uw < 300 ? 112 : 48) : 36, '#ffd35a', 1, textO); c.globalAlpha = 1; }
+  // (not over a panel: the veil hides the world, and the words would show through the gaps between its cards)
+  const veiled = UI.open && UI.open !== 'score';
+  if (G.biomeT > 0 && !G.banner && G.state === 'play' && !veiled) { const a = min(1, G.biomeT / 40, (200 - G.biomeT) / 30); c.globalAlpha = max(0, a); const s = G.biomeN || BIOME[G.biome] || ''; textC(c, s, uw / 2, round(uh * .2), '#fff', 2, textO); if (s) { c.fillStyle = '#ffd35a'; c.fillRect(round(uw / 2 - 30), round(uh * .2) + 20, 60, 1); if (G.biomeS) textC(c, G.biomeS, uw / 2, round(uh * .2) + 25, '#d8d4e6', 1, textO); } c.globalAlpha = 1; }
+  if (G.banner && G.banner.t >= 0 && !veiled) { const t = G.banner.t, a = clamp(min(t / 25, (230 - t) / 30), 0, 1); c.globalAlpha = a; const wild = wildOn(); textC(c, G.banner.text, uw / 2, round(uh * .24), '#ffd35a', wild && textW(G.banner.text, 2) > uw - 8 ? 1 : 2, textO); if (G.banner.sub) (wild ? wrapText(noKeys(G.banner.sub), uw - 8) : [noKeys(G.banner.sub)]).forEach((l, i) => textC(c, l, uw / 2, round(uh * .24) + 22 + i * 10, '#fff', 1, textO)); c.globalAlpha = 1; }
+  if (G.note && G.note.t >= 0 && !veiled) { c.globalAlpha = clamp(min(G.note.t / 15, (240 - G.note.t) / 30), 0, 1); textC(c, noKeys(G.note.text), uw / 2, wildOn() ? (uw < 300 ? 112 : 48) : 36, '#ffd35a', 1, textO); c.globalAlpha = 1; }
   if (G.linkBanner) { const t = G.linkBanner.t, a = clamp(min(t / 8, (150 - t) / 25), 0, 1), y = round(uh * .36); c.globalAlpha = a; textC(c, G.linkBanner.first ? 'NEW LINK' : 'LINK', uw / 2, y - 12, '#8ff5e6', 1, textO); textC(c, G.linkBanner.name.toUpperCase(), uw / 2 + (t < 8 ? (8 - t) * 3 : 0), y, '#fff1a8', 2, textO); c.globalAlpha = 1; }
   if (G.leadDone) { const t = G.leadDone.t; c.globalAlpha = clamp(min(t / 15, (200 - t) / 30), 0, 1); textC(c, 'LEAD FOLLOWED : ' + G.leadDone.title, uw / 2, 48, '#7ddc6f', 1, textO); c.globalAlpha = 1; }
   if (!SETTINGS.fpsMode) G.picks.forEach((q, i) => { c.globalAlpha = clamp((200 - q.t) / 40, 0, 1); const ic = IT[q.id].icon, y = uh - 16 - i * 12; c.drawImage(ic, 4, y - (ic.height >> 1) + 4); textS(c, `+${q.n} ${IT[q.id].name}`, 24, y, '#fff'); }); c.globalAlpha = 1;
@@ -270,7 +277,7 @@ function drawHUD(c) {
 function drawObjective(c) {
   const uw = VS.uw, p = G.p, id = G.pin, L = id && LEADS[id];
   if (WORLD.mode === 1 && !L) return;
-  if (!L) { if (leadsOpen().length) textS(c, '[J] leads', uw - 52, 6 + (G.miniH || 0), '#6a6485'); drawMileWay(c, uw, 18 + (G.miniH || 0)); return; }
+  if (!L) { if (leadsOpen().length) textS(c, kb('[J] leads', 'leads'), uw - 52, 6 + (G.miniH || 0), '#6a6485'); drawMileWay(c, uw, 18 + (G.miniH || 0)); return; }
   const qw = min(160, uw - 200), lines = wrapText(L.text, qw - 10), at = leadAt(L), qh = 14 + min(3, lines.length) * 9 + (at !== null && at !== undefined ? 9 : 0), qx = uw - qw - 4, oy = G.miniH || 0;
   c.fillStyle = 'rgba(18,13,31,.62)'; c.fillRect(qx, 4 + oy, qw, qh); c.fillStyle = '#ffd35a'; c.fillRect(qx, 4 + oy, 2, qh);
   textS(c, 'LEAD : ' + L.title.toUpperCase(), qx + 6, 7 + oy, '#ffd35a'); lines.slice(0, 3).forEach((l, i) => textS(c, l, qx + 6, 17 + oy + i * 9, '#fff'));

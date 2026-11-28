@@ -327,7 +327,7 @@ function drawCoopPanel(c) {
   if (guest) { guestL.forEach((l, i) => drawText(c, l, fx, ty + i * 9, '#d8d4e6')); kbutton(c, K.x + K.w - 8 - bw, K.footY + 5, bw, 'LEAVE THEIR WORLD', () => { closeUI(); quitToTitle(); }, { danger: true, hint: 'Back to the home page. Your pack is kept.' }); pfoot(c, K, '', K.w - bw - 24); return; }
   if (!ok) { noL.forEach((l, i) => drawText(c, l, fx, ty + i * 9, '#ffb347')); return; }
   sigHost('world');
-  drawText(c, 'YOUR NAME', fx, ty + round((S.fh - 8) / 2), '#b9bdd0'); const el = domBox('hname', fx + 62, ty, min(140, w - 62), S.fh, { input: true, val: FORM.nick || G.nick || 'WAKER' }); const nm = cleanName(el.value); if (nm && nm !== FORM.nick) { FORM.nick = nm; if (G.p) G.p.name = nm; } ty += S.fh + 8;
+  drawText(c, 'YOUR NAME', fx, ty + round((S.fh - 8) / 2), '#b9bdd0'); const el = domBig(domBox('hname', fx + 62, ty, min(140, w - 62), S.fh, { input: true, val: FORM.nick || G.nick || 'WAKER' })); const nm = cleanName(el.value); if (nm && nm !== FORM.nick) { FORM.nick = nm; if (G.p) G.p.name = nm; } ty += S.fh + 8;
   drawText(c, 'YOUR GAME CODE', fx, ty, '#b9bdd0'); ty += 10;
   // the code itself, big, on a lit strip, with COPY and NEW CODE beside it
   const cbw = KIT.T ? 72 : 58, cw = w - cbw - S.gap, code = sigSpaced(COOP.gcode || '......'), sc = textW(code) * 3 <= cw - 8 ? 3 : 2;
@@ -412,8 +412,11 @@ function joinCode(c, x, y, w, h) {
     drawText(c, fitText(kb('Your friend sees it in PLAY TOGETHER (P).', 'Your friend sees it in PLAY TOGETHER.'), cw), cx, yy, '#b9bdd0'); yy += 11;
     const bw = min(cw, KIT.T ? 150 : 132), bh = KIT.T ? 22 : 20;
     joinLamps(c, cx + 4, yy - 1, bw - 8); yy += 9;
-    const el = domBox('gcin', cx, yy, bw, bh, { input: true, ph: 'K7P2QX', onEnter: joinGo, onEsc: el => el.blur() }); el.maxLength = 8;
-    if (!el.dataset.pre && FORM.gcode) { el.value = FORM.gcode; el.dataset.pre = '1'; } el.style.textTransform = 'uppercase'; el.style.letterSpacing = '3px'; el.style.fontSize = max(12, round(parseFloat(el.style.fontSize) * 1.6)) + 'px';
+    const el = domBig(domBox('gcin', cx, yy, bw, bh, { input: true, ph: 'K7P2QX', onEnter: joinGo, onEsc: el => { el.blur(); KIT.focus = null; }, onTab: (el, back) => { el.blur(); kitNav(back ? -1 : 1, 'field:gcode'); } })); el.maxLength = 8;
+    if (!el.dataset.pre && FORM.gcode) { el.value = FORM.gcode; el.dataset.pre = '1'; }
+    // a computer can type the code as soon as the card opens, and Tab stops at the box like at any field
+    kctrl({ tag: 'field:gcode', kind: 'btn', x: cx, y: yy, w: bw, h: bh, fn: () => el.focus() });
+    if (!KIT.T && document.activeElement !== el && (el.dataset.t0 !== String(KIT.enter.t0) || (KIT.kbd && KIT.focus === 'field:gcode'))) { el.dataset.t0 = KIT.enter.t0; el.focus(); }
     el.style.borderColor = busy ? '#7ddc6f' : '#6a6485';
     if (bw + 60 <= cw) drawText(c, fitText(kb('then Enter', 'then JOIN'), cw - bw - 8), cx + bw + 8, yy + round((bh - 8) / 2), '#6a6485');
     yy += bh + 6;

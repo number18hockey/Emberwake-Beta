@@ -222,6 +222,12 @@ const pwheel = () => kb('wheel', 'slide');
 // ---------------- THE PAUSE PANEL: THE WORLD HELD STILL ----------------
 // The actions (THE WORLD card) beside a card of tabs: SETTINGS, KEYS (TOUCH on a phone) and THIS WORLD (its traits).
 // A phone held upright gets one card: the actions two by two over the tabs, all of it scrolling over a pinned foot.
+// a touch screen has no J or C key: the journal and the forms codex open from here
+function pauseBooks(L, A) {
+  if (!KIT.T) return;
+  if (!A) L.push({ l: 'JOURNAL', fn: () => toggleUI('journal'), o: { hint: 'Leads, lore, echoes and beasts.' } });
+  L.push({ l: 'FORMS', fn: () => toggleUI('codex'), o: { hint: 'Every form of every weapon, and the links.' } });
+}
 function pauseActs(A) {
   const leave = () => { closeUI(); if (WORLD.royale && BR.on && BR.via !== 'solo') brBackToLobby(); else quitToTitle(); sfx('ui'); };
   const L = [{ l: 'RESUME', fn: () => { closeUI(); sfx('ui'); }, o: { main: true, hint: kb('Back to the world (Esc or P).', 'Back to the world.') } }];
@@ -229,12 +235,13 @@ function pauseActs(A) {
     const l = WORLD.royale ? (BR.via !== 'solo' ? 'TO THE LOBBY' : 'LEAVE MATCH') : 'LEAVE FFA';
     L.push({ l, fn: leave, o: { danger: true, hint: WORLD.royale ? (BR.via !== 'solo' ? 'Leave the match for the lobby.' : 'Leave the match.') : 'Leave the arcade for the home page.' } });
     if (wildOn() && BR.teammate) L.push({ l: 'LEAVE PACT', fn: () => { brBreakPact(false); closeUI(); }, o: { hint: 'Break the pact with your teammate.' } });
-    return L;
+    pauseBooks(L, A); return L;
   }
   L.push({ l: 'SAVE', fn: () => { saveWorld(); sfx('craft'); }, o: { hint: 'Save this world now.' } });
   L.push({ l: 'SAVE & QUIT', fn: leave, o: { hint: 'Save, and go back to the home page.' } });
   if (netGuest()) L.push({ l: 'LEAVE THEIR WORLD', fn: () => { closeUI(); quitToTitle(); }, o: { danger: true, short: 'LEAVE', hint: 'Your pack is kept on this computer for next time.' } });
   else L.push({ l: COOP.role ? 'PLAY TOGETHER (' + (1 + [...COOP.peers.values()].filter(P => P.ok).length) + ')' : 'PLAY TOGETHER', fn: () => { UI.open = 'coop'; COOP.err = ''; sfx('ui'); }, o: { short: 'TOGETHER', hint: 'Let friends join this world with a code.' } });
+  pauseBooks(L, A);
   if (G.p && !G.boss && !G.duel) L.push({ l: 'WAKE AT THE FIRE', fn: () => { closeUI(); wakeAtFire(); }, o: { short: 'TO THE FIRE', hint: 'Walk back to the fire or your bedroll. It costs a meal.' } });
   return L;
 }

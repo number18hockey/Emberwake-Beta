@@ -71,7 +71,7 @@ function wBrLeave() { brPayLeaving();
   if (BR.via === 'room') netLeave(); else if (BR.via === 'rtc') { for (const u of NET.unsubs) try { u(); } catch (e) { } NET.unsubs = []; NET.R = null; coopLeave(); COOP.br = false; }
   BR.on = false; BR.phase = ''; BR.mi = ''; BR.people.clear(); NET.me = ''; NET.status = 'off';
   for (const f of NET.peers.values()) f.gone = true; NET.peers.clear(); G.fighters = G.fighters.filter(f => !f.gone);
-  G.state = 'title'; UI.open = null; G.dialog = null; G.boss = null; G.duel = null; WORLD.id = ''; BR.wild = false;
+  G.state = 'title'; UI.open = null; G.dialog = null; G.boss = null; G.duel = null; WORLD.id = ''; BR.wild = false; arenaGone();
 }
 
 // ---------------- what this computer says about itself ----------------
@@ -113,7 +113,7 @@ function wBrPeers(list) {
     here.add(pe.peer);
     let q = BR.people.get(pe.peer); if (!q) { q = { id: pe.peer, sq: -1 }; BR.people.set(pe.peer, q); }
     if (q.sq === s.sq && q.pres) continue; q.sq = s.sq; q.pres = s; q.at = performance.now();
-    q.n = cleanName(s.n) || 'WAKER'; q.sk = clamp(num(s.sk) | 0, 0, SKINS.length - 1); q.ph = s.ph === 'M' ? 'M' : 'L'; q.mi = typeof s.mi === 'string' ? s.mi.slice(0, 24) : ''; q.ld = s.ld && typeof s.ld === 'object' ? s.ld : null; q.guest = !!pe.guest;
+    q.n = cleanName(s.n) || 'WAKER'; q.sk = clamp(num(s.sk) | 0, 0, SKINS.length - 1); q.ph = s.ph === 'M' ? 'M' : 'L'; q.mi = typeof s.mi === 'string' ? s.mi.slice(0, 24) : ''; q.ld = s.ld && typeof s.ld === 'object' ? s.ld : null; q.guest = !!pe.guest; q.ht = clamp(num(s.ht) | 0, 0, 3);
     if (q.ld && q.ld.st === 'L') BR.lastCd = num(q.ld.cd);
     wBrSaw(pe.peer, q, s);
   }

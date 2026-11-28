@@ -538,6 +538,7 @@ function advance() { if (G.state === 'intro') { if (G.introT < 20) return; if (+
 function quitToTitle() {
   if (BR.on) { brLeave(); return; }
   if (WORLD.arena && NET.via === 'rtc') ringRtcEnd(); else if (WORLD.arena) netLeave(); else if (netGuest()) coopLeave(); else { saveWorld(true); coopLeave(); }
+  arenaGone();
   G.dialog = null; UI.open = null; G.state = 'title'; titleScene(); WORLD.guest = false; G.boss = null; G.duel = null; G.enemies = []; G.projs = [];
   WORLD.id = ''; sfx('ui');
 }
