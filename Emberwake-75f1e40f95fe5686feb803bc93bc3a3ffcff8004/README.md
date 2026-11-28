@@ -46,6 +46,7 @@ This version joins two that had grown apart: the uploaded "Emberwake 2" (the hom
 - The Wilds, a third arena for 32: fall with nothing, gather, dig, craft, make pacts; souls and coins for the soul wheel and the shop
 - Echoes (computer players) that find real routes over walls and gaps, choose their fights, and keep the beat as well as their skill allows
 - Accounts kept in the browser: a name and a password, a look and a hat, and each account's own worlds
+- An optional online social board: username friend requests, private chat, friend-only activity, and Ember-coin gifts (requires running the included service)
 - Touch controls for phones and tablets
 - Synthesized pixel graphics and sound with no image or audio downloads
 
@@ -97,6 +98,10 @@ Emberwake uses direct peer-to-peer connections when possible and falls back to a
 To move a save between the Mac app and a browser or another computer, open the world list and use **COPY**, then sign in on the destination and use **PASTE A WORLD**.
 
 > Every player must use the same Emberwake version. On different computers, share the latest `Emberwake.html` or `Emberwake.app` build.
+
+## Social board
+
+The optional **SOCIAL** button on the home screen opens username accounts, friend requests, private chat, friend activity and coin gifts. It uses a separate online account and wallet; the existing local accounts and arena balances are unchanged. To try it locally, follow the [social service instructions](Emberwake-1/Source/README.md#social-board). For cross-device use, the service and game must be deployed together behind HTTPS.
 
 ## Building from source
 

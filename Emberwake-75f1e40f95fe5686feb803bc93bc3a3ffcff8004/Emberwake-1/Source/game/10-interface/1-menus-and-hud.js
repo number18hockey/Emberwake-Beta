@@ -192,18 +192,20 @@ function drawTitle(c) {
     titleCard(c, x0, cy, cw, ch, 'ALONE', '#ffd35a', 'fire', alone);
     titleCard(c, x0 + cw + gap, cy, cw, ch, 'WITH FRIENDS', '#7ddc6f', 'friends', friends);
     titleCard(c, x0 + (cw + gap) * 2, cy, cw, ch, 'THE ARENAS', '#ff6b6b', 'arena', arenas);
-    const by = min(uh - 36, cy + ch + 10), bw = min(104, floor((uw - 44) / 5)), bx = round((uw - bw * 5 - 16) / 2);
+    const by = min(uh - 36, cy + ch + 10), bw = min(90, floor((uw - 40) / 6)), bx = round((uw - bw * 6 - 20) / 2);
     button(c, bx, by, bw, 14, muted ? 'SOUND: OFF' : 'SOUND: ON', () => { muted = !muted; sfx('ui'); }); if (inR(bx, by, bw, 14)) TITLE.hint = 'Sound on or off (also the O key while playing).';
     button(c, bx + bw + 4, by, bw, 14, 'DIFFICULTY: ' + DIFF().n, () => { SETTINGS.diff = SETTINGS.diff === 'easy' ? 'normal' : SETTINGS.diff === 'normal' ? 'hard' : 'easy'; saveSettings(); sfx('ui'); }); if (inR(bx + bw + 4, by, bw, 14)) TITLE.hint = 'How hard blows land on you, and how wide the timing of your own blows is.';
     button(c, bx + (bw + 4) * 2, by, bw, 14, 'CONTROLS: ' + (SETTINGS.combat === 'simple' ? 'SIMPLE' : 'FULL'), () => { SETTINGS.combat = SETTINGS.combat === 'simple' ? 'full' : 'simple'; saveSettings(); sfx('ui'); }); if (inR(bx + (bw + 4) * 2, by, bw, 14)) TITLE.hint = 'SIMPLE: aim and S choose the form. FULL: movement keys and distance change it too.';
     button(c, bx + (bw + 4) * 3, by, bw, 14, 'HOW TO PLAY', () => { G.state = 'howto'; sfx('ui'); }); if (inR(bx + (bw + 4) * 3, by, bw, 14)) TITLE.hint = 'The keys, and how a fight works.';
     button(c, bx + (bw + 4) * 4, by, bw, 14, 'COSMETIC SHOP', () => { G.state = 'shop'; COSMETIC_SHOP.scroll = 0; sfx('ui'); });
+    button(c, bx + (bw + 4) * 5, by, bw, 14, 'SOCIAL', socialOpen); if (inR(bx + (bw + 4) * 5, by, bw, 14)) TITLE.hint = 'Find friends, chat, see when they are playing, and gift Ember coins.';
   } else {
     // a narrow window: one plain column
     const bw = min(176, uw - 16), bx = round((uw - bw) / 2); let by = max(ly + 56, round(uh * .36));
     for (const r of [...alone, ...friends, ...arenas]) { button(c, bx, by, bw, 16, r[0], r[2], r[4] || {}); if (inR(bx, by, bw, 16)) TITLE.hint = r[3]; by += 19; }
     button(c, bx, by, bw, 14, 'COSMETIC SHOP', () => { G.state = 'shop'; COSMETIC_SHOP.scroll = 0; sfx('ui'); }); by += 16;
-    button(c, bx, by, bw, 14, 'HOW TO PLAY', () => { G.state = 'howto'; sfx('ui'); });
+    button(c, bx, by, bw, 14, 'HOW TO PLAY', () => { G.state = 'howto'; sfx('ui'); }); by += 16;
+    button(c, bx, by, bw, 14, 'SOCIAL', socialOpen); if (inR(bx, by, bw, 14)) TITLE.hint = 'Find friends, chat, see when they are playing, and gift Ember coins.';
   }
   { let h = TITLE.hint || (mobileDevice ? 'touch to move and fight' : 'mouse + keyboard'); while (h.length > 3 && textW(h) > uw - 12) h = h.slice(0, -1); textC(c, h, uw / 2, uh - 15, TITLE.hint ? '#d8d4e6' : '#8b8fa3', 1, textO); }
   const vs = 'version ' + GAME_VERSION; textS(c, vs, uw - textW(vs) - 4, uh - 10, '#6a6485');

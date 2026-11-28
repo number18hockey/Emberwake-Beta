@@ -17,6 +17,7 @@ Build the game first: `python3 build.py` in `Source`.
 python3 tests/run.py                      # everything (about half an hour)
 python3 tests/run.py together             # one group
 python3 tests/run.py together/relay.py    # one test
+python3 tests/social_api.py                # online social service API
 python3 tests/together/relay.py           # or run a test by itself
 ```
 
